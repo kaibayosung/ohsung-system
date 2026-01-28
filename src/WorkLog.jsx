@@ -7,13 +7,11 @@ function WorkLog() {
   const [loading, setLoading] = useState(false);
   const [monthlyRecords, setMonthlyRecords] = useState([]);
   
-  // 연/월 선택 상태
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-  // [신규] 인라인 편집을 위한 상태
-  const [editingId, setEditingId] = useState(null); // 현재 수정 중인 행의 ID
-  const [editFormData, setEditFormData] = useState({}); // 수정 중인 데이터 임시 저장
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
 
@@ -30,7 +28,6 @@ function WorkLog() {
       .order('work_date', { ascending: false })
       .order('created_at', { ascending: false });
     
-    // DB의 management_no(품명|규격)를 분리해서 데이터 가공
     const formattedData = data?.map(r => {
       const [prod, spec] = r.management_no ? r.management_no.split(' | ') : ['', ''];
       return { ...r, product_name: prod || '', spec: spec || '' };
@@ -39,17 +36,14 @@ function WorkLog() {
     setMonthlyRecords(formattedData);
   };
 
-  // [수정] 인라인 편집 시작
   const handleEditClick = (record) => {
     setEditingId(record.id);
     setEditFormData({ ...record });
   };
 
-  // [수정] 인라인 편집 저장
   const handleInlineSave = async (id) => {
     setLoading(true);
     try {
-      // 품명과 규격을 다시 합쳐서 저장
       const combinedName = `${editFormData.product_name} | ${editFormData.spec}`;
       const { error } = await supabase.from('sales_records').update({
         management_no: combinedName,
@@ -102,8 +96,8 @@ function WorkLog() {
         id: Date.now() + index, 
         work_date: cols[0] || new Date().toISOString().split('T')[0], 
         company_name: cols[1] || '', 
-        product_name: cols[2] || '', // 품명
-        spec: cols[3] || '',         // 규격
+        product_name: cols[2] || '', 
+        spec: cols[3] || '', 
         weight: Number(cols[4]?.replace(/,/g,'')) || 0, 
         unit_price: Number(cols[5]?.replace(/,/g,'')) || 0, 
         total_price: Number(cols[6]?.replace(/,/g,'')) || 0, 
@@ -113,25 +107,63 @@ function WorkLog() {
     setRows(parsed);
   };
 
+  // --- [핵심 수정 부분] 중복 체크 기능이 추가된 저장 함수 ---
   const handleSaveToDB = async () => {
     if (rows.length === 0) return;
     setLoading(true);
+    
     try {
       const { data: companies } = await supabase.from('companies').select('id, name');
+      
+      // 1. 저장할 데이터 준비
       const preparedData = rows.map(r => ({
         work_date: r.work_date,
         company_id: companies.find(c => c.name.trim() === r.company_name.trim())?.id || 1,
-        management_no: `${r.product_name} | ${r.spec}`, // 합쳐서 저장
+        management_no: `${r.product_name} | ${r.spec}`,
         weight: r.weight,
         unit_price: r.unit_price,
         total_price: r.total_price,
         work_type: r.work_type
       }));
+
+      // 2. DB에 이미 있는 데이터와 대조 (하나씩 체크)
+      let duplicates = [];
+      for (const item of preparedData) {
+        const { data: existing } = await supabase
+          .from('sales_records')
+          .select('id')
+          .match({
+            work_date: item.work_date,
+            company_id: item.company_id,
+            management_no: item.management_no,
+            weight: item.weight
+          })
+          .maybeSingle();
+
+        if (existing) {
+          const companyName = companies.find(c => c.id === item.company_id)?.name;
+          duplicates.push(`${item.work_date} | ${companyName} | ${item.management_no} | ${item.weight}kg`);
+        }
+      }
+
+      // 3. 중복 발견 시 알림 후 중단
+      if (duplicates.length > 0) {
+        alert(`⚠️ 중복 데이터가 발견되어 저장이 중단되었습니다.\n\n[중복 내역]\n${duplicates.join('\n')}\n\n이미 등록된 내역인지 확인해 주세요.`);
+        setLoading(false);
+        return;
+      }
+
+      // 4. 중복이 없을 때만 저장 실행
       const { error } = await supabase.from('sales_records').insert(preparedData);
       if (error) throw error;
+      
       alert("성공적으로 저장되었습니다.");
       setRows([]); setPasteData(''); fetchMonthlyRecords();
-    } catch (err) { alert("저장 실패: " + err.message); } finally { setLoading(false); }
+    } catch (err) { 
+      alert("저장 실패: " + err.message); 
+    } finally { 
+      setLoading(false); 
+    }
   };
 
   const summary = rows.reduce((acc, cur) => { acc[cur.work_type] = (acc[cur.work_type] || 0) + cur.total_price; return acc; }, {});
@@ -141,7 +173,7 @@ function WorkLog() {
       <div style={styles.topSection}>
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>📄 매출 엑셀 붙여넣기</h3>
-          <textarea className="excel-input" value={pasteData} onChange={e=>setPasteData(e.target.value)} placeholder="엑셀 복사 -> 붙여넣기" />
+          <textarea className="excel-input" value={pasteData} onChange={e=>setPasteData(e.target.value)} placeholder="엑셀 복사 -> 붙여넣기" style={styles.textarea} />
           <button onClick={handlePasteProcess} style={styles.blueBtn}>데이터 분석 실행</button>
         </div>
         <div style={styles.summaryCard}>
@@ -151,7 +183,7 @@ function WorkLog() {
         </div>
       </div>
 
-      {rows.length > 0 && <div style={styles.card}><button onClick={handleSaveToDB} disabled={loading} style={styles.greenBtn}>DB에 저장하기</button></div>}
+      {rows.length > 0 && <div style={styles.card}><button onClick={handleSaveToDB} disabled={loading} style={styles.greenBtn}>{loading ? '중복 데이터 검사 중...' : 'DB에 저장하기'}</button></div>}
 
       <div style={{...styles.card, marginTop:'20px', backgroundColor:'#f8fafc'}}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px'}}>
@@ -174,7 +206,6 @@ function WorkLog() {
               {monthlyRecords.map(r => (
                 <tr key={r.id} style={styles.tr}>
                   {editingId === r.id ? (
-                    // --- 수정 모드 (엑셀처럼 입력창 표시) ---
                     <>
                       <td><input type="date" value={editFormData.work_date} onChange={e=>setEditFormData({...editFormData, work_date:e.target.value})} style={styles.inlineInput}/></td>
                       <td>{r.companies?.name}</td>
@@ -194,7 +225,6 @@ function WorkLog() {
                       </td>
                     </>
                   ) : (
-                    // --- 일반 모드 (데이터 표시) ---
                     <>
                       <td>{r.work_date}</td>
                       <td>{r.companies?.name}</td>
@@ -226,6 +256,7 @@ const styles = {
   card: { flex: 1, backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
   summaryCard: { flex: 1, backgroundColor: '#ebf8ff', padding: '20px', borderRadius: '12px' },
   cardTitle: { margin: '0 0 15px 0', fontSize: '18px', fontWeight:'bold' },
+  textarea: { width: '100%', height: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #ddd', marginBottom: '10px', boxSizing: 'border-box' },
   blueBtn: { width:'100%', padding: '10px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' },
   greenBtn: { width: '100%', padding: '12px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' },
   totalBox: { marginTop: '15px', paddingTop:'10px', borderTop:'1px solid #bee3f8', fontWeight:'bold', fontSize:'18px', textAlign:'right' },
