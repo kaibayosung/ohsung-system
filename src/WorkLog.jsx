@@ -10,12 +10,15 @@ function WorkLog() {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [editingCell, setEditingCell] = useState({ id: null, field: null });
 
+  // 테이블 이름을 변수로 관리하면 수정이 쉽습니다.
+  const TABLE_NAME = 'daily_work_log'; 
+
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
 
   const fetchMonthlyRecords = async () => {
     const startDate = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`;
     const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
-    const { data } = await supabase.from('work_log').select('*')
+    const { data } = await supabase.from(TABLE_NAME).select('*')
       .gte('work_date', startDate).lte('work_date', endDate)
       .order('work_date', { ascending: false });
     setMonthlyRecords(data || []);
@@ -24,7 +27,7 @@ function WorkLog() {
   const handleCellUpdate = async (id, field, value) => {
     setMonthlyRecords(prev => prev.map(r => r.id === id ? { ...r, [field]: value } : r));
     try {
-      const { error } = await supabase.from('work_log').update({ [field]: value }).eq('id', id);
+      const { error } = await supabase.from(TABLE_NAME).update({ [field]: value }).eq('id', id);
       if (error) throw error;
     } catch (e) {
       alert("수정 실패");
@@ -35,7 +38,7 @@ function WorkLog() {
 
   const handleSingleDelete = async (id) => {
     if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    const { error } = await supabase.from('work_log').delete().eq('id', id);
+    const { error } = await supabase.from(TABLE_NAME).delete().eq('id', id);
     if (!error) fetchMonthlyRecords();
   };
 
@@ -62,16 +65,14 @@ function WorkLog() {
     setLoading(true);
     try {
       const dates = rows.map(r => r.work_date);
-      const minDate = dates.reduce((a, b) => a < b ? a : b);
-      const maxDate = dates.reduce((a, b) => a > b ? a : b);
+      const minDate = dates.reduce((a, b) => (a < b ? a : b));
+      const maxDate = dates.reduce((a, b) => (a > b ? a : b));
 
-      const { data: existingData, error: fetchError } = await supabase.from('work_log').select('*')
+      const { data: existingData, error: fetchError } = await supabase.from(TABLE_NAME).select('*')
         .gte('work_date', minDate).lte('work_date', maxDate);
 
       if (fetchError) throw fetchError;
-
-      // [핵심 수정] existingData가 null일 경우 빈 배열([])로 대체하여 .some() 에러 방지
-      const existing = existingData || []; 
+      const existing = existingData || [];
 
       const duplicates = [];
       const validRows = [];
@@ -82,12 +83,12 @@ function WorkLog() {
           oldR.project_name === newR.project_name && 
           oldR.worker === newR.worker
         );
-        if (isDup) duplicates.push(`${newR.work_date} | ${newR.project_name} | ${newR.worker}`);
+        if (isDup) duplicates.push(`${newR.work_date} | ${newR.worker}`);
         else validRows.push(newR);
       });
 
       if (validRows.length > 0) {
-        const { error: insertError } = await supabase.from('work_log').insert(validRows);
+        const { error: insertError } = await supabase.from(TABLE_NAME).insert(validRows);
         if (insertError) throw insertError;
       }
 
@@ -96,9 +97,7 @@ function WorkLog() {
         : '';
       alert(`✅ 작업일보 ${validRows.length}건 저장 완료!${dupMsg}`);
 
-      setRows([]); 
-      setPasteData(''); 
-      fetchMonthlyRecords();
+      setRows([]); setPasteData(''); fetchMonthlyRecords();
     } catch (err) { 
       alert("저장 오류: " + err.message); 
     } finally { 
@@ -158,7 +157,6 @@ function WorkLog() {
                   <td><button onClick={() => handleSingleDelete(r.id)} style={styles.delBtn}>삭제</button></td>
                 </tr>
               ))}
-              {monthlyRecords.length === 0 && <tr><td colSpan="5" style={{padding:'20px', color:'#888'}}>데이터가 없습니다.</td></tr>}
             </tbody>
           </table>
         </div>
