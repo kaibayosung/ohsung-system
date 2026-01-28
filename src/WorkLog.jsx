@@ -10,7 +10,7 @@ function WorkLog() {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [editingCell, setEditingCell] = useState({ id: null, field: null });
 
-  // [핵심 수정] 실제 DB 테이블 명으로 변경
+  // [⚠️ 중요] 에러 발생 시 Supabase Table Editor에서 실제 이름을 확인 후 아래를 수정하세요.
   const TABLE_NAME = 'daily_work_log'; 
 
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
@@ -30,7 +30,7 @@ function WorkLog() {
       const { error } = await supabase.from(TABLE_NAME).update({ [field]: value }).eq('id', id);
       if (error) throw error;
     } catch (e) {
-      alert("수정 실패");
+      alert("수정 실패: " + e.message);
       fetchMonthlyRecords();
     }
     setEditingCell({ id: null, field: null });
@@ -72,8 +72,6 @@ function WorkLog() {
         .gte('work_date', minDate).lte('work_date', maxDate);
 
       if (fetchError) throw fetchError;
-      
-      // [에러 방지] 데이터가 null인 경우 빈 배열로 처리
       const existing = existingData || [];
 
       const duplicates = [];
@@ -97,7 +95,7 @@ function WorkLog() {
       const dupMsg = duplicates.length > 0 
         ? `\n\n⚠️ 중복 제외(${duplicates.length}건):\n${duplicates.slice(0, 5).join('\n')}${duplicates.length > 5 ? '\n...외 더 있음' : ''}`
         : '';
-      alert(`✅ 작업일보 ${validRows.length}건 저장 완료!${dupMsg}`);
+      alert(`✅ 저장 완료: ${validRows.length}건${dupMsg}`);
 
       setRows([]); setPasteData(''); fetchMonthlyRecords();
     } catch (err) { 
@@ -133,7 +131,7 @@ function WorkLog() {
         <div style={styles.summaryCard}>
           <p>분석 데이터: {rows.length}건</p>
           <button onClick={handleSave} disabled={loading || rows.length===0} style={styles.greenBtn}>
-            {loading ? '저장 중...' : '중복 제외 후 저장'}
+            {loading ? '처리 중...' : '중복 제외 후 저장'}
           </button>
         </div>
       </div>
