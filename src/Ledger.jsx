@@ -10,150 +10,118 @@ function Ledger() {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [editingCell, setEditingCell] = useState({ id: null, field: null });
 
+  const TABLE_NAME = 'daily_ledger';
+
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
 
   const fetchMonthlyRecords = async () => {
     const startDate = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-01`;
     const endDate = new Date(selectedYear, selectedMonth, 0).toISOString().split('T')[0];
-    const { data } = await supabase.from('daily_ledger').select('*')
+    const { data } = await supabase.from(TABLE_NAME).select('*')
       .gte('trans_date', startDate).lte('trans_date', endDate)
-      .order('trans_date', { ascending: false }).order('created_at', { ascending: false });
+      .order('trans_date', { ascending: false });
     setMonthlyRecords(data || []);
   };
 
   const handleCellUpdate = async (id, field, value) => {
-    const updatedValue = field === 'amount' ? Number(value) : value;
-    setMonthlyRecords(prev => prev.map(r => r.id === id ? { ...r, [field]: updatedValue } : r));
+    const val = field === 'amount' ? Number(value) : value;
+    setMonthlyRecords(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r));
     try {
-      const { error } = await supabase.from('daily_ledger').update({ [field]: updatedValue }).eq('id', id);
+      const { error } = await supabase.from(TABLE_NAME).update({ [field]: val }).eq('id', id);
       if (error) throw error;
-    } catch (e) {
-      alert("수정 실패: " + e.message);
-      fetchMonthlyRecords();
-    }
+    } catch (e) { alert("수정 오류: " + e.message); fetchMonthlyRecords(); }
     setEditingCell({ id: null, field: null });
-  };
-
-  const handleSingleDelete = async (id) => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    const { error } = await supabase.from('daily_ledger').delete().eq('id', id);
-    if (!error) fetchMonthlyRecords();
   };
 
   const handlePasteProcess = () => {
     if (!pasteData.trim()) return alert("데이터를 붙여넣어 주세요.");
     const lines = pasteData.trim().split('\n');
     const parsedRows = [];
-    let lastValidDate = ""; 
+    let lastDate = ""; 
+
     lines.forEach((line) => {
       if (line.includes("날자") || line.includes("수입") || line.trim() === "") return;
       const cols = line.split('\t');
       if (cols.length < 5) return;
+
       let rowDate = cols[0]?.trim();
-      if (rowDate && /^\d{4}-\d{2}-\d{2}$/.test(rowDate)) lastValidDate = rowDate;
-      else rowDate = lastValidDate;
+      if (rowDate && /^\d{4}-\d{2}-\d{2}$/.test(rowDate)) lastDate = rowDate;
+      else rowDate = lastDate;
       if (!rowDate) return;
-      const parseAmt = (val) => Number(val?.replace(/,/g, '')) || 0;
-      const income = parseAmt(cols[4]);
-      const expCash = parseAmt(cols[5]);
-      const expCard = parseAmt(cols[6]);
-      const expOther = parseAmt(cols[7]);
-      if (income > 0) parsedRows.push({ trans_date: rowDate, type: '수입', company: cols[1], description: cols[2], amount: income, method: '현금' });
-      if (expCash > 0) parsedRows.push({ trans_date: rowDate, type: '지출', company: cols[1], description: cols[2], amount: expCash, method: '현금' });
-      if (expCard > 0) parsedRows.push({ trans_date: rowDate, type: '지출', company: cols[1], description: cols[2], amount: expCard, method: '법인카드' });
-      if (expOther > 0) parsedRows.push({ trans_date: rowDate, type: '지출', company: cols[1], description: cols[2], amount: expOther, method: '기타' });
+
+      const parseAmt = (v) => Number(v?.replace(/,/g, '')) || 0;
+      const data = { trans_date: rowDate, company: cols[1], description: cols[2] };
+
+      if (parseAmt(cols[4]) > 0) parsedRows.push({ ...data, type: '수입', amount: parseAmt(cols[4]), method: '현금' });
+      if (parseAmt(cols[5]) > 0) parsedRows.push({ ...data, type: '지출', amount: parseAmt(cols[5]), method: '현금' });
+      if (parseAmt(cols[6]) > 0) parsedRows.push({ ...data, type: '지출', amount: parseAmt(cols[6]), method: '법인카드' });
+      if (parseAmt(cols[7]) > 0) parsedRows.push({ ...data, type: '지출', amount: parseAmt(cols[7]), method: '기타' });
     });
     setRows(parsedRows);
   };
 
   const handleSave = async () => {
-    if (rows.length === 0) return;
     setLoading(true);
     try {
-      const dates = rows.map(r => r.trans_date);
-      const minDate = dates.reduce((a, b) => a < b ? a : b);
-      const maxDate = dates.reduce((a, b) => a > b ? a : b);
-
-      const { data: existingData } = await supabase.from('daily_ledger').select('*')
-        .gte('trans_date', minDate).lte('trans_date', maxDate);
-
-      // [에러 방지] 데이터가 없을 경우 빈 배열 처리
-      const existing = existingData || []; 
-
-      const duplicates = [];
-      const validRows = [];
-
-      rows.forEach(newR => {
-        const isDup = existing.some(oldR => 
-          oldR.trans_date === newR.trans_date && oldR.company === newR.company && 
-          oldR.amount === newR.amount && oldR.method === newR.method && 
-          (oldR.description || '') === (newR.description || '')
-        );
-        if (isDup) duplicates.push(`${newR.trans_date} | ${newR.company} | ${newR.amount.toLocaleString()}원`);
-        else validRows.push(newR);
-      });
+      const { data: existingData } = await supabase.from(TABLE_NAME).select('*');
+      const existing = existingData || [];
+      const validRows = rows.filter(newR => !existing.some(oldR => 
+        oldR.trans_date === newR.trans_date && oldR.company === newR.company && oldR.amount === newR.amount && oldR.method === newR.method
+      ));
 
       if (validRows.length > 0) {
-        const { error } = await supabase.from('daily_ledger').insert(validRows);
+        const { error } = await supabase.from(TABLE_NAME).insert(validRows);
         if (error) throw error;
       }
-
-      const dupMsg = duplicates.length > 0 
-        ? `\n\n⚠️ 중복 제외(${duplicates.length}건):\n${duplicates.slice(0, 5).join('\n')}${duplicates.length > 5 ? '\n...외 더 있음' : ''}`
-        : '';
-      alert(`✅ ${validRows.length}건 저장 완료!${dupMsg}`);
+      alert(`저장 완료: ${validRows.length}건 (중복 제외: ${rows.length - validRows.length}건)`);
       setRows([]); setPasteData(''); fetchMonthlyRecords();
-    } catch (err) { alert("저장 오류: " + err.message); } finally { setLoading(false); }
+    } catch (err) { alert("저장 실패: " + err.message); } finally { setLoading(false); }
   };
 
-  const EditableCell = ({ record, field, type = "text" }) => {
-    const isEditing = editingCell.id === record.id && editingCell.field === field;
-    if (isEditing) {
-      return (
-        <input
-          autoFocus type={type} defaultValue={record[field]}
-          onBlur={(e) => handleCellUpdate(record.id, field, e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCellUpdate(record.id, field, e.target.value)}
-          style={styles.cellInput}
-        />
-      );
-    }
-    return <div onClick={() => setEditingCell({ id: record.id, field })} style={styles.cellDiv}>{field === 'amount' ? record[field].toLocaleString() : record[field]}</div>;
-  };
+  const EditableCell = ({ record, field, type = "text" }) => (
+    editingCell.id === record.id && editingCell.field === field ? 
+    <input autoFocus type={type} defaultValue={record[field]} onBlur={(e) => handleCellUpdate(record.id, field, e.target.value)} style={{width:'90%'}} /> :
+    <div onClick={() => setEditingCell({ id: record.id, field })} style={{padding:'5px', cursor:'pointer'}}>{field === 'amount' ? record[field].toLocaleString() : record[field]}</div>
+  );
 
   return (
-    <div style={styles.container}>
-      <div style={styles.topSection}>
-        <div style={styles.card}><h3 style={styles.cardTitle}>📝 일계표 엑셀 붙여넣기</h3><textarea style={styles.textarea} value={pasteData} onChange={e=>setPasteData(e.target.value)} /><button onClick={handlePasteProcess} style={styles.blueBtn}>데이터 분석</button></div>
-        <div style={styles.summaryCard}><h3>📊 분석 결과</h3><p>수입: {rows.filter(r=>r.type==='수입').length}건 / 지출: {rows.filter(r=>r.type==='지출').length}건</p><button onClick={handleSave} disabled={loading || rows.length===0} style={styles.greenBtn}>{loading ? '처리 중...' : '중복 제외 후 저장'}</button></div>
+    <div style={{padding:'20px', fontFamily:'sans-serif'}}>
+      <div style={{display:'flex', gap:'20px', marginBottom:'20px'}}>
+        <div style={{flex:2, padding:'15px', background:'white', borderRadius:'8px', boxShadow:'0 2px 5px rgba(0,0,0,0.1)'}}>
+          <h3>📝 일계표 붙여넣기</h3>
+          <textarea style={{width:'100%', height:'100px'}} value={pasteData} onChange={e=>setPasteData(e.target.value)} />
+          <button onClick={handlePasteProcess} style={{width:'100%', marginTop:'10px', padding:'10px', background:'#3182ce', color:'white', border:'none', borderRadius:'4px'}}>데이터 분석</button>
+        </div>
+        <div style={{flex:1, padding:'20px', background:'#ebf8ff', borderRadius:'8px', display:'flex', flexDirection:'column', justifyContent:'center'}}>
+          <p>분석 데이터: <b>{rows.length}</b>건</p>
+          <button onClick={handleSave} disabled={loading || rows.length===0} style={{padding:'15px', background:'#38a169', color:'white', border:'none', borderRadius:'4px', fontWeight:'bold'}}>{loading ? '저장 중...' : '중복 제외 후 저장'}</button>
+        </div>
       </div>
-      <div style={styles.listCard}>
-        <div style={styles.headerRow}><h3>📅 {selectedYear}년 {selectedMonth}월 내역</h3><select value={selectedMonth} onChange={e=>setSelectedMonth(Number(e.target.value))}>{[1,2,3,4,5,6,7,8,9,10,11,12].map(m=><option key={m} value={m}>{m}월</option>)}</select></div>
-        <div style={styles.scrollWrapper}><table style={styles.table}><thead style={styles.thead}><tr><th>날짜</th><th>구분</th><th>상호</th><th>적요</th><th>금액</th><th>방식</th><th>관리</th></tr></thead>
-        <tbody>{monthlyRecords.map(r => (<tr key={r.id} style={styles.tr}><td><EditableCell record={r} field="trans_date" type="date" /></td><td><EditableCell record={r} field="type" /></td><td><EditableCell record={r} field="company" /></td><td><EditableCell record={r} field="description" /></td><td style={{textAlign:'right'}}><EditableCell record={r} field="amount" type="number" /></td><td><EditableCell record={r} field="method" /></td><td><button onClick={() => handleSingleDelete(r.id)} style={styles.delBtn}>삭제</button></td></tr>))}</tbody></table></div>
+      <div style={{background:'white', padding:'15px', borderRadius:'8px', boxShadow:'0 2px 5px rgba(0,0,0,0.1)'}}>
+        <div style={{display:'flex', justifyContent:'space-between', marginBottom:'15px'}}>
+          <h3>📅 {selectedYear}년 {selectedMonth}월 장부</h3>
+          <select value={selectedMonth} onChange={e=>setSelectedMonth(Number(e.target.value))} style={{padding:'5px'}}>{[1,2,3,4,5,6,7,8,9,10,11,12].map(m=><option key={m} value={m}>{m}월</option>)}</select>
+        </div>
+        <table style={{width:'100%', borderCollapse:'collapse', textAlign:'center', fontSize:'13px'}}>
+          <thead style={{background:'#f7fafc'}}>
+            <tr><th style={{padding:'10px', borderBottom:'1px solid #ddd'}}>날짜</th><th style={{borderBottom:'1px solid #ddd'}}>구분</th><th style={{borderBottom:'1px solid #ddd'}}>상호</th><th style={{borderBottom:'1px solid #ddd'}}>적요</th><th style={{borderBottom:'1px solid #ddd'}}>금합계</th><th style={{borderBottom:'1px solid #ddd'}}>방식</th></tr>
+          </thead>
+          <tbody>
+            {monthlyRecords.map(r => (
+              <tr key={r.id} style={{borderBottom:'1px solid #eee'}}>
+                <td><EditableCell record={r} field="trans_date" type="date" /></td>
+                <td style={{color:r.type==='수입'?'blue':'red', fontWeight:'bold'}}>{r.type}</td>
+                <td><EditableCell record={r} field="company" /></td>
+                <td><EditableCell record={r} field="description" /></td>
+                <td style={{textAlign:'right', paddingRight:'10px'}}><EditableCell record={r} field="amount" type="number" /></td>
+                <td><EditableCell record={r} field="method" /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: { padding: '20px', height: '100vh', boxSizing:'border-box', display:'flex', flexDirection:'column', gap:'20px', backgroundColor:'#f4f7f9' },
-  topSection: { display: 'flex', gap: '20px' },
-  card: { flex: 2, backgroundColor: 'white', padding: '20px', borderRadius: '12px' },
-  summaryCard: { flex: 1, backgroundColor: '#ebf8ff', padding: '20px', borderRadius: '12px' },
-  textarea: { width:'100%', height:'100px', marginBottom:'10px' },
-  blueBtn: { width:'100%', padding: '10px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor:'pointer' },
-  greenBtn: { width: '100%', padding: '15px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor:'pointer' },
-  listCard: { background:'white', padding:'20px', borderRadius:'12px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
-  headerRow: { display:'flex', justifyContent:'space-between', marginBottom:'10px' },
-  scrollWrapper: { flex: 1, overflowY: 'auto', border: '1px solid #edf2f7' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  thead: { position: 'sticky', top: 0, backgroundColor: '#f7fafc', zIndex: 1 },
-  tr: { borderBottom: '1px solid #edf2f7', height: '40px' },
-  cellDiv: { padding: '8px', cursor: 'pointer', minHeight: '20px', width: '100%' },
-  cellInput: { width: '90%', padding: '5px', border: '2px solid #3182ce', borderRadius: '4px', outline: 'none' },
-  delBtn: { color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer' },
-  cardTitle: { margin: '0 0 10px 0' }
-};
 
 export default Ledger;
