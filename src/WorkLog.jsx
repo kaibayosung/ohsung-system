@@ -10,7 +10,7 @@ function WorkLog() {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [editingCell, setEditingCell] = useState({ id: null, field: null });
 
-  // 테이블 이름을 변수로 관리하면 수정이 쉽습니다.
+  // [핵심 수정] 실제 DB 테이블 명으로 변경
   const TABLE_NAME = 'daily_work_log'; 
 
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
@@ -72,6 +72,8 @@ function WorkLog() {
         .gte('work_date', minDate).lte('work_date', maxDate);
 
       if (fetchError) throw fetchError;
+      
+      // [에러 방지] 데이터가 null인 경우 빈 배열로 처리
       const existing = existingData || [];
 
       const duplicates = [];
