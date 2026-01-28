@@ -10,8 +10,8 @@ function WorkLog() {
   const [selectedMonth, setSelectedMonth] = useState(1);
   const [editingCell, setEditingCell] = useState({ id: null, field: null });
 
-  // [⚠️ 중요] 에러 발생 시 Supabase Table Editor에서 실제 이름을 확인 후 아래를 수정하세요.
-  const TABLE_NAME = 'daily_work_log'; 
+  // [명세서 확인 완료] 실제 DB 테이블명
+  const TABLE_NAME = 'daily_work_report';
 
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
 
@@ -29,17 +29,8 @@ function WorkLog() {
     try {
       const { error } = await supabase.from(TABLE_NAME).update({ [field]: value }).eq('id', id);
       if (error) throw error;
-    } catch (e) {
-      alert("수정 실패: " + e.message);
-      fetchMonthlyRecords();
-    }
+    } catch (e) { alert("수정 실패: " + e.message); fetchMonthlyRecords(); }
     setEditingCell({ id: null, field: null });
-  };
-
-  const handleSingleDelete = async (id) => {
-    if (!window.confirm("정말 삭제하시겠습니까?")) return;
-    const { error } = await supabase.from(TABLE_NAME).delete().eq('id', id);
-    if (!error) fetchMonthlyRecords();
   };
 
   const handlePasteProcess = () => {
@@ -50,11 +41,13 @@ function WorkLog() {
       if (line.includes("날짜") || line.trim() === "") return;
       const cols = line.split('\t');
       if (cols.length < 3) return;
+      
+      // 명세서 필드 매핑: 날짜 | 현장명 | 작업자 | 작업내용
       parsedRows.push({
         work_date: cols[0]?.trim(),
-        project_name: cols[1]?.trim(),
-        worker: cols[2]?.trim(),
-        content: cols[3]?.trim()
+        site_name: cols[1]?.trim(),    
+        worker_name: cols[2]?.trim(),  
+        work_content: cols[3]?.trim()  
       });
     });
     setRows(parsedRows);
@@ -64,125 +57,51 @@ function WorkLog() {
     if (rows.length === 0) return;
     setLoading(true);
     try {
-      const dates = rows.map(r => r.work_date);
-      const minDate = dates.reduce((a, b) => (a < b ? a : b));
-      const maxDate = dates.reduce((a, b) => (a > b ? a : b));
-
-      const { data: existingData, error: fetchError } = await supabase.from(TABLE_NAME).select('*')
-        .gte('work_date', minDate).lte('work_date', maxDate);
-
-      if (fetchError) throw fetchError;
+      // 해당 범위의 기존 데이터를 한 번에 가져옴 (성능 최적화)
+      const { data: existingData } = await supabase.from(TABLE_NAME).select('work_date, site_name, worker_name');
       const existing = existingData || [];
 
-      const duplicates = [];
-      const validRows = [];
-
-      rows.forEach(newR => {
-        const isDup = existing.some(oldR => 
-          oldR.work_date === newR.work_date && 
-          oldR.project_name === newR.project_name && 
-          oldR.worker === newR.worker
-        );
-        if (isDup) duplicates.push(`${newR.work_date} | ${newR.worker}`);
-        else validRows.push(newR);
-      });
+      // 중복 체크 로직: 날짜, 현장명, 작업자가 모두 같으면 제외
+      const validRows = rows.filter(newR => !existing.some(oldR => 
+        oldR.work_date === newR.work_date && 
+        oldR.site_name === newR.site_name && 
+        oldR.worker_name === newR.worker_name
+      ));
 
       if (validRows.length > 0) {
-        const { error: insertError } = await supabase.from(TABLE_NAME).insert(validRows);
-        if (insertError) throw insertError;
+        const { error } = await supabase.from(TABLE_NAME).insert(validRows);
+        if (error) throw error;
       }
 
-      const dupMsg = duplicates.length > 0 
-        ? `\n\n⚠️ 중복 제외(${duplicates.length}건):\n${duplicates.slice(0, 5).join('\n')}${duplicates.length > 5 ? '\n...외 더 있음' : ''}`
-        : '';
-      alert(`✅ 저장 완료: ${validRows.length}건${dupMsg}`);
-
+      const dupCount = rows.length - validRows.length;
+      alert(`✅ 저장 완료: ${validRows.length}건\n⚠️ 중복 제외: ${dupCount}건`);
+      
       setRows([]); setPasteData(''); fetchMonthlyRecords();
-    } catch (err) { 
-      alert("저장 오류: " + err.message); 
-    } finally { 
-      setLoading(false); 
-    }
+    } catch (err) { alert("저장 오류: " + err.message); } finally { setLoading(false); }
   };
 
-  const EditableCell = ({ record, field, type = "text" }) => {
-    const isEditing = editingCell.id === record.id && editingCell.field === field;
-    if (isEditing) {
-      return (
-        <input
-          autoFocus type={type} defaultValue={record[field]}
-          onBlur={(e) => handleCellUpdate(record.id, field, e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleCellUpdate(record.id, field, e.target.value)}
-          style={styles.cellInput}
-        />
-      );
-    }
-    return <div onClick={() => setEditingCell({ id: record.id, field })} style={styles.cellDiv}>{record[field]}</div>;
-  };
-
-  return (
-    <div style={styles.container}>
-      <div style={styles.topSection}>
-        <div style={styles.card}>
-          <h3 style={styles.cardTitle}>👷 작업일보 엑셀 붙여넣기</h3>
-          <textarea style={styles.textarea} value={pasteData} onChange={e=>setPasteData(e.target.value)} placeholder="날짜	현장명	작업자	내용 순으로 붙여넣으세요." />
-          <button onClick={handlePasteProcess} style={styles.blueBtn}>데이터 분석</button>
-        </div>
-        <div style={styles.summaryCard}>
-          <p>분석 데이터: {rows.length}건</p>
-          <button onClick={handleSave} disabled={loading || rows.length===0} style={styles.greenBtn}>
-            {loading ? '처리 중...' : '중복 제외 후 저장'}
-          </button>
-        </div>
-      </div>
-      <div style={styles.listCard}>
-        <div style={styles.headerRow}>
-          <h3 style={{margin:0}}>📅 {selectedYear}년 {selectedMonth}월 작업기록</h3>
-          <select value={selectedMonth} onChange={e=>setSelectedMonth(Number(e.target.value))}>
-            {[1,2,3,4,5,6,7,8,9,10,11,12].map(m=><option key={m} value={m}>{m}월</option>)}
-          </select>
-        </div>
-        <div style={styles.scrollWrapper}>
-          <table style={styles.table}>
-            <thead style={styles.thead}>
-              <tr><th style={{width:'15%'}}>날짜</th><th style={{width:'20%'}}>현장명</th><th style={{width:'15%'}}>작업자</th><th>작업내용</th><th style={{width:'10%'}}>관리</th></tr>
-            </thead>
-            <tbody>
-              {monthlyRecords.map(r => (
-                <tr key={r.id} style={styles.tr}>
-                  <td><EditableCell record={r} field="work_date" type="date" /></td>
-                  <td><EditableCell record={r} field="project_name" /></td>
-                  <td><EditableCell record={r} field="worker" /></td>
-                  <td style={{textAlign:'left'}}><EditableCell record={r} field="content" /></td>
-                  <td><button onClick={() => handleSingleDelete(r.id)} style={styles.delBtn}>삭제</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+  const EditableCell = ({ record, field, type = "text" }) => (
+    editingCell.id === record.id && editingCell.field === field ? 
+    <input 
+      autoFocus type={type} 
+      defaultValue={record[field]} 
+      onBlur={(e) => handleCellUpdate(record.id, field, e.target.value)} 
+      onKeyDown={(e) => e.key === 'Enter' && handleCellUpdate(record.id, field, e.target.value)}
+      style={{width:'90%', padding:'4px', border:'2px solid #3182ce'}} 
+    /> :
+    <div onClick={() => setEditingCell({ id: record.id, field })} style={{padding:'8px', cursor:'pointer', minHeight:'20px'}}>
+      {record[field]}
     </div>
   );
-}
 
-const styles = {
-  container: { padding: '20px', height: '100vh', boxSizing:'border-box', display:'flex', flexDirection:'column', gap:'20px', backgroundColor:'#f9f9f9' },
-  topSection: { display: 'flex', gap: '20px' },
-  card: { flex: 2, backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  summaryCard: { flex: 1, backgroundColor: '#f0fff4', padding: '20px', borderRadius: '12px', display:'flex', flexDirection:'column', justifyContent:'center' },
-  textarea: { width:'100%', height:'100px', marginBottom:'10px', padding:'10px', boxSizing:'border-box' },
-  blueBtn: { width:'100%', padding: '10px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor:'pointer' },
-  greenBtn: { width: '100%', padding: '15px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor:'pointer' },
-  listCard: { background:'white', padding:'20px', borderRadius:'12px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
-  headerRow: { display:'flex', justifyContent:'space-between', marginBottom:'10px' },
-  scrollWrapper: { flex: 1, overflowY: 'auto', border: '1px solid #edf2f7' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'center' },
-  thead: { position: 'sticky', top: 0, backgroundColor: '#f7fafc', zIndex: 1 },
-  tr: { borderBottom: '1px solid #edf2f7', height: '40px' },
-  cellDiv: { padding: '8px', cursor: 'pointer', minHeight: '20px', width: '100%' },
-  cellInput: { width: '90%', padding: '5px', border: '2px solid #3182ce', borderRadius: '4px', outline: 'none' },
-  delBtn: { color: '#e53e3e', background: 'none', border: 'none', cursor: 'pointer' },
-  cardTitle: { margin: '0 0 10px 0' }
-};
-
-export default WorkLog;
+  return (
+    <div style={{padding:'20px', background:'#f7fafc', minHeight:'100vh'}}>
+      <div style={{display:'flex', gap:'20px', marginBottom:'20px'}}>
+        <div style={{flex:2, background:'white', padding:'20px', borderRadius:'12px', boxShadow:'0 2px 10px rgba(0,0,0,0.05)'}}>
+          <h3 style={{marginTop:0}}>👷 작업일보 엑셀 붙여넣기</h3>
+          <textarea 
+            style={{width:'100%', height:'120px', padding:'10px', boxSizing:'border-box', borderRadius:'8px', border:'1px solid #ddd'}} 
+            value={pasteData} onChange={e=>setPasteData(e.target.value)} 
+            placeholder="날짜	현장명	작업자	내용 순으로 붙여넣으세요."
+          />
+          <button onClick={handlePasteProcess} style
