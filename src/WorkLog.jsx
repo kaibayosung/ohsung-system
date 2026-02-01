@@ -7,17 +7,15 @@ function WorkLog() {
   const [loading, setLoading] = useState(false);
   const [monthlyRecords, setMonthlyRecords] = useState([]);
   
-  // 연/월 선택 상태
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-  // 인라인 편집 상태 (기존 기능 유지)
   const [editingId, setEditingId] = useState(null); 
   const [editFormData, setEditFormData] = useState({}); 
 
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
 
-  // 데이터 불러오기 (기존의 품명/규격 분리 로직 포함)
+  // [유지] 기존의 데이터 로딩 및 품명/규격 분리 로직
   const fetchMonthlyRecords = async () => {
     const yearStr = selectedYear.toString();
     const monthStr = selectedMonth.toString().padStart(2, '0');
@@ -39,7 +37,7 @@ function WorkLog() {
     setMonthlyRecords(formattedData);
   };
 
-  // 인라인 편집 관련 함수 (기존 UI 기능)
+  // [유지] 기존 인라인 편집 및 저장 기능
   const handleEditClick = (record) => {
     setEditingId(record.id);
     setEditFormData({ ...record });
@@ -71,6 +69,7 @@ function WorkLog() {
     }
   };
 
+  // [유지] 기존 삭제 및 전체 삭제 기능
   const handleDeleteMonth = async () => {
     if (!window.confirm(`${selectedYear}년 ${selectedMonth}월 데이터를 전부 삭제하시겠습니까?`)) return;
     setLoading(true);
@@ -86,15 +85,18 @@ function WorkLog() {
     if (error) alert("삭제 실패: " + error.message); else fetchMonthlyRecords();
   };
 
-  // 엑셀 분석 (기존 컬럼 인덱스 및 자동 분류 로직 유지)
+  // [업그레이드] 엑셀 분석 로직 (탭 및 다중 공백 완벽 대응)
   const handlePasteProcess = () => {
     if (!pasteData.trim()) return alert("데이터를 먼저 붙여넣어 주세요.");
     const lines = pasteData.trim().split('\n');
     const dataLines = lines.filter(line => !line.includes("생산일자") && line.trim() !== "");
+    
     const parsed = dataLines.map((line, index) => {
-      const cols = line.split('\t');
-      // 기존 소스의 자동 분류 로직 (7번 또는 8번 열 기준)
-      const rawType = cols[7]?.toUpperCase().trim() || ''; 
+      // 탭 또는 2개 이상의 공백으로 분리하여 칸 인식 정확도 향상
+      const cols = line.split(/\t| {2,}/).map(c => c.trim());
+      
+      // 실장님 데이터 순서에 맞춰 인덱스 조정 (0:날짜, 1:업체, 2:코일, 3:규격, 4:중량, 5:단가, 6:금액, 7:구분)
+      const rawType = cols[7]?.toUpperCase() || ''; 
       let workType = '기타';
       if (rawType.includes('SLITING2')) workType = '슬리팅 2';
       else if (rawType.includes('SLITING')) workType = '슬리팅 1';
@@ -104,19 +106,19 @@ function WorkLog() {
         temp_id: Date.now() + index, 
         work_date: cols[0] || new Date().toISOString().split('T')[0], 
         customer_name: cols[1] || '', 
-        product_name: cols[2] || '', 
+        product_name: cols[2] || '', // 품명(코일번호)
         spec: cols[3] || '', 
-        coil_number: cols[4] || '', 
-        weight: Number(cols[5]?.replace(/,/g,'')) || 0, 
-        unit_price: Number(cols[6]?.replace(/,/g,'')) || 0, 
-        total_price: Number(cols[7]?.replace(/,/g,'')) || 0, 
+        coil_number: cols[2] || '', // 코일번호로도 저장
+        weight: Number(cols[4]?.replace(/,/g,'')) || 0, 
+        unit_price: Number(cols[5]?.replace(/,/g,'')) || 0, 
+        total_price: Number(cols[6]?.replace(/,/g,'')) || 0, 
         work_type: workType 
       };
     });
     setRows(parsed);
   };
 
-  // --- [핵심] 신규 스마트 중복 필터링 저장 ---
+  // [업그레이드] 스마트 중복 필터링 저장 기능
   const handleSaveToDB = async () => {
     if (rows.length === 0) return;
     setLoading(true);
@@ -125,7 +127,7 @@ function WorkLog() {
 
     try {
       for (const r of rows) {
-        // DB에 날짜, 코일번호, 중량이 모두 일치하는 데이터가 있는지 확인
+        // 날짜, 코일번호, 중량이 일치하는지 DB 확인
         const { data: existing } = await supabase.from('sales_records').select('id').match({
           work_date: r.work_date,
           coil_number: r.coil_number,
@@ -169,13 +171,13 @@ function WorkLog() {
 
   const summary = rows.reduce((acc, cur) => { acc[cur.work_type] = (acc[cur.work_type] || 0) + cur.total_price; return acc; }, {});
 
-  // 기존 디자인(스타일) 그대로 유지
+  // [유지] 기존 UI 디자인(스타일)
   return (
     <div style={styles.container}>
       <div style={styles.topSection}>
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>📄 매출 엑셀 붙여넣기</h3>
-          <textarea className="excel-input" value={pasteData} onChange={e=>setPasteData(e.target.value)} placeholder="엑셀 데이터를 붙여넣으세요" />
+          <textarea className="excel-input" value={pasteData} onChange={e=>setPasteData(e.target.value)} placeholder="엑셀 복사 -> 붙여넣기" />
           <button onClick={handlePasteProcess} style={styles.blueBtn}>데이터 분석 실행</button>
         </div>
         <div style={styles.summaryCard}>
@@ -260,7 +262,6 @@ function WorkLog() {
   );
 }
 
-// 기존 스타일 객체 그대로 유지
 const styles = {
   container: { padding: '20px', overflowY:'auto' },
   topSection: { display: 'flex', gap: '20px', marginBottom:'20px' },
