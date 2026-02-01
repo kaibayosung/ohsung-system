@@ -4,7 +4,8 @@ import { supabase } from './supabaseClient';
 // 1. 모든 부품(컴포넌트) 불러오기
 import Login from './Login';
 import WorkLog from './WorkLog';
-import Ledger from './Ledger';
+// [수정됨] 구버전 Ledger 대신 새 폴더에 만든 LedgerPage를 불러옵니다.
+import LedgerPage from './pages/LedgerPage'; 
 import DailyReport from './DailyReport';
 import MonthlyAnalysis from './MonthlyAnalysis';
 import AccessLog from './AccessLog';
@@ -65,7 +66,7 @@ function App() {
       {/* 상단 통합 네비게이션 바 */}
       <header style={styles.header}>
         <div style={styles.logo} onClick={() => setCurrentPage('daily')}>
-          🏭 오성철강 <span style={{fontWeight:'300', fontSize:'14px', marginLeft:'10px'}}>SMART ERP</span>
+          🏭 오성철강 <span style={{fontWeight:'300', fontSize:'14px', marginLeft:'10px'}}>SMART ERP 2.0</span>
         </div>
         
         <nav style={styles.nav}>
@@ -86,7 +87,8 @@ function App() {
       {/* 메인 콘텐츠 영역 (선택된 메뉴의 화면을 렌더링) */}
       <main style={styles.mainContent}>
         {currentPage === 'worklog' && <WorkLog />}
-        {currentPage === 'ledger' && <Ledger />}
+        {/* [수정됨] 이제 구버전이 아닌 새로운 LedgerPage를 보여줍니다. */}
+        {currentPage === 'ledger' && <LedgerPage />} 
         {currentPage === 'daily' && <DailyReport />}
         {currentPage === 'monthly' && <MonthlyAnalysis />}
         {currentPage === 'ceo' && <CEOReport />}
@@ -96,7 +98,7 @@ function App() {
   );
 }
 
-// 전체 레이아웃 스타일
+// 전체 레이아웃 스타일 (기존 유지)
 const styles = {
   appContainer: {
     display: 'flex',
