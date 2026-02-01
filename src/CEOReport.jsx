@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  LineChart, Line 
+  Cell, LineChart, Line 
 } from 'recharts';
 
 function CEOReport() {
@@ -12,7 +12,6 @@ function CEOReport() {
     dailyClients: [], equipmentBar: [], dailyTrend: []
   });
   const [notes, setNotes] = useState([]);
-  // [수정] DB 데이터 연동을 위해 초기값을 빈 배열로 변경
   const [expenseList, setExpenseList] = useState([]);
 
   const EQ_COLORS = { '슬리팅 1': '#3182ce', '슬리팅 2': '#805ad5', '레베링': '#38a169', '기타': '#718096' };
@@ -21,26 +20,17 @@ function CEOReport() {
 
   const fetchCEOData = async () => {
     const [year, month] = selectedDate.split('-');
-    // 1. DB에서 데이터 가져오기
     const { data: dSales } = await supabase.from('sales_records').select('*').eq('work_date', selectedDate);
     const { data: dLedger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
     const { data: mSales } = await supabase.from('sales_records').select('work_date, total_price').gte('work_date', `${year}-${month}-01`).lte('work_date', selectedDate);
 
-    // 2. 총액 계산
     const calcTotal = (arr, type) => arr?.filter(r => !type || r.type === type).reduce((sum, r) => sum + (Number(r.total_price || r.amount) || 0), 0) || 0;
     
-    // 3. [핵심 수정] DB에서 가져온 Ledger 데이터 중 '지출'만 필터링하여 상세 내역 목록 업데이트
-    const realtimeExpenses = dLedger
-      ?.filter(item => item.type === '지출')
-      .map(item => ({
-        id: item.id,
-        item: item.description, // DB의 description 컬럼을 항목명으로 사용
-        amount: item.amount,
-        note: item.note || ''
+    const realtimeExpenses = dLedger?.filter(item => item.type === '지출').map(item => ({
+        id: item.id, item: item.description, amount: item.amount, note: item.note || ''
       })) || [];
     setExpenseList(realtimeExpenses);
 
-    // 4. 기타 데이터 집계 (거래처, 장비, 트렌드)
     const clientMap = {}; dSales?.forEach(s => { const n = s.customer_name || s.companies?.name || '미지정'; clientMap[n] = (clientMap[n] || 0) + s.total_price; });
     const eqStats = { '슬리팅 1': { s:0, c:0 }, '슬리팅 2': { s:0, c:0 }, '레베링': { s:0, c:0 } };
     dSales?.forEach(s => { if(eqStats[s.work_type]) { eqStats[s.work_type].s += s.total_price; eqStats[s.work_type].c += 1; } });
@@ -53,8 +43,6 @@ function CEOReport() {
         trend.push({ name: `${i}일`, sales: Math.round(s / 1000) });
       }
     }
-
-    // 5. 최종 리포트 데이터 업데이트
     setReportData({
       daily: { workSales: calcTotal(dSales), otherIncome: calcTotal(dLedger, '수입'), expense: calcTotal(dLedger, '지출'), netProfit: (calcTotal(dSales) + calcTotal(dLedger, '수입')) - calcTotal(dLedger, '지출') },
       dailyClients: Object.entries(clientMap).map(([name, value]) => ({ name, value })).sort((a,b)=>b.value-a.value),
@@ -72,19 +60,21 @@ function CEOReport() {
     return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
   };
 
-  const handlePrint = () => { window.print(); };
-
   return (
     <div className="report-container" style={styles.container}>
+      {/* 인쇄 시 숨겨질 컨트롤 영역 */}
       <div className="no-print" style={styles.headerControl}>
-        <h1 style={styles.pageTitle}>오성철강 CEO 일일 경영 브리핑 ({formattedDate()})</h1>
+        <h1 style={styles.pageTitle}>오성철강 CEO 일일 경영 브리핑</h1>
         <div style={styles.controlGroup}>
-            <button onClick={handlePrint} style={styles.printBtn}>🖨️ 출력 보기</button>
+            <button onClick={() => window.print()} style={styles.printBtn}>🖨️ 출력 보기</button>
             <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} style={styles.datePicker} />
         </div>
       </div>
 
-      <div style={styles.reportContent}>
+      {/* 실제 인쇄될 리포트 본문 */}
+      <div className="printable-area" style={styles.reportContent}>
+        <h2 className="print-only title" style={{display:'none', textAlign:'center', marginBottom:'20px'}}>오성철강 CEO 일일 경영 브리핑 ({formattedDate()})</h2>
+        
         <div style={styles.topGrid}>
           <div style={styles.mainCard}>
             <h3 style={styles.cardTitle}>총 수익</h3>
@@ -106,12 +96,12 @@ function CEOReport() {
                 <div style={styles.eqBarChart}>
                     {reportData.equipmentBar.map(e => {
                         const totalSales = reportData.daily.workSales || 1;
-                        const widthPercentage = (e.value / totalSales) * 100;
+                        const widthPercentage = totalSales > 0 ? (e.value / totalSales) * 100 : 0;
                         return (
                             <div key={e.name} style={styles.eqBarItem}>
                                 <span style={styles.eqName}>{e.name}</span>
                                 <div style={styles.barContainer}>
-                                    <div style={{...styles.barFill, width: `${widthPercentage}%`, backgroundColor: EQ_COLORS[e.name]}}></div>
+                                    <div className="color-bar" style={{...styles.barFill, width: `${widthPercentage}%`, backgroundColor: EQ_COLORS[e.name]}}></div>
                                     <span style={styles.barLabel}>{e.value.toLocaleString()}원 ({e.count}건)</span>
                                 </div>
                             </div>
@@ -125,9 +115,7 @@ function CEOReport() {
                     <table style={styles.expenseTable}>
                         <thead>
                             <tr>
-                                <th style={styles.th}>항목</th>
-                                <th style={{...styles.th, textAlign: 'right'}}>금액</th>
-                                <th style={styles.th}>비고</th>
+                                <th style={styles.th}>항목</th><th style={{...styles.th, textAlign: 'right'}}>금액</th><th style={styles.th}>비고</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -140,7 +128,7 @@ function CEOReport() {
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="3" style={{...styles.td, textAlign:'center', color:'#999'}}>등록된 지출 내역이 없습니다.</td></tr>
+                                <tr><td colSpan="3" style={{...styles.td, textAlign:'center', color:'#999'}}>내역 없음</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -160,7 +148,7 @@ function CEOReport() {
                         <div key={i} style={styles.clientItem}>
                             <span style={styles.clientName}>{c.name}</span>
                             <div style={styles.clientBarContainer}>
-                                <div style={{...styles.clientBarFill, width: `${(c.value / (reportData.daily.workSales || 1)) * 100}%`}}></div>
+                                <div className="color-bar" style={{...styles.clientBarFill, width: `${(c.value / (reportData.daily.workSales || 1)) * 100}%`}}></div>
                                 <span style={styles.clientValue}>{c.value.toLocaleString()}원</span>
                             </div>
                         </div>
@@ -180,12 +168,33 @@ function CEOReport() {
             </div>
         </div>
       </div>
+
+      {/* 강력한 인쇄 전용 스타일 */}
       <style>{`
         @media print {
-          .no-print { display: none !important; }
-          .report-container { padding: 0 !important; background-color: white !important; }
-          .report-content { box-shadow: none !important; padding: 20px !important; }
-          body { -webkit-print-color-adjust: exact; }
+          @page { size: A4 landscape; margin: 10mm; } /* A4 가로 방향 설정 */
+          body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .no-print { display: none !important; } /* 버튼, 날짜선택기 숨김 */
+          .report-container { padding: 0 !important; margin: 0 !important; }
+          .printable-area { box-shadow: none !important; padding: 0 !important; border-radius: 0 !important; }
+          .print-only.title { display: block !important; font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #1a365d; }
+          
+          /* 카드 스타일 인쇄 최적화 */
+          .mainCard, .contentCard {
+            break-inside: avoid; /* 페이지 넘김 방지 */
+            border: 1px solid #ccc !important;
+            box-shadow: none !important;
+            background-color: #f8fafc !important; /* 배경색 강제 적용 */
+          }
+          /* 그래프 색상 강제 적용 */
+          .color-bar { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          
+          /* 스크롤 영역 전체 표시 */
+          .tableContainer, .clientList, .noteList { max-height: none !important; overflow: visible !important; }
+          
+          /* 레이아웃 간격 조정 */
+          .topGrid, .middleGrid, .bottomGrid { gap: 15px !important; margin-bottom: 15px !important; }
+          .mainValue { font-size: 24px !important; }
         }
       `}</style>
     </div>
@@ -197,7 +206,7 @@ const styles = {
   headerControl: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', padding: '15px 20px', backgroundColor: 'white', color: '#2d3748', borderRadius: '10px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
   pageTitle: { margin: 0, fontSize: '24px', fontWeight: 'bold' },
   controlGroup: { display: 'flex', gap: '10px' },
-  printBtn: { padding: '8px 15px', backgroundColor: 'white', color: '#4a5568', border: '1px solid #cbd5e0', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' },
+  printBtn: { padding: '8px 15px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' },
   datePicker: { padding: '8px', borderRadius: '5px', border: '1px solid #cbd5e0', backgroundColor: 'white', color: '#333' },
   reportContent: { backgroundColor: 'white', padding: '30px', borderRadius: '15px', boxShadow: '0 4px 10px rgba(0,0,0,0.05)' },
   topGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' },
@@ -206,4 +215,26 @@ const styles = {
   mainValue: { margin: 0, fontSize: '28px', fontWeight: '900', color: '#2d3748' },
   middleGrid: { display: 'flex', gap: '20px', marginBottom: '20px' },
   contentCard: { backgroundColor: '#f7fafc', padding: '20px', borderRadius: '12px', border: '1px solid #edf2f7' },
-  eqBarChart: { display: 'flex', flexDirection: 'column', gap:
+  eqBarChart: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  eqBarItem: { display: 'flex', alignItems: 'center', fontSize: '14px' },
+  eqName: { width: '80px', fontWeight: 'bold', color: '#4a5568' },
+  barContainer: { flex: 1, backgroundColor: '#edf2f7', borderRadius: '5px', height: '24px', position: 'relative', overflow: 'hidden' },
+  barFill: { height: '100%', borderRadius: '5px' },
+  barLabel: { position: 'absolute', top: '50%', right: '10px', transform: 'translateY(-50%)', fontSize: '12px', fontWeight: 'bold', color: '#2d3748', textShadow: '0 0 2px white' },
+  tableContainer: { maxHeight: '200px', overflowY: 'auto' },
+  expenseTable: { width: '100%', borderCollapse: 'collapse', fontSize: '14px' },
+  th: { padding: '10px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', textAlign: 'left', position: 'sticky', top: 0, backgroundColor: '#f7fafc' },
+  td: { padding: '10px', borderBottom: '1px solid #edf2f7', color: '#2d3748' },
+  bottomGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' },
+  clientList: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' },
+  clientItem: { display: 'flex', alignItems: 'center', fontSize: '13px' },
+  clientName: { width: '100px', color: '#4a5568' },
+  clientBarContainer: { flex: 1, backgroundColor: '#edf2f7', borderRadius: '4px', height: '18px', position: 'relative', overflow: 'hidden' },
+  clientBarFill: { height: '100%', backgroundColor: '#3182ce', borderRadius: '4px' },
+  clientValue: { position: 'absolute', top: '50%', right: '8px', transform: 'translateY(-50%)', fontSize: '11px', fontWeight: 'bold', color: '#2d3748' },
+  noteList: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '200px', overflowY: 'auto' },
+  noteItem: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', backgroundColor: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '14px' },
+  deleteNoteBtn: { border: 'none', backgroundColor: 'transparent', color: '#a0aec0', cursor: 'pointer', fontSize: '16px', padding: '0 5px' }
+};
+
+export default CEOReport;
