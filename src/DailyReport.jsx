@@ -10,13 +10,12 @@ function DailyReport() {
   const [viewMode, setViewMode] = useState('daily'); 
   
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
   
   const [dailySales, setDailySales] = useState([]);
   const [dailyLedger, setDailyLedger] = useState([]);
   const [prevDaySales, setPrevDaySales] = useState(0); 
-  const [monthlyData, setMonthlyData] = useState([]);
 
   useEffect(() => {
     if (viewMode === 'daily') fetchDaily();
@@ -26,6 +25,7 @@ function DailyReport() {
   const fetchDaily = async () => {
     setLoading(true);
     try {
+      // [수정] customer_name 컬럼이 포함되도록 쿼리 확인
       const { data: sales } = await supabase.from('sales_records').select('*, companies(name)').eq('work_date', selectedDate);
       const { data: ledger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
       
@@ -41,11 +41,10 @@ function DailyReport() {
 
   const fetchMonthly = async () => {
     setLoading(true);
-    // 월간 집계 로직 생략 (기존 유지)
+    // 월간 요약 로직 (기존 유지)
     setLoading(false);
   };
 
-  // --- 데이터 분석 및 구분 로직 ---
   const incomeList = dailyLedger.filter(r => r.type === '수입');
   const expenseList = dailyLedger.filter(r => r.type === '지출');
 
@@ -74,7 +73,7 @@ function DailyReport() {
   return (
     <div style={styles.container}>
       <div style={styles.header}>
-        <h2 style={styles.title}>📈 오성철강 데일리 리포트</h2>
+        <h2 style={styles.title}>📈 오성철강 데일리 리포트 (2026)</h2>
         <div style={styles.headerActions}>
           <div style={styles.tabGroup}>
             <button onClick={() => setViewMode('daily')} style={styles.tab(viewMode==='daily')}>일별 상세</button>
@@ -86,13 +85,11 @@ function DailyReport() {
 
       {viewMode === 'daily' && (
         <div style={styles.content}>
-          {/* 1. 핵심 요약 지표 */}
           <div style={styles.statGrid}>
             <StatCard title="금일 총 매출" value={dTotals.sales} sub={`전일 대비: ${salesDiff.toLocaleString()}원`} subColor={salesDiff>=0?'#38a169':'#e53e3e'} icon="🏗️" color="#3182ce" bg="#ebf8ff" />
             <StatCard title="최종 순수익" value={netProfit} sub="매출+수입-지출" icon="💎" color="#805ad5" bg="#faf5ff" isBold={true} />
           </div>
 
-          {/* 2. 설비별 생산성 분석 */}
           <div style={styles.card}>
             <h3 style={styles.cardTitle}>⚙️ 설비별 작업 생산성 분석</h3>
             <div style={styles.workTypeGrid}>
@@ -115,7 +112,6 @@ function DailyReport() {
           </div>
 
           <div style={styles.mainGrid}>
-            {/* 3. 작업 상세 내역 */}
             <div style={{...styles.card, gridColumn: 'span 2'}}>
               <h3 style={styles.cardTitle}>📋 작업 상세 내역</h3>
               <div style={styles.tableScroll}>
@@ -126,7 +122,8 @@ function DailyReport() {
                   <tbody>
                     {dailySales.map(r => (
                       <tr key={r.id} style={styles.tr}>
-                        <td style={{fontWeight:'bold'}}>{r.companies?.name}</td>
+                        {/* [수정] 직접 입력한 업체명을 우선 표시 */}
+                        <td style={{fontWeight:'bold'}}>{r.customer_name || r.companies?.name || '미지정'}</td>
                         <td style={{textAlign:'left', fontSize:'11px'}}>{r.management_no}</td>
                         <td>{r.weight.toLocaleString()}</td>
                         <td style={{fontWeight:'bold', color:'#2b6cb0'}}>{r.total_price.toLocaleString()}</td>
@@ -138,11 +135,8 @@ function DailyReport() {
               </div>
             </div>
 
-            {/* 4. [개선] 수입/지출 상세 분리 섹션 */}
             <div style={styles.card}>
               <h3 style={{...styles.cardTitle, color:'#2d3748', borderLeftColor:'#4a5568'}}>🧾 기타 수입/지출 상세</h3>
-              
-              {/* 수입 섹션 */}
               <div style={styles.ledgerSection}>
                 <div style={styles.ledgerHeader}>
                   <span style={{color:'#2f855a', fontWeight:'bold'}}>📥 기타 수입</span>
@@ -158,11 +152,9 @@ function DailyReport() {
                       <span style={{fontWeight:'bold', color:'#2f855a'}}>+{r.amount.toLocaleString()}</span>
                     </div>
                   ))}
-                  {incomeList.length === 0 && <p style={styles.noData}>수입 내역 없음</p>}
                 </div>
               </div>
 
-              {/* 지출 섹션 */}
               <div style={{...styles.ledgerSection, marginTop:'15px'}}>
                 <div style={styles.ledgerHeader}>
                   <span style={{color:'#c53030', fontWeight:'bold'}}>📤 지출 내역</span>
@@ -178,7 +170,6 @@ function DailyReport() {
                       <span style={{fontWeight:'bold', color:'#c53030'}}>-{r.amount.toLocaleString()}</span>
                     </div>
                   ))}
-                  {expenseList.length === 0 && <p style={styles.noData}>지출 내역 없음</p>}
                 </div>
               </div>
             </div>
@@ -201,14 +192,12 @@ const styles = {
   tabGroup: { display:'flex', backgroundColor:'#e2e8f0', borderRadius:'8px', padding:'4px' },
   tab: (active) => ({ padding:'8px 16px', border:'none', borderRadius:'6px', cursor:'pointer', backgroundColor: active?'white':'transparent', fontWeight: active?'bold':'normal', color: active?'#3182ce':'#4a5568' }),
   dateInput: { padding:'8px 12px', borderRadius:'8px', border:'1px solid #cbd5e0' },
-  
   content: { display:'flex', flexDirection:'column', gap:'20px' },
   statGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
   statCard: { padding: '20px', borderRadius: '15px', display: 'flex', gap: '15px', alignItems: 'center' },
   statTitle: { margin: 0, fontSize: '13px', color: '#718096', fontWeight: 'bold' },
   statValue: { margin: '4px 0', fontWeight: '900' },
   statSub: { margin: 0, fontSize: '12px' },
-
   workTypeGrid: { display:'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap:'15px', marginTop:'10px' },
   workTypeCard: { backgroundColor:'#f8fafc', padding:'15px', borderRadius:'10px', display:'flex', flexDirection:'column', gap:'5px' },
   workTypeInfo: { display:'flex', justifyContent:'space-between', alignItems:'center' },
@@ -217,17 +206,14 @@ const styles = {
   workTypeSales: { display:'flex', justifyContent:'space-between', fontSize:'13px' },
   progressBg: { height:'6px', backgroundColor:'#e2e8f0', borderRadius:'3px', marginTop:'5px', overflow:'hidden' },
   progressFill: { height:'100%', borderRadius:'3px' },
-
   mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' },
   card: { backgroundColor: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
   cardTitle: { margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold', color: '#2d3748', borderLeft:'4px solid #3182ce', paddingLeft:'10px' },
-  
   tableScroll: { maxHeight: '500px', overflowY: 'auto' },
   table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign:'center' },
   thead: { position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 5 },
   tr: { borderBottom: '1px solid #edf2f7', height: '40px' },
   badge: { padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight:'bold' },
-  
   ledgerSection: { display: 'flex', flexDirection: 'column', gap: '8px' },
   ledgerHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', paddingBottom: '5px', borderBottom: '1px solid #edf2f7' },
   ledgerList: { maxHeight: '200px', overflowY: 'auto' },

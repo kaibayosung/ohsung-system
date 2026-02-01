@@ -11,8 +11,9 @@ function CEOReport() {
   
   const [reportData, setReportData] = useState({
     daily: { workSales: 0, otherIncome: 0, expense: 0, netProfit: 0, weight: 0 },
-    otherIncomeList: [], // 기타 수입 상세 내역
-    expenseList: [],     // [신규] 지출 상세 내역
+    topClient: '분석 중...', // [신규] 우수 거래처 상태 추가
+    otherIncomeList: [], 
+    expenseList: [],     
     monthly: { workSales: 0, otherIncome: 0, expense: 0, netProfit: 0 },
     equipment: [],
     dailyTrend: []
@@ -30,16 +31,26 @@ function CEOReport() {
     const monthStart = `${year}-${month}-01`;
 
     try {
-      const { data: dSales } = await supabase.from('sales_records').select('*').eq('work_date', selectedDate);
+      // [수정] customer_name 컬럼과 조인된 companies(name)을 모두 가져옵니다.
+      const { data: dSales } = await supabase.from('sales_records').select('*, companies(name)').eq('work_date', selectedDate);
       const { data: dLedger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
-      const { data: mSales } = await supabase.from('sales_records').select('*').gte('work_date', monthStart).lte('work_date', selectedDate);
+      const { data: mSales } = await supabase.from('sales_records').select('*, companies(name)').gte('work_date', monthStart).lte('work_date', selectedDate);
       const { data: mLedger } = await supabase.from('daily_ledger').select('*').gte('trans_date', monthStart).lte('trans_date', selectedDate);
 
       const calcTotal = (arr, field) => arr?.reduce((sum, r) => sum + (Number(r[field]) || 0), 0) || 0;
       
       const dWork = calcTotal(dSales, 'total_price');
       const dIncomeList = dLedger.filter(r => r.type === '수입');
-      const dExpenseList = dLedger.filter(r => r.type === '지출'); // [신규] 지출 리스트 추출
+      const dExpenseList = dLedger.filter(r => r.type === '지출');
+
+      // [신규] 월간 누적 데이터를 바탕으로 '우수 거래처'를 계산합니다.
+      const compMap = {};
+      mSales?.forEach(s => {
+        // 직접 입력한 업체명(customer_name)을 최우선으로, 없으면 DB 등록명을 사용합니다.
+        const name = s.customer_name || s.companies?.name || '미지정';
+        compMap[name] = (compMap[name] || 0) + (Number(s.total_price) || 0);
+      });
+      const topClientName = Object.entries(compMap).sort((a, b) => b[1] - a[1])[0]?.[0] || '내역 없음';
 
       const eqMap = { '슬리팅 1': { sales:0, count:0 }, '슬리팅 2': { sales:0, count:0 }, '레베링': { sales:0, count:0 } };
       dSales?.forEach(s => {
@@ -61,10 +72,22 @@ function CEOReport() {
       }
 
       setReportData({
-        daily: { workSales: dWork, otherIncome: calcTotal(dIncomeList, 'amount'), expense: calcTotal(dExpenseList, 'amount'), netProfit: (dWork + calcTotal(dIncomeList, 'amount')) - calcTotal(dExpenseList, 'amount'), weight: calcTotal(dSales, 'weight') },
+        daily: { 
+          workSales: dWork, 
+          otherIncome: calcTotal(dIncomeList, 'amount'), 
+          expense: calcTotal(dExpenseList, 'amount'), 
+          netProfit: (dWork + calcTotal(dIncomeList, 'amount')) - calcTotal(dExpenseList, 'amount'), 
+          weight: calcTotal(dSales, 'weight') 
+        },
+        topClient: topClientName, // 계산된 우수 거래처 저장
         otherIncomeList: dIncomeList,
         expenseList: dExpenseList,
-        monthly: { workSales: calcTotal(mSales, 'total_price'), otherIncome: calcTotal(mLedger.filter(r=>r.type==='수입'), 'amount'), expense: calcTotal(mLedger.filter(r=>r.type==='지출'), 'amount'), netProfit: 0 },
+        monthly: { 
+          workSales: calcTotal(mSales, 'total_price'), 
+          otherIncome: calcTotal(mLedger.filter(r=>r.type==='수입'), 'amount'), 
+          expense: calcTotal(mLedger.filter(r=>r.type==='지출'), 'amount'), 
+          netProfit: 0 
+        },
         equipment,
         dailyTrend: trend
       });
@@ -99,12 +122,11 @@ function CEOReport() {
         <div style={{...styles.mainCard, borderTop: '4px solid #38a169', backgroundColor:'#f0fff4'}}>
           <p style={styles.label}>금일 영업 이익</p>
           <h2 style={{...styles.val, color:'#2f855a'}}>{reportData.daily.netProfit.toLocaleString()}원</h2>
-          <p style={styles.subText}>당일 수익률: {((reportData.daily.netProfit / (reportData.daily.workSales + reportData.daily.otherIncome || 1)) * 100).toFixed(1)}%</p>
+          <p style={styles.subText}>⭐ 이달의 우수 거래처: <b>{reportData.topClient}</b></p>
         </div>
       </div>
 
       <div style={styles.contentGrid}>
-        {/* [요청 1] 설비 가공 및 매출 (금액 + 갯수 통합 표시) */}
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>⚙️ 설비별 실적 (금액 & 수량)</h3>
           <div style={{height:'220px'}}>
@@ -133,7 +155,6 @@ function CEOReport() {
           </div>
         </div>
 
-        {/* 매출 추이 */}
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>📈 평일 매출 흐름 (만원)</h3>
           <div style={{height:'220px'}}>
@@ -148,11 +169,10 @@ function CEOReport() {
             </ResponsiveContainer>
           </div>
           <div style={{textAlign:'right', marginTop:'10px', fontSize:'14px', fontWeight:'bold'}}>
-             총 생산중량: <span style={{color:'#3182ce'}}>{reportData.daily.weight.toLocaleString()} kg</span>
+               총 생산중량: <span style={{color:'#3182ce'}}>{reportData.daily.weight.toLocaleString()} kg</span>
           </div>
         </div>
 
-        {/* [요청 2] 상세 내역 추가 - 기타 수입 */}
         <div style={styles.card}>
           <h3 style={{...styles.cardTitle, color:'#3182ce'}}>💰 기타 수입 상세</h3>
           <div style={styles.scrollList}>
@@ -166,7 +186,6 @@ function CEOReport() {
           </div>
         </div>
 
-        {/* [요청 2] 상세 내역 추가 - 지출 내역 */}
         <div style={styles.card}>
           <h3 style={{...styles.cardTitle, color:'#c53030'}}>💸 지출 상세 내역</h3>
           <div style={styles.scrollList}>

@@ -13,9 +13,9 @@ function MonthlyAnalysis() {
   const [data, setData] = useState({
     workSales: 0,
     ledgerIncome: 0,
-    incomeDetails: [], // 기타 수입 상세
+    incomeDetails: [],
     totalExpense: 0,
-    expenseDetails: [], // 지출 상세
+    expenseDetails: [],
     dailyTrend: [],
     equipmentData: [],
     companyData: []
@@ -34,27 +34,24 @@ function MonthlyAnalysis() {
     const end = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-${lastDay}`;
 
     try {
-      const { data: sales } = await supabase.from('sales_records').select('work_date, total_price, work_type, companies(name)').gte('work_date', start).lte('work_date', end);
+      // [수정] customer_name 컬럼을 쿼리에 추가했습니다.
+      const { data: sales } = await supabase.from('sales_records')
+        .select('work_date, total_price, work_type, customer_name, companies(name)')
+        .gte('work_date', start).lte('work_date', end);
+        
       const { data: ledger } = await supabase.from('daily_ledger').select('*').gte('trans_date', start).lte('trans_date', end);
 
       const workSalesTotal = sales?.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0) || 0;
-      
-      // [요청 2] 기타 수입 및 내역 추출
       const incomeRows = ledger?.filter(r => r.type === '수입') || [];
       const ledgerIncomeTotal = incomeRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0;
-
-      // [요청 4] 지출 및 상세 내역 추출 (금액 큰 순서로 5개)
       const expenseRows = ledger?.filter(r => r.type === '지출') || [];
       const totalExpense = expenseRows.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) || 0;
       const topExpenses = [...expenseRows].sort((a, b) => b.amount - a.amount).slice(0, 5);
 
-      // [요청 3] 일일 작업추이 (주말 제외)
       const trend = [];
       for (let i = 1; i <= lastDay; i++) {
         const dateStr = `${selectedYear}-${selectedMonth.toString().padStart(2, '0')}-${i.toString().padStart(2, '0')}`;
-        const dayOfWeek = new Date(dateStr).getDay(); // 0:일, 6:토
-        
-        // 주말(0, 6)이 아닌 평일만 그래프 데이터에 포함
+        const dayOfWeek = new Date(dateStr).getDay();
         if (dayOfWeek !== 0 && dayOfWeek !== 6) {
           const daySales = sales?.filter(s => s.work_date === dateStr).reduce((sum, s) => sum + (Number(s.total_price) || 0), 0) || 0;
           trend.push({ name: `${i}일`, sales: Math.round(daySales / 10000) });
@@ -69,9 +66,10 @@ function MonthlyAnalysis() {
       });
       const equipmentData = Object.entries(eqMap).filter(([_, v]) => v > 0).map(([name, value]) => ({ name, value }));
 
+      // [수정] 거래처 집계 시 customer_name을 우선적으로 확인합니다.
       const compMap = {};
       sales?.forEach(s => {
-        const name = s.companies?.name || '미지정';
+        const name = s.customer_name || s.companies?.name || '미지정';
         compMap[name] = (compMap[name] || 0) + (Number(s.total_price) || 0);
       });
       const companyData = Object.entries(compMap).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, value]) => ({ name, value }));
@@ -101,7 +99,6 @@ function MonthlyAnalysis() {
         </select>
       </div>
 
-      {/* 1. 요약 카드 (폰트 확대) */}
       <div style={styles.statGrid}>
         <div style={{...styles.statCard, borderLeft:'8px solid #3182ce'}}>
           <p style={styles.statLabel}>총 매출액 (작업 + 기타)</p>
@@ -124,7 +121,6 @@ function MonthlyAnalysis() {
       </div>
 
       <div style={styles.mainGrid}>
-        {/* 일별 작업 추이 (평일 기준) */}
         <div style={{...styles.card, gridColumn: 'span 2'}}>
           <h3 style={styles.cardTitle}>📈 평일 작업 매출 추이 (단위: 만원)</h3>
           <div style={{height:'350px', width:'100%'}}>
@@ -140,7 +136,6 @@ function MonthlyAnalysis() {
           </div>
         </div>
 
-        {/* 장비별 매출 비중 */}
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>⚙️ 장비별 매출 비중</h3>
           <div style={{height:'350px', width:'100%'}}>
@@ -156,7 +151,6 @@ function MonthlyAnalysis() {
           </div>
         </div>
 
-        {/* [요청 2] 기타 수입 상세 내역 */}
         <div style={styles.card}>
           <h3 style={{...styles.cardTitle, color:'#2f855a'}}>💰 기타 수입 상세 (Top 5)</h3>
           <div style={styles.detailList}>
@@ -170,7 +164,6 @@ function MonthlyAnalysis() {
           </div>
         </div>
 
-        {/* [요청 4] 주요 지출 내역 */}
         <div style={styles.card}>
           <h3 style={{...styles.cardTitle, color:'#c53030'}}>💸 주요 지출 내역 (금액순)</h3>
           <div style={styles.detailList}>
@@ -184,7 +177,6 @@ function MonthlyAnalysis() {
           </div>
         </div>
 
-        {/* 거래처 TOP 5 */}
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>🏢 우수 거래처 TOP 5</h3>
           <div style={styles.detailList}>
@@ -202,22 +194,20 @@ function MonthlyAnalysis() {
   );
 }
 
+// 스타일 객체는 그대로 유지
 const styles = {
   container: { padding: '40px', backgroundColor: '#f7fafc', minHeight: '100vh', overflowY:'auto' },
   header: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'30px' },
   title: { margin:0, fontSize:'32px', fontWeight:'900', color:'#1a365d' },
   select: { padding:'12px 20px', borderRadius:'12px', border:'2px solid #cbd5e0', fontSize:'20px', fontWeight:'bold' },
-  
   statGrid: { display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'30px', marginBottom:'30px' },
   statCard: { backgroundColor:'white', padding:'30px', borderRadius:'20px', boxShadow:'0 6px 12px rgba(0,0,0,0.08)' },
   statLabel: { margin:0, color:'#718096', fontSize:'18px', fontWeight:'bold' },
   statDetail: { display:'flex', flexDirection:'column', fontSize:'18px', color:'#4a5568', gap:'8px', marginTop:'15px', borderTop:'2px solid #edf2f7', paddingTop:'15px' },
   statSub: { margin:0, fontSize:'16px', color:'#a0aec0' },
-
   mainGrid: { display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'30px' },
   card: { backgroundColor:'white', padding:'30px', borderRadius:'20px', boxShadow:'0 6px 12px rgba(0,0,0,0.08)', display:'flex', flexDirection:'column' },
   cardTitle: { margin:'0 0 25px 0', fontSize:'22px', fontWeight:'bold', color:'#2d3748', borderLeft:'8px solid #3182ce', paddingLeft:'15px' },
-  
   detailList: { display:'flex', flexDirection:'column', gap:'15px' },
   detailRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'15px', backgroundColor:'#f8fafc', borderRadius:'12px', fontSize:'18px' },
   detailLabel: { color:'#4a5568', fontWeight:'500' },
