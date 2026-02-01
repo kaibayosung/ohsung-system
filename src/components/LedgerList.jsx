@@ -1,46 +1,59 @@
-import React, { useState } from 'react';
-import { supabase } from '../supabaseClient';
+// src/components/LedgerList.jsx
+import React from 'react';
 
-function LedgerList({ transactions, loading, onDelete, onEdit }) {
-  const [searchTerm, setSearchTerm] = useState('');
-
-  const filtered = transactions.filter(t => t.company.includes(searchTerm) || (t.description && t.description.includes(searchTerm)));
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("삭제할까요?")) return;
-    const { error } = await supabase.from('daily_ledger').delete().eq('id', id);
-    if (!error) onDelete();
-  };
-
+function LedgerList({ records, onUpdateStatus, onDelete }) {
   return (
     <div style={{ background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h3 style={{ margin: 0 }}>📊 일일 거래 리포트</h3>
-        <input type="text" placeholder="거래처/적요 검색..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} style={{ padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
-      </div>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #edf2f7', textAlign: 'left' }}>
-            <th style={{ padding: '12px' }}>구분</th><th style={{ padding: '12px' }}>거래처</th><th style={{ padding: '12px' }}>금액</th><th style={{ padding: '12px' }}>수단</th><th style={{ padding: '12px' }}>관리</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filtered.map(t => (
-            <tr key={t.id} style={{ borderBottom: '1px solid #edf2f7' }}>
-              <td style={{ padding: '12px', color: t.type === '수입' ? '#38a169' : '#e53e3e', fontWeight: 'bold' }}>{t.type}</td>
-              <td style={{ padding: '12px' }}>{t.company}<br/><small style={{ color: '#aaa' }}>{t.description}</small></td>
-              <td style={{ padding: '12px', fontWeight: 'bold' }}>{t.amount.toLocaleString()}</td>
-              <td style={{ padding: '12px' }}>{t.method}</td>
-              <td style={{ padding: '12px' }}>
-                <button onClick={() => onEdit(t)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px' }}>✏️</button>
-                <button onClick={() => handleDelete(t.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '18px' }}>🗑️</button>
-              </td>
+      <h3 style={{ marginBottom: '20px' }}>📋 일일 거래 리포트</h3>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+              <th style={styles.th}>상태</th>
+              <th style={styles.th}>구분</th>
+              <th style={styles.th}>거래처</th>
+              <th style={{ ...styles.th, textAlign: 'right' }}>금액</th>
+              <th style={styles.th}>관리</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {records.map(r => (
+              <tr key={r.id} style={{ borderBottom: '1px solid #edf2f7' }}>
+                <td style={styles.td}>
+                  <span style={{
+                    padding: '3px 8px', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold',
+                    backgroundColor: r.status === '지불예정' ? '#fed7d7' : '#c6f6d5',
+                    color: r.status === '지불예정' ? '#c53030' : '#2f855a'
+                  }}>
+                    {r.status}
+                  </span>
+                </td>
+                <td style={styles.td}>{r.type}</td>
+                <td style={styles.td}>{r.company}</td>
+                <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }}>{r.amount.toLocaleString()}원</td>
+                <td style={styles.td}>
+                  <div style={{ display: 'flex', gap: '5px' }}>
+                    {/* [추가] 지불예정일 때만 나타나는 버튼 */}
+                    {r.status === '지불예정' && (
+                      <button onClick={() => onUpdateStatus(r.id)} style={styles.payBtn}>지불완료</button>
+                    )}
+                    <button onClick={() => onDelete(r.id)} style={styles.delBtn}>삭제</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
+
+const styles = {
+  th: { padding: '12px', color: '#4a5568', fontSize: '14px' },
+  td: { padding: '12px', color: '#2d3748', fontSize: '14px' },
+  payBtn: { padding: '4px 8px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' },
+  delBtn: { padding: '4px 8px', backgroundColor: 'transparent', color: '#e53e3e', border: 'none', cursor: 'pointer', fontSize: '11px' }
+};
 
 export default LedgerList;
