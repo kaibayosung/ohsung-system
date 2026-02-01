@@ -15,7 +15,7 @@ function WorkLog() {
 
   useEffect(() => { fetchMonthlyRecords(); }, [selectedYear, selectedMonth]);
 
-  // [유지] 기존의 데이터 로딩 및 품명/규격 분리 로직
+  // 데이터 로딩 및 관리번호(품명|규격) 분리 로직
   const fetchMonthlyRecords = async () => {
     const yearStr = selectedYear.toString();
     const monthStr = selectedMonth.toString().padStart(2, '0');
@@ -37,7 +37,7 @@ function WorkLog() {
     setMonthlyRecords(formattedData);
   };
 
-  // [유지] 기존 인라인 편집 및 저장 기능
+  // 인라인 편집 기능
   const handleEditClick = (record) => {
     setEditingId(record.id);
     setEditFormData({ ...record });
@@ -55,7 +55,8 @@ function WorkLog() {
         total_price: Number(editFormData.total_price),
         work_type: editFormData.work_type,
         work_date: editFormData.work_date,
-        customer_name: editFormData.customer_name
+        customer_name: editFormData.customer_name,
+        company_id: 1 // DB 에러 방지를 위한 기본값
       }).eq('id', id);
 
       if (error) throw error;
@@ -69,7 +70,6 @@ function WorkLog() {
     }
   };
 
-  // [유지] 기존 삭제 및 전체 삭제 기능
   const handleDeleteMonth = async () => {
     if (!window.confirm(`${selectedYear}년 ${selectedMonth}월 데이터를 전부 삭제하시겠습니까?`)) return;
     setLoading(true);
@@ -85,17 +85,16 @@ function WorkLog() {
     if (error) alert("삭제 실패: " + error.message); else fetchMonthlyRecords();
   };
 
-  // [업그레이드] 엑셀 분석 로직 (탭 및 다중 공백 완벽 대응)
+  // 엑셀 분석 로직 (실장님 데이터 순서 반영)
   const handlePasteProcess = () => {
     if (!pasteData.trim()) return alert("데이터를 먼저 붙여넣어 주세요.");
     const lines = pasteData.trim().split('\n');
     const dataLines = lines.filter(line => !line.includes("생산일자") && line.trim() !== "");
     
     const parsed = dataLines.map((line, index) => {
-      // 탭 또는 2개 이상의 공백으로 분리하여 칸 인식 정확도 향상
       const cols = line.split(/\t| {2,}/).map(c => c.trim());
-      
-      // 실장님 데이터 순서에 맞춰 인덱스 조정 (0:날짜, 1:업체, 2:코일, 3:규격, 4:중량, 5:단가, 6:금액, 7:구분)
+      if (cols.length < 5) return null;
+
       const rawType = cols[7]?.toUpperCase() || ''; 
       let workType = '기타';
       if (rawType.includes('SLITING2')) workType = '슬리팅 2';
@@ -104,21 +103,21 @@ function WorkLog() {
       
       return { 
         temp_id: Date.now() + index, 
-        work_date: cols[0] || new Date().toISOString().split('T')[0], 
+        work_date: cols[0], 
         customer_name: cols[1] || '', 
-        product_name: cols[2] || '', // 품명(코일번호)
+        product_name: cols[2] || '', 
         spec: cols[3] || '', 
-        coil_number: cols[2] || '', // 코일번호로도 저장
+        coil_number: cols[2] || '', 
         weight: Number(cols[4]?.replace(/,/g,'')) || 0, 
         unit_price: Number(cols[5]?.replace(/,/g,'')) || 0, 
         total_price: Number(cols[6]?.replace(/,/g,'')) || 0, 
         work_type: workType 
       };
-    });
+    }).filter(r => r !== null);
     setRows(parsed);
   };
 
-  // [업그레이드] 스마트 중복 필터링 저장 기능
+  // 스마트 중복 필터링 및 company_id 에러 방지 저장
   const handleSaveToDB = async () => {
     if (rows.length === 0) return;
     setLoading(true);
@@ -127,7 +126,6 @@ function WorkLog() {
 
     try {
       for (const r of rows) {
-        // 날짜, 코일번호, 중량이 일치하는지 DB 확인
         const { data: existing } = await supabase.from('sales_records').select('id').match({
           work_date: r.work_date,
           coil_number: r.coil_number,
@@ -135,7 +133,7 @@ function WorkLog() {
         }).maybeSingle();
 
         if (existing) {
-          skippedData.push(`${r.work_date} | ${r.coil_number} | ${r.weight}kg`);
+          skippedData.push(`${r.work_date} | ${r.coil_number}`);
         } else {
           validData.push({
             work_date: r.work_date,
@@ -145,7 +143,8 @@ function WorkLog() {
             weight: r.weight,
             unit_price: r.unit_price,
             total_price: r.total_price,
-            work_type: r.work_type
+            work_type: r.work_type,
+            company_id: 1 // [핵심 수정] DB 제약조건 에러 방지
           });
         }
       }
@@ -155,12 +154,7 @@ function WorkLog() {
         if (error) throw error;
       }
 
-      let msg = `✅ ${validData.length}건이 성공적으로 저장되었습니다.`;
-      if (skippedData.length > 0) {
-        msg += `\n\n⚠️ 중복 제외(${skippedData.length}건):\n` + skippedData.join('\n');
-      }
-      alert(msg);
-      
+      alert(`✅ ${validData.length}건 저장 완료` + (skippedData.length ? `\n⚠️ 중복 제외: ${skippedData.length}건` : ""));
       setRows([]); setPasteData(''); fetchMonthlyRecords();
     } catch (err) {
       alert("저장 실패: " + err.message);
@@ -171,7 +165,6 @@ function WorkLog() {
 
   const summary = rows.reduce((acc, cur) => { acc[cur.work_type] = (acc[cur.work_type] || 0) + cur.total_price; return acc; }, {});
 
-  // [유지] 기존 UI 디자인(스타일)
   return (
     <div style={styles.container}>
       <div style={styles.topSection}>
