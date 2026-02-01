@@ -50,15 +50,15 @@ function CEOReport() {
 
   return (
     <div style={{padding:'20px', backgroundColor:'#f4f7f9', minHeight:'100vh'}}>
-      <div style={{display:'flex', justifyContent:'space-between', marginBottom:'20px'}}>
+      <header style={{display:'flex', justifyContent:'space-between', marginBottom:'20px'}}>
         <h2>CEO 일일 경영 브리핑</h2>
         <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} />
-      </div>
-      <div style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'15px', marginBottom:'20px'}}>
+      </header>
+      <section style={{display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:'15px', marginBottom:'20px'}}>
         <div style={{background:'white', padding:'15px', borderRadius:'10px', borderTop:'4px solid #3182ce'}}><h4>총 수익</h4><h3>{(reportData.daily.workSales + reportData.daily.otherIncome).toLocaleString()}원</h3></div>
         <div style={{background:'white', padding:'15px', borderRadius:'10px', borderTop:'4px solid #e53e3e'}}><h4>총 지출</h4><h3>{reportData.daily.expense.toLocaleString()}원</h3></div>
         <div style={{background:'white', padding:'15px', borderRadius:'10px', borderTop:'4px solid #38a169'}}><h4>영업 이익</h4><h3>{reportData.daily.netProfit.toLocaleString()}원</h3></div>
-      </div>
+      </section>
       <div style={{background:'white', padding:'20px', borderRadius:'10px', marginBottom:'20px'}}>
         <h4>📈 이달의 매출 추이 (만원)</h4>
         <div style={{height:'200px'}}><ResponsiveContainer><LineChart data={reportData.dailyTrend}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><YAxis/><Tooltip/><Line type="monotone" dataKey="sales" stroke="#3182ce" strokeWidth={3}/></LineChart></ResponsiveContainer></div>
