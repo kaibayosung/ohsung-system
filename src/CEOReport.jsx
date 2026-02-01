@@ -134,7 +134,7 @@ function CEOReport() {
                                     <td style={styles.td}>{expense.item}</td>
                                     <td style={{...styles.td, textAlign: 'right', fontWeight: 'bold'}}>{expense.amount.toLocaleString()}원</td>
                                     <td style={styles.td}>{expense.note}</td>
-                                </span>
+                                </tr>
                             ))}
                         </tbody>
                     </table>
