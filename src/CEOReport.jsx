@@ -1,8 +1,7 @@
-// src/CEOReport.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from './supabaseClient';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import CEOMonthlyReport from './components/CEOMonthlyReport'; // components 폴더 내부에서 임포트
+import CEOMonthlyReport from './components/CEOMonthlyReport'; // components 폴더에서 임포트
 
 function CEOReport() {
   const [viewMode, setViewMode] = useState('daily');
@@ -21,8 +20,7 @@ function CEOReport() {
     const { data: dLedger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
     const { data: mSales } = await supabase.from('sales_records').select('work_date, total_price').gte('work_date', `${year}-${month}-01`).lte('work_date', selectedDate);
     
-    const realtimeExpenses = dLedger?.filter(item => item.type === '지출').map(item => ({ id: item.id, item: item.description, amount: item.amount, note: item.note || '' })) || [];
-    setExpenseList(realtimeExpenses);
+    setExpenseList(dLedger?.filter(i => i.type === '지출').map(i => ({ id: i.id, item: i.description, amount: i.amount, note: i.note || '' })) || []);
     const calcTotal = (arr, type) => arr?.filter(r => !type || r.type === type).reduce((sum, r) => sum + (Number(r.total_price || r.amount) || 0), 0) || 0;
     const clientMap = {}; dSales?.forEach(s => { const n = s.customer_name || '미지정'; clientMap[n] = (clientMap[n] || 0) + s.total_price; });
     const eqStats = { '슬리팅 1': { s:0, c:0 }, '슬리팅 2': { s:0, c:0 }, '레베링': { s:0, c:0 } };
@@ -53,14 +51,22 @@ function CEOReport() {
               <input type="date" value={selectedDate} onChange={e=>setSelectedDate(e.target.value)} style={styles.datePicker} />
             </div>
           </div>
+          {/* 상단 3단 요약 카드 */}
           <div style={styles.topGrid}>
-            <div style={styles.mainCard}><h3>총 수익</h3><p style={styles.mainValue}>{(reportData.daily.workSales + reportData.daily.otherIncome).toLocaleString()}원</p></div>
-            <div style={styles.mainCard}><h3>총 지출</h3><p style={{...styles.mainValue, color:'#e53e3e'}}>{reportData.daily.expense.toLocaleString()}원</p></div>
-            <div style={styles.mainCard}><h3>영업 이익</h3><p style={{...styles.mainValue, color:'#38a169'}}>{reportData.daily.netProfit.toLocaleString()}원</p></div>
+            <div style={styles.mainCard}><h3>총 수익</h3><p style={styles.mainValue}>{ (reportData.daily.workSales + reportData.daily.otherIncome).toLocaleString() }원</p></div>
+            <div style={styles.mainCard}><h3>총 지출</h3><p style={{...styles.mainValue, color:'#e53e3e'}}>{ reportData.daily.expense.toLocaleString() }원</p></div>
+            <div style={styles.mainCard}><h3>영업 이익</h3><p style={{...styles.mainValue, color:'#38a169'}}>{ reportData.daily.netProfit.toLocaleString() }원</p></div>
           </div>
+          {/* 중간 2단 그리드 (장비별 / 지출내역) */}
           <div style={styles.middleGrid}>
-            <div style={{...styles.contentCard, flex: 1}}><h3>장비별 실적</h3><div style={styles.eqBarChart}>{reportData.equipmentBar.map(e => ( <div key={e.name} style={styles.eqBarItem}><span>{e.name}</span><div style={styles.barContainer}><div className="color-bar" style={{...styles.barFill, width:`${(e.value/(reportData.daily.workSales||1))*100}%`, backgroundColor:EQ_COLORS[e.name]}}></div><span style={styles.barLabel}>{e.value.toLocaleString()}원</span></div></div> ))}</div></div>
-            <div style={{...styles.contentCard, flex: 1}}><h3>주요 내용</h3><div className="no-print"><input value={newNote} onChange={e=>setNewNote(e.target.value)} onKeyPress={e=>e.key==='Enter'&&handleAddNote()} placeholder="입력 후 추가" style={styles.noteInput} /></div><div style={styles.noteList}>{notes.map(n => ( <div key={n.id} style={styles.noteItem}><span>• {n.content}</span><button className="no-print" onClick={()=>handleDeleteNote(n.id)} style={styles.delBtn}>×</button></div> ))}</div></div>
+            <div style={{...styles.contentCard, flex: 1}}><h3>장비별 상세 실적</h3><div style={styles.eqBarChart}>{reportData.equipmentBar.map(e => ( <div key={e.name} style={styles.eqBarItem}><span>{e.name}</span><div style={styles.barContainer}><div className="color-bar" style={{...styles.barFill, width:`${(e.value/(reportData.daily.workSales||1))*100}%`, backgroundColor:EQ_COLORS[e.name]}}></div><span style={styles.barLabel}>{e.value.toLocaleString()}원</span></div></div> ))}</div></div>
+            <div style={{...styles.contentCard, flex: 1}}><h3>비용 지출 내역 ({expenseList.length}건)</h3><div style={styles.tableContainer}><table style={styles.expenseTable}><thead><tr><th>항목</th><th style={{textAlign:'right'}}>금액</th></tr></thead><tbody>{expenseList.map(ex => ( <tr key={ex.id}><td>{ex.item}</td><td style={{textAlign:'right', fontWeight:'bold'}}>{ex.amount.toLocaleString()}원</td></tr> ))}</tbody></table></div></div>
+          </div>
+          {/* 하단 3단 그리드 (추이 / 거래처 / 메모) */}
+          <div style={styles.bottomGrid}>
+            <div style={styles.contentCard}><h3>이달의 매출 추이</h3><div style={{height:150}}><ResponsiveContainer><LineChart data={reportData.dailyTrend}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="name"/><Tooltip/><Line type="monotone" dataKey="sales" stroke="#3182ce" strokeWidth={3}/></LineChart></ResponsiveContainer></div></div>
+            <div style={styles.contentCard}><h3>거래처 매출</h3><div style={styles.clientList}>{reportData.dailyClients.map((c, i) => ( <div key={i} style={styles.clientItem}><span>{c.name}</span><div style={styles.clientBarContainer}><div className="color-bar" style={{...styles.clientBarFill, width:`${(c.value/(reportData.daily.workSales||1))*100}%`}}></div></div></div> ))}</div></div>
+            <div style={styles.contentCard}><h3>주요 내용 (메모)</h3><div className="no-print"><input value={newNote} onChange={e=>setNewNote(e.target.value)} onKeyPress={e=>e.key==='Enter'&&handleAddNote()} placeholder="입력 후 추가" style={styles.noteInput} /></div><div style={styles.noteList}>{notes.map(n => ( <div key={n.id} style={styles.noteItem}><span>• {n.content}</span><button className="no-print" onClick={()=>handleDeleteNote(n.id)} style={styles.delBtn}>×</button></div> ))}</div></div>
           </div>
         </div>
       ) : (
@@ -76,7 +82,7 @@ const styles = {
   tabBar: { display: 'flex', gap: '5px' },
   activeTab: { padding: '12px 25px', backgroundColor: 'white', color: '#3182ce', border: 'none', borderRadius: '10px 10px 0 0', fontWeight: 'bold', cursor: 'pointer' },
   inactiveTab: { padding: '12px 25px', backgroundColor: '#cbd5e0', color: '#4a5568', border: 'none', borderRadius: '10px 10px 0 0', fontWeight: 'bold', cursor: 'pointer' },
-  headerControl: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom:'15px' },
+  headerControl: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   reportContent: { backgroundColor: 'white', padding: '30px', borderRadius: '0 15px 15px 15px', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' },
   pageTitle: { margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#1a365d' },
   controlGroup: { display: 'flex', gap: '10px' },
@@ -92,6 +98,13 @@ const styles = {
   barContainer: { flex: 1, backgroundColor: '#edf2f7', borderRadius: '4px', height: '20px', position: 'relative', overflow: 'hidden', marginLeft:'10px' },
   barFill: { height: '100%', borderRadius: '4px' },
   barLabel: { position: 'absolute', right: '5px', top: '50%', transform: 'translateY(-50%)', fontSize: '10px', fontWeight: 'bold' },
+  tableContainer: { maxHeight: '150px', overflowY: 'auto' },
+  expenseTable: { width: '100%', fontSize: '13px' },
+  bottomGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' },
+  clientList: { display: 'flex', flexDirection: 'column', gap: '5px' },
+  clientItem: { display: 'flex', alignItems: 'center', fontSize: '11px' },
+  clientBarContainer: { flex: 1, backgroundColor: '#edf2f7', height: '10px', marginLeft:'5px' },
+  clientBarFill: { height: '100%', backgroundColor: '#3182ce' },
   noteInput: { width: '100%', padding: '6px', borderRadius: '4px', border: '1px solid #cbd5e0', fontSize: '12px', marginBottom:'10px' },
   noteList: { display: 'flex', flexDirection: 'column', gap: '5px' },
   noteItem: { display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '5px', backgroundColor: 'white', borderRadius: '4px' },
