@@ -1,4 +1,4 @@
-// src/components/CEOReport.jsx (전체 교체)
+// src/components/CEOReport.jsx (전체 교체용)
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabaseClient';
 import { 
