@@ -5,11 +5,12 @@ import { supabase } from './supabaseClient';
 import Login from './Login';
 import WorkLog from './WorkLog';
 // [수정됨] 구버전 Ledger 대신 새 폴더에 만든 LedgerPage를 불러옵니다.
-import LedgerPage from './pages/LedgerPage'; 
+import LedgerPage from './pages/LedgerPage';
 import DailyReport from './DailyReport';
 import MonthlyAnalysis from './MonthlyAnalysis';
 import AccessLog from './AccessLog';
 import CEOReport from './CEOReport';
+import ExpensePage from './pages/ExpensePage';
 
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
@@ -76,6 +77,7 @@ function App() {
           <button onClick={() => setCurrentPage('monthly')} style={getBtnStyle('monthly')}>📊 월간 분석</button>
           <button onClick={() => setCurrentPage('ceo')} style={getBtnStyle('ceo')}>🌟 대표님 브리핑</button>
           <button onClick={() => setCurrentPage('accesslog')} style={getBtnStyle('accesslog')}>🔐 접속 로그</button>
+          <button onClick={() => setCurrentPage('expense')} style={getBtnStyle('expense')}>📎 지출결의서</button>
         </nav>
 
         <div style={styles.userSection}>
@@ -93,6 +95,7 @@ function App() {
         {currentPage === 'monthly' && <MonthlyAnalysis />}
         {currentPage === 'ceo' && <CEOReport />}
         {currentPage === 'accesslog' && <AccessLog />}
+        {currentPage === 'expense' && <ExpensePage />}
       </main>
     </div>
   );
@@ -124,12 +127,12 @@ const styles = {
   nav: { display: 'flex', gap: '8px' },
   userSection: { display: 'flex', alignItems: 'center', gap: '15px' },
   userName: { fontSize: '14px', color: '#cbd5e0' },
-  logoutBtn: { 
-    backgroundColor: '#e53e3e', 
-    color: 'white', 
-    border: 'none', 
-    padding: '8px 15px', 
-    borderRadius: '6px', 
+  logoutBtn: {
+    backgroundColor: '#e53e3e',
+    color: 'white',
+    border: 'none',
+    padding: '8px 15px',
+    borderRadius: '6px',
     cursor: 'pointer',
     fontSize: '13px',
     fontWeight: 'bold'
