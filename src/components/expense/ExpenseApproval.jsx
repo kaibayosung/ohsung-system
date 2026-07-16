@@ -151,4 +151,4 @@ const styles = {
   uploadBtn: { padding: '15px 26px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '11px', cursor: 'pointer', fontWeight: 700, fontSize: '17px' },
 };
 
-export default ExpenseApproval
+export default ExpenseApproval;

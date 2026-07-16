@@ -115,4 +115,4 @@ function LedgerInputForm({ selectedDate, onTransactionAdded, editingItem, setEdi
   );
 }
 
-export default LedgerInpu
+export default LedgerInputForm;

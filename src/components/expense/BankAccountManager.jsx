@@ -109,4 +109,4 @@ const styles = {
   deleteBtn: { padding: '10px 16px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '16px', fontWeight: 700 },
 };
 
-export default BankAccountManag
+export default BankAccountManager;
