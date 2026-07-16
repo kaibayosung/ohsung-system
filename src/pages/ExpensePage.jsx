@@ -25,7 +25,7 @@ function ExpensePage() {
   const goToForm = (id) => { setActiveRequestId(id); setTab('form'); };
 
   return (
-    <div style={styles.container}>
+    <div className="expense-shell" style={styles.container}>
       <div className="no-print" style={styles.tabBar}>
         {TABS.map((t) => (
           <button
@@ -38,7 +38,7 @@ function ExpensePage() {
         ))}
       </div>
 
-      <div style={styles.content}>
+      <div className="expense-content" style={styles.content}>
         {tab === 'list' && (
           <ExpenseList onOpenPrint={goToPrint} onOpenApproval={goToApproval} onOpenForm={goToForm} onNew={() => { setActiveRequestId(null); setTab('form'); }} />
         )}
@@ -62,6 +62,18 @@ function ExpensePage() {
         @media print {
           .no-print { display: none !important; }
           body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .expense-shell {
+            padding: 0 !important;
+            background: white !important;
+            min-height: 0 !important;
+          }
+          .expense-content {
+            padding: 0 !important;
+            background: white !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            min-height: 0 !important;
+          }
         }
       `}</style>
     </div>
