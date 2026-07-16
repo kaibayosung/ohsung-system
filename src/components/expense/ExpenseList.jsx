@@ -4,8 +4,8 @@ import { supabase } from '../../supabaseClient';
 
 const STATUS_STYLE = {
   '작성중': { bg: '#edf2f7', tx: '#4a5568' },
-  '결재대기': { bg: '#faf0d7', tx: '#975a16' },
-  '결재완료': { bg: '#e6f4d7', tx: '#276749' },
+  '결재대기': { bg: '#fdf1d6', tx: '#975a16' },
+  '결재완료': { bg: '#e3f6df', tx: '#276749' },
   '반려': { bg: '#fde2e2', tx: '#9b2c2c' },
 };
 
@@ -91,9 +91,9 @@ function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew }) {
       </div>
 
       {loading ? (
-        <p style={{ color: '#718096' }}>불러오는 중...</p>
+        <p style={styles.emptyText}>불러오는 중...</p>
       ) : rows.length === 0 ? (
-        <p style={{ color: '#718096' }}>조건에 맞는 지출결의서가 없습니다.</p>
+        <p style={styles.emptyText}>조건에 맞는 지출결의서가 없습니다.</p>
       ) : (
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
@@ -117,7 +117,7 @@ function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew }) {
                     <td style={styles.td}>{r.company_bank_accounts ? `${r.company_bank_accounts.bank_name} ${r.company_bank_accounts.account_no}` : '-'}</td>
                     <td style={styles.td}>{r.requester || '-'}</td>
                     <td style={styles.td}>{vendorSummary(r.expense_request_items)}</td>
-                    <td style={styles.td}>{Number(r.total_amount || 0).toLocaleString()}원</td>
+                    <td style={{ ...styles.td, fontWeight: 700 }}>{Number(r.total_amount || 0).toLocaleString()}원</td>
                     <td style={styles.td}>
                       <span style={{ ...styles.badge, backgroundColor: badge.bg, color: badge.tx }}>{r.status}</span>
                     </td>
@@ -129,7 +129,7 @@ function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew }) {
                         <button onClick={() => onOpenPrint(r.id)} style={styles.actionBtn}>출력</button>
                       )}
                       {r.status === '결재대기' && (
-                        <button onClick={() => onOpenApproval(r.id)} style={styles.approveBtn}>결재완료 처리</button>
+                        <button onClick={() => onOpenApproval(r.id)} style={styles.approveBtn}>결재완료</button>
                       )}
                       <button onClick={() => handleDelete(r.id)} style={styles.deleteBtn}>삭제</button>
                     </td>
@@ -145,23 +145,24 @@ function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew }) {
 }
 
 const styles = {
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
-  title: { margin: 0, fontSize: '20px', color: '#1a365d' },
-  newBtn: { padding: '10px 18px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  filterRow: { display: 'flex', gap: '14px', marginBottom: '18px', flexWrap: 'wrap' },
-  field: { display: 'flex', flexDirection: 'column', gap: '4px' },
-  label: { fontSize: '12px', color: '#4a5568', fontWeight: 'bold' },
-  input: { padding: '7px 9px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px' },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
+  title: { margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a365d' },
+  newBtn: { padding: '12px 22px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px', boxShadow: '0 4px 10px rgba(49,130,206,0.35)' },
+  filterRow: { display: 'flex', gap: '16px', marginBottom: '22px', flexWrap: 'wrap' },
+  field: { display: 'flex', flexDirection: 'column', gap: '5px' },
+  label: { fontSize: '13px', color: '#718096', fontWeight: 700 },
+  input: { padding: '9px 11px', borderRadius: '8px', border: '1px solid #dfe4ea', fontSize: '15px', backgroundColor: '#fbfcfe' },
+  emptyText: { color: '#718096', fontSize: '16px' },
+  tableWrapper: { overflowX: 'auto', borderRadius: '12px', border: '1px solid #edf1f5' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  th: { padding: '10px 8px', borderBottom: '2px solid #e2e8f0', color: '#4a5568' },
+  th: { padding: '13px 10px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', fontSize: '14px', fontWeight: 700 },
   tr: { borderBottom: '1px solid #edf2f7' },
-  td: { padding: '10px 8px' },
-  badge: { padding: '3px 10px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' },
-  actionBtn: { padding: '5px 10px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', marginRight: '6px' },
-  approveBtn: { padding: '5px 10px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '12px', marginRight: '6px' },
-  deleteBtn: { padding: '5px 10px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' },
+  td: { padding: '12px 10px' },
+  badge: { padding: '5px 13px', borderRadius: '12px', fontSize: '13px', fontWeight: 700 },
+  actionBtn: { padding: '7px 13px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, marginRight: '6px' },
+  approveBtn: { padding: '7px 13px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, marginRight: '6px' },
+  deleteBtn: { padding: '7px 13px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
 };
 
 export default ExpenseList;

@@ -2,10 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 
-const emptyItem = () => ({
-  vendor_name: '', item_name: '', amount: '', payment_method: '계좌이체',
-  bank_name: '', account_no: '', account_holder: '', passbook_memo: '', note: '',
-});
+const emptyItem = () => ({ vendor_name: '', item_name: '', amount: '', note: '' });
 
 function ExpenseForm({ requestId, onSaved, onCancel }) {
   const [accounts, setAccounts] = useState([]);
@@ -48,9 +45,7 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
     }
     if (its && its.length > 0) {
       setItems(its.map((i) => ({
-        vendor_name: i.vendor_name || '', item_name: i.item_name || '', amount: i.amount ?? '',
-        payment_method: i.payment_method || '계좌이체', bank_name: i.bank_name || '', account_no: i.account_no || '',
-        account_holder: i.account_holder || '', passbook_memo: i.passbook_memo || '', note: i.note || '',
+        vendor_name: i.vendor_name || '', item_name: i.item_name || '', amount: i.amount ?? '', note: i.note || '',
       })));
     }
     setLoading(false);
@@ -68,9 +63,6 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
   const validate = () => {
     if (!header.bank_account_id) { alert('출금계좌를 선택해주세요.'); return false; }
     if (items.every((it) => !it.vendor_name && !it.item_name && !it.amount)) { alert('최소 1개 항목을 입력해주세요.'); return false; }
-    for (const it of items) {
-      if (it.passbook_memo && it.passbook_memo.length > 6) { alert('통장 표시내용은 6자 이내로 입력해주세요.'); return false; }
-    }
     return true;
   };
 
@@ -104,11 +96,7 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
         vendor_name: it.vendor_name || null,
         item_name: it.item_name || null,
         amount: Number(it.amount) || 0,
-        payment_method: it.payment_method || null,
-        bank_name: it.payment_method === '계좌이체' ? (it.bank_name || null) : null,
-        account_no: it.payment_method === '계좌이체' ? (it.account_no || null) : null,
-        account_holder: it.payment_method === '계좌이체' ? (it.account_holder || null) : null,
-        passbook_memo: it.payment_method === '계좌이체' ? (it.passbook_memo || null) : null,
+        payment_method: '현금',
         note: it.note || null,
       }));
       if (itemRows.length > 0) {
@@ -125,7 +113,7 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
     }
   };
 
-  if (loading) return <p style={{ color: '#718096' }}>불러오는 중...</p>;
+  if (loading) return <p style={styles.loadingText}>불러오는 중...</p>;
 
   return (
     <div>
@@ -152,7 +140,7 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
       </div>
 
       <div style={styles.itemsHeader}>
-        <h3 style={styles.subtitle}>지출 항목</h3>
+        <h3 style={styles.subtitle}>지출 항목 (현금 결제)</h3>
         <button onClick={addItem} style={styles.addBtn}>+ 항목 추가</button>
       </div>
 
@@ -160,55 +148,27 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
         <table style={styles.table}>
           <thead>
             <tr style={styles.thRow}>
-              <th style={styles.th}>NO</th>
+              <th style={{ ...styles.th, width: '48px' }}>NO</th>
               <th style={styles.th}>거래처</th>
               <th style={styles.th}>품목</th>
-              <th style={styles.th}>금액</th>
-              <th style={styles.th}>지급방법</th>
-              <th style={styles.th}>입금은행/계좌</th>
-              <th style={styles.th}>예금주</th>
-              <th style={styles.th}>통장표시(6자)</th>
+              <th style={{ ...styles.th, width: '150px' }}>금액</th>
               <th style={styles.th}>비고</th>
-              <th style={styles.th}></th>
+              <th style={{ ...styles.th, width: '44px' }}></th>
             </tr>
           </thead>
           <tbody>
-            {items.map((it, idx) => {
-              const isTransfer = it.payment_method === '계좌이체';
-              return (
-                <tr key={idx} style={styles.tr}>
-                  <td style={styles.td}>{idx + 1}</td>
-                  <td style={styles.td}><input value={it.vendor_name} onChange={(e) => updateItem(idx, 'vendor_name', e.target.value)} style={styles.cellInput} /></td>
-                  <td style={styles.td}><input value={it.item_name} onChange={(e) => updateItem(idx, 'item_name', e.target.value)} style={styles.cellInput} /></td>
-                  <td style={styles.td}><input type="number" value={it.amount} onChange={(e) => updateItem(idx, 'amount', e.target.value)} style={{ ...styles.cellInput, width: '90px' }} /></td>
-                  <td style={styles.td}>
-                    <select value={it.payment_method} onChange={(e) => updateItem(idx, 'payment_method', e.target.value)} style={styles.cellInput}>
-                      <option value="계좌이체">계좌이체</option>
-                      <option value="현금">현금</option>
-                      <option value="어음">어음</option>
-                    </select>
-                  </td>
-                  <td style={styles.td}>
-                    <input disabled={!isTransfer} value={it.bank_name} onChange={(e) => updateItem(idx, 'bank_name', e.target.value)} placeholder="은행" style={{ ...styles.cellInput, width: '60px', marginBottom: '4px' }} />
-                    <input disabled={!isTransfer} value={it.account_no} onChange={(e) => updateItem(idx, 'account_no', e.target.value)} placeholder="계좌번호" style={{ ...styles.cellInput, width: '110px' }} />
-                  </td>
-                  <td style={styles.td}><input disabled={!isTransfer} value={it.account_holder} onChange={(e) => updateItem(idx, 'account_holder', e.target.value)} style={styles.cellInput} /></td>
-                  <td style={styles.td}>
-                    <input
-                      disabled={!isTransfer}
-                      value={it.passbook_memo}
-                      maxLength={6}
-                      onChange={(e) => updateItem(idx, 'passbook_memo', e.target.value.slice(0, 6))}
-                      style={{ ...styles.cellInput, width: '70px' }}
-                    />
-                  </td>
-                  <td style={styles.td}><input value={it.note} onChange={(e) => updateItem(idx, 'note', e.target.value)} style={styles.cellInput} /></td>
-                  <td style={styles.td}>
-                    <button onClick={() => removeItem(idx)} style={styles.removeBtn}>×</button>
-                  </td>
-                </tr>
-              );
-            })}
+            {items.map((it, idx) => (
+              <tr key={idx} style={styles.tr}>
+                <td style={{ ...styles.td, textAlign: 'center', color: '#a0aec0' }}>{idx + 1}</td>
+                <td style={styles.td}><input value={it.vendor_name} onChange={(e) => updateItem(idx, 'vendor_name', e.target.value)} style={styles.cellInput} placeholder="거래처명" /></td>
+                <td style={styles.td}><input value={it.item_name} onChange={(e) => updateItem(idx, 'item_name', e.target.value)} style={styles.cellInput} placeholder="품목" /></td>
+                <td style={styles.td}><input type="number" value={it.amount} onChange={(e) => updateItem(idx, 'amount', e.target.value)} style={styles.cellInput} placeholder="0" /></td>
+                <td style={styles.td}><input value={it.note} onChange={(e) => updateItem(idx, 'note', e.target.value)} style={styles.cellInput} placeholder="선택 입력" /></td>
+                <td style={{ ...styles.td, textAlign: 'center' }}>
+                  <button onClick={() => removeItem(idx)} style={styles.removeBtn}>×</button>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
@@ -228,27 +188,28 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
 }
 
 const styles = {
-  title: { margin: '0 0 16px 0', fontSize: '20px', color: '#1a365d' },
-  headerGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '20px' },
-  field: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  label: { fontSize: '13px', fontWeight: 'bold', color: '#4a5568' },
-  input: { padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px' },
-  itemsHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', marginBottom: '10px' },
-  subtitle: { margin: 0, fontSize: '15px', color: '#2d3748' },
-  addBtn: { padding: '6px 14px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '12px' },
+  loadingText: { color: '#718096', fontSize: '16px' },
+  title: { margin: '0 0 20px 0', fontSize: '24px', fontWeight: 800, color: '#1a365d' },
+  headerGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '18px', marginBottom: '26px' },
+  field: { display: 'flex', flexDirection: 'column', gap: '7px' },
+  label: { fontSize: '15px', fontWeight: 700, color: '#4a5568' },
+  input: { padding: '11px 13px', borderRadius: '8px', border: '1px solid #dfe4ea', fontSize: '16px', backgroundColor: '#fbfcfe' },
+  itemsHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', marginBottom: '14px' },
+  subtitle: { margin: 0, fontSize: '18px', fontWeight: 700, color: '#2d3748' },
+  addBtn: { padding: '9px 18px', backgroundColor: '#ebf4ff', color: '#2b6cb0', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 700 },
+  tableWrapper: { overflowX: 'auto', borderRadius: '12px', border: '1px solid #edf1f5' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  th: { padding: '8px 6px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', whiteSpace: 'nowrap' },
+  th: { padding: '13px 12px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', whiteSpace: 'nowrap', fontSize: '14px', fontWeight: 700 },
   tr: { borderBottom: '1px solid #edf2f7' },
-  td: { padding: '6px' },
-  cellInput: { width: '100%', padding: '6px 7px', borderRadius: '5px', border: '1px solid #e2e8f0', fontSize: '12px', boxSizing: 'border-box' },
-  removeBtn: { border: 'none', backgroundColor: '#fde2e2', color: '#9b2c2c', borderRadius: '5px', width: '26px', height: '26px', cursor: 'pointer', fontWeight: 'bold' },
-  totalRow: { display: 'flex', justifyContent: 'flex-end', gap: '14px', alignItems: 'center', marginTop: '14px', paddingTop: '14px', borderTop: '2px solid #2d3748', fontSize: '16px' },
-  actions: { display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' },
-  cancelBtn: { padding: '10px 18px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  saveBtn: { padding: '10px 18px', backgroundColor: '#718096', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  submitBtn: { padding: '10px 18px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
+  td: { padding: '9px 10px' },
+  cellInput: { width: '100%', padding: '10px 11px', borderRadius: '7px', border: '1px solid #e2e8f0', fontSize: '15px', boxSizing: 'border-box' },
+  removeBtn: { border: 'none', backgroundColor: '#fde2e2', color: '#9b2c2c', borderRadius: '7px', width: '30px', height: '30px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' },
+  totalRow: { display: 'flex', justifyContent: 'flex-end', gap: '16px', alignItems: 'baseline', marginTop: '18px', paddingTop: '18px', borderTop: '2px solid #2d3748', fontSize: '18px' },
+  actions: { display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '26px' },
+  cancelBtn: { padding: '13px 22px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
+  saveBtn: { padding: '13px 22px', backgroundColor: '#718096', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
+  submitBtn: { padding: '13px 24px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px', boxShadow: '0 4px 10px rgba(49,130,206,0.35)' },
 };
 
 export default ExpenseForm;

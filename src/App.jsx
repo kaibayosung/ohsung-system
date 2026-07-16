@@ -42,14 +42,14 @@ function App() {
 
   // 3. 버튼 스타일 정의 (선택된 메뉴 강조)
   const getBtnStyle = (pageName) => ({
-    padding: '10px 18px',
+    padding: '12px 20px',
     backgroundColor: currentPage === pageName ? '#3182ce' : '#2d3748',
     color: 'white',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '9px',
     cursor: 'pointer',
     fontWeight: 'bold',
-    fontSize: '14px',
+    fontSize: '16px',
     transition: 'all 0.2s',
     display: 'flex',
     alignItems: 'center',
@@ -67,7 +67,7 @@ function App() {
       {/* 상단 통합 네비게이션 바 */}
       <header style={styles.header}>
         <div style={styles.logo} onClick={() => setCurrentPage('daily')}>
-          🏭 오성철강 <span style={{fontWeight:'300', fontSize:'14px', marginLeft:'10px'}}>SMART ERP 2.0</span>
+          🏭 오성철강 <span style={{fontWeight:'300', fontSize:'15px', marginLeft:'10px'}}>SMART ERP 2.0</span>
         </div>
         
         <nav style={styles.nav}>
@@ -112,7 +112,7 @@ const styles = {
     overflow: 'hidden'
   },
   header: {
-    height: '70px',
+    height: '78px',
     backgroundColor: '#1a365d',
     color: 'white',
     display: 'flex',
@@ -123,18 +123,18 @@ const styles = {
     zIndex: 1000,
     flexShrink: 0
   },
-  logo: { fontSize: '22px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center' },
+  logo: { fontSize: '25px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center' },
   nav: { display: 'flex', gap: '8px' },
-  userSection: { display: 'flex', alignItems: 'center', gap: '15px' },
-  userName: { fontSize: '14px', color: '#cbd5e0' },
+  userSection: { display: 'flex', alignItems: 'center', gap: '16px' },
+  userName: { fontSize: '16px', color: '#cbd5e0' },
   logoutBtn: {
     backgroundColor: '#e53e3e',
     color: 'white',
     border: 'none',
-    padding: '8px 15px',
-    borderRadius: '6px',
+    padding: '10px 18px',
+    borderRadius: '8px',
     cursor: 'pointer',
-    fontSize: '13px',
+    fontSize: '15px',
     fontWeight: 'bold'
   },
   mainContent: {

@@ -54,7 +54,7 @@ function BankAccountManager() {
       </div>
 
       {loading ? (
-        <p style={{ color: '#718096' }}>불러오는 중...</p>
+        <p style={styles.emptyText}>불러오는 중...</p>
       ) : (
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
@@ -92,20 +92,21 @@ function BankAccountManager() {
 }
 
 const styles = {
-  title: { margin: '0 0 6px 0', fontSize: '20px', color: '#1a365d' },
-  subtitle: { margin: '0 0 18px 0', fontSize: '13px', color: '#718096' },
-  formRow: { display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' },
-  input: { padding: '8px 10px', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '14px', flex: 1, minWidth: '140px' },
-  addBtn: { padding: '8px 18px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  tableWrapper: { overflowX: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
+  title: { margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1a365d' },
+  subtitle: { margin: '0 0 24px 0', fontSize: '15px', color: '#718096' },
+  formRow: { display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' },
+  input: { padding: '11px 13px', borderRadius: '8px', border: '1px solid #dfe4ea', fontSize: '16px', flex: 1, minWidth: '160px', backgroundColor: '#fbfcfe' },
+  addBtn: { padding: '11px 22px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
+  emptyText: { color: '#718096', fontSize: '16px' },
+  tableWrapper: { overflowX: 'auto', borderRadius: '12px', border: '1px solid #edf1f5' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  th: { padding: '10px 8px', borderBottom: '2px solid #e2e8f0', color: '#4a5568' },
+  th: { padding: '13px 10px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', fontSize: '14px', fontWeight: 700 },
   tr: { borderBottom: '1px solid #edf2f7' },
-  td: { padding: '10px 8px' },
-  activeBadge: { padding: '4px 10px', backgroundColor: '#e6f4d7', color: '#276749', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' },
-  inactiveBadge: { padding: '4px 10px', backgroundColor: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' },
-  deleteBtn: { padding: '5px 10px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '12px' },
+  td: { padding: '12px 10px' },
+  activeBadge: { padding: '6px 14px', backgroundColor: '#e3f6df', color: '#276749', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
+  inactiveBadge: { padding: '6px 14px', backgroundColor: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
+  deleteBtn: { padding: '7px 13px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
 };
 
 export default BankAccountManager;

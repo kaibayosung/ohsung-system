@@ -25,10 +25,10 @@ function ExpensePrint({ requestId, onBack }) {
   };
 
   if (!requestId) {
-    return <p style={{ color: '#718096' }}>목록에서 출력할 지출결의서를 선택해주세요.</p>;
+    return <p style={styles.emptyText}>목록에서 출력할 지출결의서를 선택해주세요.</p>;
   }
-  if (loading) return <p style={{ color: '#718096' }}>불러오는 중...</p>;
-  if (!request) return <p style={{ color: '#718096' }}>결의서를 찾을 수 없습니다.</p>;
+  if (loading) return <p style={styles.emptyText}>불러오는 중...</p>;
+  if (!request) return <p style={styles.emptyText}>결의서를 찾을 수 없습니다.</p>;
 
   const total = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
 
@@ -63,36 +63,33 @@ function ExpensePrint({ requestId, onBack }) {
         <div style={styles.metaRow}>
           <span>일자: {request.request_date}</span>
           <span>출금계좌: {request.company_bank_accounts ? `${request.company_bank_accounts.bank_name} ${request.company_bank_accounts.account_no}` : '-'}</span>
+          <span>지급방법: 현금</span>
         </div>
 
         <table style={styles.itemTable}>
           <thead>
             <tr>
-              <th style={styles.th}>NO</th>
+              <th style={{ ...styles.th, width: '50px' }}>NO</th>
               <th style={styles.th}>거래처</th>
               <th style={styles.th}>품목</th>
-              <th style={styles.th}>금액</th>
-              <th style={styles.th}>지급방법</th>
-              <th style={styles.th}>입금계좌</th>
-              <th style={styles.th}>통장표시</th>
+              <th style={{ ...styles.th, width: '130px' }}>금액</th>
+              <th style={styles.th}>비고</th>
             </tr>
           </thead>
           <tbody>
             {items.map((it) => (
               <tr key={it.id}>
-                <td style={styles.td}>{it.line_no}</td>
+                <td style={{ ...styles.td, textAlign: 'center' }}>{it.line_no}</td>
                 <td style={styles.td}>{it.vendor_name}</td>
                 <td style={styles.td}>{it.item_name}</td>
                 <td style={{ ...styles.td, textAlign: 'right' }}>{Number(it.amount).toLocaleString()}</td>
-                <td style={{ ...styles.td, textAlign: 'center' }}>{it.payment_method}</td>
-                <td style={styles.td}>{it.bank_name ? `${it.bank_name} ${it.account_no || ''}` : '-'}</td>
-                <td style={{ ...styles.td, textAlign: 'center' }}>{it.passbook_memo || '-'}</td>
+                <td style={styles.td}>{it.note || ''}</td>
               </tr>
             ))}
             <tr>
-              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }}>합계</td>
-              <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }}>{total.toLocaleString()}</td>
-              <td colSpan={3} style={styles.td}></td>
+              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>합계</td>
+              <td style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>{total.toLocaleString()}</td>
+              <td style={styles.td}></td>
             </tr>
           </tbody>
         </table>
@@ -111,21 +108,22 @@ function ExpensePrint({ requestId, onBack }) {
 }
 
 const styles = {
-  controlBar: { display: 'flex', justifyContent: 'space-between', marginBottom: '16px' },
-  backBtn: { padding: '8px 16px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '6px', cursor: 'pointer' },
-  printBtn: { padding: '8px 16px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
-  sheet: { border: '1px solid #e2e8f0', padding: '30px', maxWidth: '800px', margin: '0 auto' },
-  approvalBox: { display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' },
+  emptyText: { color: '#718096', fontSize: '16px' },
+  controlBar: { display: 'flex', justifyContent: 'space-between', marginBottom: '18px' },
+  backBtn: { padding: '10px 18px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 700 },
+  printBtn: { padding: '10px 18px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
+  sheet: { border: '1px solid #e2e8f0', borderRadius: '10px', padding: '40px', maxWidth: '820px', margin: '0 auto', fontSize: '16px' },
+  approvalBox: { display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' },
   approvalTable: { borderCollapse: 'collapse' },
-  approvalLabel: { border: '1px solid #2d3748', padding: '4px 8px', textAlign: 'center', fontSize: '12px', backgroundColor: '#f7fafc' },
-  approvalHeadCell: { border: '1px solid #2d3748', padding: '4px 14px', textAlign: 'center', fontSize: '12px', backgroundColor: '#f7fafc' },
-  approvalStampCell: { border: '1px solid #2d3748', width: '60px', height: '50px' },
-  formTitle: { textAlign: 'center', fontSize: '24px', letterSpacing: '8px', margin: '10px 0 24px 0' },
-  metaRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' },
-  itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
-  th: { border: '1px solid #2d3748', padding: '8px 6px', backgroundColor: '#f7fafc' },
-  td: { border: '1px solid #cbd5e0', padding: '7px 6px' },
-  footNote: { marginTop: '20px', fontSize: '14px' },
+  approvalLabel: { border: '1px solid #2d3748', padding: '6px 10px', textAlign: 'center', fontSize: '14px', backgroundColor: '#f7fafc' },
+  approvalHeadCell: { border: '1px solid #2d3748', padding: '6px 18px', textAlign: 'center', fontSize: '14px', backgroundColor: '#f7fafc' },
+  approvalStampCell: { border: '1px solid #2d3748', width: '70px', height: '58px' },
+  formTitle: { textAlign: 'center', fontSize: '28px', fontWeight: 800, letterSpacing: '10px', margin: '14px 0 28px 0' },
+  metaRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '14px', fontSize: '16px' },
+  itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  th: { border: '1px solid #2d3748', padding: '10px 8px', backgroundColor: '#f7fafc', fontWeight: 700 },
+  td: { border: '1px solid #cbd5e0', padding: '10px 8px' },
+  footNote: { marginTop: '24px', fontSize: '16px' },
 };
 
 export default ExpensePrint;

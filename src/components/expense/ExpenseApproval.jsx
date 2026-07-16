@@ -81,7 +81,7 @@ function ExpenseApproval({ requestId, onDone }) {
     }
   };
 
-  if (loading) return <p style={{ color: '#718096' }}>불러오는 중...</p>;
+  if (loading) return <p style={styles.emptyText}>불러오는 중...</p>;
 
   return (
     <div>
@@ -91,7 +91,7 @@ function ExpenseApproval({ requestId, onDone }) {
       <div style={styles.layout}>
         <div style={styles.listCol}>
           {pending.length === 0 ? (
-            <p style={{ color: '#718096' }}>결재대기 중인 건이 없습니다.</p>
+            <p style={styles.emptyText}>결재대기 중인 건이 없습니다.</p>
           ) : (
             pending.map((r) => (
               <div
@@ -99,11 +99,11 @@ function ExpenseApproval({ requestId, onDone }) {
                 onClick={() => setSelectedId(r.id)}
                 style={{ ...styles.pendingItem, ...(selectedId === r.id ? styles.pendingItemActive : {}) }}
               >
-                <div style={{ fontWeight: 'bold' }}>{r.request_date}</div>
-                <div style={{ fontSize: '12px', color: '#718096' }}>
+                <div style={styles.pendingDate}>{r.request_date}</div>
+                <div style={styles.pendingAccount}>
                   {r.company_bank_accounts ? `${r.company_bank_accounts.bank_name} ${r.company_bank_accounts.account_no}` : '-'}
                 </div>
-                <div style={{ fontSize: '13px' }}>{Number(r.total_amount || 0).toLocaleString()}원</div>
+                <div style={styles.pendingAmount}>{Number(r.total_amount || 0).toLocaleString()}원</div>
               </div>
             ))
           )}
@@ -113,17 +113,17 @@ function ExpenseApproval({ requestId, onDone }) {
           {selected ? (
             <>
               <div style={styles.detailHeader}>
-                <div><strong>{selected.request_date}</strong> · {selected.company_bank_accounts ? `${selected.company_bank_accounts.bank_name} ${selected.company_bank_accounts.account_no}` : '-'}</div>
-                <div>합계 {Number(selected.total_amount || 0).toLocaleString()}원</div>
+                <div style={styles.detailMain}>{selected.request_date} · {selected.company_bank_accounts ? `${selected.company_bank_accounts.bank_name} ${selected.company_bank_accounts.account_no}` : '-'}</div>
+                <div style={styles.detailAmount}>합계 {Number(selected.total_amount || 0).toLocaleString()}원</div>
               </div>
               <label style={styles.label}>결재 스캔 파일 (이미지 또는 PDF)</label>
-              <input type="file" accept="image/*,.pdf" onChange={handleFileChange} />
+              <input type="file" accept="image/*,.pdf" onChange={handleFileChange} style={styles.fileInput} />
               <button onClick={handleUpload} disabled={uploading} style={styles.uploadBtn}>
                 {uploading ? '업로드 중...' : '결재완료 처리'}
               </button>
             </>
           ) : (
-            <p style={{ color: '#718096' }}>왼쪽에서 처리할 건을 선택해주세요.</p>
+            <p style={styles.emptyText}>왼쪽에서 처리할 건을 선택해주세요.</p>
           )}
         </div>
       </div>
@@ -132,16 +132,23 @@ function ExpenseApproval({ requestId, onDone }) {
 }
 
 const styles = {
-  title: { margin: '0 0 6px 0', fontSize: '20px', color: '#1a365d' },
-  subtitle: { margin: '0 0 18px 0', fontSize: '13px', color: '#718096' },
-  layout: { display: 'grid', gridTemplateColumns: '260px 1fr', gap: '20px' },
-  listCol: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  pendingItem: { padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', cursor: 'pointer' },
-  pendingItemActive: { borderColor: '#3182ce', backgroundColor: '#ebf8ff' },
-  detailCol: { display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'flex-start' },
-  detailHeader: { display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '6px' },
-  label: { fontSize: '13px', fontWeight: 'bold', color: '#4a5568' },
-  uploadBtn: { padding: '10px 20px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' },
+  title: { margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1a365d' },
+  subtitle: { margin: '0 0 24px 0', fontSize: '15px', color: '#718096' },
+  emptyText: { color: '#718096', fontSize: '16px' },
+  layout: { display: 'grid', gridTemplateColumns: '280px 1fr', gap: '24px' },
+  listCol: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  pendingItem: { padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', cursor: 'pointer' },
+  pendingItemActive: { borderColor: '#3182ce', borderWidth: '2px', backgroundColor: '#ebf8ff' },
+  pendingDate: { fontWeight: 700, fontSize: '16px' },
+  pendingAccount: { fontSize: '13px', color: '#718096', marginTop: '2px' },
+  pendingAmount: { fontSize: '15px', marginTop: '4px', fontWeight: 700 },
+  detailCol: { display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'flex-start' },
+  detailHeader: { display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '6px' },
+  detailMain: { fontSize: '17px', fontWeight: 700 },
+  detailAmount: { fontSize: '15px', color: '#4a5568' },
+  label: { fontSize: '15px', fontWeight: 700, color: '#4a5568' },
+  fileInput: { fontSize: '15px' },
+  uploadBtn: { padding: '13px 24px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
 };
 
 export default ExpenseApproval;
