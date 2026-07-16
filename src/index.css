@@ -33,3 +33,23 @@ textarea.excel-input:focus {
   outline: none;
   box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
 }
+
+/* 인쇄 시 상단 네비게이션 바 등 화면 전용 요소는 항상 숨김 */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* 화면 전용 레이아웃(고정 높이/스크롤 영역)이 인쇄 시 내용을 잘라먹지 않도록 해제 */
+  .app-shell {
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .app-main {
+    overflow: visible !important;
+  }
+}

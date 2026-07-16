@@ -63,9 +63,9 @@ function App() {
 
   // 5. [메인 시스템] 로그인 성공 시에만 진입 가능한 영역
   return (
-    <div style={styles.appContainer}>
-      {/* 상단 통합 네비게이션 바 */}
-      <header style={styles.header}>
+    <div className="app-shell" style={styles.appContainer}>
+      {/* 상단 통합 네비게이션 바 (인쇄 시 숨김) */}
+      <header className="no-print" style={styles.header}>
         <div style={styles.logo} onClick={() => setCurrentPage('daily')}>
           🏭 오성철강 <span style={{fontWeight:'300', fontSize:'16px', marginLeft:'10px'}}>SMART ERP 2.0</span>
         </div>
@@ -87,7 +87,7 @@ function App() {
       </header>
 
       {/* 메인 콘텐츠 영역 (선택된 메뉴의 화면을 렌더링) */}
-      <main style={styles.mainContent}>
+      <main className="app-main" style={styles.mainContent}>
         {currentPage === 'worklog' && <WorkLog />}
         {/* [수정됨] 이제 구버전이 아닌 새로운 LedgerPage를 보여줍니다. */}
         {currentPage === 'ledger' && <LedgerPage />} 
