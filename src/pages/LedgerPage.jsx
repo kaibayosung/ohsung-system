@@ -40,24 +40,24 @@ function LedgerPage() {
   };
 
   return (
-    <div style={{ padding: '24px', backgroundColor: '#e2e8f0', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '22px' }}>
-        <h2 style={{ margin: 0, fontSize: '24px' }}>🌀 오성철강 일일 금전출납부</h2>
-        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{ padding: '10px 12px', borderRadius: '8px', border: 'none', fontSize: '15px' }} />
+    <div style={{ padding: '36px', backgroundColor: '#e2e8f0', minHeight: '100vh' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '26px' }}>
+        <h2 style={{ margin: 0, fontSize: '32px' }}>🌀 오성철강 일일 금전출납부</h2>
+        <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{ padding: '12px 14px', borderRadius: '9px', border: 'none', fontSize: '17px' }} />
       </div>
 
       {/* 상단 4단 현황판 */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '22px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '26px' }}>
         <div style={styles.sumCard}><h4 style={styles.sumLabel}>오늘 수입</h4><p style={styles.sumValue}>{summary.income.toLocaleString()}원</p></div>
         <div style={styles.sumCard}><h4 style={styles.sumLabel}>오늘 지출</h4><p style={styles.sumValue}>{summary.expense.toLocaleString()}원</p></div>
         <div style={styles.sumCard}><h4 style={styles.sumLabel}>현재 잔액</h4><p style={styles.sumValue}>{summary.balance.toLocaleString()}원</p></div>
         <div style={{...styles.sumCard, borderTop: '5px solid #ed8936', backgroundColor: '#fffaf0'}}>
           <h4 style={{...styles.sumLabel, color:'#c05621'}}>미지급 합계 (예정)</h4>
-          <p style={{color:'#c05621', fontSize:'25px', fontWeight:'900', margin: '6px 0 0 0'}}>{summary.unpaid.toLocaleString()}원</p>
+          <p style={{color:'#c05621', fontSize:'31px', fontWeight:'900', margin: '8px 0 0 0'}}>{summary.unpaid.toLocaleString()}원</p>
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '24px' }}>
         <LedgerInputForm selectedDate={selectedDate} onTransactionAdded={fetchLedger} />
         <LedgerList records={records} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} />
       </div>
@@ -66,9 +66,9 @@ function LedgerPage() {
 }
 
 const styles = {
-  sumCard: { backgroundColor: 'white', padding: '17px', borderRadius: '13px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-  sumLabel: { margin: 0, fontSize: '14px', color: '#4a5568' },
-  sumValue: { margin: '6px 0 0 0', fontSize: '21px', fontWeight: 800 }
+  sumCard: { backgroundColor: 'white', padding: '22px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' },
+  sumLabel: { margin: 0, fontSize: '17px', color: '#4a5568' },
+  sumValue: { margin: '8px 0 0 0', fontSize: '27px', fontWeight: 800 }
 };
 
 export default LedgerPage;

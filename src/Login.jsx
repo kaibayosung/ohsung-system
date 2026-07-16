@@ -37,8 +37,8 @@ function Login({ onLoginSuccess }) {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2 style={{fontSize:'30px', color:'#1a365d', marginBottom:'10px'}}>🏭 오성철강 관리 시스템</h2>
-        <p style={{color:'#718096', marginBottom:'30px', fontSize:'16px'}}>인가된 사용자만 접속 가능합니다.</p>
+        <h2 style={{fontSize:'34px', color:'#1a365d', marginBottom:'12px'}}>🏭 오성철강 관리 시스템</h2>
+        <p style={{color:'#718096', marginBottom:'34px', fontSize:'18px'}}>인가된 사용자만 접속 가능합니다.</p>
         <form onSubmit={handleLogin} style={styles.form}>
           <input type="email" placeholder="이메일 주소" value={email} onChange={e=>setEmail(e.target.value)} style={styles.input} required />
           <input type="password" placeholder="비밀번호" value={password} onChange={e=>setPassword(e.target.value)} style={styles.input} required />
@@ -53,10 +53,10 @@ function Login({ onLoginSuccess }) {
 
 const styles = {
   container: { height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', backgroundColor: '#1a365d' },
-  card: { backgroundColor: 'white', padding: '50px', borderRadius: '24px', width: '450px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
-  form: { display: 'flex', flexDirection: 'column', gap: '20px' },
-  input: { padding: '15px', borderRadius: '12px', border: '1px solid #cbd5e0', fontSize: '18px' },
-  btn: { padding: '18px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '12px', fontSize: '20px', fontWeight: 'bold', cursor: 'pointer' }
+  card: { backgroundColor: 'white', padding: '54px', borderRadius: '26px', width: '480px', textAlign: 'center', boxShadow: '0 20px 40px rgba(0,0,0,0.2)' },
+  form: { display: 'flex', flexDirection: 'column', gap: '22px' },
+  input: { padding: '17px', borderRadius: '13px', border: '1px solid #cbd5e0', fontSize: '20px' },
+  btn: { padding: '20px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '13px', fontSize: '22px', fontWeight: 'bold', cursor: 'pointer' }
 };
 
 export default Login;

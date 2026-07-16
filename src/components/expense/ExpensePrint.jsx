@@ -63,16 +63,20 @@ function ExpensePrint({ requestId, onBack }) {
         <div style={styles.metaRow}>
           <span>일자: {request.request_date}</span>
           <span>출금계좌: {request.company_bank_accounts ? `${request.company_bank_accounts.bank_name} ${request.company_bank_accounts.account_no}` : '-'}</span>
-          <span>지급방법: 현금</span>
+          <span>지급방법: 계좌이체</span>
         </div>
 
         <table style={styles.itemTable}>
           <thead>
             <tr>
-              <th style={{ ...styles.th, width: '50px' }}>NO</th>
+              <th style={{ ...styles.th, width: '46px' }}>NO</th>
               <th style={styles.th}>거래처</th>
               <th style={styles.th}>품목</th>
-              <th style={{ ...styles.th, width: '130px' }}>금액</th>
+              <th style={{ ...styles.th, width: '110px' }}>금액</th>
+              <th style={styles.th}>입금은행</th>
+              <th style={styles.th}>계좌번호</th>
+              <th style={styles.th}>예금주</th>
+              <th style={{ ...styles.th, width: '90px' }}>통장표시</th>
               <th style={styles.th}>비고</th>
             </tr>
           </thead>
@@ -83,13 +87,17 @@ function ExpensePrint({ requestId, onBack }) {
                 <td style={styles.td}>{it.vendor_name}</td>
                 <td style={styles.td}>{it.item_name}</td>
                 <td style={{ ...styles.td, textAlign: 'right' }}>{Number(it.amount).toLocaleString()}</td>
+                <td style={styles.td}>{it.bank_name || ''}</td>
+                <td style={styles.td}>{it.account_no || ''}</td>
+                <td style={styles.td}>{it.account_holder || ''}</td>
+                <td style={styles.td}>{it.passbook_memo || ''}</td>
                 <td style={styles.td}>{it.note || ''}</td>
               </tr>
             ))}
             <tr>
               <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>합계</td>
               <td style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>{total.toLocaleString()}</td>
-              <td style={styles.td}></td>
+              <td colSpan={5} style={styles.td}></td>
             </tr>
           </tbody>
         </table>
@@ -108,10 +116,10 @@ function ExpensePrint({ requestId, onBack }) {
 }
 
 const styles = {
-  emptyText: { color: '#718096', fontSize: '16px' },
-  controlBar: { display: 'flex', justifyContent: 'space-between', marginBottom: '18px' },
-  backBtn: { padding: '10px 18px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 700 },
-  printBtn: { padding: '10px 18px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
+  emptyText: { color: '#718096', fontSize: '18px' },
+  controlBar: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
+  backBtn: { padding: '12px 20px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '17px', fontWeight: 700 },
+  printBtn: { padding: '12px 20px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '17px' },
   sheet: { border: '1px solid #e2e8f0', borderRadius: '10px', padding: '40px', maxWidth: '820px', margin: '0 auto', fontSize: '16px' },
   approvalBox: { display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' },
   approvalTable: { borderCollapse: 'collapse' },
@@ -119,7 +127,7 @@ const styles = {
   approvalHeadCell: { border: '1px solid #2d3748', padding: '6px 18px', textAlign: 'center', fontSize: '14px', backgroundColor: '#f7fafc' },
   approvalStampCell: { border: '1px solid #2d3748', width: '70px', height: '58px' },
   formTitle: { textAlign: 'center', fontSize: '28px', fontWeight: 800, letterSpacing: '10px', margin: '14px 0 28px 0' },
-  metaRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '14px', fontSize: '16px' },
+  metaRow: { display: 'flex', justifyContent: 'space-between', marginBottom: '14px', fontSize: '17px' },
   itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
   th: { border: '1px solid #2d3748', padding: '10px 8px', backgroundColor: '#f7fafc', fontWeight: 700 },
   td: { border: '1px solid #cbd5e0', padding: '10px 8px' },

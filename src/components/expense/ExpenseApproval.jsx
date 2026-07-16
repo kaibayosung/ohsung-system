@@ -132,23 +132,23 @@ function ExpenseApproval({ requestId, onDone }) {
 }
 
 const styles = {
-  title: { margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1a365d' },
-  subtitle: { margin: '0 0 24px 0', fontSize: '15px', color: '#718096' },
-  emptyText: { color: '#718096', fontSize: '16px' },
-  layout: { display: 'grid', gridTemplateColumns: '280px 1fr', gap: '24px' },
-  listCol: { display: 'flex', flexDirection: 'column', gap: '10px' },
-  pendingItem: { padding: '14px 16px', borderRadius: '10px', border: '1px solid #e2e8f0', cursor: 'pointer' },
+  title: { margin: '0 0 10px 0', fontSize: '30px', fontWeight: 800, color: '#1a365d' },
+  subtitle: { margin: '0 0 28px 0', fontSize: '17px', color: '#718096' },
+  emptyText: { color: '#718096', fontSize: '18px' },
+  layout: { display: 'grid', gridTemplateColumns: '300px 1fr', gap: '28px' },
+  listCol: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  pendingItem: { padding: '16px 18px', borderRadius: '12px', border: '1px solid #e2e8f0', cursor: 'pointer' },
   pendingItemActive: { borderColor: '#3182ce', borderWidth: '2px', backgroundColor: '#ebf8ff' },
-  pendingDate: { fontWeight: 700, fontSize: '16px' },
-  pendingAccount: { fontSize: '13px', color: '#718096', marginTop: '2px' },
-  pendingAmount: { fontSize: '15px', marginTop: '4px', fontWeight: 700 },
-  detailCol: { display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'flex-start' },
-  detailHeader: { display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '6px' },
-  detailMain: { fontSize: '17px', fontWeight: 700 },
-  detailAmount: { fontSize: '15px', color: '#4a5568' },
-  label: { fontSize: '15px', fontWeight: 700, color: '#4a5568' },
-  fileInput: { fontSize: '15px' },
-  uploadBtn: { padding: '13px 24px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
+  pendingDate: { fontWeight: 700, fontSize: '18px' },
+  pendingAccount: { fontSize: '15px', color: '#718096', marginTop: '3px' },
+  pendingAmount: { fontSize: '17px', marginTop: '5px', fontWeight: 700 },
+  detailCol: { display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'flex-start' },
+  detailHeader: { display: 'flex', flexDirection: 'column', gap: '7px', marginBottom: '7px' },
+  detailMain: { fontSize: '19px', fontWeight: 700 },
+  detailAmount: { fontSize: '17px', color: '#4a5568' },
+  label: { fontSize: '17px', fontWeight: 700, color: '#4a5568' },
+  fileInput: { fontSize: '17px' },
+  uploadBtn: { padding: '15px 26px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '11px', cursor: 'pointer', fontWeight: 700, fontSize: '17px' },
 };
 
-export default ExpenseApproval;
+export default ExpenseApproval

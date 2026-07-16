@@ -145,24 +145,24 @@ function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew }) {
 }
 
 const styles = {
-  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  title: { margin: 0, fontSize: '24px', fontWeight: 800, color: '#1a365d' },
-  newBtn: { padding: '12px 22px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '15px', boxShadow: '0 4px 10px rgba(49,130,206,0.35)' },
-  filterRow: { display: 'flex', gap: '16px', marginBottom: '22px', flexWrap: 'wrap' },
-  field: { display: 'flex', flexDirection: 'column', gap: '5px' },
-  label: { fontSize: '13px', color: '#718096', fontWeight: 700 },
-  input: { padding: '9px 11px', borderRadius: '8px', border: '1px solid #dfe4ea', fontSize: '15px', backgroundColor: '#fbfcfe' },
-  emptyText: { color: '#718096', fontSize: '16px' },
-  tableWrapper: { overflowX: 'auto', borderRadius: '12px', border: '1px solid #edf1f5' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  headerRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '26px' },
+  title: { margin: 0, fontSize: '32px', fontWeight: 800, color: '#1a365d' },
+  newBtn: { padding: '15px 28px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '18px', boxShadow: '0 4px 10px rgba(49,130,206,0.35)' },
+  filterRow: { display: 'flex', gap: '20px', marginBottom: '28px', flexWrap: 'wrap' },
+  field: { display: 'flex', flexDirection: 'column', gap: '7px' },
+  label: { fontSize: '16px', color: '#718096', fontWeight: 700 },
+  input: { padding: '12px 14px', borderRadius: '10px', border: '1px solid #dfe4ea', fontSize: '18px', backgroundColor: '#fbfcfe' },
+  emptyText: { color: '#718096', fontSize: '19px' },
+  tableWrapper: { overflowX: 'auto', borderRadius: '14px', border: '1px solid #edf1f5' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '18px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  th: { padding: '13px 10px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', fontSize: '14px', fontWeight: 700 },
+  th: { padding: '17px 13px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', fontSize: '17px', fontWeight: 700 },
   tr: { borderBottom: '1px solid #edf2f7' },
-  td: { padding: '12px 10px' },
-  badge: { padding: '5px 13px', borderRadius: '12px', fontSize: '13px', fontWeight: 700 },
-  actionBtn: { padding: '7px 13px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, marginRight: '6px' },
-  approveBtn: { padding: '7px 13px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700, marginRight: '6px' },
-  deleteBtn: { padding: '7px 13px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
+  td: { padding: '16px 13px' },
+  badge: { padding: '7px 16px', borderRadius: '14px', fontSize: '16px', fontWeight: 700 },
+  actionBtn: { padding: '10px 16px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '16px', fontWeight: 700, marginRight: '6px' },
+  approveBtn: { padding: '10px 16px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '16px', fontWeight: 700, marginRight: '6px' },
+  deleteBtn: { padding: '10px 16px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '16px', fontWeight: 700 },
 };
 
-export default ExpenseList;
+export default Expense

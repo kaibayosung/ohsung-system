@@ -92,21 +92,21 @@ function BankAccountManager() {
 }
 
 const styles = {
-  title: { margin: '0 0 8px 0', fontSize: '24px', fontWeight: 800, color: '#1a365d' },
-  subtitle: { margin: '0 0 24px 0', fontSize: '15px', color: '#718096' },
-  formRow: { display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' },
-  input: { padding: '11px 13px', borderRadius: '8px', border: '1px solid #dfe4ea', fontSize: '16px', flex: 1, minWidth: '160px', backgroundColor: '#fbfcfe' },
-  addBtn: { padding: '11px 22px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '15px' },
-  emptyText: { color: '#718096', fontSize: '16px' },
-  tableWrapper: { overflowX: 'auto', borderRadius: '12px', border: '1px solid #edf1f5' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  title: { margin: '0 0 12px 0', fontSize: '32px', fontWeight: 800, color: '#1a365d' },
+  subtitle: { margin: '0 0 30px 0', fontSize: '18px', color: '#718096' },
+  formRow: { display: 'flex', gap: '16px', marginBottom: '30px', flexWrap: 'wrap' },
+  input: { padding: '14px 16px', borderRadius: '10px', border: '1px solid #dfe4ea', fontSize: '19px', flex: 1, minWidth: '160px', backgroundColor: '#fbfcfe' },
+  addBtn: { padding: '14px 26px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '18px' },
+  emptyText: { color: '#718096', fontSize: '19px' },
+  tableWrapper: { overflowX: 'auto', borderRadius: '14px', border: '1px solid #edf1f5' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '18px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  th: { padding: '13px 10px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', fontSize: '14px', fontWeight: 700 },
+  th: { padding: '16px 13px', borderBottom: '2px solid #e2e8f0', color: '#4a5568', fontSize: '17px', fontWeight: 700 },
   tr: { borderBottom: '1px solid #edf2f7' },
-  td: { padding: '12px 10px' },
-  activeBadge: { padding: '6px 14px', backgroundColor: '#e3f6df', color: '#276749', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
-  inactiveBadge: { padding: '6px 14px', backgroundColor: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
-  deleteBtn: { padding: '7px 13px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '7px', cursor: 'pointer', fontSize: '13px', fontWeight: 700 },
+  td: { padding: '15px 13px' },
+  activeBadge: { padding: '8px 17px', backgroundColor: '#e3f6df', color: '#276749', border: 'none', borderRadius: '14px', cursor: 'pointer', fontSize: '16px', fontWeight: 700 },
+  inactiveBadge: { padding: '8px 17px', backgroundColor: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: '14px', cursor: 'pointer', fontSize: '16px', fontWeight: 700 },
+  deleteBtn: { padding: '10px 16px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '16px', fontWeight: 700 },
 };
 
-export default BankAccountManager;
+export default BankAccountManag

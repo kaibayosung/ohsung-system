@@ -3,8 +3,8 @@ import React from 'react';
 
 function LedgerList({ records, onUpdateStatus, onDelete }) {
   return (
-    <div style={{ background: 'white', padding: '26px', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: '19px' }}>📋 일일 거래 리포트</h3>
+    <div style={{ background: 'white', padding: '30px', borderRadius: '20px', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' }}>
+      <h3 style={{ marginBottom: '24px', fontSize: '22px' }}>📋 일일 거래 리포트</h3>
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
@@ -21,7 +21,7 @@ function LedgerList({ records, onUpdateStatus, onDelete }) {
               <tr key={r.id} style={{ borderBottom: '1px solid #edf2f7' }}>
                 <td style={styles.td}>
                   <span style={{
-                    padding: '5px 11px', borderRadius: '12px', fontSize: '13px', fontWeight: 'bold',
+                    padding: '6px 13px', borderRadius: '14px', fontSize: '15px', fontWeight: 'bold',
                     backgroundColor: r.status === '지불예정' ? '#fed7d7' : '#c6f6d5',
                     color: r.status === '지불예정' ? '#c53030' : '#2f855a'
                   }}>
@@ -32,7 +32,7 @@ function LedgerList({ records, onUpdateStatus, onDelete }) {
                 <td style={styles.td}>{r.company}</td>
                 <td style={{ ...styles.td, textAlign: 'right', fontWeight: 'bold' }}>{r.amount.toLocaleString()}원</td>
                 <td style={styles.td}>
-                  <div style={{ display: 'flex', gap: '5px' }}>
+                  <div style={{ display: 'flex', gap: '7px' }}>
                     {/* [추가] 지불예정일 때만 나타나는 버튼 */}
                     {r.status === '지불예정' && (
                       <button onClick={() => onUpdateStatus(r.id)} style={styles.payBtn}>지불완료</button>
@@ -50,10 +50,10 @@ function LedgerList({ records, onUpdateStatus, onDelete }) {
 }
 
 const styles = {
-  th: { padding: '13px', color: '#4a5568', fontSize: '15px' },
-  td: { padding: '13px', color: '#2d3748', fontSize: '15px' },
-  payBtn: { padding: '6px 11px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold' },
-  delBtn: { padding: '6px 11px', backgroundColor: 'transparent', color: '#e53e3e', border: 'none', cursor: 'pointer', fontSize: '13px' }
+  th: { padding: '16px', color: '#4a5568', fontSize: '17px' },
+  td: { padding: '16px', color: '#2d3748', fontSize: '17px' },
+  payBtn: { padding: '8px 13px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '15px', fontWeight: 'bold' },
+  delBtn: { padding: '8px 13px', backgroundColor: 'transparent', color: '#e53e3e', border: 'none', cursor: 'pointer', fontSize: '15px' }
 };
 
 export default LedgerList;

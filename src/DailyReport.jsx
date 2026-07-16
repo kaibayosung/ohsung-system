@@ -1,21 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Cell, LineChart, Line, Legend 
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  Cell, LineChart, Line, Legend
 } from 'recharts';
 
 function DailyReport() {
   const [loading, setLoading] = useState(false);
-  const [viewMode, setViewMode] = useState('daily'); 
-  
+  const [viewMode, setViewMode] = useState('daily');
+
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
-  
+
   const [dailySales, setDailySales] = useState([]);
   const [dailyLedger, setDailyLedger] = useState([]);
-  const [prevDaySales, setPrevDaySales] = useState(0); 
+  const [prevDaySales, setPrevDaySales] = useState(0);
 
   useEffect(() => {
     if (viewMode === 'daily') fetchDaily();
@@ -28,11 +28,11 @@ function DailyReport() {
       // [수정] customer_name 컬럼이 포함되도록 쿼리 확인
       const { data: sales } = await supabase.from('sales_records').select('*, companies(name)').eq('work_date', selectedDate);
       const { data: ledger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
-      
+
       const prevDate = new Date(selectedDate);
       prevDate.setDate(prevDate.getDate() - 1);
       const { data: pSales } = await supabase.from('sales_records').select('total_price').eq('work_date', prevDate.toISOString().split('T')[0]);
-      
+
       setDailySales(sales || []);
       setDailyLedger(ledger || []);
       setPrevDaySales(pSales?.reduce((sum, r) => sum + r.total_price, 0) || 0);
@@ -115,7 +115,7 @@ function DailyReport() {
             <div style={{...styles.card, gridColumn: 'span 2'}}>
               <h3 style={styles.cardTitle}>📋 작업 상세 내역</h3>
               <div style={styles.tableScroll}>
-                <table style={styles.table}>
+                <table style={styles.table} className="dr-table">
                   <thead style={styles.thead}>
                     <tr><th>업체명</th><th>품명/규격</th><th>중량</th><th>금액</th><th>구분</th></tr>
                   </thead>
@@ -124,7 +124,7 @@ function DailyReport() {
                       <tr key={r.id} style={styles.tr}>
                         {/* [수정] 직접 입력한 업체명을 우선 표시 */}
                         <td style={{fontWeight:'bold'}}>{r.customer_name || r.companies?.name || '미지정'}</td>
-                        <td style={{textAlign:'left', fontSize:'13px'}}>{r.management_no}</td>
+                        <td style={{textAlign:'left', fontSize:'15px'}}>{r.management_no}</td>
                         <td>{r.weight.toLocaleString()}</td>
                         <td style={{fontWeight:'bold', color:'#2b6cb0'}}>{r.total_price.toLocaleString()}</td>
                         <td><span style={{...styles.badge, backgroundColor: workTypeAnalysis[r.work_type]?.color + '22', color: workTypeAnalysis[r.work_type]?.color}}>{r.work_type}</span></td>
@@ -146,8 +146,8 @@ function DailyReport() {
                   {incomeList.map(r => (
                     <div key={r.id} style={styles.ledgerRow}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:'15px', fontWeight:'bold'}}>{r.company}</div>
-                        <div style={{fontSize:'13px', color:'#999'}}>{r.description}</div>
+                        <div style={{fontSize:'17px', fontWeight:'bold'}}>{r.company}</div>
+                        <div style={{fontSize:'14px', color:'#999'}}>{r.description}</div>
                       </div>
                       <span style={{fontWeight:'bold', color:'#2f855a'}}>+{r.amount.toLocaleString()}</span>
                     </div>
@@ -155,7 +155,7 @@ function DailyReport() {
                 </div>
               </div>
 
-              <div style={{...styles.ledgerSection, marginTop:'15px'}}>
+              <div style={{...styles.ledgerSection, marginTop:'18px'}}>
                 <div style={styles.ledgerHeader}>
                   <span style={{color:'#c53030', fontWeight:'bold'}}>📤 지출 내역</span>
                   <span style={{fontWeight:'bold'}}>{dTotals.expense.toLocaleString()}원</span>
@@ -164,8 +164,8 @@ function DailyReport() {
                   {expenseList.map(r => (
                     <div key={r.id} style={styles.ledgerRow}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:'15px', fontWeight:'bold'}}>{r.company}</div>
-                        <div style={{fontSize:'13px', color:'#999'}}>{r.description} | {r.method}</div>
+                        <div style={{fontSize:'17px', fontWeight:'bold'}}>{r.company}</div>
+                        <div style={{fontSize:'14px', color:'#999'}}>{r.description} | {r.method}</div>
                       </div>
                       <span style={{fontWeight:'bold', color:'#c53030'}}>-{r.amount.toLocaleString()}</span>
                     </div>
@@ -176,49 +176,52 @@ function DailyReport() {
           </div>
         </div>
       )}
+      <style>{`
+        .dr-table th, .dr-table td { padding: 14px 10px; }
+      `}</style>
     </div>
   );
 }
 
 const StatCard = ({ title, value, sub, subColor, icon, color, bg, isBold }) => (
-  <div style={{...styles.statCard, backgroundColor: bg}}><div style={{fontSize:'28px'}}>{icon}</div><div style={{flex:1}}><p style={styles.statTitle}>{title}</p><h2 style={{...styles.statValue, color, fontSize: isBold?'30px':'26px'}}>{value.toLocaleString()}원</h2><p style={{...styles.statSub, color: subColor || '#718096'}}>{sub}</p></div></div>
+  <div style={{...styles.statCard, backgroundColor: bg}}><div style={{fontSize:'34px'}}>{icon}</div><div style={{flex:1}}><p style={styles.statTitle}>{title}</p><h2 style={{...styles.statValue, color, fontSize: isBold?'38px':'34px'}}>{value.toLocaleString()}원</h2><p style={{...styles.statSub, color: subColor || '#718096'}}>{sub}</p></div></div>
 );
 
 const styles = {
-  container: { padding: '28px', backgroundColor: '#f0f2f5', minHeight: '100vh', display:'flex', flexDirection:'column', gap:'22px' },
+  container: { padding: '36px', backgroundColor: '#f0f2f5', minHeight: '100vh', display:'flex', flexDirection:'column', gap:'26px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  title: { margin: 0, fontSize: '27px', fontWeight: '900', color: '#1a365d' },
-  headerActions: { display:'flex', gap:'16px', alignItems:'center' },
-  tabGroup: { display:'flex', backgroundColor:'#e2e8f0', borderRadius:'9px', padding:'4px' },
-  tab: (active) => ({ padding:'10px 18px', border:'none', borderRadius:'7px', cursor:'pointer', backgroundColor: active?'white':'transparent', fontWeight: active?'bold':'normal', color: active?'#3182ce':'#4a5568', fontSize: '15px' }),
-  dateInput: { padding:'10px 14px', borderRadius:'9px', border:'1px solid #cbd5e0', fontSize: '15px' },
-  content: { display:'flex', flexDirection:'column', gap:'22px' },
-  statGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-  statCard: { padding: '24px', borderRadius: '16px', display: 'flex', gap: '16px', alignItems: 'center' },
-  statTitle: { margin: 0, fontSize: '14px', color: '#718096', fontWeight: 'bold' },
-  statValue: { margin: '4px 0', fontWeight: '900' },
-  statSub: { margin: 0, fontSize: '13px' },
-  workTypeGrid: { display:'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap:'16px', marginTop:'12px' },
-  workTypeCard: { backgroundColor:'#f8fafc', padding:'17px', borderRadius:'11px', display:'flex', flexDirection:'column', gap:'6px' },
+  title: { margin: 0, fontSize: '32px', fontWeight: '900', color: '#1a365d' },
+  headerActions: { display:'flex', gap:'18px', alignItems:'center' },
+  tabGroup: { display:'flex', backgroundColor:'#e2e8f0', borderRadius:'10px', padding:'5px' },
+  tab: (active) => ({ padding:'12px 22px', border:'none', borderRadius:'8px', cursor:'pointer', backgroundColor: active?'white':'transparent', fontWeight: active?'bold':'normal', color: active?'#3182ce':'#4a5568', fontSize: '17px' }),
+  dateInput: { padding:'12px 16px', borderRadius:'10px', border:'1px solid #cbd5e0', fontSize: '17px' },
+  content: { display:'flex', flexDirection:'column', gap:'26px' },
+  statGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' },
+  statCard: { padding: '30px', borderRadius: '20px', display: 'flex', gap: '20px', alignItems: 'center' },
+  statTitle: { margin: 0, fontSize: '16px', color: '#718096', fontWeight: 'bold' },
+  statValue: { margin: '6px 0', fontWeight: '900' },
+  statSub: { margin: 0, fontSize: '15px' },
+  workTypeGrid: { display:'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap:'18px', marginTop:'14px' },
+  workTypeCard: { backgroundColor:'#f8fafc', padding:'20px', borderRadius:'13px', display:'flex', flexDirection:'column', gap:'8px' },
   workTypeInfo: { display:'flex', justifyContent:'space-between', alignItems:'center' },
-  workTypeName: { fontWeight:'bold', fontSize:'16px', color:'#2d3748' },
-  workTypeCount: { fontSize:'20px', fontWeight:'900' },
-  workTypeSales: { display:'flex', justifyContent:'space-between', fontSize:'14px' },
-  progressBg: { height:'7px', backgroundColor:'#e2e8f0', borderRadius:'4px', marginTop:'6px', overflow:'hidden' },
-  progressFill: { height:'100%', borderRadius:'4px' },
-  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' },
-  card: { backgroundColor: 'white', padding: '22px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
-  cardTitle: { margin: '0 0 17px 0', fontSize: '18px', fontWeight: 'bold', color: '#2d3748', borderLeft:'4px solid #3182ce', paddingLeft:'11px' },
-  tableScroll: { maxHeight: '500px', overflowY: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px', textAlign:'center' },
+  workTypeName: { fontWeight:'bold', fontSize:'18px', color:'#2d3748' },
+  workTypeCount: { fontSize:'22px', fontWeight:'900' },
+  workTypeSales: { display:'flex', justifyContent:'space-between', fontSize:'16px' },
+  progressBg: { height:'8px', backgroundColor:'#e2e8f0', borderRadius:'5px', marginTop:'6px', overflow:'hidden' },
+  progressFill: { height:'100%', borderRadius:'5px' },
+  mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '24px' },
+  card: { backgroundColor: 'white', padding: '28px', borderRadius: '20px', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' },
+  cardTitle: { margin: '0 0 20px 0', fontSize: '22px', fontWeight: 'bold', color: '#2d3748', borderLeft:'5px solid #3182ce', paddingLeft:'13px' },
+  tableScroll: { maxHeight: '520px', overflowY: 'auto' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '17px', textAlign:'center' },
   thead: { position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 5 },
-  tr: { borderBottom: '1px solid #edf2f7', height: '46px' },
-  badge: { padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight:'bold' },
-  ledgerSection: { display: 'flex', flexDirection: 'column', gap: '9px' },
-  ledgerHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '15px', paddingBottom: '6px', borderBottom: '1px solid #edf2f7' },
-  ledgerList: { maxHeight: '200px', overflowY: 'auto' },
-  ledgerRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 12px', backgroundColor:'#f8fafc', borderRadius:'9px', marginBottom:'6px' },
-  noData: { textAlign:'center', color:'#999', padding:'12px', fontSize:'13px' },
+  tr: { borderBottom: '1px solid #edf2f7', height: '54px' },
+  badge: { padding: '5px 12px', borderRadius: '7px', fontSize: '15px', fontWeight:'bold' },
+  ledgerSection: { display: 'flex', flexDirection: 'column', gap: '10px' },
+  ledgerHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '17px', paddingBottom: '8px', borderBottom: '1px solid #edf2f7' },
+  ledgerList: { maxHeight: '220px', overflowY: 'auto' },
+  ledgerRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'12px 14px', backgroundColor:'#f8fafc', borderRadius:'10px', marginBottom:'7px' },
+  noData: { textAlign:'center', color:'#999', padding:'14px', fontSize:'15px' },
   value: { fontWeight:'bold' }, label: { color:'#718096' }
 };
 

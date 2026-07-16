@@ -73,23 +73,23 @@ function CEOMonthlyReport() {
 
   return (
     <div style={{ backgroundColor: '#e2e8f0', minHeight: '100vh' }}>
-      <div style={{ backgroundColor: '#1a365d', color: 'white', padding: '17px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0, fontSize: '20px' }}>📊 {selectedMonth} 경영 리포트 및 인사이트</h2>
+      <div style={{ backgroundColor: '#1a365d', color: 'white', padding: '22px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0, fontSize: '26px' }}>📊 {selectedMonth} 경영 리포트 및 인사이트</h2>
         <div className="no-print">
-          <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{ padding: '9px 11px', borderRadius: '7px', fontWeight: 'bold', fontSize: '15px' }} />
+          <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{ padding: '11px 14px', borderRadius: '9px', fontWeight: 'bold', fontSize: '17px' }} />
         </div>
       </div>
 
-      <div style={{ padding: '20px' }}>
+      <div style={{ padding: '30px' }}>
         {/* 핵심 요약 (원 단위 적용) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
           <div style={styles.card}><h4>월간 총 매출</h4><p style={styles.summaryVal}>{data.summary.totalSales.toLocaleString()}원</p></div>
           <div style={styles.card}><h4>월간 총 생산량</h4><p style={styles.summaryVal}>{Math.round(data.summary.totalWeight/1000).toLocaleString()}t</p></div>
           <div style={styles.card}><h4>월간 영업 이익</h4><p style={{...styles.summaryVal, color: data.summary.profit >= 0 ? '#38a169' : '#e53e3e'}}>{data.summary.profit.toLocaleString()}원</p></div>
         </div>
 
         {/* 인사이트 대시보드 */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px', marginBottom: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
           <div style={{...styles.insightCard, borderTop: '5px solid #3182ce'}}>
             <span style={styles.insightLabel}>생산 효율성 (톤당 매출)</span>
             <p style={styles.insightVal}>{data.insights.revPerTon.toLocaleString()}원 / t</p>
@@ -104,18 +104,18 @@ function CEOMonthlyReport() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div style={styles.chartCard}>
             <h4>장비별 상세 실적 (원)</h4>
-            <div style={{height: 250}}>
+            <div style={{height: 260}}>
               <ResponsiveContainer>
                 <BarChart layout="vertical" data={data.equipment} margin={{right: 120}}>
                   <XAxis type="number" hide />
-                  <YAxis dataKey="name" type="category" width={80} />
+                  <YAxis dataKey="name" type="category" width={90} tick={{fontSize: 15}} />
                   <Tooltip formatter={(v) => `${v.toLocaleString()}원`} />
                   <Bar dataKey="sales" radius={[0, 5, 5, 0]}>
                     {data.equipment.map((e,i) => <Cell key={i} fill={EQ_COLORS[e.name]} />)}
-                    <LabelList dataKey="label" position="right" style={{fontSize: '12px', fontWeight: 'bold'}} />
+                    <LabelList dataKey="label" position="right" style={{fontSize: '14px', fontWeight: 'bold'}} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -123,12 +123,12 @@ function CEOMonthlyReport() {
           </div>
           <div style={styles.chartCard}>
             <h4>주간 매출 추이 (원)</h4>
-            <div style={{height: 250}}>
+            <div style={{height: 260}}>
                 <ResponsiveContainer>
                     <LineChart data={data.weekly} margin={{top:20, right:30, left:20, bottom:10}}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                        <XAxis dataKey="name" />
-                        <YAxis tickFormatter={(v) => v.toLocaleString()} />
+                        <XAxis dataKey="name" tick={{fontSize: 15}} />
+                        <YAxis tickFormatter={(v) => v.toLocaleString()} tick={{fontSize: 13}} />
                         <Tooltip formatter={(v) => `${v.toLocaleString()}원`} />
                         <Line type="monotone" dataKey="sales" stroke="#3182ce" strokeWidth={4} dot={{r:6}} />
                     </LineChart>
@@ -142,12 +142,12 @@ function CEOMonthlyReport() {
 }
 
 const styles = {
-  card: { backgroundColor: 'white', padding: '18px', borderRadius: '14px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', fontSize: '16px' },
-  summaryVal: { fontSize: '26px', fontWeight: '900', margin: '6px 0' },
-  insightCard: { backgroundColor: 'white', padding: '18px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-  insightLabel: { fontSize: '15px', color: '#4a5568', fontWeight: 'bold' },
-  insightVal: { fontSize: '23px', fontWeight: '900', margin: '6px 0', color: '#1a365d' },
-  chartCard: { backgroundColor: 'white', padding: '22px', borderRadius: '14px', fontSize: '16px' }
+  card: { backgroundColor: 'white', padding: '24px', borderRadius: '18px', textAlign: 'center', boxShadow: '0 6px 12px rgba(0,0,0,0.08)', fontSize: '18px' },
+  summaryVal: { fontSize: '32px', fontWeight: '900', margin: '8px 0' },
+  insightCard: { backgroundColor: 'white', padding: '24px', borderRadius: '16px', textAlign: 'center', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' },
+  insightLabel: { fontSize: '17px', color: '#4a5568', fontWeight: 'bold' },
+  insightVal: { fontSize: '27px', fontWeight: '900', margin: '8px 0', color: '#1a365d' },
+  chartCard: { backgroundColor: 'white', padding: '26px', borderRadius: '18px', fontSize: '18px' }
 };
 
 export default CEOMonthlyReport;

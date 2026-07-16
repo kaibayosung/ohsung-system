@@ -69,11 +69,11 @@ function ExpensePage() {
 }
 
 const styles = {
-  container: { padding: '24px', backgroundColor: '#e2e8f0', minHeight: '100vh' },
-  tabBar: { display: 'flex', gap: '6px' },
-  activeTab: { padding: '14px 26px', backgroundColor: 'white', color: '#3182ce', border: 'none', borderRadius: '12px 12px 0 0', fontWeight: 700, cursor: 'pointer', fontSize: '16px' },
-  inactiveTab: { padding: '14px 26px', backgroundColor: '#cbd5e0', color: '#4a5568', border: 'none', borderRadius: '12px 12px 0 0', fontWeight: 700, cursor: 'pointer', fontSize: '16px' },
-  content: { backgroundColor: 'white', padding: '30px', borderRadius: '0 16px 16px 16px', boxShadow: '0 6px 16px rgba(0,0,0,0.06)', minHeight: '70vh' },
+  container: { padding: '36px', backgroundColor: '#e2e8f0', minHeight: '100vh' },
+  tabBar: { display: 'flex', gap: '7px' },
+  activeTab: { padding: '16px 30px', backgroundColor: 'white', color: '#3182ce', border: 'none', borderRadius: '14px 14px 0 0', fontWeight: 700, cursor: 'pointer', fontSize: '18px' },
+  inactiveTab: { padding: '16px 30px', backgroundColor: '#cbd5e0', color: '#4a5568', border: 'none', borderRadius: '14px 14px 0 0', fontWeight: 700, cursor: 'pointer', fontSize: '18px' },
+  content: { backgroundColor: 'white', padding: '36px', borderRadius: '0 18px 18px 18px', boxShadow: '0 6px 16px rgba(0,0,0,0.06)', minHeight: '70vh' },
 };
 
 export default ExpensePage;

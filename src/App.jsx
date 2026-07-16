@@ -42,14 +42,14 @@ function App() {
 
   // 3. 버튼 스타일 정의 (선택된 메뉴 강조)
   const getBtnStyle = (pageName) => ({
-    padding: '12px 20px',
+    padding: '13px 22px',
     backgroundColor: currentPage === pageName ? '#3182ce' : '#2d3748',
     color: 'white',
     border: 'none',
-    borderRadius: '9px',
+    borderRadius: '10px',
     cursor: 'pointer',
     fontWeight: 'bold',
-    fontSize: '16px',
+    fontSize: '17px',
     transition: 'all 0.2s',
     display: 'flex',
     alignItems: 'center',
@@ -67,7 +67,7 @@ function App() {
       {/* 상단 통합 네비게이션 바 */}
       <header style={styles.header}>
         <div style={styles.logo} onClick={() => setCurrentPage('daily')}>
-          🏭 오성철강 <span style={{fontWeight:'300', fontSize:'15px', marginLeft:'10px'}}>SMART ERP 2.0</span>
+          🏭 오성철강 <span style={{fontWeight:'300', fontSize:'16px', marginLeft:'10px'}}>SMART ERP 2.0</span>
         </div>
         
         <nav style={styles.nav}>
@@ -112,29 +112,29 @@ const styles = {
     overflow: 'hidden'
   },
   header: {
-    height: '78px',
+    height: '84px',
     backgroundColor: '#1a365d',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '0 30px',
+    padding: '0 32px',
     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
     zIndex: 1000,
     flexShrink: 0
   },
-  logo: { fontSize: '25px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center' },
+  logo: { fontSize: '27px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center' },
   nav: { display: 'flex', gap: '8px' },
   userSection: { display: 'flex', alignItems: 'center', gap: '16px' },
-  userName: { fontSize: '16px', color: '#cbd5e0' },
+  userName: { fontSize: '17px', color: '#cbd5e0' },
   logoutBtn: {
     backgroundColor: '#e53e3e',
     color: 'white',
     border: 'none',
-    padding: '10px 18px',
-    borderRadius: '8px',
+    padding: '11px 20px',
+    borderRadius: '9px',
     cursor: 'pointer',
-    fontSize: '15px',
+    fontSize: '16px',
     fontWeight: 'bold'
   },
   mainContent: {

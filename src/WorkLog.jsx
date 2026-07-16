@@ -6,12 +6,12 @@ function WorkLog() {
   const [rows, setRows] = useState([]); // 분석 후 미리보기 데이터
   const [loading, setLoading] = useState(false);
   const [monthlyRecords, setMonthlyRecords] = useState([]); // DB에서 가져온 데이터
-  
+
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-  const [editingId, setEditingId] = useState(null); 
-  const [editFormData, setEditFormData] = useState({}); 
+  const [editingId, setEditingId] = useState(null);
+  const [editFormData, setEditFormData] = useState({});
 
   const EQ_COLORS = { '슬리팅 1': '#3182ce', '슬리팅 2': '#805ad5', '레베링': '#38a169', '기타': '#718096' };
 
@@ -25,7 +25,7 @@ function WorkLog() {
     const { data, error } = await supabase.from('sales_records')
       .select('*').gte('work_date', start).lte('work_date', end)
       .order('work_date', { ascending: false });
-    
+
     if (!error) {
       setMonthlyRecords(data?.map(r => {
         const [prod, spec] = r.management_no ? r.management_no.split(' | ') : ['', ''];
@@ -38,18 +38,18 @@ function WorkLog() {
   const handlePasteProcess = () => {
     if (!pasteData.trim()) return alert("데이터를 먼저 붙여넣어 주세요.");
     const lines = pasteData.trim().split('\n').filter(l => !l.includes("생산일자") && l.trim());
-    
+
     const parsed = lines.map((line, index) => {
       const cols = line.split(/\t| {2,}/).map(c => c.trim());
       if (cols.length < 5) return null;
-      const rawType = cols[7]?.toUpperCase() || ''; 
+      const rawType = cols[7]?.toUpperCase() || '';
       let workType = rawType.includes('SLITING2') ? '슬리팅 2' : rawType.includes('SLITING') ? '슬리팅 1' : rawType.includes('LEVELLING') ? '레베링' : '기타';
-      
-      return { 
+
+      return {
         work_date: cols[0], customer_name: cols[1], product_name: cols[2], spec: cols[3],
-        coil_number: cols[2], weight: Number(cols[4]?.replace(/,/g,'')), 
-        unit_price: Number(cols[5]?.replace(/,/g,'')), total_price: Number(cols[6]?.replace(/,/g,'')), 
-        work_type: workType 
+        coil_number: cols[2], weight: Number(cols[4]?.replace(/,/g,'')),
+        unit_price: Number(cols[5]?.replace(/,/g,'')), total_price: Number(cols[6]?.replace(/,/g,'')),
+        work_type: workType
       };
     }).filter(r => r !== null);
 
@@ -66,7 +66,7 @@ function WorkLog() {
         work_date: r.work_date, customer_name: r.customer_name,
         management_no: `${r.product_name} | ${r.spec}`,
         coil_number: r.coil_number, weight: r.weight, unit_price: r.unit_price,
-        total_price: r.total_price, work_type: r.work_type, company_id: 1 
+        total_price: r.total_price, work_type: r.work_type, company_id: 1
       }));
 
       const { error } = await supabase.from('sales_records').upsert(dbData);
@@ -126,10 +126,10 @@ function WorkLog() {
         </button>
       )}
 
-      <div style={{...styles.card, marginTop:'20px'}}>
+      <div style={{...styles.card, marginTop:'25px'}}>
         <div style={styles.tableHeader}>
           <h3 style={styles.cardTitle}>📅 {selectedYear}년 {selectedMonth}월 작업 데이터 ({monthlyRecords.length}건)</h3>
-          <div style={{display:'flex', gap:'10px'}}>
+          <div style={{display:'flex', gap:'12px'}}>
             <select value={selectedYear} onChange={e=>setSelectedYear(Number(e.target.value))} style={styles.select}><option value="2026">2026년</option><option value="2025">2025년</option></select>
             <select value={selectedMonth} onChange={e=>setSelectedMonth(Number(e.target.value))} style={styles.select}>{Array.from({length:12},(_,i)=>i+1).map(m=><option key={m} value={m}>{m}월</option>)}</select>
             <button onClick={handleDeleteMonth} style={styles.dangerBtn}>🚨 월 전체 삭제</button>
@@ -151,32 +151,33 @@ function WorkLog() {
         </table>
       </div>
       <style>{`
-        .wl-table th, .wl-table td { padding: 12px 10px; }
-        .wl-table th { font-size: 14px; }
-        .wl-table input, .wl-table select { font-size: 14px; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .wl-table button { font-size: 13px; padding: 6px 12px; border-radius: 6px; border: none; background-color: #edf2f7; cursor: pointer; font-weight: 700; margin-right: 4px; }
+        .wl-table th, .wl-table td { padding: 16px 14px; }
+        .wl-table th { font-size: 17px; }
+        .wl-table td { font-size: 17px; }
+        .wl-table input, .wl-table select { font-size: 16px; padding: 8px 10px; border-radius: 7px; border: 1px solid #e2e8f0; }
+        .wl-table button { font-size: 15px; padding: 8px 14px; border-radius: 7px; border: none; background-color: #edf2f7; cursor: pointer; font-weight: 700; margin-right: 5px; }
       `}</style>
     </div>
   );
 }
 
 const styles = {
-  container: { padding: '24px' },
-  topSection: { display: 'flex', gap: '20px', marginBottom:'20px' },
-  card: { flex: 1, backgroundColor: 'white', padding: '24px', borderRadius: '14px', boxShadow: '0 3px 10px rgba(0,0,0,0.06)' },
-  summaryCard: { flex: 1, backgroundColor: '#ebf8ff', padding: '24px', borderRadius: '14px', fontSize: '16px' },
-  cardTitle: { margin: '0 0 16px 0', fontSize: '20px', fontWeight:'bold' },
-  textArea: { width:'100%', height:'120px', padding:'12px', borderRadius:'8px', border:'1px solid #ddd', fontSize: '15px' },
-  blueBtn: { width:'100%', marginTop:'12px', padding: '12px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor:'pointer', fontSize: '15px', fontWeight: 700 },
-  greenBtn: { width: '100%', padding: '16px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '9px', fontWeight: 'bold', fontSize:'17px', cursor:'pointer' },
-  totalBox: { marginTop: '16px', borderTop:'1px solid #bee3f8', fontWeight:'bold', fontSize:'20px', textAlign:'right', paddingTop: '10px' },
-  tableHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'18px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
+  container: { padding: '40px' },
+  topSection: { display: 'flex', gap: '25px', marginBottom:'25px' },
+  card: { flex: 1, backgroundColor: 'white', padding: '30px', borderRadius: '20px', boxShadow: '0 6px 12px rgba(0,0,0,0.08)' },
+  summaryCard: { flex: 1, backgroundColor: '#ebf8ff', padding: '30px', borderRadius: '20px', fontSize: '18px' },
+  cardTitle: { margin: '0 0 20px 0', fontSize: '22px', fontWeight:'bold' },
+  textArea: { width:'100%', height:'140px', padding:'14px', borderRadius:'10px', border:'1px solid #ddd', fontSize: '17px' },
+  blueBtn: { width:'100%', marginTop:'15px', padding: '15px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '10px', cursor:'pointer', fontSize: '17px', fontWeight: 700 },
+  greenBtn: { width: '100%', padding: '18px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize:'20px', cursor:'pointer' },
+  totalBox: { marginTop: '18px', borderTop:'1px solid #bee3f8', fontWeight:'bold', fontSize:'22px', textAlign:'right', paddingTop: '12px' },
+  tableHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'20px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '17px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  tr: { borderBottom: '1px solid #edf2f7', height: '44px' },
-  badge: { padding: '4px 10px', color: 'white', borderRadius: '6px', fontSize: '13px', fontWeight: 700 },
-  dangerBtn: { padding: '8px 14px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '7px', cursor:'pointer', fontSize: '14px', fontWeight: 700 },
-  select: { padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #dfe4ea' }
+  tr: { borderBottom: '1px solid #edf2f7', height: '52px' },
+  badge: { padding: '5px 12px', color: 'white', borderRadius: '7px', fontSize: '15px', fontWeight: 700 },
+  dangerBtn: { padding: '10px 18px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '9px', cursor:'pointer', fontSize: '16px', fontWeight: 700 },
+  select: { padding: '10px 12px', fontSize: '16px', borderRadius: '8px', border: '1px solid #dfe4ea' }
 };
 
 export default WorkLog;
