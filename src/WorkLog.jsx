@@ -135,7 +135,7 @@ function WorkLog() {
             <button onClick={handleDeleteMonth} style={styles.dangerBtn}>🚨 월 전체 삭제</button>
           </div>
         </div>
-        <table style={styles.table}>
+        <table style={styles.table} className="wl-table">
           <thead><tr style={styles.thRow}><th>일자</th><th>업체</th><th>품명</th><th>금액</th><th>구분</th><th>관리</th></tr></thead>
           <tbody>
             {monthlyRecords.map(r => (
@@ -150,27 +150,33 @@ function WorkLog() {
           </tbody>
         </table>
       </div>
+      <style>{`
+        .wl-table th, .wl-table td { padding: 12px 10px; }
+        .wl-table th { font-size: 14px; }
+        .wl-table input, .wl-table select { font-size: 14px; padding: 6px 8px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .wl-table button { font-size: 13px; padding: 6px 12px; border-radius: 6px; border: none; background-color: #edf2f7; cursor: pointer; font-weight: 700; margin-right: 4px; }
+      `}</style>
     </div>
   );
 }
 
 const styles = {
-  container: { padding: '20px' },
+  container: { padding: '24px' },
   topSection: { display: 'flex', gap: '20px', marginBottom:'20px' },
-  card: { flex: 1, backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' },
-  summaryCard: { flex: 1, backgroundColor: '#ebf8ff', padding: '20px', borderRadius: '12px' },
-  cardTitle: { margin: '0 0 15px 0', fontSize: '18px', fontWeight:'bold' },
-  textArea: { width:'100%', height:'120px', padding:'10px', borderRadius:'8px', border:'1px solid #ddd' },
-  blueBtn: { width:'100%', marginTop:'10px', padding: '10px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '6px', cursor:'pointer' },
-  greenBtn: { width: '100%', padding: '15px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize:'16px', cursor:'pointer' },
-  totalBox: { marginTop: '15px', borderTop:'1px solid #bee3f8', fontWeight:'bold', fontSize:'18px', textAlign:'right' },
-  tableHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'15px' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px' },
+  card: { flex: 1, backgroundColor: 'white', padding: '24px', borderRadius: '14px', boxShadow: '0 3px 10px rgba(0,0,0,0.06)' },
+  summaryCard: { flex: 1, backgroundColor: '#ebf8ff', padding: '24px', borderRadius: '14px', fontSize: '16px' },
+  cardTitle: { margin: '0 0 16px 0', fontSize: '20px', fontWeight:'bold' },
+  textArea: { width:'100%', height:'120px', padding:'12px', borderRadius:'8px', border:'1px solid #ddd', fontSize: '15px' },
+  blueBtn: { width:'100%', marginTop:'12px', padding: '12px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '8px', cursor:'pointer', fontSize: '15px', fontWeight: 700 },
+  greenBtn: { width: '100%', padding: '16px', backgroundColor: '#38a169', color: 'white', border: 'none', borderRadius: '9px', fontWeight: 'bold', fontSize:'17px', cursor:'pointer' },
+  totalBox: { marginTop: '16px', borderTop:'1px solid #bee3f8', fontWeight:'bold', fontSize:'20px', textAlign:'right', paddingTop: '10px' },
+  tableHeader: { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'18px' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px' },
   thRow: { backgroundColor: '#f7fafc', textAlign: 'left' },
-  tr: { borderBottom: '1px solid #edf2f7', height: '40px' },
-  badge: { padding: '2px 8px', color: 'white', borderRadius: '4px', fontSize: '11px' },
-  dangerBtn: { padding: '5px 10px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '4px', cursor:'pointer' },
-  select: { padding: '5px' }
+  tr: { borderBottom: '1px solid #edf2f7', height: '44px' },
+  badge: { padding: '4px 10px', color: 'white', borderRadius: '6px', fontSize: '13px', fontWeight: 700 },
+  dangerBtn: { padding: '8px 14px', backgroundColor: '#e53e3e', color: 'white', border: 'none', borderRadius: '7px', cursor:'pointer', fontSize: '14px', fontWeight: 700 },
+  select: { padding: '8px 10px', fontSize: '14px', borderRadius: '6px', border: '1px solid #dfe4ea' }
 };
 
 export default WorkLog;

@@ -124,7 +124,7 @@ function DailyReport() {
                       <tr key={r.id} style={styles.tr}>
                         {/* [수정] 직접 입력한 업체명을 우선 표시 */}
                         <td style={{fontWeight:'bold'}}>{r.customer_name || r.companies?.name || '미지정'}</td>
-                        <td style={{textAlign:'left', fontSize:'11px'}}>{r.management_no}</td>
+                        <td style={{textAlign:'left', fontSize:'13px'}}>{r.management_no}</td>
                         <td>{r.weight.toLocaleString()}</td>
                         <td style={{fontWeight:'bold', color:'#2b6cb0'}}>{r.total_price.toLocaleString()}</td>
                         <td><span style={{...styles.badge, backgroundColor: workTypeAnalysis[r.work_type]?.color + '22', color: workTypeAnalysis[r.work_type]?.color}}>{r.work_type}</span></td>
@@ -146,8 +146,8 @@ function DailyReport() {
                   {incomeList.map(r => (
                     <div key={r.id} style={styles.ledgerRow}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:'13px', fontWeight:'bold'}}>{r.company}</div>
-                        <div style={{fontSize:'11px', color:'#999'}}>{r.description}</div>
+                        <div style={{fontSize:'15px', fontWeight:'bold'}}>{r.company}</div>
+                        <div style={{fontSize:'13px', color:'#999'}}>{r.description}</div>
                       </div>
                       <span style={{fontWeight:'bold', color:'#2f855a'}}>+{r.amount.toLocaleString()}</span>
                     </div>
@@ -164,8 +164,8 @@ function DailyReport() {
                   {expenseList.map(r => (
                     <div key={r.id} style={styles.ledgerRow}>
                       <div style={{flex:1}}>
-                        <div style={{fontSize:'13px', fontWeight:'bold'}}>{r.company}</div>
-                        <div style={{fontSize:'11px', color:'#999'}}>{r.description} | {r.method}</div>
+                        <div style={{fontSize:'15px', fontWeight:'bold'}}>{r.company}</div>
+                        <div style={{fontSize:'13px', color:'#999'}}>{r.description} | {r.method}</div>
                       </div>
                       <span style={{fontWeight:'bold', color:'#c53030'}}>-{r.amount.toLocaleString()}</span>
                     </div>
@@ -181,44 +181,44 @@ function DailyReport() {
 }
 
 const StatCard = ({ title, value, sub, subColor, icon, color, bg, isBold }) => (
-  <div style={{...styles.statCard, backgroundColor: bg}}><div style={{fontSize:'24px'}}>{icon}</div><div style={{flex:1}}><p style={styles.statTitle}>{title}</p><h2 style={{...styles.statValue, color, fontSize: isBold?'26px':'22px'}}>{value.toLocaleString()}원</h2><p style={{...styles.statSub, color: subColor || '#718096'}}>{sub}</p></div></div>
+  <div style={{...styles.statCard, backgroundColor: bg}}><div style={{fontSize:'28px'}}>{icon}</div><div style={{flex:1}}><p style={styles.statTitle}>{title}</p><h2 style={{...styles.statValue, color, fontSize: isBold?'30px':'26px'}}>{value.toLocaleString()}원</h2><p style={{...styles.statSub, color: subColor || '#718096'}}>{sub}</p></div></div>
 );
 
 const styles = {
-  container: { padding: '25px', backgroundColor: '#f0f2f5', minHeight: '100vh', display:'flex', flexDirection:'column', gap:'20px' },
+  container: { padding: '28px', backgroundColor: '#f0f2f5', minHeight: '100vh', display:'flex', flexDirection:'column', gap:'22px' },
   header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  title: { margin: 0, fontSize: '24px', fontWeight: '900', color: '#1a365d' },
-  headerActions: { display:'flex', gap:'15px', alignItems:'center' },
-  tabGroup: { display:'flex', backgroundColor:'#e2e8f0', borderRadius:'8px', padding:'4px' },
-  tab: (active) => ({ padding:'8px 16px', border:'none', borderRadius:'6px', cursor:'pointer', backgroundColor: active?'white':'transparent', fontWeight: active?'bold':'normal', color: active?'#3182ce':'#4a5568' }),
-  dateInput: { padding:'8px 12px', borderRadius:'8px', border:'1px solid #cbd5e0' },
-  content: { display:'flex', flexDirection:'column', gap:'20px' },
+  title: { margin: 0, fontSize: '27px', fontWeight: '900', color: '#1a365d' },
+  headerActions: { display:'flex', gap:'16px', alignItems:'center' },
+  tabGroup: { display:'flex', backgroundColor:'#e2e8f0', borderRadius:'9px', padding:'4px' },
+  tab: (active) => ({ padding:'10px 18px', border:'none', borderRadius:'7px', cursor:'pointer', backgroundColor: active?'white':'transparent', fontWeight: active?'bold':'normal', color: active?'#3182ce':'#4a5568', fontSize: '15px' }),
+  dateInput: { padding:'10px 14px', borderRadius:'9px', border:'1px solid #cbd5e0', fontSize: '15px' },
+  content: { display:'flex', flexDirection:'column', gap:'22px' },
   statGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-  statCard: { padding: '20px', borderRadius: '15px', display: 'flex', gap: '15px', alignItems: 'center' },
-  statTitle: { margin: 0, fontSize: '13px', color: '#718096', fontWeight: 'bold' },
+  statCard: { padding: '24px', borderRadius: '16px', display: 'flex', gap: '16px', alignItems: 'center' },
+  statTitle: { margin: 0, fontSize: '14px', color: '#718096', fontWeight: 'bold' },
   statValue: { margin: '4px 0', fontWeight: '900' },
-  statSub: { margin: 0, fontSize: '12px' },
-  workTypeGrid: { display:'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap:'15px', marginTop:'10px' },
-  workTypeCard: { backgroundColor:'#f8fafc', padding:'15px', borderRadius:'10px', display:'flex', flexDirection:'column', gap:'5px' },
+  statSub: { margin: 0, fontSize: '13px' },
+  workTypeGrid: { display:'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap:'16px', marginTop:'12px' },
+  workTypeCard: { backgroundColor:'#f8fafc', padding:'17px', borderRadius:'11px', display:'flex', flexDirection:'column', gap:'6px' },
   workTypeInfo: { display:'flex', justifyContent:'space-between', alignItems:'center' },
-  workTypeName: { fontWeight:'bold', fontSize:'15px', color:'#2d3748' },
-  workTypeCount: { fontSize:'18px', fontWeight:'900' },
-  workTypeSales: { display:'flex', justifyContent:'space-between', fontSize:'13px' },
-  progressBg: { height:'6px', backgroundColor:'#e2e8f0', borderRadius:'3px', marginTop:'5px', overflow:'hidden' },
-  progressFill: { height:'100%', borderRadius:'3px' },
+  workTypeName: { fontWeight:'bold', fontSize:'16px', color:'#2d3748' },
+  workTypeCount: { fontSize:'20px', fontWeight:'900' },
+  workTypeSales: { display:'flex', justifyContent:'space-between', fontSize:'14px' },
+  progressBg: { height:'7px', backgroundColor:'#e2e8f0', borderRadius:'4px', marginTop:'6px', overflow:'hidden' },
+  progressFill: { height:'100%', borderRadius:'4px' },
   mainGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' },
-  card: { backgroundColor: 'white', padding: '20px', borderRadius: '15px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
-  cardTitle: { margin: '0 0 15px 0', fontSize: '16px', fontWeight: 'bold', color: '#2d3748', borderLeft:'4px solid #3182ce', paddingLeft:'10px' },
+  card: { backgroundColor: 'white', padding: '22px', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' },
+  cardTitle: { margin: '0 0 17px 0', fontSize: '18px', fontWeight: 'bold', color: '#2d3748', borderLeft:'4px solid #3182ce', paddingLeft:'11px' },
   tableScroll: { maxHeight: '500px', overflowY: 'auto' },
-  table: { width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign:'center' },
+  table: { width: '100%', borderCollapse: 'collapse', fontSize: '15px', textAlign:'center' },
   thead: { position: 'sticky', top: 0, backgroundColor: '#f8fafc', zIndex: 5 },
-  tr: { borderBottom: '1px solid #edf2f7', height: '40px' },
-  badge: { padding: '2px 8px', borderRadius: '4px', fontSize: '11px', fontWeight:'bold' },
-  ledgerSection: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  ledgerHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '14px', paddingBottom: '5px', borderBottom: '1px solid #edf2f7' },
+  tr: { borderBottom: '1px solid #edf2f7', height: '46px' },
+  badge: { padding: '4px 10px', borderRadius: '6px', fontSize: '13px', fontWeight:'bold' },
+  ledgerSection: { display: 'flex', flexDirection: 'column', gap: '9px' },
+  ledgerHeader: { display: 'flex', justifyContent: 'space-between', fontSize: '15px', paddingBottom: '6px', borderBottom: '1px solid #edf2f7' },
   ledgerList: { maxHeight: '200px', overflowY: 'auto' },
-  ledgerRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'8px 10px', backgroundColor:'#f8fafc', borderRadius:'8px', marginBottom:'5px' },
-  noData: { textAlign:'center', color:'#999', padding:'10px', fontSize:'12px' },
+  ledgerRow: { display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 12px', backgroundColor:'#f8fafc', borderRadius:'9px', marginBottom:'6px' },
+  noData: { textAlign:'center', color:'#999', padding:'12px', fontSize:'13px' },
   value: { fontWeight:'bold' }, label: { color:'#718096' }
 };
 

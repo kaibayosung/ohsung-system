@@ -73,10 +73,10 @@ function CEOMonthlyReport() {
 
   return (
     <div style={{ backgroundColor: '#e2e8f0', minHeight: '100vh' }}>
-      <div style={{ backgroundColor: '#1a365d', color: 'white', padding: '15px 25px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2 style={{ margin: 0 }}>📊 {selectedMonth} 경영 리포트 및 인사이트</h2>
+      <div style={{ backgroundColor: '#1a365d', color: 'white', padding: '17px 26px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2 style={{ margin: 0, fontSize: '20px' }}>📊 {selectedMonth} 경영 리포트 및 인사이트</h2>
         <div className="no-print">
-          <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{ padding: '8px', borderRadius: '5px', fontWeight: 'bold' }} />
+          <input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} style={{ padding: '9px 11px', borderRadius: '7px', fontWeight: 'bold', fontSize: '15px' }} />
         </div>
       </div>
 
@@ -142,12 +142,12 @@ function CEOMonthlyReport() {
 }
 
 const styles = {
-  card: { backgroundColor: 'white', padding: '15px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' },
-  summaryVal: { fontSize: '22px', fontWeight: '900', margin: '5px 0' },
-  insightCard: { backgroundColor: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
-  insightLabel: { fontSize: '13px', color: '#4a5568', fontWeight: 'bold' },
-  insightVal: { fontSize: '20px', fontWeight: '900', margin: '5px 0', color: '#1a365d' },
-  chartCard: { backgroundColor: 'white', padding: '20px', borderRadius: '12px' }
+  card: { backgroundColor: 'white', padding: '18px', borderRadius: '14px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', fontSize: '16px' },
+  summaryVal: { fontSize: '26px', fontWeight: '900', margin: '6px 0' },
+  insightCard: { backgroundColor: 'white', padding: '18px', borderRadius: '10px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' },
+  insightLabel: { fontSize: '15px', color: '#4a5568', fontWeight: 'bold' },
+  insightVal: { fontSize: '23px', fontWeight: '900', margin: '6px 0', color: '#1a365d' },
+  chartCard: { backgroundColor: 'white', padding: '22px', borderRadius: '14px', fontSize: '16px' }
 };
 
 export default CEOMonthlyReport;

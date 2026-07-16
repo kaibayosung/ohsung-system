@@ -63,11 +63,11 @@ function LedgerInputForm({ selectedDate, onTransactionAdded, editingItem, setEdi
     } catch (err) { alert("오류: " + err.message); } finally { setLoading(false); }
   };
 
-  const btnStyle = (active, color) => ({ flex: 1, padding: '12px', background: active ? color : 'white', color: active ? 'white' : '#718096', border: `2px solid ${active ? color : '#e2e8f0'}`, borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' });
+  const btnStyle = (active, color) => ({ flex: 1, padding: '13px', background: active ? color : 'white', color: active ? 'white' : '#718096', border: `2px solid ${active ? color : '#e2e8f0'}`, borderRadius: '9px', fontWeight: 'bold', cursor: 'pointer', fontSize: '15px' });
 
   return (
-    <div style={{ background: 'white', padding: '25px', borderRadius: '15px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-      <h3 style={{ marginBottom: '20px' }}>{isEditMode ? '✏️ 내역 수정' : '➕ 거래 등록'}</h3>
+    <div style={{ background: 'white', padding: '26px', borderRadius: '16px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', fontSize: '16px' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: '19px' }}>{isEditMode ? '✏️ 내역 수정' : '➕ 거래 등록'}</h3>
       <form onSubmit={handleSubmit}>
         {/* 수입/지출 선택 */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
@@ -94,20 +94,20 @@ function LedgerInputForm({ selectedDate, onTransactionAdded, editingItem, setEdi
           <div style={{ background: '#f0fff4', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
             {cashEntries.map((entry, i) => (
               <div key={i} style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <input type="text" placeholder="거래처" value={entry.company} onChange={e => { const n = [...cashEntries]; n[i].company = e.target.value; setCashEntries(n); }} style={{ flex: 2, padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
-                <input type="number" placeholder="금액" value={entry.amount} onChange={e => { const n = [...cashEntries]; n[i].amount = e.target.value; setCashEntries(n); }} style={{ flex: 1, padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                <input type="text" placeholder="거래처" value={entry.company} onChange={e => { const n = [...cashEntries]; n[i].company = e.target.value; setCashEntries(n); }} style={{ flex: 2, padding: '11px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '15px' }} />
+                <input type="number" placeholder="금액" value={entry.amount} onChange={e => { const n = [...cashEntries]; n[i].amount = e.target.value; setCashEntries(n); }} style={{ flex: 1, padding: '11px', borderRadius: '7px', border: '1px solid #ddd', fontSize: '15px' }} />
               </div>
             ))}
-            <button type="button" onClick={() => setCashEntries([...cashEntries, { company: '', amount: '' }])} style={{ width: '100%', padding: '8px', background: 'white', border: '1px solid #38a169', color: '#38a169', borderRadius: '6px', cursor: 'pointer' }}>+ 항목 추가</button>
+            <button type="button" onClick={() => setCashEntries([...cashEntries, { company: '', amount: '' }])} style={{ width: '100%', padding: '9px', background: 'white', border: '1px solid #38a169', color: '#38a169', borderRadius: '7px', cursor: 'pointer', fontSize: '14px', fontWeight: 700 }}>+ 항목 추가</button>
           </div>
         ) : (
           <>
-            <input type="text" placeholder="거래처명" value={formData.company} onChange={e => setFormData({ ...formData, company: e.target.value })} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', boxSizing: 'border-box' }} required />
-            <input type="text" placeholder="적요(선택)" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ width: '100%', padding: '12px', marginBottom: '15px', borderRadius: '8px', border: '1px solid #e2e8f0', boxSizing: 'border-box' }} />
-            <input type="number" placeholder="금액" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} style={{ width: '100%', padding: '12px', marginBottom: '20px', borderRadius: '8px', border: '1px solid #e2e8f0', boxSizing: 'border-box' }} required />
+            <input type="text" placeholder="거래처명" value={formData.company} onChange={e => setFormData({ ...formData, company: e.target.value })} style={{ width: '100%', padding: '13px', marginBottom: '16px', borderRadius: '9px', border: '1px solid #e2e8f0', boxSizing: 'border-box', fontSize: '16px' }} required />
+            <input type="text" placeholder="적요(선택)" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} style={{ width: '100%', padding: '13px', marginBottom: '16px', borderRadius: '9px', border: '1px solid #e2e8f0', boxSizing: 'border-box', fontSize: '16px' }} />
+            <input type="number" placeholder="금액" value={formData.amount} onChange={e => setFormData({ ...formData, amount: e.target.value })} style={{ width: '100%', padding: '13px', marginBottom: '20px', borderRadius: '9px', border: '1px solid #e2e8f0', boxSizing: 'border-box', fontSize: '16px' }} required />
           </>
         )}
-        <button type="submit" disabled={loading} style={{ width: '100%', padding: '15px', background: isEditMode ? '#d69e2e' : (formData.status === '지불예정' ? '#ed8936' : '#3182ce'), color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '18px', cursor: 'pointer' }}>
+        <button type="submit" disabled={loading} style={{ width: '100%', padding: '16px', background: isEditMode ? '#d69e2e' : (formData.status === '지불예정' ? '#ed8936' : '#3182ce'), color: 'white', border: 'none', borderRadius: '9px', fontWeight: 'bold', fontSize: '19px', cursor: 'pointer' }}>
           {loading ? '처리 중...' : isEditMode ? '수정 내용 저장' : (formData.status === '지불예정' ? '지불예정으로 등록' : '데이터 등록하기')}
         </button>
       </form>

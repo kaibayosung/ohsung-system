@@ -37,8 +37,8 @@ function Login({ onLoginSuccess }) {
   return (
     <div style={styles.container}>
       <div style={styles.card}>
-        <h2 style={{fontSize:'28px', color:'#1a365d', marginBottom:'10px'}}>🏭 오성철강 관리 시스템</h2>
-        <p style={{color:'#718096', marginBottom:'30px'}}>인가된 사용자만 접속 가능합니다.</p>
+        <h2 style={{fontSize:'30px', color:'#1a365d', marginBottom:'10px'}}>🏭 오성철강 관리 시스템</h2>
+        <p style={{color:'#718096', marginBottom:'30px', fontSize:'16px'}}>인가된 사용자만 접속 가능합니다.</p>
         <form onSubmit={handleLogin} style={styles.form}>
           <input type="email" placeholder="이메일 주소" value={email} onChange={e=>setEmail(e.target.value)} style={styles.input} required />
           <input type="password" placeholder="비밀번호" value={password} onChange={e=>setPassword(e.target.value)} style={styles.input} required />
