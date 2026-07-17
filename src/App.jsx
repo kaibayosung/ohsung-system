@@ -11,6 +11,7 @@ import MonthlyAnalysis from './MonthlyAnalysis';
 import AccessLog from './AccessLog';
 import CEOReport from './CEOReport';
 import ExpensePage from './pages/ExpensePage';
+import TestPage from './pages/TestPage';
 
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
@@ -94,6 +95,7 @@ function App() {
             📎 지출결의서
             {expensePendingCount > 0 && <span style={styles.navBadge}>{expensePendingCount}</span>}
           </button>
+          <button onClick={() => setCurrentPage('test')} style={getBtnStyle('test')}>🧪 테스트</button>
         </nav>
 
         <div style={styles.userSection}>
@@ -112,6 +114,7 @@ function App() {
         {currentPage === 'ceo' && <CEOReport />}
         {currentPage === 'accesslog' && <AccessLog />}
         {currentPage === 'expense' && <ExpensePage />}
+        {currentPage === 'test' && <TestPage />}
       </main>
     </div>
   );
