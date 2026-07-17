@@ -190,6 +190,12 @@ export function InventoryList({ onOpenDetail }) {
         <h2 style={box.title}>재고 현황 · {rows.length}건</h2>
         <input style={{ ...box.input, maxWidth: '280px' }} placeholder="거래처/품명 검색" value={q} onChange={(e) => setQ(e.target.value)} />
       </div>
+      <div style={box.statGrid}>
+        <div style={box.statCard}><span style={box.statLabel}>그린피 실사 전체재고(2026-07-17 스냅샷)</span><span style={box.statValue}>700+ 품목</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>실사 재고중량 합계</span><span style={box.statValue}>{fmtNum(5967947)}kg</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>10분 주기 자동연동</span><span style={{ ...box.statValue, color: COLORS.amber }}>구축 예정(자동화팀)</span></div>
+      </div>
+      <p style={box.hint}>그린피 재고 모듈은 화면 수 최다(9개)이며 검색·필터 기능이 약해, 실사 시점 기준 전체재고는 위 요약치로만 확보되어 있습니다. 아래 목록은 대표 샘플이며, 10분 주기 자동연동이 구축되면 700+ 품목 전체가 실시간으로 반영됩니다.</p>
       <div style={box.card}>
         <table style={box.table}>
           <thead><tr><th style={box.th}>업체명</th><th style={box.th}>품명</th><th style={box.th}>재고중량</th><th style={box.th}>입고일자</th><th style={box.th}></th></tr></thead>

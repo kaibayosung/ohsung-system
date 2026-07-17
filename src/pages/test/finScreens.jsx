@@ -17,13 +17,15 @@ export function ReceivablesList({ onSelectCompany }) {
   }, []);
   if (!rows) return <p style={box.loadingText}>불러오는 중...</p>;
   const total = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const isAggregateRow = (r) => (r.customer_name || '').startsWith('기타');
+  const namedCount = rows.filter((r) => !isAggregateRow(r)).length;
 
   return (
     <div style={box.page}>
       <h2 style={box.title}>미수금 현황</h2>
       <div style={box.statGrid}>
-        <div style={box.statCard}><span style={box.statLabel}>총 미수금</span><span style={{ ...box.statValue, color: '#dd6b20' }}>{fmtWon(total)}</span></div>
-        <div style={box.statCard}><span style={box.statLabel}>거래처 수</span><span style={box.statValue}>{rows.length}개사</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>총 미수금 (그린피 실사 2026-07-17 기준)</span><span style={{ ...box.statValue, color: '#dd6b20' }}>{fmtWon(total)}</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>거래처 수</span><span style={box.statValue}>약 140개사 (상위 {namedCount}개사 상세 표시)</span></div>
         <div style={box.statCard}><span style={box.statLabel}>최다 미수</span><span style={{ ...box.statValue, color: COLORS.red }}>{rows[0]?.customer_name} {fmtWon(rows[0]?.amount)}</span></div>
       </div>
       <div style={box.card}>
@@ -31,12 +33,12 @@ export function ReceivablesList({ onSelectCompany }) {
           <thead><tr><th style={box.th}>거래처</th><th style={box.th}>미수금액</th><th style={box.th}>비고</th><th style={box.th}></th></tr></thead>
           <tbody>
             {rows.map((r) => (
-              <tr key={r.id}>
+              <tr key={r.id} style={isAggregateRow(r) ? { backgroundColor: '#f8fafc' } : undefined}>
                 <td style={box.td}>{r.customer_name}</td>
                 <td style={box.td}>{fmtWon(r.amount)}</td>
                 <td style={box.td}>{r.overdue_days > 0 ? <span style={pill(COLORS.redBg, COLORS.red)}>연체 {r.overdue_days}일</span> : (r.note || '-')}</td>
                 <td style={box.td}>
-                  {onSelectCompany && <button style={{ ...box.ghostBtn, padding: '6px 14px', fontSize: '13px' }} onClick={() => onSelectCompany(r.customer_name)}>거래처 상세</button>}
+                  {onSelectCompany && !isAggregateRow(r) && <button style={{ ...box.ghostBtn, padding: '6px 14px', fontSize: '13px' }} onClick={() => onSelectCompany(r.customer_name)}>거래처 상세</button>}
                 </td>
               </tr>
             ))}
