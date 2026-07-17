@@ -9,10 +9,10 @@ const STATUS_STYLE = {
   '반려': { bg: '#fde2e2', tx: '#9b2c2c' },
 };
 
-function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew }) {
+function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew, initialStatus }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({ from: '', to: '', status: '전체', accountId: '전체' });
+  const [filters, setFilters] = useState({ from: '', to: '', status: initialStatus || '전체', accountId: '전체' });
   const [accounts, setAccounts] = useState([]);
 
   useEffect(() => { fetchAccounts(); }, []);

@@ -2,10 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 
-const emptyItem = () => ({ vendor_name: '', item_name: '', amount: '', bank_name: '', account_no: '', account_holder: '', passbook_memo: '', note: '' });
+const ACCOUNT_CATEGORIES = ['급여', '4대보험', '대출이자', '카드대금', '위탁대행/기타', '퇴직연금', '통신비', '수도광열비', '원자재매입', '기타'];
+
+const emptyItem = () => ({ account_category: '', vendor_name: '', item_name: '', amount: '', bank_name: '', account_no: '', account_holder: '', passbook_memo: '', note: '' });
 
 function ExpenseForm({ requestId, onSaved, onCancel }) {
   const [accounts, setAccounts] = useState([]);
+  const [isRecurring, setIsRecurring] = useState(false);
   const [header, setHeader] = useState({
     request_date: new Date().toISOString().split('T')[0],
     requester: '',
@@ -42,9 +45,11 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
         requester: req.requester || '',
         bank_account_id: req.bank_account_id || '',
       });
+      setIsRecurring(!!req.is_recurring);
     }
     if (its && its.length > 0) {
       setItems(its.map((i) => ({
+        account_category: i.account_category || '',
         vendor_name: i.vendor_name || '', item_name: i.item_name || '', amount: i.amount ?? '',
         bank_name: i.bank_name || '', account_no: i.account_no || '', account_holder: i.account_holder || '', passbook_memo: i.passbook_memo || '',
         note: i.note || '',
@@ -62,14 +67,18 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
 
   const total = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
 
-  const validate = () => {
+  const filledItems = () => items.filter((it) => it.vendor_name || it.item_name || it.amount);
+  const missingCategory = filledItems().some((it) => !it.account_category);
+
+  const validate = (forSubmit) => {
     if (!header.bank_account_id) { alert('출금계좌를 선택해주세요.'); return false; }
     if (items.every((it) => !it.vendor_name && !it.item_name && !it.amount)) { alert('최소 1개 항목을 입력해주세요.'); return false; }
+    if (forSubmit && missingCategory) { alert('계정과목을 선택하지 않은 항목이 있습니다. 모든 항목에 계정과목을 선택해주세요.'); return false; }
     return true;
   };
 
   const save = async (nextStatus) => {
-    if (!validate()) return;
+    if (!validate(nextStatus === '결재대기')) return;
     setSaving(true);
     try {
       const payload = {
@@ -91,10 +100,11 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
         id = data.id;
       }
 
-      const validItems = items.filter((it) => it.vendor_name || it.item_name || it.amount);
+      const validItems = filledItems();
       const itemRows = validItems.map((it, idx) => ({
         request_id: id,
         line_no: idx + 1,
+        account_category: it.account_category || null,
         vendor_name: it.vendor_name || null,
         item_name: it.item_name || null,
         amount: Number(it.amount) || 0,
@@ -123,7 +133,10 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
 
   return (
     <div>
-      <h2 style={styles.title}>지출결의서 작성</h2>
+      <h2 style={styles.title}>
+        지출결의서 작성
+        {isRecurring && <span style={styles.recurringBadge}>정기 항목</span>}
+      </h2>
 
       <div style={styles.headerGrid}>
         <div style={styles.field}>
@@ -155,6 +168,7 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
           <thead>
             <tr style={styles.thRow}>
               <th style={{ ...styles.th, width: '48px' }}>NO</th>
+              <th style={{ ...styles.th, width: '150px' }}>계정과목</th>
               <th style={styles.th}>거래처</th>
               <th style={styles.th}>품목</th>
               <th style={{ ...styles.th, width: '140px' }}>금액</th>
@@ -170,6 +184,18 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
             {items.map((it, idx) => (
               <tr key={idx} style={styles.tr}>
                 <td style={{ ...styles.td, textAlign: 'center', color: '#a0aec0' }}>{idx + 1}</td>
+                <td style={styles.td}>
+                  <select
+                    value={it.account_category}
+                    onChange={(e) => updateItem(idx, 'account_category', e.target.value)}
+                    style={{ ...styles.cellInput, ...(!it.account_category && (it.vendor_name || it.item_name || it.amount) ? styles.cellInputWarn : {}) }}
+                  >
+                    <option value="">선택</option>
+                    {ACCOUNT_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </td>
                 <td style={styles.td}><input value={it.vendor_name} onChange={(e) => updateItem(idx, 'vendor_name', e.target.value)} style={styles.cellInput} placeholder="거래처명" /></td>
                 <td style={styles.td}><input value={it.item_name} onChange={(e) => updateItem(idx, 'item_name', e.target.value)} style={styles.cellInput} placeholder="품목" /></td>
                 <td style={styles.td}><input type="number" value={it.amount} onChange={(e) => updateItem(idx, 'amount', e.target.value)} style={styles.cellInput} placeholder="0" /></td>
@@ -195,15 +221,24 @@ function ExpenseForm({ requestId, onSaved, onCancel }) {
       <div style={styles.actions}>
         <button onClick={onCancel} style={styles.cancelBtn} disabled={saving}>목록으로</button>
         <button onClick={() => save('작성중')} style={styles.saveBtn} disabled={saving}>임시 저장</button>
-        <button onClick={() => save('결재대기')} style={styles.submitBtn} disabled={saving}>저장 후 출력</button>
+        <button
+          onClick={() => save('결재대기')}
+          style={{ ...styles.submitBtn, ...(missingCategory ? styles.submitBtnDisabled : {}) }}
+          disabled={saving || missingCategory}
+          title={missingCategory ? '모든 항목에 계정과목을 선택해야 상신할 수 있습니다.' : ''}
+        >
+          저장 후 출력
+        </button>
       </div>
+      {missingCategory && <p style={styles.warnText}>계정과목을 선택하지 않은 항목이 있어 "저장 후 출력"이 비활성화되어 있습니다.</p>}
     </div>
   );
 }
 
 const styles = {
   loadingText: { color: '#718096', fontSize: '19px' },
-  title: { margin: '0 0 26px 0', fontSize: '32px', fontWeight: 800, color: '#1a365d' },
+  title: { margin: '0 0 26px 0', fontSize: '32px', fontWeight: 800, color: '#1a365d', display: 'flex', alignItems: 'center', gap: '14px' },
+  recurringBadge: { fontSize: '15px', fontWeight: 700, color: '#3182ce', backgroundColor: '#ebf4fb', padding: '6px 14px', borderRadius: '999px' },
   headerGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '22px', marginBottom: '32px' },
   field: { display: 'flex', flexDirection: 'column', gap: '9px' },
   label: { fontSize: '18px', fontWeight: 700, color: '#4a5568' },
@@ -218,12 +253,15 @@ const styles = {
   tr: { borderBottom: '1px solid #edf2f7' },
   td: { padding: '12px 12px' },
   cellInput: { width: '100%', padding: '13px 14px', borderRadius: '9px', border: '1px solid #e2e8f0', fontSize: '18px', boxSizing: 'border-box' },
+  cellInputWarn: { border: '1px solid #e53e3e', backgroundColor: '#fff5f5' },
   removeBtn: { border: 'none', backgroundColor: '#fde2e2', color: '#9b2c2c', borderRadius: '9px', width: '36px', height: '36px', cursor: 'pointer', fontWeight: 'bold', fontSize: '19px' },
   totalRow: { display: 'flex', justifyContent: 'flex-end', gap: '20px', alignItems: 'baseline', marginTop: '24px', paddingTop: '24px', borderTop: '2px solid #2d3748', fontSize: '24px' },
   actions: { display: 'flex', justifyContent: 'flex-end', gap: '16px', marginTop: '32px' },
   cancelBtn: { padding: '16px 28px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '18px' },
   saveBtn: { padding: '16px 28px', backgroundColor: '#718096', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '18px' },
   submitBtn: { padding: '16px 30px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '18px', boxShadow: '0 4px 10px rgba(49,130,206,0.35)' },
+  submitBtnDisabled: { backgroundColor: '#cbd5e0', cursor: 'not-allowed', boxShadow: 'none' },
+  warnText: { textAlign: 'right', color: '#c53030', fontSize: '15px', marginTop: '10px' },
 };
 
 export default ExpenseForm;

@@ -16,6 +16,7 @@ function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
   const [session, setSession] = useState(null);
   const [currentPage, setCurrentPage] = useState('daily'); // 기본 시작 화면: 데일리 리포트
+  const [expensePendingCount, setExpensePendingCount] = useState(0);
 
   // 2. 로그인 상태 실시간 감시 (인증 관문)
   useEffect(() => {
@@ -31,6 +32,18 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // 지출결의서 결재대기 건수 — 상단 메뉴 알림 배지용 (1분마다 갱신)
+  useEffect(() => {
+    if (!session) return;
+    const fetchPending = async () => {
+      const { count } = await supabase.from('expense_requests').select('id', { count: 'exact', head: true }).eq('status', '결재대기');
+      setExpensePendingCount(count || 0);
+    };
+    fetchPending();
+    const timer = setInterval(fetchPending, 60000);
+    return () => clearInterval(timer);
+  }, [session]);
 
   // 로그아웃 처리 함수
   const handleLogout = async () => {
@@ -77,7 +90,10 @@ function App() {
           <button onClick={() => setCurrentPage('monthly')} style={getBtnStyle('monthly')}>📊 월간 분석</button>
           <button onClick={() => setCurrentPage('ceo')} style={getBtnStyle('ceo')}>🌟 대표님 브리핑</button>
           <button onClick={() => setCurrentPage('accesslog')} style={getBtnStyle('accesslog')}>🔐 접속 로그</button>
-          <button onClick={() => setCurrentPage('expense')} style={getBtnStyle('expense')}>📎 지출결의서</button>
+          <button onClick={() => setCurrentPage('expense')} style={{ ...getBtnStyle('expense'), position: 'relative' }}>
+            📎 지출결의서
+            {expensePendingCount > 0 && <span style={styles.navBadge}>{expensePendingCount}</span>}
+          </button>
         </nav>
 
         <div style={styles.userSection}>
@@ -127,6 +143,23 @@ const styles = {
   nav: { display: 'flex', gap: '8px' },
   userSection: { display: 'flex', alignItems: 'center', gap: '16px' },
   userName: { fontSize: '17px', color: '#cbd5e0' },
+  navBadge: {
+    position: 'absolute',
+    top: '-8px',
+    right: '-8px',
+    backgroundColor: '#e53e3e',
+    color: 'white',
+    borderRadius: '999px',
+    fontSize: '12px',
+    fontWeight: 'bold',
+    minWidth: '20px',
+    height: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 5px',
+    boxShadow: '0 0 0 2px #1a365d'
+  },
   logoutBtn: {
     backgroundColor: '#e53e3e',
     color: 'white',
