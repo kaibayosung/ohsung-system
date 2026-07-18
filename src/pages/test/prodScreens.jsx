@@ -1,5 +1,5 @@
 // src/pages/test/prodScreens.jsx
-// 생산(PROD) 화면 7종: 상품입고 접수 / 생산전표 조회 / 그린피 연동 현황 / 동기화 히스토리 / 재고 현황 / 재고 단품 상세 / 출고 현황
+// 생산(PROD) 화면 9종: 상품입고 접수 / 생산전표 조회 / 그린피 연동 현황 / 동기화 히스토리 / 재고 현황 / 재고 단품 상세 / 출고 현황 / 코일 워크플로우 / 코일 로트 상세
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { COLORS, box, pill, fmtWon, fmtNum } from './theme';
@@ -273,6 +273,193 @@ export function ShipmentStatus() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// ---------- 코일 워크플로우 (입고 → 가공 → 출고 → 현재고, 그린피 실데이터) ----------
+function lotStatus(originalWeight, remainingWeight) {
+  const orig = Number(originalWeight || 0);
+  const rem = Number(remainingWeight || 0);
+  let ratio = orig > 0 ? (orig - rem) / orig : 0;
+  if (ratio < 0) ratio = 0;
+  if (ratio > 1) ratio = 1;
+  let label = '가공중';
+  let bg = COLORS.amberBg, color = COLORS.amber;
+  if (ratio <= 0) { label = '미착수'; bg = '#edf2f7'; color = COLORS.steel; }
+  else if (ratio >= 0.999) { label = '출고완료'; bg = COLORS.greenBg; color = COLORS.green; }
+  return { ratio, label, bg, color };
+}
+
+export function CoilFlowBoard({ onOpenDetail }) {
+  const [lots, setLots] = useState(null);
+  const [totals, setTotals] = useState(null);
+  const [q, setQ] = useState('');
+  const [sortBy, setSortBy] = useState('received_date');
+
+  useEffect(() => { load(); }, []);
+  const load = async () => {
+    const [lotsRes, inRes, outRes] = await Promise.all([
+      supabase.from('greenp_inventory').select('*').order('received_date', { ascending: false }).limit(1000),
+      supabase.from('greenp_inbound').select('weight').limit(3000),
+      supabase.from('greenp_outbound').select('weight').limit(3000),
+    ]);
+    const lotsData = lotsRes.data || [];
+    setLots(lotsData);
+    const totalInbound = (inRes.data || []).reduce((s, r) => s + Number(r.weight || 0), 0);
+    const totalOutbound = (outRes.data || []).reduce((s, r) => s + Number(r.weight || 0), 0);
+    const totalRemaining = lotsData.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
+    setTotals({ totalInbound, totalOutbound, totalRemaining });
+  };
+
+  if (!lots || !totals) return <p style={box.loadingText}>불러오는 중...</p>;
+
+  const filtered = lots.filter((r) => !q || (r.customer_name || '').includes(q) || (r.product_name || '').includes(q) || (r.spec || '').includes(q));
+  const sorted = [...filtered].sort((a, b) => {
+    if (sortBy === 'remaining_weight') return Number(b.remaining_weight || 0) - Number(a.remaining_weight || 0);
+    return new Date(b.received_date || 0) - new Date(a.received_date || 0);
+  });
+  const depletionRate = totals.totalInbound > 0 ? (totals.totalOutbound / totals.totalInbound) * 100 : 0;
+
+  return (
+    <div style={box.page}>
+      <div>
+        <h2 style={box.title}>코일 워크플로우 · 입고 → 가공 → 출고 → 현재고</h2>
+        <p style={box.hint}>그린피 실데이터(2026년) 기준 · 입고 {fmtNum(totals.totalInbound)}건 / 출고 {fmtNum(totals.totalOutbound)}건 로우 데이터를 집계한 화면입니다.</p>
+      </div>
+      <div style={box.statGrid}>
+        <div style={box.statCard}><span style={box.statLabel}>누적 입고중량 합계</span><span style={box.statValue}>{fmtNum(totals.totalInbound)}kg</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>누적 출고중량 합계</span><span style={box.statValue}>{fmtNum(totals.totalOutbound)}kg</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>현재고 합계(재고 스냅샷)</span><span style={box.statValue}>{fmtNum(totals.totalRemaining)}kg</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>재고 소진율(출고/입고)</span><span style={{ ...box.statValue, color: COLORS.blue }}>{depletionRate.toFixed(1)}%</span></div>
+      </div>
+      <p style={box.hint}>입고·출고는 2026년 누적 거래 로그이며, 현재고는 그린피 재고 모듈의 "지금 시점" 스냅샷(트렌드 미보관)입니다. 세 수치는 서로 다른 시점/범위의 집계이므로 단순 산술로 정확히 맞아떨어지지 않을 수 있습니다.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <h3 style={box.subtitle}>코일 로트 목록 · {sorted.length}건</h3>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <input style={{ ...box.input, maxWidth: '260px' }} placeholder="업체명/품명/규격 검색" value={q} onChange={(e) => setQ(e.target.value)} />
+          <select style={{ ...box.input, maxWidth: '180px' }} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <option value="received_date">입고일자순</option>
+            <option value="remaining_weight">잔여중량순</option>
+          </select>
+        </div>
+      </div>
+      <div style={box.card}>
+        <table style={box.table}>
+          <thead>
+            <tr>
+              <th style={box.th}>업체명</th><th style={box.th}>품명</th><th style={box.th}>규격</th><th style={box.th}>입고일자</th>
+              <th style={box.th}>원중량</th><th style={box.th}>잔여중량</th><th style={box.th}>소진율</th><th style={box.th}>상태</th><th style={box.th}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.length === 0 && <tr><td style={box.td} colSpan={9}>검색 결과가 없습니다.</td></tr>}
+            {sorted.slice(0, 200).map((r) => {
+              const st = lotStatus(r.original_weight, r.remaining_weight);
+              return (
+                <tr key={r.id}>
+                  <td style={box.td}>{r.customer_name}</td>
+                  <td style={box.td}>{r.product_name}</td>
+                  <td style={box.td}>{r.spec}</td>
+                  <td style={box.td}>{r.received_date}</td>
+                  <td style={box.td}>{fmtNum(r.original_weight)}kg</td>
+                  <td style={box.td}>{fmtNum(r.remaining_weight)}kg</td>
+                  <td style={box.td}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ width: '70px', height: '8px', borderRadius: '999px', backgroundColor: '#edf2f7', overflow: 'hidden' }}>
+                        <div style={{ width: `${(st.ratio * 100).toFixed(0)}%`, height: '100%', backgroundColor: COLORS.blue }} />
+                      </div>
+                      <span style={{ fontSize: '13px', color: COLORS.steel }}>{(st.ratio * 100).toFixed(0)}%</span>
+                    </div>
+                  </td>
+                  <td style={box.td}><span style={pill(st.bg, st.color)}>{st.label}</span></td>
+                  <td style={box.td}><button style={{ ...box.ghostBtn, padding: '6px 14px', fontSize: '13px' }} onClick={() => onOpenDetail(r.id)}>상세</button></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------- 코일 로트 상세 (입고/출고 이력 드릴다운) ----------
+export function CoilFlowDetail({ lotId }) {
+  const [lot, setLot] = useState(null);
+  const [inboundRows, setInboundRows] = useState(null);
+  const [outboundRows, setOutboundRows] = useState(null);
+
+  useEffect(() => {
+    if (!lotId) return;
+    setLot(null); setInboundRows(null); setOutboundRows(null);
+    supabase.from('greenp_inventory').select('*').eq('id', lotId).single().then(({ data }) => setLot(data));
+  }, [lotId]);
+
+  useEffect(() => {
+    if (!lot) return;
+    supabase.from('greenp_inbound').select('*')
+      .eq('company_name', lot.customer_name).eq('product_name', lot.product_name).eq('spec', lot.spec)
+      .order('inbound_date', { ascending: false }).limit(50)
+      .then(({ data }) => setInboundRows(data || []));
+    supabase.from('greenp_outbound').select('*')
+      .eq('company_name', lot.customer_name).eq('product_name', lot.product_name).eq('spec', lot.spec)
+      .order('outbound_date', { ascending: false }).limit(50)
+      .then(({ data }) => setOutboundRows(data || []));
+  }, [lot]);
+
+  if (!lotId) return <p style={box.emptyText}>코일 워크플로우 화면에서 로트를 선택하면 입출고 상세가 표시됩니다.</p>;
+  if (!lot) return <p style={box.loadingText}>불러오는 중...</p>;
+
+  const st = lotStatus(lot.original_weight, lot.remaining_weight);
+  const matchedOutWeight = (outboundRows || []).reduce((s, r) => s + Number(r.weight || 0), 0);
+
+  return (
+    <div style={box.page}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+        <h2 style={box.title}>{lot.customer_name} · {lot.product_name} ({lot.spec})</h2>
+        <span style={pill(st.bg, st.color)}>{st.label}</span>
+      </div>
+      <div style={box.statGrid}>
+        <div style={box.statCard}><span style={box.statLabel}>원중량</span><span style={box.statValue}>{fmtNum(lot.original_weight)}kg</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>잔여중량(현재고)</span><span style={box.statValue}>{fmtNum(lot.remaining_weight)}kg</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>소진율</span><span style={{ ...box.statValue, color: COLORS.blue }}>{(st.ratio * 100).toFixed(0)}%</span></div>
+        <div style={box.statCard}><span style={box.statLabel}>입고일자</span><span style={box.statValue}>{lot.received_date}</span></div>
+      </div>
+
+      <div style={box.card}>
+        <h3 style={box.subtitle}>입고 이력 (동일 업체명·품명·규격 기준)</h3>
+        {!inboundRows ? <p style={box.loadingText}>불러오는 중...</p> : inboundRows.length === 0 ? (
+          <p style={box.emptyText}>일치하는 입고 전표를 찾지 못했습니다.</p>
+        ) : (
+          <table style={box.table}>
+            <thead><tr><th style={box.th}>입고일자</th><th style={box.th}>전표번호</th><th style={box.th}>중량</th><th style={box.th}>길이(m)</th></tr></thead>
+            <tbody>
+              {inboundRows.map((r) => (
+                <tr key={r.id}><td style={box.td}>{r.inbound_date}</td><td style={box.td}>{r.slip_no || '-'}</td><td style={box.td}>{fmtNum(r.weight)}kg</td><td style={box.td}>{fmtNum(r.length_m)}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <div style={box.card}>
+        <h3 style={box.subtitle}>출고 이력 (동일 업체명·품명·규격 기준) · 합계 {fmtNum(matchedOutWeight)}kg</h3>
+        {!outboundRows ? <p style={box.loadingText}>불러오는 중...</p> : outboundRows.length === 0 ? (
+          <p style={box.emptyText}>일치하는 출고 전표를 찾지 못했습니다. (아직 미출고 상태이거나, 품명/규격 표기가 달라 자동 매칭이 안 된 경우일 수 있습니다)</p>
+        ) : (
+          <table style={box.table}>
+            <thead><tr><th style={box.th}>출고일자</th><th style={box.th}>작업일자</th><th style={box.th}>작업전표번호</th><th style={box.th}>중량</th><th style={box.th}>수량</th></tr></thead>
+            <tbody>
+              {outboundRows.map((r) => (
+                <tr key={r.id}><td style={box.td}>{r.outbound_date}</td><td style={box.td}>{r.work_date || '-'}</td><td style={box.td}>{r.work_slip_no || '-'}</td><td style={box.td}>{fmtNum(r.weight)}kg</td><td style={box.td}>{r.qty || '-'}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      <p style={box.hint}>※ 그린피 원본 데이터에는 입고 로트와 출고 전표를 잇는 고유 키(LOT ID)가 없어, 업체명·품명·규격이 동일한 전표를 매칭했습니다. 동일 품명/규격의 소량 로트가 여러 건 존재하는 거래처의 경우 상세 이력이 실제와 다르게 섞여 보일 수 있습니다.</p>
     </div>
   );
 }

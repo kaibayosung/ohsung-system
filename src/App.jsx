@@ -54,20 +54,21 @@ function App() {
     }
   };
 
-  // 3. 버튼 스타일 정의 (선택된 메뉴 강조)
+  // 3. 버튼 스타일 정의 (선택된 메뉴 강조 — 활성 탭은 앰버 포인트 컬러로 강조)
   const getBtnStyle = (pageName) => ({
     padding: '13px 22px',
-    backgroundColor: currentPage === pageName ? '#3182ce' : '#2d3748',
-    color: 'white',
-    border: 'none',
+    backgroundColor: currentPage === pageName ? '#e8830f' : 'rgba(255,255,255,0.06)',
+    color: currentPage === pageName ? '#ffffff' : '#c8d3e2',
+    border: currentPage === pageName ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.05)',
     borderRadius: '10px',
     cursor: 'pointer',
-    fontWeight: 'bold',
+    fontWeight: currentPage === pageName ? 800 : 600,
     fontSize: '17px',
-    transition: 'all 0.2s',
+    transition: 'all 0.15s ease',
     display: 'flex',
     alignItems: 'center',
-    gap: '6px'
+    gap: '6px',
+    boxShadow: currentPage === pageName ? '0 4px 12px rgba(232,131,15,0.35)' : 'none',
   });
 
   // 4. [보안 성문] 로그인이 안 되어 있으면 무조건 로그인 화면만 노출
@@ -85,22 +86,22 @@ function App() {
         </div>
         
         <nav style={styles.nav}>
-          <button onClick={() => setCurrentPage('worklog')} style={getBtnStyle('worklog')}>작업일보</button>
-          <button onClick={() => setCurrentPage('ledger')} style={getBtnStyle('ledger')}>일계표</button>
-          <button onClick={() => setCurrentPage('daily')} style={getBtnStyle('daily')}>📅 데일리 리포트</button>
-          <button onClick={() => setCurrentPage('monthly')} style={getBtnStyle('monthly')}>📊 월간 분석</button>
-          <button onClick={() => setCurrentPage('ceo')} style={getBtnStyle('ceo')}>🌟 대표님 브리핑</button>
-          <button onClick={() => setCurrentPage('accesslog')} style={getBtnStyle('accesslog')}>🔐 접속 로그</button>
-          <button onClick={() => setCurrentPage('expense')} style={{ ...getBtnStyle('expense'), position: 'relative' }}>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('worklog')} style={getBtnStyle('worklog')}>📝 작업일보</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('ledger')} style={getBtnStyle('ledger')}>📒 일계표</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('daily')} style={getBtnStyle('daily')}>📅 데일리 리포트</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('monthly')} style={getBtnStyle('monthly')}>📊 월간 분석</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('ceo')} style={getBtnStyle('ceo')}>🌟 대표님 브리핑</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('accesslog')} style={getBtnStyle('accesslog')}>🔐 접속 로그</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('expense')} style={{ ...getBtnStyle('expense'), position: 'relative' }}>
             📎 지출결의서
             {expensePendingCount > 0 && <span style={styles.navBadge}>{expensePendingCount}</span>}
           </button>
-          <button onClick={() => setCurrentPage('test')} style={getBtnStyle('test')}>🧪 테스트</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('test')} style={getBtnStyle('test')}>🧪 테스트</button>
         </nav>
 
         <div style={styles.userSection}>
           <span style={styles.userName}>{session.user.email.split('@')[0]} 실장님</span>
-          <button onClick={handleLogout} style={styles.logoutBtn}>로그아웃</button>
+          <button className="op-logout-btn" onClick={handleLogout} style={styles.logoutBtn}>로그아웃</button>
         </div>
       </header>
 
@@ -120,37 +121,38 @@ function App() {
   );
 }
 
-// 전체 레이아웃 스타일 (기존 유지)
+// 전체 레이아웃 스타일 — 산업-모던(다크 네이비 + 스틸 블루 + 앰버 포인트) 테마
 const styles = {
   appContainer: {
     display: 'flex',
     flexDirection: 'column',
     height: '100vh',
     width: '100vw',
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#eef1f6',
     overflow: 'hidden'
   },
   header: {
     height: '84px',
-    backgroundColor: '#1a365d',
+    background: 'linear-gradient(160deg, #16283f 0%, #0a1524 100%)',
     color: 'white',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: '0 32px',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+    boxShadow: '0 4px 16px rgba(10,21,36,0.28)',
     zIndex: 1000,
-    flexShrink: 0
+    flexShrink: 0,
+    borderBottom: '1px solid rgba(255,255,255,0.06)'
   },
-  logo: { fontSize: '27px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center' },
+  logo: { fontSize: '27px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', letterSpacing: '-0.01em' },
   nav: { display: 'flex', gap: '8px' },
   userSection: { display: 'flex', alignItems: 'center', gap: '16px' },
-  userName: { fontSize: '17px', color: '#cbd5e0' },
+  userName: { fontSize: '17px', color: '#c8d3e2' },
   navBadge: {
     position: 'absolute',
     top: '-8px',
     right: '-8px',
-    backgroundColor: '#e53e3e',
+    backgroundColor: '#e8830f',
     color: 'white',
     borderRadius: '999px',
     fontSize: '12px',
@@ -161,22 +163,23 @@ const styles = {
     alignItems: 'center',
     justifyContent: 'center',
     padding: '0 5px',
-    boxShadow: '0 0 0 2px #1a365d'
+    boxShadow: '0 0 0 2px #0a1524'
   },
   logoutBtn: {
-    backgroundColor: '#e53e3e',
-    color: 'white',
-    border: 'none',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    color: '#e2e8f0',
+    border: '1px solid rgba(255,255,255,0.14)',
     padding: '11px 20px',
     borderRadius: '9px',
     cursor: 'pointer',
     fontSize: '16px',
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    transition: 'background-color 0.15s ease'
   },
   mainContent: {
     flex: 1,
     overflowY: 'auto',
-    backgroundColor: '#f1f5f9'
+    backgroundColor: '#eef1f6'
   }
 };
 

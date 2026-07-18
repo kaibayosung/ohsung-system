@@ -10,7 +10,7 @@ import {
   WorkOrderForm, WorkOrderBoard, WorkOrderComplete, ShipmentDocs, CompanyDetail,
 } from './test/salesScreens';
 import {
-  GoodsReceipt, ProductionSlips, GreenpStatus, GreenpHistory, InventoryList, InventoryDetail, ShipmentStatus,
+  GoodsReceipt, ProductionSlips, GreenpStatus, GreenpHistory, InventoryList, InventoryDetail, ShipmentStatus, CoilFlowBoard, CoilFlowDetail,
 } from './test/prodScreens';
 import {
   ReceivablesList, ExpenseFormScreen, ExpenseDetailApproval, ExpenseApprovalScreen, ExpenseDashboardScreen, RecurringScreen, AccountsScreen, TaxInvoiceStatus,
@@ -18,6 +18,16 @@ import {
 import {
   LoginHomeLauncher, NotificationCenter, GlobalSearch, AdminSettings,
 } from './test/commonScreens';
+import { CustomerPortal } from './test/customerPortal';
+
+const TEAM_ICONS = {
+  경영: '📊',
+  '영업/현장': '🚚',
+  생산: '🏭',
+  '경리/재무': '💰',
+  공통: '⚙️',
+  '고객사 포털': '🤝',
+};
 
 const TEAM_GROUPS = [
   {
@@ -48,6 +58,8 @@ const TEAM_GROUPS = [
       { key: 'inventory', label: '16 재고 현황' },
       { key: 'inventory-detail', label: '17 재고 단품 상세' },
       { key: 'shipments', label: '18 출고 현황' },
+      { key: 'coilflow', label: '코일 워크플로우' },
+      { key: 'coilflow-detail', label: '코일 로트 상세' },
     ],
   },
   {
@@ -70,6 +82,11 @@ const TEAM_GROUPS = [
       { key: 'admin', label: '30 관리자 설정' },
     ],
   },
+  {
+    key: 'portal', label: '고객사 포털', screens: [
+      { key: 'customer-portal', label: '31 고객사 포털 (데모)' },
+    ],
+  },
 ];
 
 function TestPage() {
@@ -77,6 +94,7 @@ function TestPage() {
   const [screenKey, setScreenKey] = useState('dashboard');
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [selectedInventoryId, setSelectedInventoryId] = useState(null);
+  const [selectedCoilLotId, setSelectedCoilLotId] = useState(null);
 
   const team = TEAM_GROUPS.find((t) => t.key === teamKey);
 
@@ -94,6 +112,11 @@ function TestPage() {
   const goInventoryDetail = (id) => {
     setSelectedInventoryId(id);
     setScreenKey('inventory-detail');
+  };
+
+  const goCoilFlowDetail = (id) => {
+    setSelectedCoilLotId(id);
+    setScreenKey('coilflow-detail');
   };
 
   const selectTeamByLabel = (label) => {
@@ -123,6 +146,8 @@ function TestPage() {
       case 'inventory': return <InventoryList onOpenDetail={goInventoryDetail} />;
       case 'inventory-detail': return <InventoryDetail inventoryId={selectedInventoryId} />;
       case 'shipments': return <ShipmentStatus />;
+      case 'coilflow': return <CoilFlowBoard onOpenDetail={goCoilFlowDetail} />;
+      case 'coilflow-detail': return <CoilFlowDetail lotId={selectedCoilLotId} />;
 
       case 'receivables': return <ReceivablesList onSelectCompany={goCompanyDetail} />;
       case 'expense-form': return <ExpenseFormScreen />;
@@ -137,6 +162,8 @@ function TestPage() {
       case 'notifications': return <NotificationCenter />;
       case 'search': return <GlobalSearch />;
       case 'admin': return <AdminSettings />;
+
+      case 'customer-portal': return <CustomerPortal />;
       default: return null;
     }
   };
@@ -144,7 +171,8 @@ function TestPage() {
   return (
     <div style={styles.container}>
       <div style={styles.banner}>
-        🧪 테스트 메뉴 — 스마트 ERP 2.0 UI 시나리오 30개 화면을 실제로 동작하는 화면으로 미리 구현한 공간입니다. 그린피 자동 연동/카카오 알림톡 발송 등 외부 연동이 필요한 기능은 실데이터 대신 준비된 테스트 데이터로 동작합니다.
+        <span style={styles.bannerIcon}>🧪</span>
+        <span>테스트 메뉴 — 스마트 ERP 2.0 UI 시나리오 30개 화면을 실제로 동작하는 화면으로 미리 구현한 공간입니다. 그린피 자동 연동/카카오 알림톡 발송 등 외부 연동이 필요한 기능은 실데이터 대신 준비된 테스트 데이터로 동작합니다.</span>
       </div>
       <div style={styles.layout}>
         <aside style={styles.sidebar}>
@@ -155,37 +183,45 @@ function TestPage() {
               return (
                 <button
                   key={t.key}
+                  className="op-team-tab"
                   onClick={() => selectTeam(t.key)}
                   style={{
                     ...styles.teamTab,
                     backgroundColor: active ? c.bg : 'transparent',
-                    color: active ? c.color : '#a0aec0',
+                    color: active ? c.color : '#aeb9c9',
                     fontWeight: active ? 800 : 600,
+                    boxShadow: active ? 'inset 0 0 0 1px rgba(255,255,255,0.06)' : 'none',
                   }}
                 >
+                  <span style={styles.teamTabIcon}>{TEAM_ICONS[t.label]}</span>
                   {t.label}
                 </button>
               );
             })}
           </div>
           <div style={styles.screenList}>
-            {team.screens.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setScreenKey(s.key)}
-                style={{
-                  ...styles.screenBtn,
-                  backgroundColor: screenKey === s.key ? '#3182ce' : 'transparent',
-                  color: screenKey === s.key ? 'white' : '#2d3748',
-                  fontWeight: screenKey === s.key ? 700 : 500,
-                }}
-              >
-                {s.label}
-              </button>
-            ))}
+            {team.screens.map((s) => {
+              const active = screenKey === s.key;
+              return (
+                <button
+                  key={s.key}
+                  className="op-screen-btn"
+                  onClick={() => setScreenKey(s.key)}
+                  style={{
+                    ...styles.screenBtn,
+                    backgroundColor: active ? COLORS.accent : 'transparent',
+                    color: active ? 'white' : '#334155',
+                    fontWeight: active ? 700 : 500,
+                    boxShadow: active ? '0 4px 10px rgba(232,131,15,0.28)' : 'none',
+                  }}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
           </div>
         </aside>
-        <main style={styles.content}>{renderScreen()}</main>
+        <main className="test-content" style={styles.content}>{renderScreen()}</main>
       </div>
     </div>
   );
@@ -193,14 +229,32 @@ function TestPage() {
 
 const styles = {
   container: { padding: '28px 36px', backgroundColor: COLORS.bg, minHeight: '100vh' },
-  banner: { background: COLORS.navy, color: '#cbd5e0', padding: '16px 22px', borderRadius: '12px', fontSize: '14px', lineHeight: 1.6, marginBottom: '20px' },
+  banner: {
+    background: COLORS.navyGradient, color: '#c8d3e2', padding: '18px 24px', borderRadius: '14px',
+    fontSize: '14px', lineHeight: 1.6, marginBottom: '22px', display: 'flex', gap: '12px', alignItems: 'flex-start',
+    boxShadow: COLORS.shadowMd,
+  },
+  bannerIcon: { fontSize: '18px', flexShrink: 0 },
   layout: { display: 'flex', gap: '24px', alignItems: 'flex-start' },
-  sidebar: { width: '240px', flexShrink: 0, backgroundColor: 'white', borderRadius: '16px', border: `1px solid ${COLORS.border}`, overflow: 'hidden' },
-  teamTabs: { display: 'flex', flexDirection: 'column', borderBottom: `1px solid ${COLORS.border}`, padding: '8px' },
-  teamTab: { border: 'none', padding: '11px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '15px', textAlign: 'left', fontFamily: 'inherit' },
-  screenList: { display: 'flex', flexDirection: 'column', padding: '8px', gap: '2px' },
-  screenBtn: { border: 'none', padding: '11px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px', textAlign: 'left', fontFamily: 'inherit' },
-  content: { flex: 1, backgroundColor: 'white', borderRadius: '16px', border: `1px solid ${COLORS.border}`, padding: '32px', minHeight: '70vh' },
+  sidebar: {
+    width: '250px', flexShrink: 0, background: COLORS.navyGradient, borderRadius: '18px',
+    overflow: 'hidden', boxShadow: COLORS.shadowMd, position: 'sticky', top: '20px',
+  },
+  teamTabs: { display: 'flex', flexDirection: 'column', borderBottom: '1px solid rgba(255,255,255,0.08)', padding: '10px', gap: '2px' },
+  teamTab: {
+    border: 'none', padding: '12px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '15px',
+    textAlign: 'left', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: '10px', transition: 'background-color 0.15s ease',
+  },
+  teamTabIcon: { fontSize: '16px' },
+  screenList: { display: 'flex', flexDirection: 'column', padding: '10px', gap: '3px', backgroundColor: COLORS.white },
+  screenBtn: {
+    border: 'none', padding: '11px 14px', borderRadius: '10px', cursor: 'pointer', fontSize: '14px',
+    textAlign: 'left', fontFamily: 'inherit', transition: 'background-color 0.15s ease',
+  },
+  content: {
+    flex: 1, backgroundColor: 'white', borderRadius: '18px', border: `1px solid ${COLORS.border}`,
+    padding: '34px 36px', minHeight: '70vh', boxShadow: COLORS.shadow,
+  },
 };
 
 export default TestPage;

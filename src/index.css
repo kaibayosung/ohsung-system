@@ -34,6 +34,31 @@ textarea.excel-input:focus {
   box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1);
 }
 
+/* 테스트 메뉴(스마트 ERP 2.0) 사이드바 내비게이션 hover 상태 */
+.op-team-tab:hover {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.op-screen-btn:hover {
+  background-color: #f1f5f9 !important;
+}
+.op-nav-btn:hover {
+  filter: brightness(1.08);
+}
+.op-logout-btn:hover {
+  background-color: rgba(255, 255, 255, 0.16) !important;
+}
+
+/* 테스트 메뉴 콘텐츠 영역 내부 표: 줄무늬 배경 + 행 호버 강조 */
+.test-content table tbody tr:nth-child(even) td {
+  background-color: #f8fafc;
+}
+.test-content table tbody tr:hover td {
+  background-color: #eef4fb;
+}
+.test-content table tbody tr td {
+  transition: background-color 0.12s ease;
+}
+
 /* 인쇄 시 상단 네비게이션 바 등 화면 전용 요소는 항상 숨김 */
 @media print {
   .no-print {
