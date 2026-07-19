@@ -12,6 +12,7 @@ import AccessLog from './AccessLog';
 import CEOReport from './CEOReport';
 import ExpensePage from './pages/ExpensePage';
 import TestPage from './pages/TestPage';
+import SalesWorkflowPage from './pages/SalesWorkflowPage';
 
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
@@ -86,6 +87,7 @@ function App() {
         </div>
         
         <nav style={styles.nav}>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('sales')} style={getBtnStyle('sales')}>🚚 영업 워크플로우</button>
           <button className="op-nav-btn" onClick={() => setCurrentPage('worklog')} style={getBtnStyle('worklog')}>📝 작업일보</button>
           <button className="op-nav-btn" onClick={() => setCurrentPage('ledger')} style={getBtnStyle('ledger')}>📒 일계표</button>
           <button className="op-nav-btn" onClick={() => setCurrentPage('daily')} style={getBtnStyle('daily')}>📅 데일리 리포트</button>
@@ -107,6 +109,7 @@ function App() {
 
       {/* 메인 콘텐츠 영역 (선택된 메뉴의 화면을 렌더링) */}
       <main className="app-main" style={styles.mainContent}>
+        {currentPage === 'sales' && <SalesWorkflowPage />}
         {currentPage === 'worklog' && <WorkLog />}
         {/* [수정됨] 이제 구버전이 아닌 새로운 LedgerPage를 보여줍니다. */}
         {currentPage === 'ledger' && <LedgerPage />} 
