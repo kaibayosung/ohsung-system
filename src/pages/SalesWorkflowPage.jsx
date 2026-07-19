@@ -37,7 +37,7 @@ const statusIndex = (k) => STATUSES.findIndex((s) => s[0] === k);
 const ROLES = [['EX', '대표'], ['MG', '관리자'], ['OF', '영업'], ['FL', '지게차 기사'], ['CP', '고객사']];
 const OF_SUBS = [['kanban', '전체 현황판'], ['register', '① 발주 접수'], ['assign', '② 코일 배정 지시'], ['workorder', '③ 작업지시서 처리'], ['monitor', '④ 현장 공정 모니터링'], ['notify', '⑤ 고객 통지·배차 지시'], ['shipment', '⑥ 출고 처리'], ['aftercare', '⑦ 사후 대응·거래처 관리']];
 const FL_SUBS = [['waiting', '대기 발주'], ['coil', '코일 검색·확정']];
-const CP_SUBS = [['inventory', '나의 재고 현황'], ['today', '금일 현황'], ['history', '과거 이력 분석'], ['place', '발주하기']];
+const CP_SUBS = [['inventory', '재고 현황'], ['work', '작업 내역'], ['outbound', '출고 내역'], ['place', '발주하기']];
 const MG_SUBS = [['search', '발주 추적'], ['inventory', '재고 수불원장(마감상태)']];
 const EDGE_POINTS = [
   { t: 'FAX 스캔 접수', d: '그린ERP는 발주 내용을 전부 수기입력 — 우리는 팩스/스캔 파일만 올리면 접수 기록이 즉시 남습니다.' },
@@ -55,6 +55,8 @@ function monthStartStr() { const d = new Date(); return `${d.getFullYear()}-${St
 function kstDateStr(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
 // "2026-07-19" → "7월 19일" — 대표 화면 조회 기간 표시에 사용
 function fmtKDate(s) { if (!s) return ''; const [, m, d] = s.split('-'); return `${parseInt(m, 10)}월 ${parseInt(d, 10)}일`; }
+// N개월 전 날짜(YYYY-MM-DD, KST 기준) — 고객사 포털 작업/출고 내역 기간 프리셋에 사용
+function monthsAgoStr(n) { const d = new Date(); d.setMonth(d.getMonth() - n); return kstDateStr(d); }
 function hoursSince(iso) { if (!iso) return 0; return (Date.now() - new Date(iso).getTime()) / 3600000; }
 function prodBadge(t) {
   t = t || '자사생산';
@@ -1068,14 +1070,59 @@ function CustomerRole({ orders, companies, onCreateOrder }) {
   const [sub, setSub] = useState('inventory');
   const [form, setForm] = useState({ thick: '', width: '', weight: '', qty: '', slit: '' });
   const company = companies.find((c) => c.id === companyId);
-  const mine = company ? orders.filter((o) => o.company_name === company.name) : [];
 
   useEffect(() => { if (!companyId && companies[0]) setCompanyId(companies[0].id); }, [companies]);
 
-  const monthly = {};
-  mine.forEach((o) => { const m = (o.order_date || '').slice(0, 7); if (m) monthly[m] = (monthly[m] || 0) + 1; });
-  const months = Object.keys(monthly).sort().slice(-6);
-  const maxM = Math.max(1, ...months.map((m) => monthly[m]));
+  // ---- 1) 재고 현황 (greenp_inventory 실데이터) ----
+  const [inv, setInv] = useState([]);
+  const [invLoading, setInvLoading] = useState(false);
+  const [invQuery, setInvQuery] = useState('');
+  useEffect(() => {
+    if (!company) return;
+    let cancelled = false;
+    setInvLoading(true);
+    supabase.from('greenp_inventory').select('*').eq('customer_name', company.name).order('received_date', { ascending: false })
+      .then(({ data }) => { if (!cancelled) { setInv(data || []); setInvLoading(false); } });
+    return () => { cancelled = true; };
+  }, [company?.name]);
+  const invFiltered = inv.filter((r) => !invQuery || (r.product_name || '').includes(invQuery) || (r.spec || '').includes(invQuery));
+  const invTotalWeight = inv.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
+  const invSpecCount = new Set(inv.map((r) => r.spec).filter(Boolean)).size;
+
+  // ---- 2) 작업 내역 (greenp_production 실데이터) ----
+  const [workStart, setWorkStart] = useState(monthsAgoStr(3));
+  const [workEnd, setWorkEnd] = useState(todayStr());
+  const [workRows, setWorkRows] = useState([]);
+  const [workLoading, setWorkLoading] = useState(false);
+  useEffect(() => {
+    if (!company) return;
+    let cancelled = false;
+    setWorkLoading(true);
+    supabase.from('greenp_production').select('*').eq('company_name', company.name).gte('slip_date', workStart).lte('slip_date', workEnd).order('slip_date', { ascending: false }).limit(500)
+      .then(({ data }) => { if (!cancelled) { setWorkRows(data || []); setWorkLoading(false); } });
+    return () => { cancelled = true; };
+  }, [company?.name, workStart, workEnd]);
+  const workTotal = workRows.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const workTypeLabel = (t) => (WORK_TYPE_GROUPS.find((g) => g.key === t) || [null, t || '기타'])[1];
+
+  // ---- 3) 출고 내역 검색 (greenp_outbound 실데이터) ----
+  const [outStart, setOutStart] = useState(monthsAgoStr(1));
+  const [outEnd, setOutEnd] = useState(todayStr());
+  const [outKeyword, setOutKeyword] = useState('');
+  const [outRows, setOutRows] = useState([]);
+  const [outTotalCount, setOutTotalCount] = useState(0);
+  const [outLoading, setOutLoading] = useState(false);
+  const runOutSearch = useCallback(() => {
+    if (!company) return;
+    setOutLoading(true);
+    let q = supabase.from('greenp_outbound').select('*', { count: 'exact' }).eq('company_name', company.name).gte('outbound_date', outStart).lte('outbound_date', outEnd);
+    if (outKeyword) q = q.or(`product_name.ilike.%${outKeyword}%,spec.ilike.%${outKeyword}%`);
+    q.order('outbound_date', { ascending: false }).limit(200).then(({ data, count }) => {
+      setOutRows(data || []); setOutTotalCount(count || 0); setOutLoading(false);
+    });
+  }, [company?.name, outStart, outEnd, outKeyword]);
+  useEffect(() => { runOutSearch(); }, [company?.name, outStart, outEnd]);
+  const outTotalWeight = outRows.reduce((s, r) => s + Number(r.weight || 0), 0);
 
   const submitOrder = async () => {
     if (!company) { alert('거래처를 선택하세요.'); return; }
@@ -1083,6 +1130,17 @@ function CustomerRole({ orders, companies, onCreateOrder }) {
     const res = await onCreateOrder({ company_name: company.name, thickness: parseFloat(form.thick), weight: form.weight ? parseFloat(form.weight) * 1000 : null, status: 'RECEIVED', prod_type: '자사생산', memo: `Slitting: ${form.slit} / 수량: ${form.qty}` }, [{ thick: form.thick, width: form.width, weight: form.weight, slit: form.slit, qty: form.qty }]);
     if (res) { alert(`발주가 접수되었습니다(발주번호 ${res.order_no}) — 영업팀 발주 현황판에 실시간 반영됩니다.`); setForm({ thick: '', width: '', weight: '', qty: '', slit: '' }); }
   };
+
+  const dateRangeBar = (start, setStart, end, setEnd) => (
+    <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+      <button style={btnStyle(start === monthsAgoStr(1))} onClick={() => setStart(monthsAgoStr(1))}>최근 1개월</button>
+      <button style={btnStyle(start === monthsAgoStr(3))} onClick={() => setStart(monthsAgoStr(3))}>최근 3개월</button>
+      <button style={btnStyle(start === monthsAgoStr(6))} onClick={() => setStart(monthsAgoStr(6))}>최근 6개월</button>
+      <input type="date" value={start} max={end} onChange={(e) => setStart(e.target.value)} style={{ ...inputStyle, height: '38px', width: '150px', fontSize: '14px' }} />
+      <span style={{ color: C.textMuted }}>~</span>
+      <input type="date" value={end} min={start} max={todayStr()} onChange={(e) => setEnd(e.target.value)} style={{ ...inputStyle, height: '38px', width: '150px', fontSize: '14px' }} />
+    </div>
+  );
 
   return (
     <div>
@@ -1096,31 +1154,69 @@ function CustomerRole({ orders, companies, onCreateOrder }) {
         {CP_SUBS.map(([k, label]) => <button key={k} style={btnStyle(sub === k)} onClick={() => setSub(k)}>{label}</button>)}
       </div>
 
-      {sub === 'inventory' && (mine.filter((o) => o.coil_id).length ? mine.filter((o) => o.coil_id).map((o) => boxMsg(`코일 ${o.coils?.coil_code || ''} · 두께 ${o.thickness} · 발주 ${o.order_no}`, { marginBottom: '7px' })) : boxMsg('현재 배정된 재고가 없습니다', { justifyContent: 'center' }))}
-
-      {sub === 'today' && (mine.length ? mine.map((o) => (
-        <div key={o.id} style={{ marginBottom: '16px' }}>
-          <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '5px' }}>발주번호 {o.order_no} · 두께 {o.thickness}</div>
-          {timelineHtml(o.status)}
-        </div>
-      )) : boxMsg('발주 내역이 없습니다', { justifyContent: 'center' }))}
-
-      {sub === 'history' && (
+      {sub === 'inventory' && (
         <div>
-          <div style={{ marginBottom: '16px' }}>
-            {months.length === 0 ? boxMsg('과거 발주 이력이 없습니다.', {}) : months.map((m) => (
-              <div key={m} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-                <span style={{ fontSize: '15px', color: C.textMuted, width: '52px' }}>{m}</span>
-                <div style={{ flex: 1, background: C.surface1, borderRadius: '5px', overflow: 'hidden', height: '15px' }}><div style={{ width: `${Math.round((monthly[m] / maxM) * 100)}%`, height: '100%', background: C.accent }} /></div>
-                <span style={{ fontSize: '15px', color: C.textSecondary, width: '40px' }}>{monthly[m]}건</span>
-              </div>
-            ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '12px' }}>
+            {statCard('보유 품목수', inv.length + '건')}
+            {statCard('총 잔량', (invTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
+            {statCard('규격 종류', invSpecCount + '종')}
           </div>
-          <table style={itemsTable}><thead><tr><th style={th}>발주번호</th><th style={th}>두께</th><th style={th}>상태</th></tr></thead>
-            <tbody>
-              {mine.filter((o) => o.status === 'SHIPPED').length ? mine.filter((o) => o.status === 'SHIPPED').map((o) => <tr key={o.id}><td style={td}>{o.order_no}</td><td style={td}>{o.thickness}</td><td style={td}>출고완료</td></tr>) : <tr><td colSpan={3} style={{ ...td, textAlign: 'center', color: C.textMuted }}>출고완료 이력 없음</td></tr>}
-            </tbody>
-          </table>
+          <input style={{ ...inputStyle, marginBottom: '10px' }} placeholder="품명/규격 검색" value={invQuery} onChange={(e) => setInvQuery(e.target.value)} />
+          {invLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : invFiltered.length === 0 ? boxMsg('해당 재고가 없습니다', { justifyContent: 'center' }) : (
+            <table style={itemsTable}>
+              <thead><tr><th style={th}>품명</th><th style={th}>규격</th><th style={th}>입고일</th><th style={th}>원중량</th><th style={th}>잔량</th></tr></thead>
+              <tbody>
+                {invFiltered.map((r) => (
+                  <tr key={r.id}><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td></tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {sub === 'work' && (
+        <div>
+          {dateRangeBar(workStart, setWorkStart, workEnd, setWorkEnd)}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '14px' }}>
+            {statCard('작업 건수', workRows.length + '건')}
+            {statCard('합계 금액', workTotal.toLocaleString() + '원', C.textAccent)}
+          </div>
+          {workLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : workRows.length === 0 ? boxMsg('해당 기간 작업 내역이 없습니다', { justifyContent: 'center' }) : (
+            <table style={itemsTable}>
+              <thead><tr><th style={th}>일자</th><th style={th}>작업유형</th><th style={th}>전표번호</th><th style={th}>금액</th></tr></thead>
+              <tbody>
+                {workRows.map((r) => (
+                  <tr key={r.id}><td style={td}>{r.slip_date}</td><td style={td}>{workTypeLabel(r.work_type)}</td><td style={td}>{r.slip_no}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.amount || 0).toLocaleString()}원</td></tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {sub === 'outbound' && (
+        <div>
+          {dateRangeBar(outStart, setOutStart, outEnd, setOutEnd)}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            <input style={inputStyle} placeholder="품명/규격 검색" value={outKeyword} onChange={(e) => setOutKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') runOutSearch(); }} />
+            <button style={{ ...btnStyle(true), whiteSpace: 'nowrap' }} onClick={runOutSearch}>검색</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '10px' }}>
+            {statCard('출고 건수', outTotalCount.toLocaleString() + '건')}
+            {statCard('합계 중량(표시분)', (outTotalWeight / 1000).toFixed(1) + '톤')}
+          </div>
+          {outTotalCount > outRows.length && <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '10px' }}>전체 {outTotalCount.toLocaleString()}건 중 최근 {outRows.length}건 표시 — 기간을 좁히거나 검색어를 입력하면 더 정확히 조회됩니다.</div>}
+          {outLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : outRows.length === 0 ? boxMsg('해당 조건의 출고 내역이 없습니다', { justifyContent: 'center' }) : (
+            <table style={itemsTable}>
+              <thead><tr><th style={th}>출고일</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>중량</th><th style={th}>수량</th></tr></thead>
+              <tbody>
+                {outRows.map((r) => (
+                  <tr key={r.id}><td style={td}>{r.outbound_date}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td><td style={td}>{r.qty || '-'}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 
