@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>오성철강 스마트 ERP 2.0 — 동작 프로토타입</title>
+<style>
+:root{
+  --surface-0:#EEF1F6; --surface-1:#F4F6FA; --surface-2:#FFFFFF;
+  --border:#E3E8F0; --border-strong:#C9D2E0;
+  --text-primary:#0F1E33; --text-secondary:#4D5C72; --text-muted:#8592A6;
+  --fill-accent:#E8830F; --on-accent:#FFFFFF; --bg-accent:#FDECD6; --text-accent:#C46B06; --border-accent:#E8830F;
+  --text-success:#1C7A4D; --bg-success:#E2F5EA; --border-success:#1C7A4D;
+  --text-warning:#A3610A; --bg-warning:#FBEDD2; --border-warning:#C98A1B;
+  --text-danger:#C8372C; --bg-danger:#FBE6E4; --border-danger:#C8372C;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--surface-0);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Pretendard,sans-serif;color:var(--text-primary);}
+.page-header{background:linear-gradient(160deg,#16283f 0%,#0a1524 100%);color:#fff;padding:22px 28px;}
+.page-header h1{margin:0 0 4px;font-size:35px;font-weight:700;}
+.page-header p{margin:0;font-size:23px;color:#b9c4d6;}
+.badge-demo{display:inline-block;font-size:19px;padding:3px 10px;border-radius:10px;background:rgba(232,131,15,0.25);color:#ffd9a8;margin-top:8px;}
+.container{max-width:1200px;margin:0 auto;padding:22px 20px 60px;}
+input,select{height:54px;padding:0 14px;border:1.5px solid var(--border-strong);border-radius:9px;font-size:23px;font-family:inherit;background:var(--surface-2);color:var(--text-primary);}
+input:focus,select:focus{outline:2px solid var(--fill-accent);outline-offset:1px;}
+button{font-family:inherit;}
+.wf-btn{font-size:22px;padding:12px 20px;border-radius:16px;border:1.5px solid var(--border-strong);background:var(--surface-2);cursor:pointer;color:var(--text-primary);}
+.wf-btn:hover{border-color:var(--fill-accent);}
+.wf-btn.active{background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);}
+.wf-btn:disabled{opacity:0.45;cursor:default;}
+.conf{font-size:18px;margin-top:3px;}
+table.items{width:100%;border-collapse:collapse;background:var(--surface-2);border-radius:8px;overflow:hidden;}
+table.items td,table.items th{padding:12px 10px;font-size:22px;text-align:left;border-bottom:1px solid var(--border);}
+table.items th{background:var(--surface-1);color:var(--text-secondary);}
+table.items input{width:100%;height:44px;font-size:20px;}
+.role-panel{display:none;}
+.role-panel.show{display:block;}
+.sub-panel{display:none;}
+.sub-panel.show{display:block;}
+.card-wrap{background:var(--surface-2);border:1px solid var(--border);border-radius:14px;padding:20px;}
+.step-head{font-size:22px;font-weight:700;color:var(--text-accent);text-transform:uppercase;letter-spacing:.02em;margin:18px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+.step-head:first-child{margin-top:0;}
+table.stock-table{width:100%;border-collapse:collapse;margin:6px 0 4px;background:var(--surface-2);border-radius:6px;overflow:hidden;}
+table.stock-table th,table.stock-table td{padding:8px 10px;font-size:19px;text-align:left;border-bottom:1px solid var(--border);}
+table.stock-table th{background:var(--surface-1);color:var(--text-secondary);font-weight:600;}
+</style>
+</head>
+<body>
+<div class="page-header">
+  <h1>오성철강 스마트 ERP 2.0</h1>
+  <p>대표 · 관리자 · 영업 · 지게차 기사 · 고객사 — 5개 역할 동작 프로토타입</p>
+  <span class="badge-demo">DB 미연동 · 브라우저 안에서만 동작하는 UI 데모</span>
+</div>
+<div class="container">
+<div id="toast" style="display:none;padding:10px 14px;border-radius:8px;font-size:23px;margin-bottom:14px;"></div>
+<div id="roleNav" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;"></div>
+
+<div class="card-wrap">
+
+<div id="role-EX" class="role-panel show">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;" id="exStats"></div>
+  <div style="font-size:23px;font-weight:600;margin:16px 0 8px;color:var(--text-secondary);">공정 흐름 (클릭 시 영업 현황판으로 이동)</div>
+  <div id="exFlow" style="display:flex;gap:6px;margin-bottom:18px;"></div>
+
+  <div style="font-size:23px;font-weight:600;margin:16px 0 8px;color:var(--text-secondary);">오늘의 작업 내용</div>
+  <table class="items" style="margin-bottom:18px;">
+    <thead><tr><th>발주번호</th><th>거래처</th><th>두께</th><th>배정 코일</th><th>상태</th></tr></thead>
+    <tbody id="exWorkBody"></tbody>
+  </table>
+
+  <div style="font-size:23px;font-weight:600;margin:16px 0 8px;color:var(--text-danger);">이상 신호</div>
+  <div id="exWarnings"></div>
+
+  <div style="font-size:23px;font-weight:600;margin:20px 0 8px;color:var(--text-secondary);">일일 매출 · 비용 밸런스</div>
+  <div id="exBalance" style="background:var(--surface-1);border-radius:10px;padding:16px;margin-bottom:18px;"></div>
+
+  <div style="font-size:23px;font-weight:600;margin:16px 0 8px;color:var(--text-secondary);">이번달 매출 추이</div>
+  <div id="exForecast" style="background:var(--surface-1);border-radius:10px;padding:16px;"></div>
+
+  <div style="font-size:23px;font-weight:600;margin:20px 0 8px;color:var(--text-secondary);">경쟁 ERP 대비 우리 강점</div>
+  <div id="exEdge" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;"></div>
+</div>
+
+<div id="role-MG" class="role-panel">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;" id="mgSubnav"></div>
+
+  <div id="MG-search" class="sub-panel show">
+    <input id="mgSearchInput" placeholder="코일ID · 거래처명 · 발주번호 검색" oninput="renderMGTable()" style="margin-bottom:12px;width:100%;"/>
+    <table class="items" style="margin-bottom:14px;">
+      <thead><tr><th>발주번호</th><th>거래처</th><th>두께</th><th>생산유형</th><th>상태</th><th></th></tr></thead>
+      <tbody id="mgTableBody"></tbody>
+    </table>
+    <div id="mgDetail" style="font-size:22px;color:var(--text-muted);">발주를 검색하거나 '추적' 버튼을 눌러 앞뒤 공정을 확인하세요.</div>
+  </div>
+
+  <div id="MG-inventory" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">코일별 현재고 · 위치 · 마감 상태(계산서 등록 완료 건은 수정 잠금)를 한눈에 확인합니다.</div>
+    <table class="items">
+      <thead><tr><th>코일ID</th><th>두께</th><th>위치</th><th>잔량</th><th>마감 상태</th></tr></thead>
+      <tbody id="mgInventoryBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="role-OF" class="role-panel">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="ofSubnav"></div>
+
+  <div id="OF-register" class="sub-panel show">
+
+    <div class="step-head">① 발주 원본 확인</div>
+    <div id="enfaxInboxWrap" style="background:var(--surface-1);border:2px solid var(--border-accent);border-radius:10px;padding:16px;margin-bottom:14px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:23px;font-weight:700;color:var(--text-accent);">📠 엔팩스 신규 팩스함</span>
+        <span id="enfaxCount" style="font-size:18px;color:var(--text-muted);"></span>
+      </div>
+      <div id="enfaxList"></div>
+      <div style="font-size:16px;color:var(--text-muted);margin-top:8px;">팩스 원본(TIFF)을 열지 않아도 아래 목록에서 바로 확인·등록할 수 있습니다.</div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;flex-wrap:wrap;">
+      <span style="font-size:22px;color:var(--text-muted);">거래처별 최근 발주:</span>
+      <select id="dupSelect" onchange="showCompanyNote()" style="width:150px;">
+        <option value="">거래처 선택</option>
+        <option value="daehan">대한강재</option>
+        <option value="steelkr">스틸코리아</option>
+      </select>
+      <button class="wf-btn" onclick="duplicateOrder()">최근 발주 복제</button>
+    </div>
+    <div id="companyNoteBox" style="display:none;background:var(--bg-accent);border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+      <div id="companyRateLine" style="font-size:22px;color:var(--text-accent);font-weight:600;margin-bottom:8px;"></div>
+      <div style="font-size:19px;color:var(--text-accent);font-weight:600;margin-bottom:5px;">거래처 메모(선호 규격 · 특이사항)</div>
+      <textarea id="companyNoteText" rows="2" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:22px;padding:6px;border-radius:6px;border:1px solid var(--border-strong);"></textarea>
+      <button class="wf-btn" style="margin-top:6px;padding:4px 10px;font-size:19px;" onclick="saveCompanyNote()">메모 저장</button>
+    </div>
+    <div style="border:1.5px dashed var(--border-strong);border-radius:10px;padding:18px;text-align:center;margin-bottom:8px;">
+      <div id="faxStatus" style="font-size:23px;color:var(--text-muted);margin-bottom:12px;">FAX 원본이 첨부되지 않았습니다</div>
+      <div id="faxPreviewWrap" style="display:none;margin:0 auto 14px;max-width:280px;"><img id="faxPreviewImg" style="width:100%;border-radius:8px;border:1px solid var(--border);"/></div>
+      <label class="wf-btn" style="display:inline-block;">
+        스캔파일 업로드
+        <input type="file" id="faxFileInput" accept="image/*,.pdf" onchange="handleFaxUpload(event)" style="display:none;"/>
+      </label>
+      <button class="wf-btn" onclick="loadSampleFax()">샘플 팩스 불러오기</button>
+      <button class="wf-btn" id="ocrBtn" onclick="runOCR()" disabled>OCR로 자동 인식</button>
+    </div>
+
+    <div class="step-head">② 발주 기본정보</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px;margin-bottom:6px;">
+      <div id="fwrap-fSender" style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">발신처(작성자)</div><input id="fSender" placeholder="예: 유민호" style="width:100%;"/><div class="conf" id="conf-fSender"></div></div>
+      <div id="fwrap-fReceiver" style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">수신처</div><input id="fReceiver" placeholder="예: 오성철강" style="width:100%;"/><div class="conf" id="conf-fReceiver"></div></div>
+      <div id="fwrap-fDate" style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">발주일자</div><input id="fDate" placeholder="예: 2026-07-16" style="width:100%;"/><div class="conf" id="conf-fDate"></div></div>
+      <div id="fwrap-fDue" style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">출고예정일</div><input id="fDue" placeholder="예: 2026-07-20(월)" style="width:100%;"/><div class="conf" id="conf-fDue"></div></div>
+      <div id="fwrap-fPhone" style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">담당 연락처</div><input id="fPhone" placeholder="예: 010-0000-0000" style="width:100%;"/><div class="conf" id="conf-fPhone"></div></div>
+    </div>
+
+    <div class="step-head">③ 처리 옵션 · 재질/단중 계산</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+      <label style="display:flex;align-items:center;gap:6px;font-size:22px;color:var(--text-secondary);"><input type="checkbox" id="fUrgent" style="width:16px;height:16px;"/> 긴급 처리(우선 배정)</label>
+      <span style="font-size:19px;color:var(--text-muted);margin-left:8px;">생산유형</span>
+      <select id="fProdType" onchange="onProdTypeChange()" style="width:130px;">
+        <option value="자사생산">자사생산</option>
+        <option value="임가공">임가공(고객사 재료)</option>
+        <option value="외주가공">외주가공(우리 재고)</option>
+      </select>
+      <input id="fOutsourceTo" placeholder="외주처명" style="width:130px;display:none;"/>
+    </div>
+    <div id="prodTypeHint" style="font-size:19px;color:var(--text-accent);margin-bottom:8px;"></div>
+    <div style="background:var(--surface-1);border-radius:8px;padding:12px 14px;margin-bottom:16px;">
+      <div style="font-size:19px;color:var(--text-secondary);font-weight:600;margin-bottom:8px;">단중 자동계산 (두께 × 폭 × 길이 × 재질비중)</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+        <select id="calcMaterial" onchange="calcUnitWeight()" style="width:110px;">
+          <option value="7.85">탄소강(7.85)</option>
+          <option value="2.7">알루미늄(2.7)</option>
+          <option value="7.9">스테인리스(7.9)</option>
+        </select>
+        <input id="calcThick" placeholder="두께(mm)" oninput="calcUnitWeight()" style="width:90px;"/>
+        <input id="calcWidth" placeholder="폭(mm)" oninput="calcUnitWeight()" style="width:90px;"/>
+        <input id="calcLen" placeholder="길이(mm)" oninput="calcUnitWeight()" style="width:90px;"/>
+        <span style="font-size:22px;color:var(--text-muted);">=</span>
+        <span id="calcResult" style="font-size:23px;font-weight:700;color:var(--text-accent);">- kg</span>
+      </div>
+    </div>
+
+    <div class="step-head">④ 품목 내역</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:0 0 10px;">
+      <span style="font-size:22px;color:var(--text-muted);">즐겨찾기 규격:</span>
+      <button class="wf-btn" style="padding:4px 10px;" onclick="addFavorite('260*4, 175*1')">260*4, 175*1</button>
+      <button class="wf-btn" style="padding:4px 10px;" onclick="addFavorite('165*6, 225*1')">165*6, 225*1</button>
+      <button class="wf-btn" style="padding:4px 10px;" onclick="addFavorite('200*5, 210*1')">200*5, 210*1</button>
+      <button class="wf-btn" style="padding:4px 10px;" onclick="addFavorite('75*16')">75*16</button>
+    </div>
+    <table class="items">
+      <thead><tr><th>순번</th><th>두께</th><th>폭</th><th>중량</th><th>업체명</th><th>Slitting Size</th><th>수량</th><th></th></tr></thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+    <div style="margin:10px 0 18px;"><button class="wf-btn" onclick="addRow()">+ 행 추가</button></div>
+    <div style="display:flex;gap:8px;">
+      <button class="wf-btn" style="flex:1;" onclick="showToast('임시저장되었습니다.', true)">임시저장</button>
+      <button class="wf-btn" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="registerOrder()">등록 → 발주 현황판 반영</button>
+    </div>
+  </div>
+
+  <div id="OF-kanban" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:10px;">전체 발주를 상태별로 조망합니다. 실제 처리는 아래 ①~⑦ 단계별 화면에서 이루어집니다.</div>
+    <div id="kanbanCols" style="display:flex;gap:6px;"></div>
+  </div>
+
+  <div id="OF-assign" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">재고 장부에서 두께 조건에 맞는 코일이 있는지 확인하고, 지게차 기사에게 배정을 지시합니다.</div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px;">
+      <button class="wf-btn" onclick="toggleFullStockList()" id="fullStockToggleBtn">📋 전체 재고 리스트 보기</button>
+      <button class="wf-btn" onclick="printAllCoilList()">🖨 전체 재고 리스트 출력</button>
+    </div>
+    <div id="fullStockListWrap" style="display:none;margin-bottom:16px;background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:10px 12px;"></div>
+    <div id="assignList"></div>
+  </div>
+
+  <div id="OF-workorder" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">코일 탐색·확정 중인 발주의 작업지시서 처리 현황과 처리 우선순위를 조정합니다.</div>
+    <div id="workorderList"></div>
+  </div>
+
+  <div id="OF-monitor" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">현장에서 작업 중인 건을 지켜보다가, 지연되는 건은 확인 전화를 기록합니다.</div>
+    <div id="monitorList"></div>
+  </div>
+
+  <div id="OF-notify" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">작업완료를 확인하면 고객사에 통지하고, 희망 시간에 맞춰 배차를 지시합니다.</div>
+    <div id="notifyList"></div>
+  </div>
+
+  <div id="OF-shipment" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">실측 중량을 확인하고 출고증을 발행합니다.</div>
+    <div id="shipmentList"></div>
+  </div>
+
+  <div id="OF-aftercare" class="sub-panel">
+    <div style="font-size:22px;color:var(--text-muted);margin-bottom:12px;">거래처별 메모·발주 이력을 관리하고, 문의 응대 및 미수금 확인 요청을 처리합니다.</div>
+    <div id="aftercareBody"></div>
+  </div>
+</div>
+
+<div id="role-FL" class="role-panel" style="max-width:640px;">
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="flSubnav"></div>
+  <div id="FL-waiting" class="sub-panel show">
+    <div style="font-size:22px;color:var(--text-secondary);margin-bottom:8px;">대기중</div>
+    <div id="flWaitingList" style="margin-bottom:16px;"></div>
+    <div style="font-size:22px;color:var(--text-secondary);margin-bottom:8px;">최근 처리 이력</div>
+    <div id="flRecentList"></div>
+  </div>
+  <div id="FL-coil" class="sub-panel">
+    <div id="flCoilBody"></div>
+  </div>
+</div>
+
+<div id="role-CP" class="role-panel">
+  <div style="margin-bottom:12px;">
+    <span style="font-size:22px;color:var(--text-muted);">거래처 선택:</span>
+    <select id="cpCompanySelect" onchange="renderCPAll()">
+      <option value="대한강재">대한강재</option>
+      <option value="스틸코리아">스틸코리아</option>
+      <option value="△△철강">△△철강</option>
+    </select>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;" id="cpSubnav"></div>
+
+  <div id="CP-inventory" class="sub-panel show">
+    <div id="cpInventoryList"></div>
+  </div>
+  <div id="CP-today" class="sub-panel">
+    <div id="cpTodayList"></div>
+  </div>
+  <div id="CP-history" class="sub-panel">
+    <div id="cpHistoryChart" style="margin-bottom:16px;"></div>
+    <table class="items"><thead><tr><th>발주번호</th><th>두께</th><th>상태</th></tr></thead><tbody id="cpHistoryTable"></tbody></table>
+  </div>
+  <div id="CP-place" class="sub-panel">
+    <div style="display:inline-block;font-size:19px;padding:4px 10px;border-radius:10px;background:var(--bg-accent);color:var(--text-accent);margin-bottom:14px;">카카오톡 채널 웹뷰로 열림(데모)</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
+      <div style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">두께</div><input id="cpThick" placeholder="예: 0.750" style="width:100%;"/></div>
+      <div style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">폭</div><input id="cpWidth" placeholder="예: 1219" style="width:100%;"/></div>
+      <div style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">중량</div><input id="cpWeight" placeholder="예: 8-11톤" style="width:100%;"/></div>
+      <div style="margin-bottom:12px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">수량</div><input id="cpQty" placeholder="예: 1" style="width:100%;"/></div>
+    </div>
+    <div style="margin-bottom:16px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">Slitting Size</div><input id="cpSlit" placeholder="예: 260*4, 175*1" style="width:100%;"/></div>
+    <button class="wf-btn" style="width:100%;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="cpPlaceOrder()">발주 제출</button>
+  </div>
+</div>
+
+</div>
+</div>
+
+<script>
+var STATUSES = [['RECEIVED','접수확인중'],['SEARCH','코일탐색중'],['WORKING','작업중'],['DONE','작업완료'],['DISPATCH','배차완료'],['SHIPPED','출고완료']];
+var orders = [
+ {id:'2026071801', company:'스틸코리아', thickness:'0.400', status:'SEARCH', coilId:null, weight:6.4, urgent:false, prodType:'자사생산', spec:'120g'},
+ {id:'2026071802', company:'△△철강', thickness:'0.750', status:'WORKING', coilId:'C-20260612-031', weight:8.6, urgent:false, prodType:'임가공', spec:'120g'},
+ {id:'2026071803', company:'대한강재', thickness:'0.500', status:'WORKING', coilId:'C-20260615-009', weight:5.1, urgent:true, prodType:'자사생산', spec:'100g'},
+ {id:'2026071804', company:'스틸코리아', thickness:'0.600', status:'DONE', coilId:'C-20260701-020', weight:7.8, urgent:false, prodType:'외주가공', spec:'110g'},
+ {id:'2026071805', company:'대한강재', thickness:'0.750', status:'DISPATCH', coilId:'C-20260610-014', weight:9.2, urgent:false, prodType:'자사생산', spec:'120g'},
+ {id:'2026071806', company:'△△철강', thickness:'0.400', status:'SHIPPED', coilId:'C-20260605-002', weight:6.4, urgent:false, prodType:'자사생산', spec:'120g'},
+ {id:'2026071807', company:'대한강재', thickness:'0.500', status:'SHIPPED', coilId:null, weight:5.8, urgent:false, prodType:'임가공', spec:'100g'},
+ {id:'2026071808', company:'스틸코리아', thickness:'0.750', status:'SHIPPED', coilId:null, weight:8.9, urgent:false, prodType:'자사생산', spec:'120g'},
+ {id:'2026071809', company:'스틸코리아', thickness:'0.750', status:'RECEIVED', coilId:null, weight:8.1, urgent:true, prodType:'자사생산', spec:'120g'},
+ {id:'2026071810', company:'△△철강', thickness:'0.400', status:'RECEIVED', coilId:null, weight:6.9, urgent:false, prodType:'외주가공', spec:'110g'}
+];
+var DAILY_FINANCE = { revenue:15200000, cost:11800000 };
+var MONTH_LABEL = '7월';
+var DAILY_TREND = [
+ 8200000,9100000,7800000,10500000,11200000,9800000,12100000,10700000,13400000,9200000,
+ 11800000,12600000,10100000,14200000,13100000,11500000,15800000,12900000,15200000
+];
+var COMPANY_NOTES = {
+ daehan:'선호 규격: 260*4,175*1 / 200*5,210*1 — 항상 오전 출고 요청, 배차는 본인 확인 후 진행',
+ steelkr:'선호 규격: 75*16 — 담당자 변경이 잦아 발주 시 담당자명 재확인 필요',
+ sam:'소량 다품종 발주가 많음 — 최소 절단수량 확인 필수'
+};
+var callLog = {};
+var financeRequests = {};
+var notified = {};
+var companyInquiries = {};
+var coils = [
+ {id:'C-20260610-014', thickness:'0.750', location:'A-3', remain:'9.2톤', spec:'120g', receivedDate:'2026-06-10'},
+ {id:'C-20260612-031', thickness:'0.750', location:'B-1', remain:'8.6톤', spec:'120g', receivedDate:'2026-06-12'},
+ {id:'C-20260605-002', thickness:'0.400', location:'A-1', remain:'6.4톤', spec:'120g', receivedDate:'2026-06-05'},
+ {id:'C-20260701-020', thickness:'0.400', location:'C-2', remain:'7.8톤', spec:'110g', receivedDate:'2026-07-01'},
+ {id:'C-20260615-009', thickness:'0.500', location:'B-4', remain:'5.1톤', spec:'100g', receivedDate:'2026-06-15'},
+ {id:'C-20260708-006', thickness:'0.600', location:'A-2', remain:'6.0톤', spec:'110g', receivedDate:'2026-07-08'},
+ {id:'C-20260703-018', thickness:'0.500', location:'C-1', remain:'4.4톤', spec:'120g', receivedDate:'2026-07-03'}
+];
+var ENFAX_INBOX = [
+ {id:'FX-0311', sender:'유민호(스틸코리아)', number:'031-XXX-7710', time:'09:12', pages:2, status:'new', file:'enfax_20260719_0311.tiff'},
+ {id:'FX-0312', sender:'△△철강 자재팀', number:'02-XXX-4402', time:'09:47', pages:1, status:'new', file:'enfax_20260719_0312.tiff'},
+ {id:'FX-0309', sender:'대한강재', number:'031-XXX-9021', time:'08:35', pages:3, status:'done', file:'enfax_20260719_0309.tiff'}
+];
+var inquiries = {};
+var currentOFId = null, currentFLId = null;
+var OCR_ITEMS = [
+ {thick:'0.750',width:'1219',weight:'8-11톤',maker:'120g',slit:'260*4, 175*1',qty:'1'},
+ {thick:'0.750',width:'1219',weight:'8-11톤',maker:'120g',slit:'165*6, 225*1',qty:'1'},
+ {thick:'0.750',width:'1219',weight:'8-11톤',maker:'120g',slit:'160*6, 250*1',qty:'1'},
+ {thick:'0.750',width:'1219',weight:'8-11톤',maker:'120g',slit:'200*5, 210*1',qty:'1'},
+ {thick:'0.400',width:'1219',weight:'8-11톤',maker:'120g',slit:'77*11, 91*4',qty:'1'},
+ {thick:'0.400',width:'1219',weight:'8-11톤',maker:'120g',slit:'75*16',qty:'8'}
+];
+var PRESETS = {
+ daehan:{sender:'대한강재 담당자',receiver:'오성철강',date:'2026-07-12',due:'2026-07-15(수)',phone:'010-1234-5678',
+  items:[{thick:'0.700',width:'1219',weight:'8-11톤',maker:'110g',slit:'250*4, 180*1',qty:'1'},{thick:'0.700',width:'1219',weight:'8-11톤',maker:'110g',slit:'150*8',qty:'1'}]},
+ steelkr:{sender:'스틸코리아 담당자',receiver:'오성철강',date:'2026-07-10',due:'2026-07-13(월)',phone:'010-9988-7766',
+  items:[{thick:'0.400',width:'1219',weight:'8-11톤',maker:'120g',slit:'75*16',qty:'6'}]}
+};
+var CP_HISTORY = { '대한강재':[14,18,9,15,20,17], '스틸코리아':[10,12,15,11,9,13], '△△철강':[6,8,7,10,12,9] };
+var MONTHS = ['2월','3월','4월','5월','6월','7월'];
+var ROLES = [['EX','대표'],['MG','관리자'],['OF','영업'],['FL','지게차 기사'],['CP','고객사']];
+var MG_SUBS = [['search','발주 추적'],['inventory','재고 수불원장(마감상태)']];
+var currentMGSub = 'search';
+var COMPANY_RATES = { daehan:850, steelkr:900, sam:820 };
+var EDGE_POINTS = [
+ {t:'FAX OCR 자동인식', d:'경쟁 ERP는 발주 내용을 전부 수기입력 — 우리는 FAX 사진만 올리면 자동으로 채워집니다.'},
+ {t:'지게차 기사 태블릿 화면', d:'경쟁 ERP는 PC 클라이언트뿐 — 현장 코일 검색·확정을 태블릿에서 바로 처리합니다.'},
+ {t:'고객사 실시간 포털', d:'경쟁 ERP는 내부직원 전용 — 우리는 고객사가 직접 접속해 진행상태를 확인합니다.'},
+ {t:'경영진 통합 대시보드', d:'경쟁 ERP는 화면별 개별조회 — 우리는 매출·비용·작업현황을 한 화면에서 봅니다.'},
+ {t:'웹 기반(설치 불필요)', d:'경쟁 ERP는 PC 설치형 — 우리는 브라우저만 있으면 어디서든 접속됩니다.'},
+ {t:'카카오톡 알림 확장 여지', d:'경쟁 ERP는 이메일·FAX 전송까지 — 우리는 카카오톡 알림으로 한 단계 더 나아갑니다.'}
+];
+function prodBadge(type){
+ var t = type || '자사생산';
+ var bg = t==='임가공' ? 'var(--bg-warning)' : (t==='외주가공' ? 'var(--bg-accent)' : 'var(--bg-success)');
+ var fg = t==='임가공' ? 'var(--text-warning)' : (t==='외주가공' ? 'var(--text-accent)' : 'var(--text-success)');
+ return '<span style="display:inline-block;font-size:16px;padding:2px 7px;border-radius:8px;background:'+bg+';color:'+fg+';font-weight:600;">'+t+'</span>';
+}
+var OF_SUBS = [['kanban','전체 현황판'],['register','① 발주 접수'],['assign','② 코일 배정 지시'],['workorder','③ 작업지시서 처리'],['monitor','④ 현장 공정 모니터링'],['notify','⑤ 고객 통지·배차 지시'],['shipment','⑥ 출고 처리'],['aftercare','⑦ 사후 대응·거래처 관리']];
+var FL_SUBS = [['waiting','대기 발주'],['coil','코일 검색·확정']];
+var CP_SUBS = [['inventory','나의 재고 현황'],['today','금일 현황'],['history','과거 이력 분석'],['place','발주하기']];
+
+function statusLabel(k){ return STATUSES.find(function(s){return s[0]===k;})[1]; }
+function statusIndex(k){ return STATUSES.findIndex(function(s){return s[0]===k;}); }
+function box(t,h,extra){ return '<div style="background:var(--surface-1);border:1px solid var(--border);border-radius:8px;min-height:'+h+'px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:22px;color:var(--text-muted);padding:8px;'+(extra||'')+'">'+t+'</div>'; }
+function statCard(label,val){ return '<div style="background:var(--surface-1);border-radius:10px;padding:14px;"><div style="font-size:19px;color:var(--text-muted);margin-bottom:5px;">'+label+'</div><div style="font-size:35px;font-weight:700;">'+val+'</div></div>'; }
+function timelineHtml(activeKey){
+ var idx = statusIndex(activeKey);
+ return '<div style="display:flex;align-items:flex-start;margin:12px 0;">' + STATUSES.map(function(s,i){
+   return '<div style="flex:1;text-align:center;"><div style="width:15px;height:15px;border-radius:50%;margin:0 auto 5px;background:'+(i<=idx?'var(--fill-accent)':'var(--border-strong)')+';"></div><div style="font-size:18px;color:'+(i===idx?'var(--text-accent)':'var(--text-muted)')+';">'+s[1]+'</div></div>';
+ }).join('') + '</div>';
+}
+function showToast(msg, ok){
+ var t = document.getElementById('toast');
+ t.style.display='block';
+ t.style.background = ok? 'var(--bg-success)':'var(--bg-warning)';
+ t.style.color = ok? 'var(--text-success)':'var(--text-warning)';
+ t.textContent = msg;
+ clearTimeout(window._toastTimer);
+ window._toastTimer = setTimeout(function(){ t.style.display='none'; }, 3200);
+}
+function buildNav(container, items, activeKey, onClick){
+ container.innerHTML = items.map(function(it){
+  var key = it[0], label = it[1];
+  return '<button class="wf-btn'+(key===activeKey?' active':'')+'" onclick="'+onClick+'(\''+key+'\')">'+label+'</button>';
+ }).join('');
+}
+
+var currentRole='EX', currentOFSub='register', currentFLSub='waiting', currentCPSub='inventory';
+
+function showRole(role){
+ currentRole = role;
+ document.querySelectorAll('.role-panel').forEach(function(p){ p.classList.remove('show'); });
+ document.getElementById('role-'+role).classList.add('show');
+ buildNav(document.getElementById('roleNav'), ROLES, role, 'showRole');
+ if(role==='EX') renderEX();
+ if(role==='MG') showMGSub(currentMGSub);
+ if(role==='OF') showSub('OF', currentOFSub);
+ if(role==='FL') showSub('FL', currentFLSub);
+ if(role==='CP') showSub('CP', currentCPSub);
+}
+function showSub(role, sub){
+ if(role==='OF') currentOFSub = sub;
+ if(role==='FL') currentFLSub = sub;
+ if(role==='CP') currentCPSub = sub;
+ document.querySelectorAll('#role-'+role+' .sub-panel').forEach(function(p){ p.classList.remove('show'); });
+ document.getElementById(role+'-'+sub).classList.add('show');
+ var navId = role==='OF'?'ofSubnav':role==='FL'?'flSubnav':'cpSubnav';
+ var list = role==='OF'?OF_SUBS:role==='FL'?FL_SUBS:CP_SUBS;
+ buildNav(document.getElementById(navId), list, sub, "showSub.bind(null,'"+role+"')");
+ if(role==='OF' && sub==='kanban') renderKanban();
+ if(role==='OF' && sub==='assign') renderAssign();
+ if(role==='OF' && sub==='workorder') renderWorkorder();
+ if(role==='OF' && sub==='monitor') renderMonitor();
+ if(role==='OF' && sub==='notify') renderNotify();
+ if(role==='OF' && sub==='shipment') renderShipment();
+ if(role==='OF' && sub==='aftercare') renderAftercare();
+ if(role==='FL' && sub==='waiting') renderFLWaiting();
+ if(role==='FL' && sub==='coil') renderFLCoil();
+ if(role==='CP') renderCPAll();
+}
+
+function renderEX(){
+ var inProgress = orders.filter(function(o){return o.status==='SEARCH'||o.status==='WORKING';}).length;
+ var dispatchCnt = orders.filter(function(o){return o.status==='DISPATCH';}).length;
+ var totalWeight = orders.reduce(function(sum,o){ return sum + (o.weight||0); }, 0);
+ document.getElementById('exStats').innerHTML = statCard('오늘 발주', orders.length+'건') + statCard('진행중', inProgress+'건') + statCard('출고예정', dispatchCnt+'건') + statCard('오늘 총 중량', totalWeight.toFixed(1)+'톤') + statCard('오늘 매출', Math.round(DAILY_FINANCE.revenue/10000).toLocaleString()+'만원');
+ document.getElementById('exFlow').innerHTML = STATUSES.map(function(s){
+  var cnt = orders.filter(function(o){return o.status===s[0];}).length;
+  return '<div style="flex:1;cursor:pointer;" onclick="showRole(\'OF\');showSub(\'OF\',\'kanban\');"><div style="font-size:18px;color:var(--text-muted);text-align:center;margin-bottom:5px;">'+s[1]+'</div>'+box(cnt+'건',44)+'</div>';
+ }).join('');
+ var active = orders.filter(function(o){return o.status!=='SHIPPED';});
+ document.getElementById('exWorkBody').innerHTML = active.length ? active.map(function(o){
+  return '<tr><td>'+o.id+'</td><td>'+o.company+'</td><td>'+o.thickness+'</td><td>'+(o.coilId||'-')+'</td><td>'+statusLabel(o.status)+'</td></tr>';
+ }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">진행중인 작업이 없습니다</td></tr>';
+ var stuck = orders.filter(function(o){return o.status==='WORKING';});
+ var warn = document.getElementById('exWarnings');
+ if(stuck.length===0){ warn.innerHTML = box('현재 지연 건 없음', 44); }
+ else {
+  warn.innerHTML = stuck.map(function(o){
+   return '<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid var(--border-warning);background:var(--bg-warning);border-radius:8px;margin-bottom:7px;font-size:22px;color:var(--text-warning);"><span style="flex:1;">'+o.company+' · '+o.id+' · 작업중 24시간 경과 추정</span><button class="wf-btn" style="padding:4px 10px;font-size:19px;" onclick="showRole(\'MG\');mgSearch(\''+o.id+'\');">관리자에서 보기</button></div>';
+  }).join('');
+ }
+ renderExBalance();
+ renderExForecast();
+ renderExEdge();
+}
+function renderExEdge(){
+ document.getElementById('exEdge').innerHTML = EDGE_POINTS.map(function(p){
+  return '<div style="background:var(--surface-1);border:1px solid var(--border);border-radius:10px;padding:12px;"><div style="font-size:22px;font-weight:700;color:var(--text-accent);margin-bottom:4px;">✓ '+p.t+'</div><div style="font-size:19px;color:var(--text-secondary);line-height:1.5;">'+p.d+'</div></div>';
+ }).join('');
+}
+function renderExBalance(){
+ var rev = DAILY_FINANCE.revenue, cost = DAILY_FINANCE.cost;
+ var net = rev - cost;
+ var max = Math.max(rev, cost);
+ var revPct = Math.round(rev/max*100), costPct = Math.round(cost/max*100);
+ var netColor = net>=0 ? 'var(--text-success)' : 'var(--text-danger)';
+ document.getElementById('exBalance').innerHTML =
+  '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;"><span style="width:56px;font-size:22px;color:var(--text-secondary);">매출</span><div style="flex:1;background:var(--surface-2);border-radius:6px;overflow:hidden;height:18px;"><div style="width:'+revPct+'%;height:100%;background:var(--text-success);"></div></div><span style="width:110px;text-align:right;font-size:22px;font-weight:600;">'+rev.toLocaleString()+'원</span></div>' +
+  '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><span style="width:56px;font-size:22px;color:var(--text-secondary);">비용</span><div style="flex:1;background:var(--surface-2);border-radius:6px;overflow:hidden;height:18px;"><div style="width:'+costPct+'%;height:100%;background:var(--text-warning);"></div></div><span style="width:110px;text-align:right;font-size:22px;font-weight:600;">'+cost.toLocaleString()+'원</span></div>' +
+  '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid var(--border);"><span style="font-size:22px;color:var(--text-secondary);">순손익</span><span style="font-size:28px;font-weight:700;color:'+netColor+';">'+(net>=0?'+':'')+net.toLocaleString()+'원</span></div>';
+}
+function renderExForecast(){
+ var max = Math.max.apply(null, DAILY_TREND);
+ var total = DAILY_TREND.reduce(function(a,b){return a+b;},0);
+ var avg = Math.round(total/DAILY_TREND.length);
+ var todayIdx = DAILY_TREND.length-1;
+ var bars = DAILY_TREND.map(function(v,i){
+  var pct = Math.round(v/max*100);
+  var isToday = i===todayIdx;
+  return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:80px;" title="'+(i+1)+'일 · '+v.toLocaleString()+'원"><div style="width:100%;max-width:16px;height:'+pct+'%;border-radius:3px 3px 0 0;background:'+(isToday?'var(--fill-accent)':'var(--bg-accent)')+';'+(isToday?'':'border:1px solid var(--border-accent);')+'"></div></div>';
+ }).join('');
+ var labels = DAILY_TREND.map(function(v,i){
+  var show = (i+1)%5===0 || i===todayIdx;
+  return '<div style="flex:1;text-align:center;font-size:16px;color:'+(i===todayIdx?'var(--text-accent)':'var(--text-muted)')+';">'+(show?((i===todayIdx)?'오늘':(i+1)):'')+'</div>';
+ }).join('');
+ document.getElementById('exForecast').innerHTML =
+  '<div style="display:flex;align-items:flex-end;gap:3px;margin-bottom:4px;">'+bars+'</div>' +
+  '<div style="display:flex;gap:3px;margin-bottom:12px;">'+labels+'</div>' +
+  '<div style="display:flex;justify-content:space-between;font-size:19px;color:var(--text-secondary);border-top:1px solid var(--border);padding-top:10px;"><span>이번달('+MONTH_LABEL+') 누적 매출: <b style="color:var(--text-primary);">'+total.toLocaleString()+'원</b></span><span>일평균: '+avg.toLocaleString()+'원</span></div>';
+}
+
+function showMGSub(sub){
+ currentMGSub = sub;
+ document.querySelectorAll('#role-MG .sub-panel').forEach(function(p){ p.classList.remove('show'); });
+ document.getElementById('MG-'+sub).classList.add('show');
+ buildNav(document.getElementById('mgSubnav'), MG_SUBS, sub, 'showMGSub');
+ if(sub==='search') renderMGTable();
+ if(sub==='inventory') renderMGInventory();
+}
+var mgEditingId = null;
+function renderMGTable(){
+ var q = (document.getElementById('mgSearchInput').value||'').toLowerCase();
+ var filtered = orders.filter(function(o){ return !q || o.id.toLowerCase().indexOf(q)>=0 || o.company.toLowerCase().indexOf(q)>=0; });
+ document.getElementById('mgTableBody').innerHTML = filtered.map(function(o){
+  if(mgEditingId===o.id){
+   return '<tr>'+
+    '<td>'+o.id+'</td>'+
+    '<td><input id="mgEditCompany" value="'+o.company+'" style="height:34px;font-size:20px;"/></td>'+
+    '<td><input id="mgEditThickness" value="'+o.thickness+'" style="height:34px;font-size:20px;width:80px;"/></td>'+
+    '<td>'+prodBadge(o.prodType)+'</td><td>'+statusLabel(o.status)+'</td>'+
+    '<td style="white-space:nowrap;"><button class="wf-btn" style="padding:3px 9px;font-size:19px;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="mgSaveEdit(\''+o.id+'\')">저장</button> <button class="wf-btn" style="padding:3px 9px;font-size:19px;" onclick="mgCancelEdit()">취소</button></td>'+
+    '</tr>';
+  }
+  return '<tr><td>'+o.id+'</td><td>'+o.company+'</td><td>'+o.thickness+'</td><td>'+prodBadge(o.prodType)+'</td><td>'+statusLabel(o.status)+'</td>'+
+   '<td style="white-space:nowrap;">'+
+   '<button class="wf-btn" style="padding:3px 9px;font-size:19px;" onclick="mgShowDetail(\''+o.id+'\')">추적</button> '+
+   '<button class="wf-btn" style="padding:3px 9px;font-size:19px;" onclick="mgStartEdit(\''+o.id+'\')">수정</button> '+
+   '<button class="wf-btn" style="padding:3px 9px;font-size:19px;color:var(--text-danger);border-color:var(--border-danger);" onclick="mgDeleteOrder(\''+o.id+'\')">삭제</button>'+
+   '</td></tr>';
+ }).join('');
+}
+function mgStartEdit(id){ mgEditingId = id; renderMGTable(); }
+function mgCancelEdit(){ mgEditingId = null; renderMGTable(); }
+function mgSaveEdit(id){
+ var o = orders.find(function(x){return x.id===id;});
+ if(!o) return;
+ var company = document.getElementById('mgEditCompany').value.trim();
+ var thickness = document.getElementById('mgEditThickness').value.trim();
+ if(!company || !thickness){ showToast('거래처와 두께를 입력하세요.', false); return; }
+ o.company = company;
+ o.thickness = thickness;
+ mgEditingId = null;
+ renderMGTable();
+ refreshOFViews();
+ showToast(id+' 발주 정보를 수정했습니다.', true);
+}
+function mgDeleteOrder(id){
+ if(!confirm(id+' 발주를 삭제하시겠습니까? 되돌릴 수 없습니다.')) return;
+ var idx = orders.findIndex(function(x){return x.id===id;});
+ if(idx>=0) orders.splice(idx,1);
+ renderMGTable();
+ refreshOFViews();
+ document.getElementById('mgDetail').innerHTML = '발주를 검색하거나 \'추적\' 버튼을 눌러 앞뒤 공정을 확인하세요.';
+ showToast(id+' 발주를 삭제했습니다.', true);
+}
+function renderMGInventory(){
+ document.getElementById('mgInventoryBody').innerHTML = coils.map(function(c,i){
+  var isClosed = (i%3===0);
+  var badge = isClosed
+   ? '<span style="font-size:18px;padding:2px 8px;border-radius:8px;background:var(--bg-success);color:var(--text-success);font-weight:600;">🔒 마감(계산서 등록완료)</span>'
+   : '<span style="font-size:18px;padding:2px 8px;border-radius:8px;background:var(--bg-warning);color:var(--text-warning);font-weight:600;">진행중(수정 가능)</span>';
+  return '<tr><td>'+c.id+'</td><td>'+c.thickness+'</td><td>'+c.location+'</td><td>'+c.remain+'</td><td>'+badge+'</td></tr>';
+ }).join('');
+}
+function mgSearch(q){ showMGSub('search'); document.getElementById('mgSearchInput').value=q; renderMGTable(); mgShowDetail(q); }
+function mgShowDetail(id){
+ var o = orders.find(function(x){return x.id===id;});
+ if(!o) return;
+ document.getElementById('mgDetail').innerHTML = '<div style="font-size:23px;font-weight:600;color:var(--text-primary);margin-bottom:4px;">'+o.company+' · '+o.id+' 전후공정 추적 '+prodBadge(o.prodType)+'</div>' + timelineHtml(o.status) + (o.coilId? box('배정 코일: '+o.coilId,34,'margin-top:8px;') : box('코일 미배정',34,'margin-top:8px;'));
+}
+
+function rowTemplate(it){
+ it = it || {thick:'',width:'',weight:'',maker:'',slit:'',qty:''};
+ return '<tr>'+
+ '<td class="rownum">1</td>'+
+ '<td><input value="'+it.thick+'"/></td>'+
+ '<td><input value="'+it.width+'"/></td>'+
+ '<td><input value="'+it.weight+'"/></td>'+
+ '<td><input value="'+it.maker+'"/></td>'+
+ '<td><input value="'+it.slit+'"/></td>'+
+ '<td><input value="'+it.qty+'" style="width:40px;"/></td>'+
+ '<td><button class="wf-btn" style="padding:2px 8px;font-size:18px;" onclick="this.closest(\'tr\').remove();renumberRows();">삭제</button></td>'+
+ '</tr>';
+}
+function addRowEl(it){ document.getElementById('itemsBody').insertAdjacentHTML('beforeend', rowTemplate(it)); renumberRows(); }
+function renumberRows(){ document.querySelectorAll('#itemsBody tr').forEach(function(r,i){ r.querySelector('.rownum').textContent = i+1; }); }
+function renderItems(list){ document.getElementById('itemsBody').innerHTML=''; (list||[]).forEach(function(it){ addRowEl(it); }); if(!list || list.length===0){ addRowEl(); } }
+function addRow(){ addRowEl(); }
+function addFavorite(spec){ addRowEl({thick:'',width:'1219',weight:'8-11톤',maker:'120g',slit:spec,qty:'1'}); showToast('즐겨찾기 규격을 새 행으로 추가했습니다.', true); }
+function loadSampleFax(){
+ document.getElementById('faxStatus').innerHTML = '<span style="color:var(--text-primary);">발주서_20260716.jpg</span> 첨부됨';
+ document.getElementById('faxPreviewWrap').style.display = 'none';
+ document.getElementById('ocrBtn').disabled = false;
+}
+function renderEnfaxInbox(){
+ var wrap = document.getElementById('enfaxList');
+ if(!wrap) return;
+ var newCount = ENFAX_INBOX.filter(function(f){return f.status==='new';}).length;
+ document.getElementById('enfaxCount').textContent = newCount>0 ? ('신규 '+newCount+'건') : '신규 팩스 없음';
+ wrap.innerHTML = ENFAX_INBOX.map(function(f,i){
+  var isNew = f.status==='new';
+  return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:'+(isNew?'var(--surface-0)':'var(--surface-1)')+';border:1.5px solid '+(isNew?'var(--border-accent)':'var(--border)')+';border-radius:8px;padding:10px 14px;margin-bottom:8px;">'+
+   '<div>'+
+    '<div style="font-size:21px;font-weight:'+(isNew?'700':'500')+';color:'+(isNew?'var(--text-primary)':'var(--text-muted)')+';">'+f.sender+(isNew?' <span style="font-size:16px;color:var(--text-accent);">NEW</span>':'')+'</div>'+
+    '<div style="font-size:16px;color:var(--text-muted);">발신번호 '+f.number+' · '+f.time+' 수신 · '+f.pages+'페이지 · '+f.file+'</div>'+
+   '</div>'+
+   (isNew ?
+    '<button class="wf-btn active" onclick="enfaxConfirm(\''+f.id+'\')">확인 및 등록</button>' :
+    '<span style="font-size:17px;color:var(--text-success);">✓ 등록완료</span>')+
+  '</div>';
+ }).join('');
+}
+function enfaxConfirm(id){
+ var f = ENFAX_INBOX.find(function(x){return x.id===id;});
+ if(!f) return;
+ f.status='done';
+ document.getElementById('faxStatus').innerHTML = '<span style="color:var(--text-primary);">'+f.file+'</span> (엔팩스 자동수신) 첨부됨 — TIFF 원본';
+ document.getElementById('faxPreviewWrap').style.display = 'block';
+ document.getElementById('faxPreviewImg').src = 'data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="600" height="800" fill="white" stroke="#999"/><text x="30" y="60" font-size="26">FAX  발주서</text><text x="30" y="110" font-size="20">보낸사람: '+f.sender+'</text><text x="30" y="150" font-size="20">발신번호: '+f.number+'</text><text x="30" y="190" font-size="20">수신시간: '+f.time+'</text><text x="30" y="230" font-size="20">페이지: '+f.pages+'</text><line x1="30" y1="260" x2="570" y2="260" stroke="#ccc"/><text x="30" y="310" font-size="18" fill="#888">(엔팩스 TIFF 원본 미리보기 — 실제 연동 시</text><text x="30" y="340" font-size="18" fill="#888">서버에서 TIFF → 이미지 변환 후 이 자리에 표시됩니다)</text></svg>');
+ document.getElementById('ocrBtn').disabled = false;
+ renderEnfaxInbox();
+ showToast('엔팩스에서 "'+f.file+'"을(를) 불러왔습니다. 원본 확인 후 OCR로 자동 인식을 눌러주세요.', true);
+}
+function handleFaxUpload(evt){
+ var file = evt.target.files[0];
+ if(!file) return;
+ document.getElementById('faxStatus').innerHTML = '<span style="color:var(--text-primary);">'+file.name+'</span> 첨부됨';
+ document.getElementById('ocrBtn').disabled = false;
+ if(file.type && file.type.indexOf('image')===0){
+  var reader = new FileReader();
+  reader.onload = function(e){
+   document.getElementById('faxPreviewImg').src = e.target.result;
+   document.getElementById('faxPreviewWrap').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+ } else {
+  document.getElementById('faxPreviewWrap').style.display = 'none';
+ }
+ showToast('스캔파일이 첨부되었습니다. OCR로 자동 인식을 눌러주세요.', true);
+}
+function setConfidence(id, ok){
+ var el = document.getElementById('conf-'+id);
+ var input = document.querySelector('#fwrap-'+id+' input');
+ if(ok){ el.style.color='var(--text-success)'; el.textContent='✓ 인식됨'; input.style.borderColor='var(--border-success)'; }
+ else { el.style.color='var(--text-warning)'; el.textContent='⚠ 확인 필요(손글씨)'; input.style.borderColor='var(--border-warning)'; }
+}
+function runOCR(){
+ document.getElementById('faxStatus').textContent = 'OCR 인식 중...';
+ setTimeout(function(){
+  document.getElementById('faxStatus').innerHTML = '발주서_20260716.jpg · <span style="color:var(--text-success);">OCR 인식 완료</span>';
+  document.getElementById('fSender').value='유민호';
+  document.getElementById('fReceiver').value='오성철강';
+  document.getElementById('fDate').value='2026-07-16';
+  document.getElementById('fDue').value='2026-07-20(월)';
+  document.getElementById('fPhone').value='010-9240-3743';
+  setConfidence('fSender',true); setConfidence('fReceiver',true); setConfidence('fDate',true); setConfidence('fDue',false); setConfidence('fPhone',false);
+  renderItems(OCR_ITEMS);
+  showToast('OCR로 6개 품목을 인식했습니다. 주황색 항목만 확인 후 등록하세요.', true);
+ }, 800);
+}
+function showCompanyNote(){
+ var key = document.getElementById('dupSelect').value;
+ var box = document.getElementById('companyNoteBox');
+ if(!key){ box.style.display='none'; return; }
+ box.style.display='block';
+ document.getElementById('companyNoteText').value = COMPANY_NOTES[key] || '';
+ document.getElementById('companyNoteText').dataset.key = key;
+ var rate = COMPANY_RATES[key];
+ document.getElementById('companyRateLine').textContent = rate ? ('계약단가 자동적용: '+rate.toLocaleString()+'원/kg (업체별 단가관리에 등록된 값)') : '';
+}
+function calcUnitWeight(){
+ var density = parseFloat(document.getElementById('calcMaterial').value);
+ var t = parseFloat(document.getElementById('calcThick').value);
+ var w = parseFloat(document.getElementById('calcWidth').value);
+ var l = parseFloat(document.getElementById('calcLen').value);
+ var out = document.getElementById('calcResult');
+ if(!t || !w || !l){ out.textContent = '- kg'; return; }
+ var kg = (t * w * l * density) / 1000000;
+ out.textContent = kg.toFixed(1) + ' kg (이론중량)';
+}
+function onProdTypeChange(){
+ var v = document.getElementById('fProdType').value;
+ var out = document.getElementById('fOutsourceTo');
+ var hint = document.getElementById('prodTypeHint');
+ out.style.display = (v==='외주가공') ? 'inline-block' : 'none';
+ if(v==='임가공'){ hint.textContent = '⚠ 고객사 소유 재료 — 매입(입고) 등록이 선행되어야 합니다.'; }
+ else if(v==='외주가공'){ hint.textContent = '우리 재고를 외주처에 보내 가공 — 가공의뢰서가 자동 발행됩니다.'; }
+ else { hint.textContent = ''; }
+}
+function saveCompanyNote(){
+ var key = document.getElementById('companyNoteText').dataset.key;
+ if(!key) return;
+ COMPANY_NOTES[key] = document.getElementById('companyNoteText').value;
+ showToast('거래처 메모를 저장했습니다.', true);
+}
+function duplicateOrder(){
+ var key = document.getElementById('dupSelect').value;
+ if(!key){ showToast('거래처를 먼저 선택하세요.', false); return; }
+ var p = PRESETS[key];
+ document.getElementById('fSender').value=p.sender;
+ document.getElementById('fReceiver').value=p.receiver;
+ document.getElementById('fDate').value=p.date;
+ document.getElementById('fDue').value=p.due;
+ document.getElementById('fPhone').value=p.phone;
+ ['fSender','fReceiver','fDate','fDue','fPhone'].forEach(function(id){ setConfidence(id,true); });
+ renderItems(p.items);
+ showToast('직전 발주 내용을 불러왔습니다 — 숫자만 확인하고 등록하세요.', true);
+}
+function genId(){ return '2026' + Math.floor(1000+Math.random()*8999); }
+function registerOrder(){
+ var sender = document.getElementById('fSender').value || '거래처 미입력';
+ var rows = document.querySelectorAll('#itemsBody tr');
+ if(rows.length===0){ showToast('품목을 1건 이상 입력하세요.', false); return; }
+ var firstThick = rows[0].querySelectorAll('input')[0].value || '-';
+ var newId = genId();
+ var urgent = document.getElementById('fUrgent').checked;
+ var prodType = document.getElementById('fProdType').value;
+ orders.unshift({id:newId, company:sender, thickness:firstThick, status:'RECEIVED', coilId:null, weight:Math.round((5+Math.random()*5)*10)/10, urgent:urgent, prodType:prodType});
+ showToast((urgent?'[긴급] ':'')+'['+prodType+'] 발주 등록 완료 · 발주번호 '+newId+' · 발주 현황판으로 이동합니다.', true);
+ document.getElementById('fUrgent').checked = false;
+ setTimeout(function(){ showSub('OF','kanban'); }, 800);
+}
+function moveOrder(id, dir){
+ var idx = orders.findIndex(function(x){return x.id===id;});
+ var status = orders[idx].status;
+ if(dir==='up'){
+  for(var j=idx-1;j>=0;j--){ if(orders[j].status===status){ var tmp=orders[idx]; orders[idx]=orders[j]; orders[j]=tmp; break; } }
+ } else {
+  for(var j=idx+1;j<orders.length;j++){ if(orders[j].status===status){ var tmp2=orders[idx]; orders[idx]=orders[j]; orders[j]=tmp2; break; } }
+ }
+ renderKanban();
+ if(document.getElementById('OF-workorder') && document.getElementById('OF-workorder').classList.contains('show')) renderWorkorder();
+}
+
+function targetSubFor(status){
+ if(status==='RECEIVED') return 'assign';
+ if(status==='SEARCH'||status==='WORKING') return 'workorder';
+ if(status==='DONE') return 'notify';
+ if(status==='DISPATCH') return 'shipment';
+ return null;
+}
+function renderKanban(){
+ var html = '';
+ STATUSES.forEach(function(s){
+  var key=s[0], label=s[1];
+  var list = orders.filter(function(o){return o.status===key;});
+  html += '<div style="flex:1;min-width:0;">';
+  html += '<div style="font-size:19px;color:var(--text-secondary);margin-bottom:7px;text-align:center;white-space:nowrap;">'+label+' ('+list.length+')</div>';
+  list.forEach(function(o){
+   var target = targetSubFor(o.status);
+   html += '<div style="background:var(--surface-1);border:1px solid '+(o.urgent?'var(--border-danger)':'var(--border)')+';border-radius:8px;padding:8px;margin-bottom:7px;">';
+   if(o.urgent){ html += '<div style="font-size:16px;font-weight:700;color:var(--text-danger);margin-bottom:3px;">🔺 긴급</div>'; }
+   html += '<div style="margin-bottom:3px;">'+prodBadge(o.prodType)+'</div>';
+   html += '<div style="font-weight:600;font-size:22px;margin-bottom:3px;">'+o.company+'</div>';
+   html += '<div style="color:var(--text-muted);font-size:18px;margin-bottom:7px;">'+o.id+'<br/>두께 '+o.thickness+'</div>';
+   if(target){
+    html += '<button class="wf-btn" style="width:100%;padding:4px;font-size:18px;" onclick="showSub(\'OF\',\''+target+'\')">'+OF_SUBS.find(function(x){return x[0]===target;})[1]+' →</button>';
+   } else {
+    html += '<div style="color:var(--text-success);font-size:19px;text-align:center;">✓ 완료</div>';
+   }
+   html += '</div>';
+  });
+  html += '</div>';
+ });
+ document.getElementById('kanbanCols').innerHTML = html;
+}
+function companyKeyFor(name){
+ if(name.indexOf('대한강재')>=0) return 'daehan';
+ if(name.indexOf('스틸코리아')>=0) return 'steelkr';
+ if(name.indexOf('△△철강')>=0) return 'sam';
+ return null;
+}
+function refreshOFViews(){
+ renderKanban();
+ var active = document.querySelector('#role-OF .sub-panel.show');
+ if(!active) return;
+ var id = active.id;
+ if(id==='OF-assign') renderAssign();
+ if(id==='OF-workorder') renderWorkorder();
+ if(id==='OF-monitor') renderMonitor();
+ if(id==='OF-notify') renderNotify();
+ if(id==='OF-shipment') renderShipment();
+ if(id==='OF-aftercare') renderAftercare();
+}
+
+/* 재고 리스트 표/출력 공통 함수 */
+function coilTableHtml(list){
+ if(!list.length) return '<div style="font-size:19px;color:var(--text-muted);padding:8px 0;">해당 조건의 재고가 없습니다.</div>';
+ var rows = list.map(function(c){
+  return '<tr><td>'+c.id+'</td><td>'+c.thickness+'</td><td>'+(c.spec||'-')+'</td><td>Bay '+c.location+'</td><td>'+c.remain+'</td><td>'+(c.receivedDate||'-')+'</td></tr>';
+ }).join('');
+ return '<table class="stock-table"><thead><tr><th>코일ID</th><th>두께</th><th>규격</th><th>위치</th><th>잔량</th><th>입고일</th></tr></thead><tbody>'+rows+'</tbody></table>';
+}
+function printHTML(title, bodyHtml){
+ var w = window.open('', '_blank', 'width=920,height=720');
+ if(!w){ showToast('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제해주세요.', false); return; }
+ w.document.write('<html><head><meta charset="UTF-8"><title>'+title+'</title><style>'+
+  'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif;padding:24px;color:#0F1E33;}'+
+  'h2{margin:0 0 4px;font-size:24px;}'+
+  '.meta{font-size:14px;color:#8592A6;margin-bottom:16px;}'+
+  'table{width:100%;border-collapse:collapse;}'+
+  'th,td{border:1px solid #C9D2E0;padding:8px 10px;font-size:15px;text-align:left;}'+
+  'th{background:#F4F6FA;color:#4D5C72;}'+
+  '@media print{button{display:none;}}'+
+  '</style></head><body>'+
+  '<h2>'+title+'</h2><div class="meta">오성철강 스마트 ERP 2.0 · 출력일시 '+new Date().toLocaleString('ko-KR')+'</div>'+
+  bodyHtml+
+  '<div style="margin-top:18px;"><button onclick="window.print()" style="font-size:16px;padding:8px 16px;">인쇄</button></div>'+
+  '</body></html>');
+ w.document.close();
+ w.focus();
+ setTimeout(function(){ w.print(); }, 300);
+}
+function printCoilListFor(orderId){
+ var o = orders.find(function(x){return x.id===orderId;});
+ var matched = coils.filter(function(c){return c.thickness===o.thickness;});
+ printHTML(o.company+' ('+o.id+') 재고 코일 리스트 — 두께 '+o.thickness, coilTableHtml(matched));
+}
+function printAllCoilList(){
+ printHTML('전체 재고 코일 리스트', coilTableHtml(coils));
+}
+function toggleFullStockList(){
+ var wrap = document.getElementById('fullStockListWrap');
+ var btn = document.getElementById('fullStockToggleBtn');
+ if(wrap.style.display==='none'){
+  wrap.innerHTML = coilTableHtml(coils);
+  wrap.style.display = 'block';
+  btn.textContent = '📋 전체 재고 리스트 닫기';
+ } else {
+  wrap.style.display = 'none';
+  btn.textContent = '📋 전체 재고 리스트 보기';
+ }
+}
+/* ② 코일 배정 지시 */
+function renderAssign(){
+ var pending = orders.filter(function(o){return o.status==='RECEIVED';});
+ document.getElementById('assignList').innerHTML = pending.length ? pending.map(function(o){
+  var matched = coils.filter(function(c){return c.thickness===o.thickness;});
+  var stockBadge = matched.length
+   ? '<div style="margin-bottom:8px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">'+
+       '<span style="font-size:19px;font-weight:600;color:var(--text-success);">✓ 재고 '+matched.length+'건 확인됨</span>'+
+       '<button class="wf-btn" style="padding:4px 12px;font-size:16px;" onclick="printCoilListFor(\''+o.id+'\')">🖨 이 조건 재고 출력</button>'+
+      '</div>'+
+      coilTableHtml(matched)+
+     '</div>'
+   : box('⚠ 두께 '+o.thickness+' 재고 없음 — 대체 규격 검토 필요', 26, 'margin-bottom:8px;background:var(--bg-warning);color:var(--text-warning);text-align:left;justify-content:flex-start;');
+  return '<div style="background:var(--surface-1);border:1px solid '+(o.urgent?'var(--border-danger)':'var(--border)')+';border-radius:8px;padding:12px;margin-bottom:10px;">' +
+   (o.urgent?'<div style="font-size:18px;font-weight:700;color:var(--text-danger);margin-bottom:4px;">🔺 긴급</div>':'') +
+   '<div style="font-weight:600;font-size:23px;margin-bottom:6px;">'+o.company+' · 두께 '+o.thickness+' · '+o.id+' '+prodBadge(o.prodType)+'</div>' +
+   stockBadge +
+   '<div id="remain-'+o.id+'" style="margin-bottom:8px;"></div>' +
+   '<div style="display:flex;gap:8px;">' +
+   '<button class="wf-btn" style="flex:1;" onclick="remainCheckFor(\''+o.id+'\')" '+(matched.length?'':'disabled')+'>잔량체크(자동 샤링수량 계산)</button>' +
+   '<button class="wf-btn" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="assignToDriver(\''+o.id+'\')" '+(matched.length?'':'disabled')+'>지게차 기사에게 배정 지시</button>' +
+   '<button class="wf-btn" style="flex:1;" onclick="showToast(\''+o.company+' 발주를 보류 처리했습니다(대체 규격 검토 필요).\', false)">보류</button>' +
+   '</div></div>';
+ }).join('') : box('배정 지시 대기중인 발주가 없습니다', 44);
+}
+function remainCheckFor(id){
+ var o = orders.find(function(x){return x.id===id;});
+ var matched = coils.filter(function(c){return c.thickness===o.thickness;});
+ var el = document.getElementById('remain-'+id);
+ if(!matched.length){ el.innerHTML = ''; return; }
+ var c = matched[0];
+ var remainTon = parseFloat(c.remain) || 0;
+ var unitKg = Math.max(1, Math.round(parseFloat(o.thickness)*7.85*100));
+ var sheets = Math.floor(remainTon*1000/unitKg);
+ el.innerHTML = box('코일 '+c.id+' 잔량 '+c.remain+' 기준 자동계산: 약 '+sheets+'매 샤링 가능(데모 계산)', 26, 'background:var(--bg-accent);color:var(--text-accent);text-align:left;justify-content:flex-start;');
+}
+function docPreviewFor(id){
+ var o = orders.find(function(x){return x.id===id;});
+ var w = document.getElementById('ship-'+id).value || (o.weight+'톤');
+ var html = '<div style="background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:8px;padding:12px;margin-top:6px;font-size:19px;line-height:1.7;">' +
+  '<div style="font-weight:700;font-size:23px;text-align:center;margin-bottom:8px;">출 고 증</div>' +
+  '<div>거래처: '+o.company+'</div><div>발주번호: '+o.id+'</div><div>두께: '+o.thickness+'</div>' +
+  '<div>배정 코일: '+(o.coilId||'-')+'</div><div>실측 중량: '+w+'</div><div>생산유형: '+(o.prodType||'자사생산')+'</div>' +
+  '<div style="display:flex;gap:6px;margin-top:10px;">' +
+  '<button class="wf-btn" style="flex:1;padding:4px;font-size:18px;" onclick="sendDocFor(\''+id+'\',\'FAX\')">FAX 전송</button>' +
+  '<button class="wf-btn" style="flex:1;padding:4px;font-size:18px;" onclick="sendDocFor(\''+id+'\',\'이메일\')">이메일 전송</button>' +
+  '</div></div>';
+ document.getElementById('docprev-'+id).innerHTML = html;
+}
+function sendDocFor(id, channel){
+ var o = orders.find(function(x){return x.id===id;});
+ showToast(o.company+'에 출고증을 '+channel+'로 전송했습니다.', true);
+}
+function assignToDriver(id){
+ var o = orders.find(function(x){return x.id===id;});
+ o.status='SEARCH';
+ renderAssign();
+ renderKanban();
+ showToast(o.company+' ('+o.id+') 코일 배정을 지게차 기사에게 지시했습니다.', true);
+}
+
+/* ③ 작업지시서 처리 */
+function renderWorkorder(){
+ var list = orders.filter(function(o){return o.status==='SEARCH'||o.status==='WORKING';});
+ document.getElementById('workorderList').innerHTML = list.length ? list.map(function(o){
+  var statusBox = o.coilId
+   ? box('작업지시서 대시보드 등록됨 · 배정 코일: '+o.coilId, 26, 'margin-bottom:8px;background:var(--bg-success);color:var(--text-success);')
+   : box('지게차 기사 코일 탐색중', 26, 'margin-bottom:8px;');
+  return '<div style="background:var(--surface-1);border:1px solid '+(o.urgent?'var(--border-danger)':'var(--border)')+';border-radius:8px;padding:12px;margin-bottom:10px;">' +
+   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><span style="font-weight:600;font-size:23px;">'+o.company+' · 두께 '+o.thickness+' · '+o.id+'</span>'+(o.urgent?'<span style="font-size:18px;font-weight:700;color:var(--text-danger);">🔺 긴급</span>':'')+'</div>' +
+   statusBox +
+   '<div style="display:flex;gap:6px;">' +
+   '<button class="wf-btn" style="flex:1;padding:6px 4px;font-size:19px;" onclick="moveOrder(\''+o.id+'\',\'up\')">▲ 우선순위</button>' +
+   '<button class="wf-btn" style="flex:1;padding:6px 4px;font-size:19px;" onclick="moveOrder(\''+o.id+'\',\'down\')">▼ 순위내림</button>' +
+   '<button class="wf-btn" style="flex:1;padding:6px 4px;font-size:19px;" onclick="toggleUrgent(\''+o.id+'\')">'+(o.urgent?'긴급 해제':'긴급 지정')+'</button>' +
+   '</div></div>';
+ }).join('') : box('처리중인 작업지시서가 없습니다', 44);
+}
+function toggleUrgent(id){
+ var o = orders.find(function(x){return x.id===id;});
+ o.urgent = !o.urgent;
+ renderWorkorder();
+ renderKanban();
+ showToast(o.urgent?'긴급 발주로 지정했습니다.':'긴급 지정을 해제했습니다.', true);
+}
+
+/* ④ 현장 공정 모니터링 */
+function elapsedHoursFor(id){ return (parseInt(id.slice(-2),10)%20)+1; }
+function renderMonitor(){
+ var list = orders.filter(function(o){return o.status==='WORKING';});
+ document.getElementById('monitorList').innerHTML = list.length ? list.map(function(o){
+  var h = elapsedHoursFor(o.id);
+  var delayed = h>=8;
+  var calls = callLog[o.id]||[];
+  return '<div style="background:var(--surface-1);border:1px solid '+(delayed?'var(--border-warning)':'var(--border)')+';border-radius:8px;padding:12px;margin-bottom:10px;">' +
+   '<div style="font-weight:600;font-size:23px;margin-bottom:6px;">'+o.company+' · '+o.id+' · 코일 '+(o.coilId||'-')+'</div>' +
+   box('경과 '+h+'시간'+(delayed?' · ⚠ 지연 의심':''), 24, 'margin-bottom:8px;'+(delayed?'background:var(--bg-warning);color:var(--text-warning);':'')) +
+   (calls.length ? box('확인 기록 '+calls.length+'건 · 최근: '+calls[calls.length-1], 22, 'margin-bottom:8px;text-align:left;justify-content:flex-start;') : '') +
+   '<button class="wf-btn" style="width:100%;" onclick="logCallFor(\''+o.id+'\')">현장 확인 요청 기록</button>' +
+   '</div>';
+ }).join('') : box('현재 작업중인 발주가 없습니다', 44);
+}
+function logCallFor(id){
+ callLog[id] = callLog[id] || [];
+ callLog[id].push('현장 확인 요청 기록됨');
+ renderMonitor();
+ showToast('현장 확인을 요청하고 기록했습니다.', true);
+}
+
+/* ⑤ 고객 통지 · 배차 지시 */
+function renderNotify(){
+ var list = orders.filter(function(o){return o.status==='DONE';});
+ document.getElementById('notifyList').innerHTML = list.length ? list.map(function(o){
+  var isNotified = !!notified[o.id];
+  return '<div style="background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">' +
+   '<div style="font-weight:600;font-size:23px;margin-bottom:8px;">'+o.company+' · '+o.id+' · 두께 '+o.thickness+'</div>' +
+   (isNotified
+    ? box('✓ 고객 통지 완료', 24, 'margin-bottom:8px;background:var(--bg-success);color:var(--text-success);')
+    : '<button class="wf-btn" style="width:100%;margin-bottom:10px;" onclick="notifyCustomer(\''+o.id+'\')">고객 통지 발송</button>') +
+   (isNotified ? (
+    '<div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">배차 등록</div>' +
+    '<input id="drv-'+o.id+'" placeholder="배차 기사명" style="width:100%;margin-bottom:6px;"/>' +
+    '<input id="car-'+o.id+'" placeholder="차량번호" style="width:100%;margin-bottom:6px;"/>' +
+    '<input id="time-'+o.id+'" placeholder="고객 희망 배차시간" style="width:100%;margin-bottom:8px;"/>' +
+    '<button class="wf-btn" style="width:100%;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="dispatchOrder(\''+o.id+'\')">배차 등록 → 출고 처리로</button>'
+   ) : '') +
+   '</div>';
+ }).join('') : box('고객 통지·배차 대기중인 발주가 없습니다', 44);
+}
+function notifyCustomer(id){
+ notified[id] = true;
+ renderNotify();
+ showToast('고객에게 작업완료 알림을 발송했습니다.', true);
+}
+function dispatchOrder(id){
+ var o = orders.find(function(x){return x.id===id;});
+ o.status = 'DISPATCH';
+ renderNotify();
+ renderKanban();
+ showToast(o.company+' 배차가 등록되었습니다 — 출고 처리 화면으로 이동합니다.', true);
+ setTimeout(function(){ showSub('OF','shipment'); }, 800);
+}
+
+/* ⑥ 출고 처리 */
+function renderShipment(){
+ var list = orders.filter(function(o){return o.status==='DISPATCH';});
+ document.getElementById('shipmentList').innerHTML = list.length ? list.map(function(o){
+  return '<div style="background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px;">' +
+   '<div style="font-weight:600;font-size:23px;margin-bottom:8px;">'+o.company+' · '+o.id+' · 배정 코일 '+(o.coilId||'-')+'</div>' +
+   '<input id="ship-'+o.id+'" placeholder="실측 중량(예: 8.9톤)" style="width:100%;margin-bottom:8px;"/>' +
+   '<div style="display:flex;gap:6px;margin-bottom:8px;">' +
+   '<button class="wf-btn" style="flex:1;" onclick="docPreviewFor(\''+o.id+'\')">출고증 미리보기</button>' +
+   '<button class="wf-btn" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="shipOrder(\''+o.id+'\')">출고증 발행</button>' +
+   '</div>' +
+   '<div id="docprev-'+o.id+'"></div>' +
+   '</div>';
+ }).join('') : box('출고 대기중인 발주가 없습니다', 44);
+}
+function shipOrder(id){
+ var o = orders.find(function(x){return x.id===id;});
+ o.status = 'SHIPPED';
+ renderShipment();
+ renderKanban();
+ showToast('출고증이 발행되었습니다. 고객에게 출고완료 알림을 보냈습니다.', true);
+}
+
+/* ⑦ 사후 대응 · 거래처 관리 */
+var COMPANIES_LIST = [{key:'daehan',name:'대한강재'},{key:'steelkr',name:'스틸코리아'},{key:'sam',name:'△△철강'}];
+function renderAftercare(){
+ document.getElementById('aftercareBody').innerHTML = COMPANIES_LIST.map(function(c){
+  var compOrders = orders.filter(function(o){return o.company===c.name;});
+  var note = COMPANY_NOTES[c.key] || '';
+  var inqs = companyInquiries[c.key] || [];
+  var financeReq = !!financeRequests[c.key];
+  return '<div class="card-wrap" style="margin-bottom:16px;padding:14px;">' +
+   '<div style="font-weight:600;font-size:24px;margin-bottom:8px;">'+c.name+'</div>' +
+   '<div style="font-size:19px;color:var(--text-muted);margin-bottom:4px;">거래처 메모(선호 규격 · 특이사항)</div>' +
+   '<textarea id="note-'+c.key+'" rows="2" style="width:100%;box-sizing:border-box;font-family:inherit;font-size:22px;padding:6px;border-radius:6px;border:1px solid var(--border-strong);margin-bottom:6px;">'+note+'</textarea>' +
+   '<button class="wf-btn" style="padding:4px 10px;font-size:19px;margin-bottom:14px;" onclick="saveAftercareNote(\''+c.key+'\')">메모 저장</button>' +
+   '<div style="font-size:19px;color:var(--text-muted);margin-bottom:6px;">최근 발주 이력 ('+compOrders.length+'건)</div>' +
+   (compOrders.length ? compOrders.slice(0,4).map(function(o){ return box(o.id+' · 두께 '+o.thickness+' · '+statusLabel(o.status), 22, 'margin-bottom:5px;'); }).join('') : box('발주 이력 없음', 22, 'margin-bottom:5px;')) +
+   '<div style="font-size:19px;color:var(--text-muted);margin:12px 0 6px;">문의 이력</div>' +
+   (inqs.length ? inqs.map(function(t){ return box(t, 22, 'margin-bottom:5px;text-align:left;justify-content:flex-start;'); }).join('') : box('문의 없음', 22, 'margin-bottom:5px;')) +
+   '<div style="display:flex;gap:6px;margin:8px 0 12px;"><input id="inq-'+c.key+'" placeholder="문의 내용 입력" style="flex:1;"/><button class="wf-btn" onclick="addAftercareInquiry(\''+c.key+'\')">등록</button></div>' +
+   '<button class="wf-btn" style="width:100%;" onclick="requestFinanceCheckFor(\''+c.key+'\',\''+c.name+'\')">'+(financeReq?'✓ 미수금 확인 요청됨':'경리팀 미수금 확인 요청')+'</button>' +
+   '</div>';
+ }).join('');
+}
+function saveAftercareNote(key){
+ COMPANY_NOTES[key] = document.getElementById('note-'+key).value;
+ showToast('거래처 메모를 저장했습니다.', true);
+}
+function addAftercareInquiry(key){
+ var t = document.getElementById('inq-'+key).value;
+ if(!t) return;
+ companyInquiries[key] = companyInquiries[key] || [];
+ companyInquiries[key].push(t);
+ renderAftercare();
+ showToast('문의가 기록되었습니다.', true);
+}
+function requestFinanceCheckFor(key, name){
+ financeRequests[key] = true;
+ renderAftercare();
+ showToast(name+' 미수금 확인을 경리팀에 요청했습니다.', true);
+}
+
+function renderFLWaiting(){
+ var waiting = orders.filter(function(o){return o.status==='RECEIVED';});
+ var recent = orders.filter(function(o){return o.status==='SEARCH'||o.status==='WORKING'||o.status==='DONE';});
+ document.getElementById('flWaitingList').innerHTML = waiting.length? waiting.map(function(o){
+  return '<div style="background:var(--surface-1);border:1px solid var(--border);border-radius:8px;padding:11px;margin-bottom:9px;"><div style="font-weight:600;font-size:24px;">'+o.company+' · 두께 '+o.thickness+'</div><button class="wf-btn" style="margin-top:7px;width:100%;" onclick="flStartSearch(\''+o.id+'\')">코일 찾기</button></div>';
+ }).join('') : box('대기중인 발주 없음',38);
+ document.getElementById('flRecentList').innerHTML = recent.length? recent.map(function(o){
+  return box(o.company+' · '+statusLabel(o.status), 32, 'margin-bottom:7px;');
+ }).join('') : box('최근 처리 이력 없음',32);
+}
+function flStartSearch(id){
+ var o = orders.find(function(x){return x.id===id;});
+ o.status = 'SEARCH';
+ currentFLId = id;
+ showSub('FL','coil');
+}
+function renderFLCoil(){
+ var body = document.getElementById('flCoilBody');
+ if(!currentFLId){ body.innerHTML = box('대기 발주에서 코일 찾기를 눌러 진입하세요.', 60); return; }
+ var o = orders.find(function(x){return x.id===currentFLId;});
+ var reqPanel = '<div style="background:var(--surface-1);border:2px solid var(--border-accent);border-radius:10px;padding:18px;margin-bottom:14px;">' +
+  '<div style="font-size:24px;font-weight:700;color:var(--text-accent);margin-bottom:10px;">이 작업이 찾는 코일 조건</div>' +
+  '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 18px;">' +
+  '<div><div style="font-size:17px;color:var(--text-muted);">거래처</div><div style="font-size:24px;font-weight:700;">'+o.company+'</div></div>' +
+  '<div><div style="font-size:17px;color:var(--text-muted);">두께</div><div style="font-size:24px;font-weight:700;">'+o.thickness+'</div></div>' +
+  '<div><div style="font-size:17px;color:var(--text-muted);">중량</div><div style="font-size:24px;font-weight:700;">'+o.weight+'톤</div></div>' +
+  '<div><div style="font-size:17px;color:var(--text-muted);">규격(도금량)</div><div style="font-size:24px;font-weight:700;">'+(o.spec||'-')+'</div></div>' +
+  '</div></div>';
+ var header = reqPanel + timelineHtml(o.status);
+ if(!o.coilId){
+  var matched = coils.filter(function(c){return c.thickness===o.thickness;});
+  var specMatched = matched.filter(function(c){return !o.spec || c.spec===o.spec;});
+  var showList = specMatched.length ? specMatched : matched;
+  body.innerHTML = header +
+   (o.spec && specMatched.length===0 && matched.length>0 ? box('⚠ 규격 '+o.spec+' 일치 코일 없음 — 두께만 일치하는 코일을 표시합니다', 44, 'margin:10px 0;background:var(--bg-warning);color:var(--text-warning);') : '') +
+   '<div style="margin-top:10px;">' +
+   (showList.length? showList.map(function(c){
+    var remainTon = parseFloat(c.remain)||0;
+    var enough = remainTon >= o.weight;
+    var specOk = c.spec===o.spec;
+    return '<div style="background:var(--surface-2);border:2px solid '+(specOk?'var(--border-success)':'var(--border)')+';border-radius:10px;padding:16px;margin-bottom:12px;">' +
+     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><span style="font-weight:700;font-size:25px;">'+c.id+'</span>'+(specOk?'<span style="font-size:17px;color:var(--text-success);font-weight:700;">✓ 규격 일치</span>':'<span style="font-size:17px;color:var(--text-warning);">규격 '+c.spec+'</span>')+'</div>' +
+     '<div style="color:var(--text-secondary);font-size:20px;margin-bottom:12px;">Bay '+c.location+' · 잔량 '+c.remain+' '+(enough?'<span style="color:var(--text-success);">(충분)</span>':'<span style="color:var(--text-danger);">(부족 주의)</span>')+'</div>' +
+     '<button class="wf-btn" style="width:100%;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="flSelectCoil(\''+c.id+'\')">이 코일로 선택</button></div>';
+   }).join('') : box('조건에 맞는 재고 코일 없음',60)) + '</div>';
+ } else {
+  body.innerHTML = header +
+   box('코일ID 확정: '+o.coilId, 30, 'margin:10px 0;background:var(--bg-success);color:var(--text-success);') +
+   '<div style="display:flex;gap:8px;margin-top:10px;">' +
+   '<button class="wf-btn" style="flex:1;" onclick="flConfirm()">작업지시서 확정</button>' +
+   '<button class="wf-btn" style="flex:1;background:var(--fill-accent);color:var(--on-accent);border-color:var(--fill-accent);" onclick="flComplete()">작업완료 처리</button>' +
+   '</div>';
+ }
+}
+function flSelectCoil(coilId){
+ var o = orders.find(function(x){return x.id===currentFLId;});
+ o.coilId = coilId;
+ o.status = 'WORKING';
+ renderFLCoil();
+ showToast('코일 '+coilId+' 선택 — 작업지시서가 대시보드에 등록됩니다.', true);
+}
+function flConfirm(){ showToast('작업지시서가 확정되어 대시보드에 반영되었습니다.', true); }
+function flComplete(){
+ var o = orders.find(function(x){return x.id===currentFLId;});
+ o.status = 'DONE';
+ showToast('작업완료 처리 — 고객사에 자동 통지가 발송되었습니다.', true);
+ currentFLId = null;
+ setTimeout(function(){ showSub('FL','waiting'); }, 800);
+}
+
+function renderCPAll(){
+ var company = document.getElementById('cpCompanySelect').value;
+ var mine = orders.filter(function(o){return o.company===company;});
+ document.getElementById('cpInventoryList').innerHTML = mine.filter(function(o){return o.coilId;}).length ?
+  mine.filter(function(o){return o.coilId;}).map(function(o){ return box('코일 '+o.coilId+' · 두께 '+o.thickness+' · 발주 '+o.id, 32, 'margin-bottom:7px;'); }).join('') :
+  box('현재 배정된 재고가 없습니다',38);
+ document.getElementById('cpTodayList').innerHTML = mine.length ? mine.map(function(o){
+  return '<div style="margin-bottom:16px;"><div style="font-size:22px;font-weight:600;margin-bottom:5px;">발주번호 '+o.id+' · 두께 '+o.thickness+'</div>' + timelineHtml(o.status) + '</div>';
+ }).join('') : box('오늘 발주 내역이 없습니다',38);
+ var data = CP_HISTORY[company] || [5,5,5,5,5,5];
+ var max = Math.max.apply(null, data);
+ document.getElementById('cpHistoryChart').innerHTML = data.map(function(v,i){
+  var pct = Math.round(v/max*100);
+  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px;"><span style="font-size:19px;color:var(--text-muted);width:28px;">'+MONTHS[i]+'</span><div style="flex:1;background:var(--surface-1);border-radius:5px;overflow:hidden;height:15px;"><div style="width:'+pct+'%;height:100%;background:var(--fill-accent);"></div></div><span style="font-size:19px;color:var(--text-secondary);width:28px;">'+v+'건</span></div>';
+ }).join('');
+ var shipped = mine.filter(function(o){return o.status==='SHIPPED';});
+ document.getElementById('cpHistoryTable').innerHTML = shipped.length ? shipped.map(function(o){ return '<tr><td>'+o.id+'</td><td>'+o.thickness+'</td><td>출고완료</td></tr>'; }).join('') : '<tr><td colspan="3" style="text-align:center;color:var(--text-muted);">출고완료 이력 없음(데모 데이터)</td></tr>';
+}
+function cpPlaceOrder(){
+ var company = document.getElementById('cpCompanySelect').value;
+ var thick = document.getElementById('cpThick').value;
+ if(!thick){ showToast('두께를 입력하세요.', false); return; }
+ var newId = genId();
+ orders.unshift({id:newId, company:company, thickness:thick, status:'RECEIVED', coilId:null, weight:Math.round((5+Math.random()*5)*10)/10});
+ showToast('발주가 접수되었습니다(발주번호 '+newId+') — 영업팀 발주 현황판에 실시간 반영됩니다.', true);
+ ['cpThick','cpWidth','cpWeight','cpQty','cpSlit'].forEach(function(id){ document.getElementById(id).value=''; });
+ renderCPAll();
+}
+
+renderItems([]);
+buildNav(document.getElementById('roleNav'), ROLES, currentRole, 'showRole');
+renderEX();
+renderEnfaxInbox();
+</script>
+</body>
+</html>

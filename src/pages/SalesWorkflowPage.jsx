@@ -573,15 +573,15 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
           <span style={{ fontSize: '19px', fontWeight: 700, color: C.textAccent }}>📠 엔팩스 접수함</span>
           <span style={{ fontSize: '14px', color: C.textMuted }}>{newFax.length > 0 ? `신규 ${newFax.length}건` : '신규 접수 없음'}</span>
         </div>
-        {enfaxInbox.length === 0 ? (
-          <div style={{ fontSize: '14px', color: C.textMuted }}>엔팩스(fax.enfax.com) 자동 연동은 준비 중입니다. 팩스로 받은 발주서는 아래에서 스캔파일로 업로드하거나, 발주 정보를 직접 입력해 접수하세요.</div>
-        ) : enfaxInbox.map((f) => (
-          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', background: f.status === 'new' ? C.surface0 : C.surface1, border: `1.5px solid ${f.status === 'new' ? C.borderAccent : C.border}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '8px' }}>
+        {newFax.length === 0 ? (
+          <div style={{ fontSize: '14px', color: C.textMuted }}>엔팩스(fax.enfax.com)와 실시간 연동 중입니다 (10분 주기 자동 조회) · 현재 신규 접수된 팩스가 없습니다.</div>
+        ) : newFax.map((f) => (
+          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', background: C.surface0, border: `1.5px solid ${C.borderAccent}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '8px' }}>
             <div>
-              <div style={{ fontSize: '16px', fontWeight: f.status === 'new' ? 700 : 500 }}>{f.sender} {f.status === 'new' && <span style={{ fontSize: '12px', color: C.textAccent }}>NEW</span>}</div>
+              <div style={{ fontSize: '16px', fontWeight: 700 }}>{f.sender} <span style={{ fontSize: '12px', color: C.textAccent }}>NEW</span></div>
               <div style={{ fontSize: '13px', color: C.textMuted }}>{f.fax_number} · {new Date(f.received_at).toLocaleString('ko-KR')} · {f.pages}페이지 · {f.file_name}</div>
             </div>
-            {f.status === 'new' ? <button style={smallBtn('accent')} onClick={() => { setCompanyName(f.sender || ''); onConfirmEnfax(f); }}>확인 및 등록</button> : <span style={{ fontSize: '14px', color: C.textSuccess }}>✓ 등록완료</span>}
+            <button style={smallBtn('accent')} onClick={() => { setCompanyName(f.sender || ''); onConfirmEnfax(f); }}>확인 및 등록</button>
           </div>
         ))}
       </div>
