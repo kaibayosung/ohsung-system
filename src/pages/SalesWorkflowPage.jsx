@@ -266,25 +266,41 @@ const WORK_TYPE_GROUPS = [
   { key: 'LEVELLING', label: '레벨링' },
 ];
 
+function aggByCompany(rows) {
+  const m = {};
+  rows.forEach((r) => {
+    if (!m[r.company_name]) m[r.company_name] = { count: 0, amount: 0 };
+    m[r.company_name].count += 1;
+    m[r.company_name].amount += Number(r.amount || 0);
+  });
+  return Object.entries(m).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.amount - a.amount);
+}
+
 function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const todayK = kstDateStr(new Date());
   const [selStart, setSelStart] = useState(todayK);
   const [selEnd, setSelEnd] = useState(todayK);
-  const [greenpJobs, setGreenpJobs] = useState([]);
-  const [rangeExpense, setRangeExpense] = useState(todayExpense);
+  const [erpJobs, setErpJobs] = useState([]);           // greenp_production (그린ERP 실적) — 선택 기간
+  const [erpExpense, setErpExpense] = useState(0);       // expense_requests(결재완료) — 선택 기간
+  const [receivables, setReceivables] = useState([]);    // greenp_receivables — 전체(현재 잔액 기준, 기간과 무관)
+  const [monthErpJobs, setMonthErpJobs] = useState([]);  // greenp_production — 이번달 전체(추이 차트용)
   const [loadingRange, setLoadingRange] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoadingRange(true);
     (async () => {
-      const [gp, led] = await Promise.all([
-        supabase.from('greenp_joborder_detail').select('*').gte('joborder_date', selStart).lte('joborder_date', selEnd).order('joborder_date', { ascending: false }),
-        supabase.from('daily_ledger').select('amount').eq('type', '지출').gte('trans_date', selStart).lte('trans_date', selEnd),
+      const [prod, exp, recv, monthProd] = await Promise.all([
+        supabase.from('greenp_production').select('*').gte('slip_date', selStart).lte('slip_date', selEnd).order('slip_date', { ascending: false }),
+        supabase.from('expense_requests').select('total_amount, request_date').eq('status', '결재완료').gte('request_date', selStart).lte('request_date', selEnd),
+        supabase.from('greenp_receivables').select('*').order('amount', { ascending: false }).limit(5),
+        supabase.from('greenp_production').select('slip_date, amount').gte('slip_date', monthStartStr()),
       ]);
       if (cancelled) return;
-      setGreenpJobs(gp.data || []);
-      setRangeExpense((led.data || []).reduce((s, r) => s + Number(r.amount || 0), 0));
+      setErpJobs(prod.data || []);
+      setErpExpense((exp.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0));
+      setReceivables(recv.data || []);
+      setMonthErpJobs(monthProd.data || []);
       setLoadingRange(false);
     })();
     return () => { cancelled = true; };
@@ -305,25 +321,26 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const setPresetWeek = () => { setSelStart(weekStartK); setSelEnd(todayK); };
   const setPresetMonth = () => { setSelStart(monthStartK); setSelEnd(todayK); };
 
+  // ---- 그린ERP 실적 리포트 (greenp_production 실데이터 기준) ----
+  const jobCount = erpJobs.length;
+  const totalRevenue = erpJobs.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const companySet = new Set(erpJobs.map((r) => r.company_name));
+  const net = totalRevenue - erpExpense;
+
+  const jobsByType = (key) => erpJobs.filter((j) => j.work_type === key);
+  const otherJobs = erpJobs.filter((j) => !WORK_TYPE_GROUPS.some((g) => g.key === j.work_type));
+  const topCompanies = aggByCompany(erpJobs).slice(0, 5);
+
+  // ---- 이 앱 자체 발주 접수 현황 (sales_orders, 실시간) ----
   const rangeOrders = orders.filter((o) => o.order_date >= selStart && o.order_date <= selEnd);
   const inProgress = rangeOrders.filter((o) => o.status === 'SEARCH' || o.status === 'WORKING').length;
   const dispatchCnt = rangeOrders.filter((o) => o.status === 'DISPATCH').length;
-  const totalWeight = rangeOrders.reduce((s, o) => s + Number(o.weight || 0), 0);
-  const rateOf = (name) => { const c = companies.find((x) => x.name === name); return c && c.unit_price ? Number(c.unit_price) : 0; };
-  const priced = rangeOrders.filter((o) => rateOf(o.company_name) > 0);
-  const unpriced = rangeOrders.length - priced.length;
-  const rangeRevenue = priced.reduce((s, o) => s + Number(o.weight || 0) * rateOf(o.company_name), 0);
-  const net = rangeRevenue - rangeExpense;
+  const appWeight = rangeOrders.reduce((s, o) => s + Number(o.weight || 0), 0);
   const stuck = orders.filter((o) => o.status === 'WORKING' && hoursSince(o.updated_at) >= 8);
 
-  const jobsByType = (key) => greenpJobs.filter((j) => j.work_type === key);
-  const otherJobs = greenpJobs.filter((j) => !WORK_TYPE_GROUPS.some((g) => g.key === j.work_type));
-
-  // 이번달 매출 추이 (일자별) — 상단 기간 선택과 무관하게 항상 이번달 기준
-  const today = todayStr();
-  const monthOrders = orders.filter((o) => o.order_date >= monthStartStr());
+  // 이번달 매출 추이 (일자별) — 그린ERP 실데이터 기준, 상단 기간 선택과 무관하게 항상 이번달
   const byDay = {};
-  monthOrders.forEach((o) => { const r = rateOf(o.company_name); if (r > 0) byDay[o.order_date] = (byDay[o.order_date] || 0) + Number(o.weight || 0) * r; });
+  monthErpJobs.forEach((r) => { byDay[r.slip_date] = (byDay[r.slip_date] || 0) + Number(r.amount || 0); });
   const days = Object.keys(byDay).sort();
   const maxDay = Math.max(1, ...Object.values(byDay));
   const monthTotal = Object.values(byDay).reduce((a, b) => a + b, 0);
@@ -343,16 +360,97 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
         <span style={{ fontSize: '15px', color: C.textAccent, fontWeight: 700, marginLeft: 'auto' }}>{rangeLabel} 기준{loadingRange ? ' · 불러오는 중...' : ''}</span>
       </div>
 
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '4px 0 8px', color: C.textSecondary }}>📊 그린ERP 실적 리포트 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 동기화 실데이터 · {rangeLabel})</span></div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '10px', marginBottom: '16px' }}>
+        {statCard('작업 건수', jobCount + '건')}
+        {statCard('매출액', Math.round(totalRevenue / 10000).toLocaleString() + '만원', C.textAccent)}
+        {statCard('거래처 수', companySet.size + '개')}
+        {statCard('비용(결재완료)', Math.round(erpExpense / 10000).toLocaleString() + '만원', C.textWarning)}
+        {statCard('순손익', (net >= 0 ? '+' : '') + Math.round(net / 10000).toLocaleString() + '만원', net >= 0 ? C.textSuccess : C.textDanger)}
+      </div>
+
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>🛠 작업 내용 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>({rangeLabel} · 슬리팅1/슬리팅2/레벨링, 그린ERP 연동)</span></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '12px', marginBottom: '8px' }}>
+        {WORK_TYPE_GROUPS.map((g) => {
+          const rows = jobsByType(g.key);
+          const amt = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+          const byCo = aggByCompany(rows);
+          return (
+            <div key={g.key} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '14px', boxShadow: '0 1px 3px rgba(15,30,51,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                <span style={{ fontSize: '17px', fontWeight: 800, color: C.textAccent }}>{g.label}</span>
+                <span style={{ fontSize: '13px', color: C.textMuted }}>{rows.length}건</span>
+              </div>
+              {byCo.length === 0 ? (
+                <div style={{ fontSize: '14px', color: C.textMuted, padding: '10px 0' }}>해당 기간 작업 내역 없음</div>
+              ) : (
+                <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
+                  {byCo.slice(0, 8).map((c) => (
+                    <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${C.border}`, fontSize: '14px' }}>
+                      <span style={{ fontWeight: 700, color: C.textPrimary }}>{c.name} <span style={{ fontWeight: 500, color: C.textMuted }}>({c.count}건)</span></span>
+                      <span style={{ color: C.textSecondary }}>{c.amount.toLocaleString()}원</span>
+                    </div>
+                  ))}
+                  {byCo.length > 8 && <div style={{ fontSize: '13px', color: C.textMuted, padding: '6px 0' }}>외 {byCo.length - 8}개 거래처 더</div>}
+                </div>
+              )}
+              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${C.border}`, textAlign: 'right', fontSize: '14px', fontWeight: 700, color: C.textSecondary }}>소계 {amt.toLocaleString()}원</div>
+            </div>
+          );
+        })}
+      </div>
+      {otherJobs.length > 0 && <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '18px' }}>* 미분류 작업 {otherJobs.length}건은 위 3개 라인에 속하지 않아 제외됨</div>}
+
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>🏢 거래처별 매출 TOP5 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>({rangeLabel})</span></div>
+      <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
+        {topCompanies.length === 0 ? boxMsg('해당 기간 매출 실적이 없습니다.', { justifyContent: 'center' }) : topCompanies.map((c, i) => {
+          const pct = Math.round((c.amount / topCompanies[0].amount) * 100);
+          return (
+            <div key={c.name} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '9px' }}>
+              <span style={{ width: '18px', fontSize: '14px', color: C.textMuted, fontWeight: 700 }}>{i + 1}</span>
+              <span style={{ width: '140px', fontSize: '15px', color: C.textPrimary, fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</span>
+              <div style={{ flex: 1, background: C.surface2, borderRadius: '6px', overflow: 'hidden', height: '14px' }}><div style={{ width: pct + '%', height: '100%', background: C.accent }} /></div>
+              <span style={{ width: '120px', textAlign: 'right', fontSize: '15px', fontWeight: 700 }}>{c.amount.toLocaleString()}원</span>
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>💳 매출채권(미수금) TOP5 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 현재 잔액 기준 · 기간과 무관)</span></div>
+      <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
+        {receivables.length === 0 ? boxMsg('미수금 데이터가 없습니다.', { justifyContent: 'center' }) : receivables.map((r) => (
+          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${C.border}`, fontSize: '15px' }}>
+            <span style={{ color: C.textPrimary, fontWeight: 700 }}>{r.company_name}</span>
+            <span style={{ color: C.textWarning, fontWeight: 700 }}>{Number(r.amount || 0).toLocaleString()}원</span>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>📈 이번달 매출 추이 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 실데이터 기준)</span></div>
+      <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
+        {days.length === 0 ? boxMsg('이번달 그린ERP 실적이 없습니다.', { justifyContent: 'center' }) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '80px', marginBottom: '4px' }}>
+              {days.map((d) => (
+                <div key={d} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }} title={`${d} · ${Math.round(byDay[d]).toLocaleString()}원`}>
+                  <div style={{ width: '100%', maxWidth: '16px', margin: '0 auto', height: `${Math.round((byDay[d] / maxDay) * 100)}%`, borderRadius: '3px 3px 0 0', background: d === todayK ? C.accent : C.bgAccent, border: d === todayK ? 'none' : `1px solid ${C.borderAccent}` }} />
+                </div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: C.textSecondary, borderTop: `1px solid ${C.border}`, paddingTop: '10px' }}>
+              <span>이번달 누적 매출(그린ERP): <b style={{ color: C.textPrimary }}>{Math.round(monthTotal).toLocaleString()}원</b></span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '24px 0 8px', color: C.textSecondary, borderTop: `2px solid ${C.border}`, paddingTop: '16px' }}>📥 이 앱 자체 발주 접수 현황 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(실시간 · 이 화면에서 직접 접수한 발주만 집계, 그린ERP와 별도)</span></div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '10px', marginBottom: '10px' }}>
         {statCard('발주', rangeOrders.length + '건')}
         {statCard('진행중', inProgress + '건')}
         {statCard('출고예정', dispatchCnt + '건')}
-        {statCard('총 중량', (totalWeight / 1000).toFixed(1) + '톤')}
-        {statCard('매출(추정)', Math.round(rangeRevenue / 10000).toLocaleString() + '만원', C.textAccent)}
+        {statCard('총 중량', (appWeight / 1000).toFixed(1) + '톤')}
       </div>
-      {unpriced > 0 && <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '14px' }}>* 계약단가 미등록 거래처 발주 {unpriced}건은 매출 추정에서 제외됨 — 사후대응 화면에서 단가를 등록하세요.</div>}
-
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>🔄 공정 흐름 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(클릭 시 영업 현황판으로 이동)</span></div>
       <div style={{ display: 'flex', gap: '6px', marginBottom: '18px' }}>
         {STATUSES.map(([k, label]) => {
           const cnt = rangeOrders.filter((o) => o.status === k).length;
@@ -365,37 +463,6 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
         })}
       </div>
 
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>🛠 작업 내용 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>({rangeLabel} · 슬리팅1/슬리팅2/레벨링, 그린ERP 연동)</span></div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '12px', marginBottom: '8px' }}>
-        {WORK_TYPE_GROUPS.map((g) => {
-          const rows = jobsByType(g.key);
-          const w = rows.reduce((s, r) => s + Number(r.used_weight || 0), 0);
-          const amt = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
-          return (
-            <div key={g.key} style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '14px', boxShadow: '0 1px 3px rgba(15,30,51,0.06)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
-                <span style={{ fontSize: '17px', fontWeight: 800, color: C.textAccent }}>{g.label}</span>
-                <span style={{ fontSize: '13px', color: C.textMuted }}>{rows.length}건 · {(w / 1000).toFixed(1)}톤</span>
-              </div>
-              {rows.length === 0 ? (
-                <div style={{ fontSize: '14px', color: C.textMuted, padding: '10px 0' }}>해당 기간 작업 내역 없음</div>
-              ) : (
-                <div style={{ maxHeight: '220px', overflowY: 'auto' }}>
-                  {rows.map((r) => (
-                    <div key={r.id} style={{ padding: '7px 0', borderBottom: `1px solid ${C.border}`, fontSize: '14px' }}>
-                      <div style={{ fontWeight: 700, color: C.textPrimary }}>{r.company_name}</div>
-                      <div style={{ color: C.textMuted }}>{r.product_name} · {r.spec} · {Number(r.used_weight || 0).toLocaleString()}kg</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${C.border}`, textAlign: 'right', fontSize: '14px', fontWeight: 700, color: C.textSecondary }}>소계 {amt.toLocaleString()}원</div>
-            </div>
-          );
-        })}
-      </div>
-      {otherJobs.length > 0 && <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '18px' }}>* 미분류 작업 {otherJobs.length}건은 위 3개 라인에 속하지 않아 제외됨</div>}
-
       <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textDanger }}>⚠️ 이상 신호 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(실시간)</span></div>
       {stuck.length === 0 ? boxMsg('현재 지연 건 없음', { justifyContent: 'center', textAlign: 'center' }) : stuck.map((o) => (
         <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 12px', border: `1px solid ${C.borderWarning}`, background: C.bgWarning, borderRadius: '8px', marginBottom: '7px', fontSize: '16px', color: C.textWarning }}>
@@ -403,43 +470,6 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
           <button style={smallBtn()} onClick={() => onGoto('MG')}>관리자에서 보기</button>
         </div>
       ))}
-
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '20px 0 8px', color: C.textSecondary }}>💰 매출 · 비용 밸런스 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>({rangeLabel})</span></div>
-      <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
-        {[['매출', rangeRevenue, C.textSuccess], ['비용', rangeExpense, C.textWarning]].map(([label, val, color]) => {
-          const max = Math.max(rangeRevenue, rangeExpense, 1);
-          const pct = Math.round((val / max) * 100);
-          return (
-            <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-              <span style={{ width: '46px', fontSize: '16px', color: C.textSecondary }}>{label}</span>
-              <div style={{ flex: 1, background: C.surface2, borderRadius: '6px', overflow: 'hidden', height: '16px' }}><div style={{ width: pct + '%', height: '100%', background: color }} /></div>
-              <span style={{ width: '110px', textAlign: 'right', fontSize: '16px', fontWeight: 700 }}>{Math.round(val).toLocaleString()}원</span>
-            </div>
-          );
-        })}
-        <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '10px', borderTop: `1px solid ${C.border}` }}>
-          <span style={{ fontSize: '16px', color: C.textSecondary }}>순손익</span>
-          <span style={{ fontSize: '22px', fontWeight: 800, color: net >= 0 ? C.textSuccess : C.textDanger }}>{net >= 0 ? '+' : ''}{Math.round(net).toLocaleString()}원</span>
-        </div>
-      </div>
-
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>📈 이번달 매출 추이 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(계약단가 등록 거래처 기준)</span></div>
-      <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
-        {days.length === 0 ? boxMsg('이번달 단가 등록 거래처의 발주 실적이 없습니다.', { justifyContent: 'center' }) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '80px', marginBottom: '4px' }}>
-              {days.map((d) => (
-                <div key={d} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', height: '100%' }} title={`${d} · ${Math.round(byDay[d]).toLocaleString()}원`}>
-                  <div style={{ width: '100%', maxWidth: '16px', margin: '0 auto', height: `${Math.round((byDay[d] / maxDay) * 100)}%`, borderRadius: '3px 3px 0 0', background: d === today ? C.accent : C.bgAccent, border: d === today ? 'none' : `1px solid ${C.borderAccent}` }} />
-                </div>
-              ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: C.textSecondary, borderTop: `1px solid ${C.border}`, paddingTop: '10px' }}>
-              <span>이번달 누적 매출(추정): <b style={{ color: C.textPrimary }}>{Math.round(monthTotal).toLocaleString()}원</b></span>
-            </div>
-          </>
-        )}
-      </div>
 
       <div style={{ fontSize: '19px', fontWeight: 700, margin: '20px 0 8px', color: C.textSecondary }}>🏆 경쟁 ERP 대비 우리 강점</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(210px,1fr))', gap: '10px' }}>
