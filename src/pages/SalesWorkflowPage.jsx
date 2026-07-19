@@ -2,7 +2,7 @@
 // 오성철강 스마트 ERP 2.0 — 영업 워크플로우 (5개 역할: 대표 / 관리자 / 영업 / 지게차 기사 / 고객사)
 // "오성철강_ERP2_동작프로토타입.html" 에서 확정한 UI/흐름을 그대로, 실제 Supabase 데이터로 재구현합니다.
 import React, { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../supabaseClient';
+import { supabase, supabaseUrl } from '../supabaseClient';
 
 /* ---------------- 컬러/스타일 토큰 (프로토타입과 동일한 팔레트) ---------------- */
 const C = {
@@ -529,6 +529,7 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
   const [material, setMaterial] = useState('7.85');
   const [ct, setCt] = useState(''); const [cw, setCw] = useState(''); const [cl, setCl] = useState('');
   const [dupTarget, setDupTarget] = useState(null);
+  const [ocrLoadingId, setOcrLoadingId] = useState(null);
 
   const matchedCompany = companies.find((c) => c.name === companyName);
   const unitWeight = (ct && cw && cl) ? ((parseFloat(ct) * parseFloat(cw) * parseFloat(cl) * parseFloat(material)) / 1000000) : null;
@@ -565,6 +566,36 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
     }
   };
 
+  const runOcr = async (f) => {
+    if (!f.file_path) { alert('파일 경로 정보가 없습니다.'); return; }
+    setOcrLoadingId(f.id);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/enfax-ocr?filePath=${encodeURIComponent(f.file_path)}`);
+      const json = await res.json();
+      if (!json.ok) { alert('AI 인식 실패: ' + (json.error || '알 수 없는 오류')); return; }
+      const ex = json.extracted || {};
+      setCompanyName(ex.company_name || f.sender || '');
+      setSender(f.sender || '');
+      if (ex.due_date) setDueDate(ex.due_date);
+      if (ex.phone) setPhone(ex.phone);
+      if (Array.isArray(ex.items) && ex.items.length > 0) {
+        setItems(ex.items.map((it) => ({
+          thick: it.thick != null ? String(it.thick) : '',
+          width: it.width != null ? String(it.width) : '',
+          weight: it.weight != null ? String(it.weight) : '',
+          maker: it.maker || '',
+          slit: it.slit || '',
+          qty: it.qty != null ? String(it.qty) : '',
+        })));
+      }
+      alert('AI 자동인식 완료. 아래 발주 등록 폼 내용을 확인 후 접수하세요.');
+    } catch (e) {
+      alert('AI 인식 중 오류: ' + e.message);
+    } finally {
+      setOcrLoadingId(null);
+    }
+  };
+
   const todayK = kstDateStr(new Date());
   const todaysFax = enfaxInbox.filter((f) => kstDateStr(f.received_at) === todayK);
   const displayFax = todaysFax.length > 0 ? todaysFax : enfaxInbox.slice(0, 5);
@@ -588,7 +619,14 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
               <div style={{ fontSize: '16px', fontWeight: f.status === 'new' ? 700 : 500 }}>{f.sender} {f.status === 'new' && <span style={{ fontSize: '12px', color: C.textAccent }}>NEW</span>}</div>
               <div style={{ fontSize: '13px', color: C.textMuted }}>{f.fax_number} · {new Date(f.received_at).toLocaleString('ko-KR')} · {f.pages}페이지 · {f.file_name}</div>
             </div>
-            {f.status === 'new' ? <button style={smallBtn('accent')} onClick={() => { setCompanyName(f.sender || ''); onConfirmEnfax(f); }}>확인 및 등록</button> : <span style={{ fontSize: '14px', color: C.textSuccess }}>✓ 등록완료</span>}
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {f.status === 'new' && f.file_path && (
+                <button style={smallBtn()} disabled={ocrLoadingId === f.id} onClick={() => runOcr(f)}>
+                  {ocrLoadingId === f.id ? '인식 중...' : '🤖 AI 자동인식'}
+                </button>
+              )}
+              {f.status === 'new' ? <button style={smallBtn('accent')} onClick={() => { setCompanyName(f.sender || ''); onConfirmEnfax(f); }}>확인 및 등록</button> : <span style={{ fontSize: '14px', color: C.textSuccess }}>✓ 등록완료</span>}
+            </div>
           </div>
         ))}
       </div>
