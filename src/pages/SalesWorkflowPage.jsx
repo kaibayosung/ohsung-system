@@ -51,6 +51,8 @@ const FAVORITES = ['260*4, 175*1', '165*6, 225*1', '200*5, 210*1', '75*16'];
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 function monthStartStr() { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`; }
+// 한국 시간(KST) 기준 YYYY-MM-DD — 엔팩스 접수함의 "오늘" 판정에 사용 (UTC 자정~오전9시 경계 오차 방지)
+function kstDateStr(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
 function hoursSince(iso) { if (!iso) return 0; return (Date.now() - new Date(iso).getTime()) / 3600000; }
 function prodBadge(t) {
   t = t || '자사생산';
@@ -116,7 +118,7 @@ function SalesWorkflowPage() {
       supabase.from('sales_orders').select('*, coils(*)').order('priority', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('coils').select('*').order('thickness', { ascending: true }),
       supabase.from('companies').select('*').order('name', { ascending: true }),
-      supabase.from('enfax_inbox').select('*').order('received_at', { ascending: false }),
+      supabase.from('enfax_inbox').select('*').order('received_at', { ascending: false }).limit(50),
       supabase.from('company_inquiries').select('*').order('created_at', { ascending: false }),
       supabase.from('daily_ledger').select('amount').eq('trans_date', todayStr()).eq('type', '지출'),
     ]);
@@ -563,7 +565,10 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
     }
   };
 
-  const newFax = enfaxInbox.filter((f) => f.status === 'new');
+  const todayK = kstDateStr(new Date());
+  const todaysFax = enfaxInbox.filter((f) => kstDateStr(f.received_at) === todayK);
+  const displayFax = todaysFax.length > 0 ? todaysFax : enfaxInbox.slice(0, 5);
+  const pendingCount = displayFax.filter((f) => f.status !== 'done').length;
 
   return (
     <div>
@@ -571,17 +576,19 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
       <div style={{ background: C.surface1, border: `2px solid ${C.borderAccent}`, borderRadius: '10px', padding: '16px', marginBottom: '14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <span style={{ fontSize: '19px', fontWeight: 700, color: C.textAccent }}>📠 엔팩스 접수함</span>
-          <span style={{ fontSize: '14px', color: C.textMuted }}>{newFax.length > 0 ? `신규 ${newFax.length}건` : '신규 접수 없음'}</span>
+          <span style={{ fontSize: '14px', color: C.textMuted }}>
+            {todaysFax.length > 0 ? `오늘 수신 ${todaysFax.length}건 · 미등록 ${pendingCount}건` : (displayFax.length > 0 ? `오늘 수신 없음 · 최근 ${displayFax.length}건 표시` : '수신 없음')}
+          </span>
         </div>
-        {newFax.length === 0 ? (
-          <div style={{ fontSize: '14px', color: C.textMuted }}>엔팩스(fax.enfax.com)와 실시간 연동 중입니다 (10분 주기 자동 조회) · 현재 신규 접수된 팩스가 없습니다.</div>
-        ) : newFax.map((f) => (
-          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', background: C.surface0, border: `1.5px solid ${C.borderAccent}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '8px' }}>
+        {displayFax.length === 0 ? (
+          <div style={{ fontSize: '14px', color: C.textMuted }}>엔팩스(fax.enfax.com)와 실시간 연동 중입니다 (10분 주기 자동 조회) · 수신된 팩스가 없습니다.</div>
+        ) : displayFax.map((f) => (
+          <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', background: f.status === 'new' ? C.surface0 : C.surface1, border: `1.5px solid ${f.status === 'new' ? C.borderAccent : C.border}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '8px' }}>
             <div>
-              <div style={{ fontSize: '16px', fontWeight: 700 }}>{f.sender} <span style={{ fontSize: '12px', color: C.textAccent }}>NEW</span></div>
+              <div style={{ fontSize: '16px', fontWeight: f.status === 'new' ? 700 : 500 }}>{f.sender} {f.status === 'new' && <span style={{ fontSize: '12px', color: C.textAccent }}>NEW</span>}</div>
               <div style={{ fontSize: '13px', color: C.textMuted }}>{f.fax_number} · {new Date(f.received_at).toLocaleString('ko-KR')} · {f.pages}페이지 · {f.file_name}</div>
             </div>
-            <button style={smallBtn('accent')} onClick={() => { setCompanyName(f.sender || ''); onConfirmEnfax(f); }}>확인 및 등록</button>
+            {f.status === 'new' ? <button style={smallBtn('accent')} onClick={() => { setCompanyName(f.sender || ''); onConfirmEnfax(f); }}>확인 및 등록</button> : <span style={{ fontSize: '14px', color: C.textSuccess }}>✓ 등록완료</span>}
           </div>
         ))}
       </div>
