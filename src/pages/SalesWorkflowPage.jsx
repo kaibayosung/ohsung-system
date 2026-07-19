@@ -282,7 +282,6 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const [selEnd, setSelEnd] = useState(todayK);
   const [erpJobs, setErpJobs] = useState([]);           // greenp_production (그린ERP 실적) — 선택 기간
   const [erpExpense, setErpExpense] = useState(0);       // expense_requests(결재완료) — 선택 기간
-  const [receivables, setReceivables] = useState([]);    // greenp_receivables — 전체(현재 잔액 기준, 기간과 무관)
   const [monthErpJobs, setMonthErpJobs] = useState([]);  // greenp_production — 이번달 전체(추이 차트용)
   const [loadingRange, setLoadingRange] = useState(false);
 
@@ -290,16 +289,14 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
     let cancelled = false;
     setLoadingRange(true);
     (async () => {
-      const [prod, exp, recv, monthProd] = await Promise.all([
+      const [prod, exp, monthProd] = await Promise.all([
         supabase.from('greenp_production').select('*').gte('slip_date', selStart).lte('slip_date', selEnd).order('slip_date', { ascending: false }),
         supabase.from('expense_requests').select('total_amount, request_date').eq('status', '결재완료').gte('request_date', selStart).lte('request_date', selEnd),
-        supabase.from('greenp_receivables').select('*').order('amount', { ascending: false }).limit(5),
         supabase.from('greenp_production').select('slip_date, amount').gte('slip_date', monthStartStr()),
       ]);
       if (cancelled) return;
       setErpJobs(prod.data || []);
       setErpExpense((exp.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0));
-      setReceivables(recv.data || []);
       setMonthErpJobs(monthProd.data || []);
       setLoadingRange(false);
     })();
@@ -414,16 +411,6 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
             </div>
           );
         })}
-      </div>
-
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>💳 매출채권(미수금) TOP5 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 현재 잔액 기준 · 기간과 무관)</span></div>
-      <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
-        {receivables.length === 0 ? boxMsg('미수금 데이터가 없습니다.', { justifyContent: 'center' }) : receivables.map((r) => (
-          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', padding: '7px 0', borderBottom: `1px solid ${C.border}`, fontSize: '15px' }}>
-            <span style={{ color: C.textPrimary, fontWeight: 700 }}>{r.company_name}</span>
-            <span style={{ color: C.textWarning, fontWeight: 700 }}>{Number(r.amount || 0).toLocaleString()}원</span>
-          </div>
-        ))}
       </div>
 
       <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>📈 이번달 매출 추이 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 실데이터 기준)</span></div>
