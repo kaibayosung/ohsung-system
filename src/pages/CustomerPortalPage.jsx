@@ -213,7 +213,7 @@ export default function CustomerPortalPage() {
     return () => { cancelled = true; };
   }, [companyName, startDate, endDate]);
   const workTotal = workRows.reduce((s, r) => s + Number(r.amount || 0), 0);
-  const workTypeLabel = (t) => (WORK_TYPE_GROUPS.find((g) => g.key === t) || [null, t || '기타'])[1];
+  const workTypeLabel = (t) => { const g = WORK_TYPE_GROUPS.find((g) => g.key === t); return g ? g.label : (t || '기타'); };
   const workSpecOf = (r) => workSpecMap[`${r.slip_date}_${r.slip_no}`] || '-';
   // 작업유형별 비교 (막대)
   const workTypeAgg = {};
