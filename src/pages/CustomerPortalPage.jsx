@@ -1,8 +1,10 @@
 // src/pages/CustomerPortalPage.jsx
 // 오성철강 스마트 ERP 2.0 — 고객사 포털 (독립 메뉴)
 // 내부 직원용 "영업 워크플로우" 5역할 탭과 분리된, 고객사 전용 화면입니다.
-// 사용법: 거래처 선택 + 날짜 선택만으로 재고/작업내역/출고내역을 조회합니다.
-import React, { useState, useEffect, useCallback } from 'react';
+// 사용법: 거래처 검색·선택 + 날짜 선택만으로 재고/작업내역/출고내역을 조회합니다.
+// 거래처 목록은 내부 companies 마스터가 아니라, 그린ERP에 실제 거래 이력이 있는
+// 모든 회사(greenp_customers 뷰 = greenp_inventory/production/outbound 통합)에서 가져옵니다.
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 
 /* ---------------- 컬러/스타일 토큰 (SalesWorkflowPage와 동일 팔레트) ---------------- */
@@ -42,18 +44,62 @@ const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내�
 function kstDateStr(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
 function todayStr() { return kstDateStr(new Date()); }
 
+/* ---------------- 거래처 검색 콤보박스 ---------------- */
+function CompanySearchBox({ companies, value, onChange }) {
+  const [query, setQuery] = useState(value || '');
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => { setQuery(value || ''); }, [value]);
+
+  const matches = (query ? companies.filter((n) => n.includes(query)) : companies).slice(0, 30);
+
+  return (
+    <div ref={wrapRef} style={{ position: 'relative', width: '260px' }}>
+      <input
+        style={{ ...inputStyle, background: '#fff' }}
+        placeholder="거래처명 검색 (예: 에버스틸, 태경)"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {open && matches.length > 0 && (
+        <div style={{ position: 'absolute', top: '52px', left: 0, right: 0, background: C.surface2, border: `1.5px solid ${C.borderStrong}`, borderRadius: '9px', boxShadow: '0 8px 20px rgba(15,30,51,0.18)', maxHeight: '280px', overflowY: 'auto', zIndex: 50 }}>
+          {matches.map((name) => (
+            <div
+              key={name}
+              onMouseDown={() => { onChange(name); setQuery(name); setOpen(false); }}
+              style={{ padding: '10px 14px', fontSize: '16px', cursor: 'pointer', color: name === value ? C.textAccent : C.textPrimary, fontWeight: name === value ? 800 : 500, background: name === value ? C.bgAccent : 'transparent' }}
+              onMouseEnter={(e) => { if (name !== value) e.currentTarget.style.background = C.surface1; }}
+              onMouseLeave={(e) => { if (name !== value) e.currentTarget.style.background = 'transparent'; }}
+            >
+              {name}
+            </div>
+          ))}
+        </div>
+      )}
+      {open && query && matches.length === 0 && (
+        <div style={{ position: 'absolute', top: '52px', left: 0, right: 0, background: C.surface2, border: `1.5px solid ${C.borderStrong}`, borderRadius: '9px', boxShadow: '0 8px 20px rgba(15,30,51,0.18)', padding: '12px 14px', fontSize: '15px', color: C.textMuted, zIndex: 50 }}>
+          일치하는 거래처가 없습니다
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CustomerPortalPage() {
-  const [companies, setCompanies] = useState([]);
-  const [companyId, setCompanyId] = useState(null);
+  const [companies, setCompanies] = useState([]); // 그린ERP 실거래 회사명 전체 목록
+  const [companyName, setCompanyName] = useState('');
   const [sub, setSub] = useState('inventory');
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [form, setForm] = useState({ thick: '', width: '', weight: '', qty: '', slit: '' });
-  const company = companies.find((c) => c.id === companyId);
 
   useEffect(() => {
-    supabase.from('companies').select('*').order('name', { ascending: true }).then(({ data }) => {
-      setCompanies(data || []);
-      if (data && data[0]) setCompanyId((prev) => prev || data[0].id);
+    supabase.from('greenp_customers').select('name').order('name', { ascending: true }).then(({ data }) => {
+      const names = (data || []).map((r) => r.name);
+      setCompanies(names);
+      if (names.length) setCompanyName((prev) => prev || names[0]);
     });
   }, []);
 
@@ -62,13 +108,13 @@ export default function CustomerPortalPage() {
   const [invLoading, setInvLoading] = useState(false);
   const [invQuery, setInvQuery] = useState('');
   useEffect(() => {
-    if (!company) return;
+    if (!companyName) return;
     let cancelled = false;
     setInvLoading(true);
-    supabase.from('greenp_inventory').select('*').eq('customer_name', company.name).order('received_date', { ascending: false })
+    supabase.from('greenp_inventory').select('*').eq('customer_name', companyName).order('received_date', { ascending: false })
       .then(({ data }) => { if (!cancelled) { setInv(data || []); setInvLoading(false); } });
     return () => { cancelled = true; };
-  }, [company?.name]);
+  }, [companyName]);
   const invFiltered = inv.filter((r) => !invQuery || (r.product_name || '').includes(invQuery) || (r.spec || '').includes(invQuery));
   const invTotalWeight = inv.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
   const invSpecCount = new Set(inv.map((r) => r.spec).filter(Boolean)).size;
@@ -96,13 +142,13 @@ export default function CustomerPortalPage() {
   const [workSpecMap, setWorkSpecMap] = useState({});
   const [workLoading, setWorkLoading] = useState(false);
   useEffect(() => {
-    if (!company) return;
+    if (!companyName) return;
     let cancelled = false;
     setWorkLoading(true);
     Promise.all([
-      supabase.from('greenp_production').select('*').eq('company_name', company.name).eq('slip_date', selectedDate).order('slip_no', { ascending: true }),
-      supabase.from('greenp_joborders').select('joborder_no, joborder_date, prod_slip_no, prod_date').eq('company_name', company.name).eq('joborder_date', selectedDate),
-      supabase.from('greenp_outbound').select('work_date, work_slip_no, spec').eq('company_name', company.name).eq('work_date', selectedDate),
+      supabase.from('greenp_production').select('*').eq('company_name', companyName).eq('slip_date', selectedDate).order('slip_no', { ascending: true }),
+      supabase.from('greenp_joborders').select('joborder_no, joborder_date, prod_slip_no, prod_date').eq('company_name', companyName).eq('joborder_date', selectedDate),
+      supabase.from('greenp_outbound').select('work_date, work_slip_no, spec').eq('company_name', companyName).eq('work_date', selectedDate),
     ]).then(([prod, jobs, out]) => {
       if (cancelled) return;
       setWorkRows(prod.data || []);
@@ -123,7 +169,7 @@ export default function CustomerPortalPage() {
       setWorkLoading(false);
     });
     return () => { cancelled = true; };
-  }, [company?.name, selectedDate]);
+  }, [companyName, selectedDate]);
   const workTotal = workRows.reduce((s, r) => s + Number(r.amount || 0), 0);
   const workTypeLabel = (t) => (WORK_TYPE_GROUPS.find((g) => g.key === t) || [null, t || '기타'])[1];
   const workSpecOf = (r) => workSpecMap[`${r.slip_date}_${r.slip_no}`] || '-';
@@ -133,25 +179,25 @@ export default function CustomerPortalPage() {
   const [outRows, setOutRows] = useState([]);
   const [outLoading, setOutLoading] = useState(false);
   const runOutSearch = useCallback(() => {
-    if (!company) return;
+    if (!companyName) return;
     setOutLoading(true);
-    let q = supabase.from('greenp_outbound').select('*').eq('company_name', company.name).eq('outbound_date', selectedDate);
+    let q = supabase.from('greenp_outbound').select('*').eq('company_name', companyName).eq('outbound_date', selectedDate);
     if (outKeyword) q = q.or(`product_name.ilike.%${outKeyword}%,spec.ilike.%${outKeyword}%`);
     q.order('id', { ascending: true }).then(({ data }) => { setOutRows(data || []); setOutLoading(false); });
-  }, [company?.name, selectedDate, outKeyword]);
-  useEffect(() => { runOutSearch(); }, [company?.name, selectedDate]);
+  }, [companyName, selectedDate, outKeyword]);
+  useEffect(() => { runOutSearch(); }, [companyName, selectedDate]);
   const outTotalWeight = outRows.reduce((s, r) => s + Number(r.weight || 0), 0);
 
   // ---- 4) 발주하기 ----
   const submitOrder = async () => {
-    if (!company) { alert('거래처를 선택하세요.'); return; }
+    if (!companyName) { alert('거래처를 선택하세요.'); return; }
     if (!form.thick) { alert('두께를 입력하세요.'); return; }
     const d = new Date();
     const ymd = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
     const { count } = await supabase.from('sales_orders').select('id', { count: 'exact', head: true }).like('order_no', `${ymd}%`);
     const order_no = `${ymd}${String((count || 0) + 1).padStart(2, '0')}`;
     const { data, error } = await supabase.from('sales_orders').insert({
-      order_no, company_name: company.name, thickness: parseFloat(form.thick),
+      order_no, company_name: companyName, thickness: parseFloat(form.thick),
       weight: form.weight ? parseFloat(form.weight) * 1000 : null, status: 'RECEIVED', prod_type: '자사생산',
       memo: `Slitting: ${form.slit} / 수량: ${form.qty}`,
     }).select().single();
@@ -168,12 +214,10 @@ export default function CustomerPortalPage() {
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: C.navyGradient, borderRadius: '14px', padding: '18px 22px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(15,30,51,0.18)', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '26px' }}>🏢</span>
         <div style={{ flex: 1, minWidth: '160px' }}>
-          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginBottom: '2px' }}>고객사 포털</div>
-          <div style={{ fontSize: '21px', fontWeight: 800, color: '#fff' }}>{company ? company.name : '거래처를 선택하세요'}</div>
+          <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginBottom: '2px' }}>고객사 포털 <span style={{ color: 'rgba(255,255,255,0.4)' }}>· 거래처 {companies.length}곳</span></div>
+          <div style={{ fontSize: '21px', fontWeight: 800, color: '#fff' }}>{companyName || '거래처를 선택하세요'}</div>
         </div>
-        <select style={{ ...inputStyle, width: '220px', background: '#fff' }} value={companyId || ''} onChange={(e) => setCompanyId(Number(e.target.value))}>
-          {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        <CompanySearchBox companies={companies} value={companyName} onChange={setCompanyName} />
         <input type="date" value={selectedDate} max={todayStr()} onChange={(e) => setSelectedDate(e.target.value)} style={{ ...inputStyle, width: '170px' }} />
       </div>
 
