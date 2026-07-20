@@ -59,8 +59,9 @@ function fmtKDate(s) { if (!s) return ''; const [, m, d] = s.split('-'); return 
 function monthsAgoStr(n) { const d = new Date(); d.setMonth(d.getMonth() - n); return kstDateStr(d); }
 function hoursSince(iso) { if (!iso) return 0; return (Date.now() - new Date(iso).getTime()) / 3600000; }
 // 그린ERP 최종 동기화 시각 표시용 — "오후 5:32" 형태(KST)
-function fmtKTime(iso) { if (!iso) return '-'; return new Date(iso).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: 'numeric', minute: '2-digit', hour12: true }); }
+function fmtKTime(iso) { if (!iso) return '-'; return new Date(iso).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true }); }
 function minsSince(iso) { if (!iso) return null; return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000)); }
+function secsSince(iso) { if (!iso) return null; return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000)); }
 function prodBadge(t) {
   t = t || '자사생산';
   const bg = t === '임가공' ? C.bgWarning : (t === '외주가공' ? C.bgAccent : C.bgSuccess);
@@ -289,16 +290,23 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const [monthErpJobs, setMonthErpJobs] = useState([]);  // greenp_production — 이번달 전체(추이 차트용)
   const [loadingRange, setLoadingRange] = useState(false);
   const [lastSync, setLastSync] = useState(null);        // greenp_sync_logs 최종 성공 동기화 시각
+  const [nowTick, setNowTick] = useState(Date.now());     // "n분 n초 전" 초단위 실시간 표시용
 
-  // 그린ERP 최종 데이터 갱신 시각 — 1분마다 새로고침
+  // 그린ERP 최종 데이터 갱신 시각 — 30초마다 DB에서 새로고침
   useEffect(() => {
     const fetchLastSync = () => {
       supabase.from('greenp_sync_logs').select('synced_at').eq('status', '성공').order('synced_at', { ascending: false }).limit(1)
         .then(({ data }) => { if (data && data[0]) setLastSync(data[0].synced_at); });
     };
     fetchLastSync();
-    const timer = setInterval(fetchLastSync, 60000);
+    const timer = setInterval(fetchLastSync, 30000);
     return () => clearInterval(timer);
+  }, []);
+
+  // 경과 시간(n분 n초 전)을 초단위로 실시간 카운트하기 위한 1초 틱
+  useEffect(() => {
+    const tick = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(tick);
   }, []);
 
   useEffect(() => {
@@ -329,11 +337,15 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const isThisMonth = selStart === monthStartK && selEnd === todayK;
   const isSingleDay = selStart === selEnd;
   const rangeLabel = isToday ? '오늘' : (isSingleDay ? fmtKDate(selStart) : `${fmtKDate(selStart)} ~ ${fmtKDate(selEnd)}`);
-  const syncMins = minsSince(lastSync);
+  void nowTick; // 1초마다 재렌더링을 유도해 아래 경과시간이 초단위로 갱신되도록 함
+  const syncTotalSecs = secsSince(lastSync);
+  const syncMins = syncTotalSecs === null ? null : Math.floor(syncTotalSecs / 60);
+  const syncSecs = syncTotalSecs === null ? null : syncTotalSecs % 60;
   const syncFresh = syncMins !== null && syncMins <= 15;
   const syncStale = syncMins !== null && syncMins > 60;
   const syncColor = syncStale ? C.textDanger : (syncFresh ? C.textSuccess : C.textWarning);
   const syncBg = syncStale ? C.bgDanger : (syncFresh ? C.bgSuccess : C.bgWarning);
+  const syncAgoLabel = syncTotalSecs === null ? '' : (syncMins > 0 ? `${syncMins}분 ${syncSecs}초 전` : `${syncSecs}초 전`);
 
   const setPresetToday = () => { setSelStart(todayK); setSelEnd(todayK); };
   const setPresetWeek = () => { setSelStart(weekStartK); setSelEnd(todayK); };
@@ -380,7 +392,7 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
         <span style={{ fontSize: '13px', fontWeight: 700, color: syncColor, background: syncBg, padding: '5px 12px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
-          🔄 최종 데이터 갱신: {fmtKTime(lastSync)}{syncMins !== null && ` (${syncMins < 1 ? '방금' : syncMins + '분 전'})`}
+          🔄 최종 데이터 갱신: {fmtKTime(lastSync)}{syncAgoLabel && ` (${syncAgoLabel})`}
         </span>
       </div>
 
