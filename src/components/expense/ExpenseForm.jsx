@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 
-const ACCOUNT_CATEGORIES = ['급여', '4대보험', '대출이자', '카드대금', '위탁대행/기타', '퇴직연금', '통신비', '수도광열비', '원자재매입', '기타'];
+const ACCOUNT_CATEGORIES = ['급여', '4대보험', '대출이자', '카드대금', '위탁대행/기타', '퇴직연금', '통신비', '수도광열비', '원자재매입', '설비 도입', '기타'];
 
 const emptyItem = () => ({ account_category: '', vendor_name: '', item_name: '', amount: '', bank_name: '', account_no: '', account_holder: '', passbook_memo: '', note: '' });
 
