@@ -390,13 +390,12 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
         <span style={{ fontSize: '15px', color: C.textAccent, fontWeight: 700, marginLeft: 'auto' }}>{rangeLabel} 기준{loadingRange ? ' · 불러오는 중...' : ''}</span>
       </div>
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '10px', margin: '4px 0 8px' }}>
+        <div style={{ fontSize: '19px', fontWeight: 700, color: C.textSecondary }}>📊 그린ERP 실적 리포트 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 동기화 실데이터 · {rangeLabel})</span></div>
         <span style={{ fontSize: '13px', fontWeight: 700, color: syncColor, background: syncBg, padding: '5px 12px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
           🔄 최종 데이터 갱신: {fmtKTime(lastSync)}{syncAgoLabel && ` (${syncAgoLabel})`}
         </span>
       </div>
-
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '4px 0 8px', color: C.textSecondary }}>📊 그린ERP 실적 리포트 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 동기화 실데이터 · {rangeLabel})</span></div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '10px', marginBottom: '16px' }}>
         {statCard('작업 건수', jobCount + '건')}
         {statCard('매출액', Math.round(totalRevenue / 10000).toLocaleString() + '만원', C.textAccent)}
