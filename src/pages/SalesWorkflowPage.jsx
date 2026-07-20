@@ -58,6 +58,9 @@ function fmtKDate(s) { if (!s) return ''; const [, m, d] = s.split('-'); return 
 // N개월 전 날짜(YYYY-MM-DD, KST 기준) — 고객사 포털 작업/출고 내역 기간 프리셋에 사용
 function monthsAgoStr(n) { const d = new Date(); d.setMonth(d.getMonth() - n); return kstDateStr(d); }
 function hoursSince(iso) { if (!iso) return 0; return (Date.now() - new Date(iso).getTime()) / 3600000; }
+// 그린ERP 최종 동기화 시각 표시용 — "오후 5:32" 형태(KST)
+function fmtKTime(iso) { if (!iso) return '-'; return new Date(iso).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: 'numeric', minute: '2-digit', hour12: true }); }
+function minsSince(iso) { if (!iso) return null; return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000)); }
 function prodBadge(t) {
   t = t || '자사생산';
   const bg = t === '임가공' ? C.bgWarning : (t === '외주가공' ? C.bgAccent : C.bgSuccess);
@@ -285,6 +288,18 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const [erpExpense, setErpExpense] = useState(0);       // expense_requests(결재완료) — 선택 기간
   const [monthErpJobs, setMonthErpJobs] = useState([]);  // greenp_production — 이번달 전체(추이 차트용)
   const [loadingRange, setLoadingRange] = useState(false);
+  const [lastSync, setLastSync] = useState(null);        // greenp_sync_logs 최종 성공 동기화 시각
+
+  // 그린ERP 최종 데이터 갱신 시각 — 1분마다 새로고침
+  useEffect(() => {
+    const fetchLastSync = () => {
+      supabase.from('greenp_sync_logs').select('synced_at').eq('status', '성공').order('synced_at', { ascending: false }).limit(1)
+        .then(({ data }) => { if (data && data[0]) setLastSync(data[0].synced_at); });
+    };
+    fetchLastSync();
+    const timer = setInterval(fetchLastSync, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -314,6 +329,11 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const isThisMonth = selStart === monthStartK && selEnd === todayK;
   const isSingleDay = selStart === selEnd;
   const rangeLabel = isToday ? '오늘' : (isSingleDay ? fmtKDate(selStart) : `${fmtKDate(selStart)} ~ ${fmtKDate(selEnd)}`);
+  const syncMins = minsSince(lastSync);
+  const syncFresh = syncMins !== null && syncMins <= 15;
+  const syncStale = syncMins !== null && syncMins > 60;
+  const syncColor = syncStale ? C.textDanger : (syncFresh ? C.textSuccess : C.textWarning);
+  const syncBg = syncStale ? C.bgDanger : (syncFresh ? C.bgSuccess : C.bgWarning);
 
   const setPresetToday = () => { setSelStart(todayK); setSelEnd(todayK); };
   const setPresetWeek = () => { setSelStart(weekStartK); setSelEnd(todayK); };
@@ -356,6 +376,12 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
         <span style={{ color: C.textMuted }}>~</span>
         <input type="date" value={selEnd} min={selStart} max={todayK} onChange={(e) => setSelEnd(e.target.value)} style={{ ...inputStyle, height: '38px', width: '150px', fontSize: '15px' }} />
         <span style={{ fontSize: '15px', color: C.textAccent, fontWeight: 700, marginLeft: 'auto' }}>{rangeLabel} 기준{loadingRange ? ' · 불러오는 중...' : ''}</span>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
+        <span style={{ fontSize: '13px', fontWeight: 700, color: syncColor, background: syncBg, padding: '5px 12px', borderRadius: '999px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+          🔄 최종 데이터 갱신: {fmtKTime(lastSync)}{syncMins !== null && ` (${syncMins < 1 ? '방금' : syncMins + '분 전'})`}
+        </span>
       </div>
 
       <div style={{ fontSize: '19px', fontWeight: 700, margin: '4px 0 8px', color: C.textSecondary }}>📊 그린ERP 실적 리포트 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 동기화 실데이터 · {rangeLabel})</span></div>
