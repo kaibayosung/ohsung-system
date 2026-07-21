@@ -96,6 +96,50 @@ function coilTableHtmlStr(list) {
   if (!list.length) return '<div style="font-size:15px;color:#8592A6;padding:8px 0;">해당 조건의 재고가 없습니다.</div>';
   return `<table style="width:100%;border-collapse:collapse;"><thead><tr><th>코일ID</th><th>두께</th><th>규격</th><th>위치</th><th>잔량</th><th>입고일</th></tr></thead><tbody>${coilTableRows(list)}</tbody></table>`;
 }
+
+/* ---- 가공규격(슬리팅 계획) 파싱 · 자동계산 유틸 ----
+   "158=6,128=1,138=1" / "158*6, 128*1--초긴급 당일" 등 발주서 표기를 폭×수량 토큰으로 해석해
+   1) 예상 로스(mm) — 접수 즉시 계산 가능
+   2) 코일 선택 후 가닥별 예상중량 — 그린ERP 실제 작업지시서(원중량÷사용폭×가닥폭) 방식과 동일하게 산출 */
+function parseSlitTokens(slitText) {
+  if (!slitText) return [];
+  return String(slitText)
+    .replace(/--.*$/s, '')
+    .split(/[,\n]/)
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((tok) => {
+      const m = tok.match(/(\d+(?:\.\d+)?)\s*[=*x×]\s*(\d+)/i);
+      if (!m) return null;
+      return { width: parseFloat(m[1]), count: parseInt(m[2], 10) };
+    })
+    .filter(Boolean);
+}
+function slitUsedWidth(slitText) {
+  return parseSlitTokens(slitText).reduce((s, t) => s + t.width * t.count, 0);
+}
+function buildProcessDetail(slitText, originalWeight) {
+  const tokens = parseSlitTokens(slitText);
+  const usedWidth = tokens.reduce((s, t) => s + t.width * t.count, 0);
+  if (!tokens.length || !originalWeight || !usedWidth) return '';
+  return tokens
+    .map((t) => `${t.width}=${t.count}(${Math.round((t.width * originalWeight) / usedWidth).toLocaleString()}KG)`)
+    .join(', ');
+}
+function workOrderPrintHtml(o) {
+  const row = (label, val) => `<tr><th style="text-align:left;width:110px;background:#F4F6FA;padding:8px;border:1px solid #C9D2E0;">${label}</th><td style="padding:8px;border:1px solid #C9D2E0;white-space:pre-line;">${val}</td></tr>`;
+  return `<div style="font-size:16px;line-height:1.7;">
+    <div style="font-size:21px;font-weight:800;margin-bottom:10px;">${o.company_name || ''} <span style="font-weight:400;font-size:14px;color:#8592A6;">${o.order_no || ''}${o.qty_label ? ' (' + o.qty_label + ')' : ''}</span></div>
+    <table style="width:100%;border-collapse:collapse;">
+      ${row('품명', o.assigned_coil_code || '<span style="color:#C46B06;">미배정 — 지게차 기사 선택 대기</span>')}
+      ${row('규격', o.spec || '-')}
+      ${row('원중량', o.assigned_original_weight ? Number(o.assigned_original_weight).toLocaleString() + 'Kg' : '미정(코일 선택 시 자동입력)')}
+      ${row('사용중량', o.assigned_used_weight ? Number(o.assigned_used_weight).toLocaleString() + 'Kg' : '미정(코일 선택 시 자동입력)')}
+      ${row('가공규격', (o.assigned_process_detail || o.slit_spec || '-').replace(/,\s*/g, '\n'))}
+      ${row('비고', `${o.memo || ''}${o.expected_loss_mm != null ? ` · 예상로스 ${o.expected_loss_mm}mm` : ''}${o.urgent ? ' · 🔺긴급' : ''}`.trim() || '-')}
+    </table>
+  </div>`;
+}
 function printHTML(title, bodyHtml) {
   const w = window.open('', '_blank', 'width=920,height=720');
   if (!w) { alert('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제해주세요.'); return; }
@@ -114,6 +158,7 @@ function SalesWorkflowPage() {
   const [role, setRole] = useState('EX');
   const [orders, setOrders] = useState([]);
   const [coils, setCoils] = useState([]);
+  const [liveCoils, setLiveCoils] = useState([]); // 그린ERP 실재고(greenp_inventory) — 코일 자동배정용 실제 데이터
   const [companies, setCompanies] = useState([]);
   const [enfaxInbox, setEnfaxInbox] = useState([]);
   const [inquiries, setInquiries] = useState([]);
@@ -122,13 +167,14 @@ function SalesWorkflowPage() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [o, c, comp, fax, inq, ledger] = await Promise.all([
+    const [o, c, comp, fax, inq, ledger, inv] = await Promise.all([
       supabase.from('sales_orders').select('*, coils(*)').order('priority', { ascending: false }).order('created_at', { ascending: false }),
       supabase.from('coils').select('*').order('thickness', { ascending: true }),
       supabase.from('companies').select('*').order('name', { ascending: true }),
       supabase.from('enfax_inbox').select('*').order('received_at', { ascending: false }).limit(50),
       supabase.from('company_inquiries').select('*').order('created_at', { ascending: false }),
       supabase.from('daily_ledger').select('amount').eq('trans_date', todayStr()).eq('type', '지출'),
+      supabase.from('greenp_inventory').select('*').gt('remaining_weight', 0).order('received_date', { ascending: true }),
     ]);
     setOrders(o.data || []);
     setCoils(c.data || []);
@@ -136,6 +182,7 @@ function SalesWorkflowPage() {
     setEnfaxInbox(fax.data || []);
     setInquiries(inq.data || []);
     setTodayExpense((ledger.data || []).reduce((s, r) => s + Number(r.amount || 0), 0));
+    setLiveCoils(inv.data || []);
     setLoading(false);
   }, []);
 
@@ -149,16 +196,72 @@ function SalesWorkflowPage() {
     return `${ymd}${seq}`;
   };
 
+  // 가공규격(슬리팅 계획)이 있는 품목은 수량(qty)만큼 "코일 1개 = 작업지시서 1건"으로 개별 분리 생성한다.
+  // (예: 158=6,128=1,138=1 수량2 → 동일 사양의 작업지시서 2건, 각각 지게차 기사가 서로 다른 코일을 배정)
+  // 가공규격이 없는 단순 발주는 기존처럼 items 전체를 합쳐 발주 1건으로 등록한다.
   const createOrder = async (payload, items) => {
     const order_no = genOrderNo();
-    const { data, error } = await supabase.from('sales_orders').insert({ order_no, ...payload }).select().single();
+    const withSpec = (items || []).filter((it) => it.thick && it.slit);
+    let rows;
+    if (withSpec.length > 0) {
+      rows = [];
+      let seq = 0;
+      const totalUnits = withSpec.reduce((s, it) => s + Math.max(1, parseInt(it.qty, 10) || 1), 0);
+      for (const it of withSpec) {
+        const qty = Math.max(1, parseInt(it.qty, 10) || 1);
+        const orderWidth = parseFloat(it.width) || null;
+        const usedWidth = slitUsedWidth(it.slit);
+        const lossMm = orderWidth && usedWidth ? Math.round((orderWidth - usedWidth) * 10) / 10 : null;
+        for (let i = 1; i <= qty; i++) {
+          seq += 1;
+          rows.push({
+            order_no: totalUnits > 1 ? `${order_no}-${seq}` : order_no,
+            company_name: payload.company_name,
+            thickness: parseFloat(it.thick) || null,
+            spec: it.thick && it.width ? `${it.thick} X ${it.width} X C` : null,
+            weight: parseFloat(it.weight) ? parseFloat(it.weight) * 1000 : null,
+            slit_spec: it.slit,
+            order_width: orderWidth,
+            expected_loss_mm: lossMm,
+            qty_label: qty > 1 ? `${i}/${qty}` : null,
+            urgent: payload.urgent,
+            prod_type: payload.prod_type,
+            outsourcing_company: payload.outsourcing_company,
+            status: 'RECEIVED',
+            due_date: payload.due_date,
+            sender: payload.sender,
+            contact_phone: payload.contact_phone,
+            memo: it.maker || null,
+          });
+        }
+      }
+    } else {
+      const totalWeightKg = (items || []).reduce((s, it) => s + (parseFloat(it.weight) || 0), 0) * 1000 || null;
+      rows = [{ order_no, ...payload, weight: payload.weight ?? totalWeightKg }];
+    }
+    const { data, error } = await supabase.from('sales_orders').insert(rows).select();
     if (error) { alert('발주 등록 실패: ' + error.message); return null; }
-    if (items && items.length) {
-      const rows = items.filter((it) => it.thick || it.slit).map((it) => ({ order_id: data.id, thickness: it.thick, width: it.width, weight: it.weight, maker: it.maker, slit_spec: it.slit, qty: it.qty }));
-      if (rows.length) await supabase.from('order_items').insert(rows);
+    if (withSpec.length === 0 && items && items.length) {
+      const itemRows = items.filter((it) => it.thick || it.slit).map((it) => ({ order_id: data[0].id, thickness: it.thick, width: it.width, weight: it.weight, maker: it.maker, slit_spec: it.slit, qty: it.qty }));
+      if (itemRows.length) await supabase.from('order_items').insert(itemRows);
     }
     await fetchAll();
     return data;
+  };
+
+  // 지게차 기사가 실제 그린ERP 재고 코일을 선택하면, 원중량/사용중량/가닥별 예상중량을 자동 계산해 작업지시서를 완성한다.
+  const assignLiveCoil = async (orderId, coil) => {
+    const order = orders.find((o) => o.id === orderId);
+    const originalWeight = Number(coil.remaining_weight ?? coil.original_weight ?? 0) || null;
+    const processDetail = order?.slit_spec && originalWeight ? buildProcessDetail(order.slit_spec, originalWeight) : null;
+    return updateOrder(orderId, {
+      assigned_coil_code: coil.product_name,
+      assigned_coil_source: 'greenp_inventory',
+      assigned_original_weight: originalWeight,
+      assigned_used_weight: originalWeight,
+      assigned_process_detail: processDetail,
+      status: 'WORKING',
+    });
   };
 
   const updateOrder = async (id, patch) => {
@@ -250,7 +353,7 @@ function SalesWorkflowPage() {
         {role === 'MG' && <AdminRole orders={orders} coils={coils} onUpdateOrder={updateOrder} onDeleteOrder={deleteOrder} onToggleCoilClosed={toggleCoilClosed} />}
         {role === 'OF' && (
           <SalesRole
-            orders={orders} coils={coils} companies={companies} enfaxInbox={enfaxInbox} inquiries={inquiries}
+            orders={orders} coils={coils} liveCoils={liveCoils} companies={companies} enfaxInbox={enfaxInbox} inquiries={inquiries}
             onCreateOrder={createOrder} onAssignToDriver={assignToDriver} onUpdateOrder={updateOrder}
             onDeleteOrder={deleteOrder} onLogCall={logCall} onNotifyCustomer={notifyCustomer} onDispatchOrder={dispatchOrder}
             onShipOrder={shipOrder} onSaveCompanyField={saveCompanyField} onAddInquiry={addInquiry}
@@ -258,7 +361,7 @@ function SalesWorkflowPage() {
             fetchAll={fetchAll}
           />
         )}
-        {role === 'FL' && <ForkliftRole orders={orders} coils={coils} onSelectCoil={selectCoil} onCompleteOrder={completeWork} />}
+        {role === 'FL' && <ForkliftRole orders={orders} coils={coils} liveCoils={liveCoils} onSelectCoil={selectCoil} onSelectLiveCoil={assignLiveCoil} onCompleteOrder={completeWork} />}
       </div>
     </div>
   );
@@ -610,7 +713,7 @@ function AdminRole({ orders, coils, onUpdateOrder, onDeleteOrder, onToggleCoilCl
 
 /* ============================== OF 영업 ============================== */
 function SalesRole(props) {
-  const { orders, coils, companies, enfaxInbox, inquiries, onCreateOrder, onAssignToDriver, onUpdateOrder, onDeleteOrder, onLogCall, onNotifyCustomer, onDispatchOrder, onShipOrder, onSaveCompanyField, onAddInquiry, onRequestFinanceCheck, onConfirmEnfax, onMovePriority, fetchAll } = props;
+  const { orders, coils, liveCoils, companies, enfaxInbox, inquiries, onCreateOrder, onAssignToDriver, onUpdateOrder, onDeleteOrder, onLogCall, onNotifyCustomer, onDispatchOrder, onShipOrder, onSaveCompanyField, onAddInquiry, onRequestFinanceCheck, onConfirmEnfax, onMovePriority, fetchAll } = props;
   const [sub, setSub] = useState(window.__ofInitialSub || 'kanban');
   useEffect(() => { if (window.__ofInitialSub) { window.__ofInitialSub = null; } }, []);
 
@@ -621,7 +724,7 @@ function SalesRole(props) {
       </div>
       {sub === 'kanban' && <OFKanban orders={orders} onGoto={setSub} />}
       {sub === 'register' && <OFRegister companies={companies} enfaxInbox={enfaxInbox} onCreateOrder={onCreateOrder} onConfirmEnfax={onConfirmEnfax} onGoto={setSub} fetchAll={fetchAll} />}
-      {sub === 'assign' && <OFAssign orders={orders} coils={coils} onAssignToDriver={onAssignToDriver} />}
+      {sub === 'assign' && <OFAssign orders={orders} coils={coils} liveCoils={liveCoils} onAssignToDriver={onAssignToDriver} />}
       {sub === 'workorder' && <OFWorkorder orders={orders} onMovePriority={onMovePriority} onUpdateOrder={onUpdateOrder} />}
       {sub === 'monitor' && <OFMonitor orders={orders} onLogCall={onLogCall} />}
       {sub === 'notify' && <OFNotify orders={orders} onNotifyCustomer={onNotifyCustomer} onDispatchOrder={onDispatchOrder} />}
@@ -722,7 +825,10 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
       status: 'RECEIVED', due_date: dueDate || null, sender: sender || null, contact_phone: phone || null,
     }, items);
     if (res) {
-      alert((urgent ? '[긴급] ' : '') + `[${prodType}] 발주 등록 완료 · 발주번호 ${res.order_no}`);
+      const count = Array.isArray(res) ? res.length : 1;
+      const first = Array.isArray(res) ? res[0] : res;
+      const summary = count > 1 ? `${count}건 (코일별 작업지시서 개별 생성됨)` : `발주번호 ${first.order_no}`;
+      alert((urgent ? '[긴급] ' : '') + `[${prodType}] 발주 등록 완료 · ${summary}`);
       setSender(''); setCompanyName(''); setDueDate(''); setPhone(''); setUrgent(false); setProdType('자사생산'); setOutsourceTo(''); setItems([emptyItem]);
       onGoto('kanban');
     }
@@ -874,40 +980,57 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
   );
 }
 
-function OFAssign({ orders, coils, onAssignToDriver }) {
+// 그린ERP 실재고(greenp_inventory)에서 이 발주 조건(거래처+두께)에 맞는 코일만 골라준다.
+// 오성철강은 임가공(toll processing)이므로, 재고는 반드시 발주한 거래처 소유 코일이어야 한다.
+function matchLiveCoils(liveCoils, order) {
+  return liveCoils.filter((c) => {
+    const specThick = parseFloat(String(c.spec || '').split(/x/i)[0]);
+    return c.customer_name === order.company_name && Math.abs(specThick - Number(order.thickness)) < 0.001 && Number(c.remaining_weight) > 0;
+  });
+}
+function liveCoilRow(c) {
+  return `<tr><td>${c.product_name}</td><td>${c.spec || '-'}</td><td>${Number(c.remaining_weight || 0).toLocaleString()}Kg</td><td>${c.received_date || '-'}</td></tr>`;
+}
+function liveCoilTableHtmlStr(list) {
+  if (!list.length) return '<div style="font-size:15px;color:#8592A6;padding:8px 0;">해당 조건의 그린ERP 실재고가 없습니다.</div>';
+  return `<table style="width:100%;border-collapse:collapse;"><thead><tr><th>코일 품번</th><th>규격</th><th>잔량</th><th>입고일</th></tr></thead><tbody>${list.map(liveCoilRow).join('')}</tbody></table>`;
+}
+
+function OFAssign({ orders, coils, liveCoils, onAssignToDriver }) {
   const [fullOpen, setFullOpen] = useState(false);
   const pending = orders.filter((o) => o.status === 'RECEIVED');
   return (
     <div>
-      {boxMsg('재고 장부에서 두께 조건에 맞는 코일이 있는지 확인하고, 지게차 기사에게 배정을 지시합니다.', { marginBottom: '12px' })}
+      {boxMsg('그린ERP 실재고(해당 거래처 소유 코일)에서 두께 조건에 맞는 코일이 있는지 확인하고, 지게차 기사에게 배정을 지시합니다.', { marginBottom: '12px' })}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
-        <button style={smallBtn()} onClick={() => setFullOpen((v) => !v)}>📋 전체 재고 리스트 {fullOpen ? '닫기' : '보기'}</button>
-        <button style={smallBtn()} onClick={() => printHTML('전체 재고 코일 리스트', coilTableHtmlStr(coils))}>🖨 전체 재고 리스트 출력</button>
+        <button style={smallBtn()} onClick={() => setFullOpen((v) => !v)}>📋 전체 실재고 리스트 {fullOpen ? '닫기' : '보기'}</button>
+        <button style={smallBtn()} onClick={() => printHTML('전체 실재고 코일 리스트', liveCoilTableHtmlStr(liveCoils))}>🖨 전체 재고 리스트 출력</button>
       </div>
       {fullOpen && (
-        <div style={{ marginBottom: '16px', background: C.surface1, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px 12px' }}>
-          <table style={itemsTable}><thead><tr><th style={th}>코일ID</th><th style={th}>두께</th><th style={th}>규격</th><th style={th}>위치</th><th style={th}>잔량</th><th style={th}>입고일</th></tr></thead>
-            <tbody>{coils.map((c) => <tr key={c.id}><td style={td}>{c.coil_code}</td><td style={td}>{c.thickness}</td><td style={td}>{c.spec || '-'}</td><td style={td}>Bay {c.bay_location || '-'}</td><td style={td}>{Number(c.remain_weight || 0).toLocaleString()}Kg</td><td style={td}>{c.received_date || '-'}</td></tr>)}</tbody>
+        <div style={{ marginBottom: '16px', background: C.surface1, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '10px 12px', maxHeight: '360px', overflowY: 'auto' }}>
+          <table style={itemsTable}><thead><tr><th style={th}>거래처</th><th style={th}>코일 품번</th><th style={th}>규격</th><th style={th}>잔량</th><th style={th}>입고일</th></tr></thead>
+            <tbody>{liveCoils.map((c) => <tr key={c.id}><td style={td}>{c.customer_name}</td><td style={td}>{c.product_name}</td><td style={td}>{c.spec || '-'}</td><td style={td}>{Number(c.remaining_weight || 0).toLocaleString()}Kg</td><td style={td}>{c.received_date || '-'}</td></tr>)}</tbody>
           </table>
         </div>
       )}
       {pending.length === 0 ? boxMsg('배정 지시 대기중인 발주가 없습니다', { justifyContent: 'center' }) : pending.map((o) => {
-        const matched = coils.filter((c) => Number(c.thickness) === Number(o.thickness) && Number(c.remain_weight) > 0);
+        const matched = matchLiveCoils(liveCoils, o);
         return (
           <div key={o.id} style={{ background: C.surface1, border: `1px solid ${o.urgent ? C.borderDanger : C.border}`, borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
             {o.urgent && <div style={{ fontSize: '13px', fontWeight: 700, color: C.textDanger, marginBottom: '4px' }}>🔺 긴급</div>}
-            <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '6px' }}>{o.company_name} · 두께 {o.thickness} · {o.order_no} {prodBadge(o.prod_type)}</div>
+            <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '4px' }}>{o.company_name} · 두께 {o.thickness} · {o.order_no}{o.qty_label ? ` (${o.qty_label})` : ''} {prodBadge(o.prod_type)}</div>
+            {o.slit_spec && <div style={{ fontSize: '14px', color: C.textSecondary, marginBottom: '8px' }}>가공규격 {o.slit_spec}{o.expected_loss_mm != null ? ` · 예상로스 ${o.expected_loss_mm}mm` : ''}</div>}
             {matched.length ? (
               <div style={{ marginBottom: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <span style={{ fontSize: '15px', fontWeight: 700, color: C.textSuccess }}>✓ 재고 {matched.length}건 확인됨</span>
-                  <button style={smallBtn()} onClick={() => printHTML(`${o.company_name} (${o.order_no}) 재고 코일 리스트`, coilTableHtmlStr(matched))}>🖨 이 조건 재고 출력</button>
+                  <span style={{ fontSize: '15px', fontWeight: 700, color: C.textSuccess }}>✓ 실재고 {matched.length}건 확인됨</span>
+                  <button style={smallBtn()} onClick={() => printHTML(`${o.company_name} (${o.order_no}) 재고 코일 리스트`, liveCoilTableHtmlStr(matched))}>🖨 이 조건 재고 출력</button>
                 </div>
-                <table style={itemsTable}><thead><tr><th style={th}>코일ID</th><th style={th}>두께</th><th style={th}>규격</th><th style={th}>위치</th><th style={th}>잔량</th><th style={th}>입고일</th></tr></thead>
-                  <tbody>{matched.map((c) => <tr key={c.id}><td style={td}>{c.coil_code}</td><td style={td}>{c.thickness}</td><td style={td}>{c.spec || '-'}</td><td style={td}>Bay {c.bay_location || '-'}</td><td style={td}>{Number(c.remain_weight || 0).toLocaleString()}Kg</td><td style={td}>{c.received_date || '-'}</td></tr>)}</tbody>
+                <table style={itemsTable}><thead><tr><th style={th}>코일 품번</th><th style={th}>규격</th><th style={th}>잔량</th><th style={th}>입고일</th></tr></thead>
+                  <tbody>{matched.map((c) => <tr key={c.id}><td style={td}>{c.product_name}</td><td style={td}>{c.spec || '-'}</td><td style={td}>{Number(c.remaining_weight || 0).toLocaleString()}Kg</td><td style={td}>{c.received_date || '-'}</td></tr>)}</tbody>
                 </table>
               </div>
-            ) : boxMsg(`⚠ 두께 ${o.thickness} 재고 없음 — 대체 규격 검토 필요`, { marginBottom: '8px', background: C.bgWarning, color: C.textWarning })}
+            ) : boxMsg(`⚠ ${o.company_name} 두께 ${o.thickness} 실재고 없음 — 입고 여부 확인 필요`, { marginBottom: '8px', background: C.bgWarning, color: C.textWarning })}
             <div style={{ display: 'flex', gap: '8px' }}>
               <button style={{ ...btnStyle(true), flex: 1 }} disabled={!matched.length} onClick={() => onAssignToDriver(o.id)}>지게차 기사에게 배정 지시</button>
             </div>
@@ -925,15 +1048,19 @@ function OFWorkorder({ orders, onMovePriority, onUpdateOrder }) {
       {boxMsg('코일 탐색·확정 중인 발주의 작업지시서 처리 현황과 처리 우선순위를 조정합니다.', { marginBottom: '12px' })}
       {list.length === 0 ? boxMsg('처리중인 작업지시서가 없습니다', { justifyContent: 'center' }) : list.map((o) => (
         <div key={o.id} style={{ background: C.surface1, border: `1px solid ${o.urgent ? C.borderDanger : C.border}`, borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-            <span style={{ fontWeight: 700, fontSize: '18px' }}>{o.company_name} · 두께 {o.thickness} · {o.order_no}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+            <span style={{ fontWeight: 700, fontSize: '18px' }}>{o.company_name} · 두께 {o.thickness} · {o.order_no}{o.qty_label ? ` (${o.qty_label})` : ''}</span>
             {o.urgent && <span style={{ fontSize: '13px', fontWeight: 700, color: C.textDanger }}>🔺 긴급</span>}
           </div>
-          {o.coils ? boxMsg(`작업지시서 대시보드 등록됨 · 배정 코일: ${o.coils.coil_code}`, { marginBottom: '8px', background: C.bgSuccess, color: C.textSuccess }) : boxMsg('지게차 기사 코일 탐색중', { marginBottom: '8px' })}
+          {o.slit_spec && <div style={{ fontSize: '14px', color: C.textSecondary, marginBottom: '6px' }}>가공규격 {o.slit_spec}{o.expected_loss_mm != null ? ` · 예상로스 ${o.expected_loss_mm}mm` : ''}</div>}
+          {o.assigned_coil_code
+            ? boxMsg(`작업지시서 완성됨 · 배정 코일: ${o.assigned_coil_code} · 원중량 ${Number(o.assigned_original_weight || 0).toLocaleString()}Kg`, { marginBottom: '8px', background: C.bgSuccess, color: C.textSuccess })
+            : (o.coils ? boxMsg(`배정 코일: ${o.coils.coil_code}`, { marginBottom: '8px', background: C.bgSuccess, color: C.textSuccess }) : boxMsg('지게차 기사 코일 탐색중', { marginBottom: '8px' }))}
           <div style={{ display: 'flex', gap: '6px' }}>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => onMovePriority(o, 'up')}>▲ 우선순위</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => onMovePriority(o, 'down')}>▼ 순위내림</button>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => onUpdateOrder(o.id, { urgent: !o.urgent })}>{o.urgent ? '긴급 해제' : '긴급 지정'}</button>
+            {o.assigned_coil_code && <button style={{ ...smallBtn('accent'), flex: 1 }} onClick={() => printHTML(`${o.company_name} 작업지시서`, workOrderPrintHtml(o))}>🖨 작업지시서 출력</button>}
           </div>
         </div>
       ))}
@@ -1057,11 +1184,11 @@ function OFAftercare({ orders, companies, inquiries, onSaveCompanyField, onAddIn
 }
 
 /* ============================== FL 지게차 기사 ============================== */
-function ForkliftRole({ orders, coils, onSelectCoil, onCompleteOrder }) {
+function ForkliftRole({ orders, coils, liveCoils, onSelectCoil, onSelectLiveCoil, onCompleteOrder }) {
   const [sub, setSub] = useState('waiting');
   const [currentId, setCurrentId] = useState(null);
   const current = orders.find((o) => o.id === currentId);
-  const waiting = orders.filter((o) => o.status === 'SEARCH' && !o.coil_id);
+  const waiting = orders.filter((o) => o.status === 'SEARCH' && !o.assigned_coil_code && !o.coil_id);
   const recent = orders.filter((o) => o.status === 'WORKING' || o.status === 'DONE');
 
   return (
@@ -1075,13 +1202,14 @@ function ForkliftRole({ orders, coils, onSelectCoil, onCompleteOrder }) {
           <div style={{ marginBottom: '16px' }}>
             {waiting.length === 0 ? boxMsg('대기중인 발주 없음', { justifyContent: 'center' }) : waiting.map((o) => (
               <div key={o.id} style={{ background: C.surface1, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '11px', marginBottom: '9px' }}>
-                <div style={{ fontWeight: 700, fontSize: '19px' }}>{o.company_name} · 두께 {o.thickness}</div>
+                <div style={{ fontWeight: 700, fontSize: '19px' }}>{o.company_name} · 두께 {o.thickness}{o.qty_label ? ` (${o.qty_label})` : ''}</div>
+                {o.slit_spec && <div style={{ fontSize: '14px', color: C.textSecondary, marginTop: '2px' }}>가공규격 {o.slit_spec}</div>}
                 <button style={{ ...btnStyle(true), marginTop: '7px', width: '100%' }} onClick={() => { setCurrentId(o.id); setSub('coil'); }}>코일 찾기</button>
               </div>
             ))}
           </div>
           <div style={{ fontSize: '18px', color: C.textSecondary, marginBottom: '8px' }}>최근 처리 이력</div>
-          {recent.length === 0 ? boxMsg('최근 처리 이력 없음', { justifyContent: 'center' }) : recent.map((o) => boxMsg(`${o.company_name} · ${statusLabel(o.status)}`, { marginBottom: '7px' }))}
+          {recent.length === 0 ? boxMsg('최근 처리 이력 없음', { justifyContent: 'center' }) : recent.map((o) => boxMsg(`${o.company_name} · ${statusLabel(o.status)}${o.assigned_coil_code ? ` · 코일 ${o.assigned_coil_code}` : ''}`, { marginBottom: '7px' }))}
         </div>
       )}
       {sub === 'coil' && (
@@ -1092,35 +1220,49 @@ function ForkliftRole({ orders, coils, onSelectCoil, onCompleteOrder }) {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 18px' }}>
                 <div><div style={{ fontSize: '13px', color: C.textMuted }}>거래처</div><div style={{ fontSize: '19px', fontWeight: 700 }}>{current.company_name}</div></div>
                 <div><div style={{ fontSize: '13px', color: C.textMuted }}>두께</div><div style={{ fontSize: '19px', fontWeight: 700 }}>{current.thickness}</div></div>
-                <div><div style={{ fontSize: '13px', color: C.textMuted }}>중량</div><div style={{ fontSize: '19px', fontWeight: 700 }}>{Number(current.weight || 0).toLocaleString()}Kg</div></div>
+                <div><div style={{ fontSize: '13px', color: C.textMuted }}>참고 중량(최소)</div><div style={{ fontSize: '19px', fontWeight: 700 }}>{Number(current.weight || 0).toLocaleString()}Kg</div></div>
                 <div><div style={{ fontSize: '13px', color: C.textMuted }}>규격</div><div style={{ fontSize: '19px', fontWeight: 700 }}>{current.spec || '-'}</div></div>
               </div>
+              {current.slit_spec && (
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '2px' }}>가공규격 (슬리팅 계획)</div>
+                  <div style={{ fontSize: '17px', fontWeight: 700 }}>{current.slit_spec}{current.expected_loss_mm != null ? ` · 예상로스 ${current.expected_loss_mm}mm` : ''}</div>
+                </div>
+              )}
             </div>
             {timelineHtml(current.status)}
-            {!current.coil_id ? (
+            {!current.assigned_coil_code ? (
               (() => {
-                const matched = coils.filter((c) => Number(c.thickness) === Number(current.thickness) && Number(c.remain_weight) > 0);
-                return matched.length === 0 ? boxMsg('조건에 맞는 재고 코일 없음', { justifyContent: 'center', minHeight: '60px' }) : matched.map((c) => {
-                  const enough = Number(c.remain_weight) >= Number(current.weight || 0);
-                  const specOk = c.spec === current.spec;
+                const matched = matchLiveCoils(liveCoils, current);
+                return matched.length === 0 ? boxMsg(`${current.company_name} 두께 ${current.thickness} 조건의 그린ERP 실재고 없음`, { justifyContent: 'center', minHeight: '60px' }) : matched.map((c) => {
+                  const enough = Number(c.remaining_weight) >= Number(current.weight || 0);
                   return (
-                    <div key={c.id} style={{ background: C.surface2, border: `2px solid ${specOk ? C.textSuccess : C.border}`, borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
+                    <div key={c.id} style={{ background: C.surface2, border: `2px solid ${C.textSuccess}`, borderRadius: '10px', padding: '16px', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontWeight: 700, fontSize: '21px' }}>{c.coil_code}</span>
-                        {specOk ? <span style={{ fontSize: '14px', color: C.textSuccess, fontWeight: 700 }}>✓ 규격 일치</span> : <span style={{ fontSize: '14px', color: C.textWarning }}>규격 {c.spec || '-'}</span>}
+                        <span style={{ fontWeight: 700, fontSize: '21px' }}>{c.product_name}</span>
+                        <span style={{ fontSize: '14px', color: C.textSuccess, fontWeight: 700 }}>✓ 규격 {c.spec || '-'}</span>
                       </div>
                       <div style={{ color: C.textSecondary, fontSize: '17px', marginBottom: '12px' }}>
-                        Bay {c.bay_location || '-'} · 잔량 {Number(c.remain_weight).toLocaleString()}Kg {enough ? <span style={{ color: C.textSuccess }}>(충분)</span> : <span style={{ color: C.textDanger }}>(부족 주의)</span>}
+                        입고일 {c.received_date || '-'} · 잔량 {Number(c.remaining_weight).toLocaleString()}Kg {enough ? <span style={{ color: C.textSuccess }}>(충분)</span> : <span style={{ color: C.textDanger }}>(부족 주의)</span>}
                       </div>
-                      <button style={{ ...btnStyle(true), width: '100%' }} onClick={() => onSelectCoil(current.id, c.id)}>이 코일로 선택</button>
+                      <button style={{ ...btnStyle(true), width: '100%' }} onClick={() => onSelectLiveCoil(current.id, c)}>이 코일로 선택</button>
                     </div>
                   );
                 });
               })()
             ) : (
               <>
-                {boxMsg(`코일ID 확정: ${current.coils?.coil_code || ''}`, { background: C.bgSuccess, color: C.textSuccess, margin: '10px 0' })}
-                <button style={{ ...btnStyle(true), width: '100%' }} onClick={() => { onCompleteOrder(current.id); setCurrentId(null); setSub('waiting'); }}>작업완료 처리</button>
+                {boxMsg(`코일 확정: ${current.assigned_coil_code} · 원중량 ${Number(current.assigned_original_weight || 0).toLocaleString()}Kg`, { background: C.bgSuccess, color: C.textSuccess, margin: '10px 0' })}
+                {current.assigned_process_detail && (
+                  <div style={{ background: C.surface1, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '14px', marginBottom: '12px' }}>
+                    <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '4px' }}>가닥별 예상중량 (자동계산)</div>
+                    <div style={{ fontSize: '16px', fontWeight: 700, lineHeight: 1.6 }}>{current.assigned_process_detail}</div>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button style={{ ...smallBtn(), flex: 1 }} onClick={() => printHTML(`${current.company_name} 작업지시서`, workOrderPrintHtml(current))}>🖨 작업지시서 출력</button>
+                  <button style={{ ...btnStyle(true), flex: 1 }} onClick={() => { onCompleteOrder(current.id); setCurrentId(null); setSub('waiting'); }}>작업완료 처리</button>
+                </div>
               </>
             )}
           </div>
