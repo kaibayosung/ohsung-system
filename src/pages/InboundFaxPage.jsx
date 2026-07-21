@@ -71,7 +71,7 @@ function CompanySearchBox({ companies, value, onChange, placeholder }) {
 }
 
 /* 오성철강 실제 로고 파일 (public/ohsung-logo.jpg) — 인쇄 리포트 헤더에 사용 */
-const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" style="height:38px;display:block;" />';
+const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" width="122" height="40" style="height:40px;width:122px;display:block;object-fit:contain;" />';
 
 /* ---------------- 세련된 입고현황 리포트 인쇄 HTML ---------------- */
 function printInboundReport(company, faxNumber, dateLabel, rows) {

@@ -65,7 +65,7 @@ function PrintButton() {
 }
 
 /* 오성철강 실제 로고 파일 (public/ohsung-logo.jpg) — 인쇄 리포트 헤더에 사용 */
-const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" style="height:38px;display:block;" />';
+const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" width="122" height="40" style="height:40px;width:122px;display:block;object-fit:contain;" />';
 
 /* ---------------- 입고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함) ---------------- */
 function printInboundPDF(company, rangeLabel, rows) {
