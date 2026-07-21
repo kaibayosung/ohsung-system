@@ -64,6 +64,19 @@ function PrintButton() {
   return <button className="no-print" style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => window.print()}>🖨️ 인쇄 / PDF 저장</button>;
 }
 
+/* 오성철강 로고 마크 (5엽 꽃 + 흰 링 + 노란 중심) — 인쇄 리포트용 인라인 SVG */
+const OHSUNG_LOGO_SVG = '<svg width="42" height="42" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="display:block;flex-shrink:0;">' +
+  '<g fill="#2B2A72">' +
+  '<path d="M50,50 C38,50 25,40 25,22 C25,10 38,3 50,3 C62,3 75,10 75,22 C75,40 62,50 50,50 Z"/>' +
+  '<path d="M50,50 C38,50 25,40 25,22 C25,10 38,3 50,3 C62,3 75,10 75,22 C75,40 62,50 50,50 Z" transform="rotate(72 50 50)"/>' +
+  '<path d="M50,50 C38,50 25,40 25,22 C25,10 38,3 50,3 C62,3 75,10 75,22 C75,40 62,50 50,50 Z" transform="rotate(144 50 50)"/>' +
+  '<path d="M50,50 C38,50 25,40 25,22 C25,10 38,3 50,3 C62,3 75,10 75,22 C75,40 62,50 50,50 Z" transform="rotate(216 50 50)"/>' +
+  '<path d="M50,50 C38,50 25,40 25,22 C25,10 38,3 50,3 C62,3 75,10 75,22 C75,40 62,50 50,50 Z" transform="rotate(288 50 50)"/>' +
+  '</g>' +
+  '<circle cx="50" cy="50" r="21" fill="#FFFFFF"/>' +
+  '<circle cx="50" cy="50" r="10.5" fill="#F5C518"/>' +
+  '</svg>';
+
 /* ---------------- 입고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함) ---------------- */
 function printInboundPDF(company, rangeLabel, rows) {
   const w = window.open('', '_blank', 'width=880,height=760');
@@ -104,7 +117,7 @@ function printInboundPDF(company, rangeLabel, rows) {
   </style></head>
   <body>
     <div class="head">
-      <div class="brand">🏭 오성철강사<div class="sub">OHSUNG STEEL · SMART ERP 2.0</div></div>
+      <div class="brand" style="display:flex;align-items:center;gap:11px;">${OHSUNG_LOGO_SVG}<div><div style="font-size:17px;">오성철강사</div><div class="sub">OHSUNG STEEL · SMART ERP 2.0</div></div></div>
       <div class="brand" style="text-align:right">
         <div class="sub">발행일시</div>
         ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
