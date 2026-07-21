@@ -64,12 +64,88 @@ function PrintButton() {
   return <button className="no-print" style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => window.print()}>🖨️ 인쇄 / PDF 저장</button>;
 }
 
+/* ---------------- 입고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함) ---------------- */
+function printInboundPDF(company, rangeLabel, rows) {
+  const w = window.open('', '_blank', 'width=880,height=760');
+  if (!w) { alert('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제해주세요.'); return; }
+  const totalWeight = rows.reduce((s, r) => s + Number(r.weight || 0), 0);
+  const bodyRows = rows.map((r, i) => `
+    <tr style="background:${i % 2 ? '#F7F9FC' : '#fff'}">
+      <td>${r.inbound_date || '-'}</td>
+      <td>${r.company_name || '-'}</td>
+      <td>${r.product_name || '-'}</td>
+      <td>${r.spec || '-'}</td>
+      <td>${Number(r.length_m || 0) > 0 ? Number(r.length_m).toLocaleString() + 'm' : '기보'}</td>
+      <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
+    </tr>`).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>입고현황 리스트 - ${company}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif; color:#0F1E33; margin:0; padding:36px 42px; }
+    .head { display:flex; align-items:center; justify-content:space-between; padding-bottom:18px; border-bottom:3px solid #16283f; margin-bottom:22px; }
+    .brand { font-size:15px; font-weight:800; color:#16283f; letter-spacing:.02em; }
+    .brand .sub { font-size:12px; font-weight:600; color:#8592A6; margin-top:2px; }
+    .title { text-align:center; margin: 4px 0 20px; }
+    .title h1 { font-size:30px; margin:0; letter-spacing:.15em; font-weight:900; }
+    .title .badge { display:inline-block; margin-top:8px; background:#FDECD6; color:#C46B06; font-weight:800; font-size:13px; padding:5px 14px; border-radius:999px; }
+    .meta { display:flex; justify-content:space-between; font-size:14.5px; color:#4D5C72; margin-bottom:16px; padding:12px 16px; background:#F4F6FA; border-radius:10px; }
+    .meta b { color:#0F1E33; }
+    table { width:100%; border-collapse:collapse; margin-top:6px; }
+    th { background:#16283f; color:#fff; font-size:13.5px; padding:11px 10px; text-align:left; font-weight:700; }
+    td { padding:9px 10px; font-size:14.5px; border-bottom:1px solid #E3E8F0; }
+    tfoot td { font-weight:900; font-size:16px; border-top:2px solid #16283f; border-bottom:none; padding-top:13px; }
+    .footnote { margin-top:22px; font-size:13px; color:#8592A6; line-height:1.7; }
+    .stamp { display:flex; justify-content:flex-end; margin-top:34px; }
+    .stamp-box { position:relative; text-align:center; font-size:14px; color:#4D5C72; width:150px; }
+    .stamp-box .co { margin-top:10px; font-size:17px; font-weight:900; color:#0F1E33; }
+    .stamp-box .seal { position:absolute; top:-58px; right:6px; width:96px; height:96px; border:3.5px solid #C8372C; border-radius:50%; color:#C8372C; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:900; font-size:15px; line-height:1.35; transform:rotate(-8deg); opacity:.88; }
+    @media print { button { display:none !important; } body { padding:16px 22px; } }
+    .printbar { text-align:center; margin-top:26px; }
+    .printbar button { font-size:16px; padding:10px 22px; border-radius:9px; border:none; background:#E8830F; color:#fff; font-weight:800; cursor:pointer; }
+  </style></head>
+  <body>
+    <div class="head">
+      <div class="brand">🏭 오성철강사<div class="sub">OHSUNG STEEL · SMART ERP 2.0</div></div>
+      <div class="brand" style="text-align:right">
+        <div class="sub">발행일시</div>
+        ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+      </div>
+    </div>
+    <div class="title">
+      <h1>입 고 현 황 리 스 트</h1>
+      <div class="badge">INBOUND COIL LIST</div>
+    </div>
+    <div class="meta">
+      <span>거래처: <b>${company}</b></span>
+      <span>기간: <b>${rangeLabel}</b></span>
+      <span>건수: <b>${rows.length}건</b></span>
+    </div>
+    <table>
+      <thead><tr><th>입고일자</th><th>업체명</th><th>품명</th><th>규격</th><th>길이</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="6" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+    </table>
+    <div class="footnote">
+      본 리스트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
+      내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
+    </div>
+    <div class="stamp">
+      <div class="stamp-box">
+        <div class="seal">확인<br/>오성<br/>철강사</div>
+        확인<div class="co">오 성 철 강 사</div>
+      </div>
+    </div>
+    <div class="printbar"><button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
 const WORK_TYPE_GROUPS = [
   { key: 'SLITING', label: '슬리팅1' },
   { key: 'SLITING2', label: '슬리팅2' },
   { key: 'LEVELLING', label: '레벨링' },
 ];
-const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내역'], ['outbound', '🚚 출고 내역'], ['place', '📝 발주하기']];
+const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내역'], ['outbound', '🚚 출고 내역'], ['inbound', '📥 입고 내역'], ['place', '📝 발주하기']];
 
 function kstDateStr(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
 function todayStr() { return kstDateStr(new Date()); }
@@ -267,6 +343,21 @@ export default function CustomerPortalPage() {
     outByDate[r.outbound_date].중량톤 += Number(r.weight || 0) / 1000;
   });
   const outTrendData = Object.values(outByDate).sort((a, b) => a.date.localeCompare(b.date)).map((r) => ({ ...r, 중량톤: +r.중량톤.toFixed(2), dateLabel: fmtKDate(r.date) }));
+
+  // ---- 3.5) 입고 내역 (greenp_inbound, 선택한 기간 기준 + 검색어) ----
+  const [inKeyword, setInKeyword] = useState('');
+  const [inRows, setInRows] = useState([]);
+  const [inTotalCount, setInTotalCount] = useState(0);
+  const [inLoading, setInLoading] = useState(false);
+  const runInSearch = useCallback(() => {
+    if (!companyName) return;
+    setInLoading(true);
+    let q = supabase.from('greenp_inbound').select('*', { count: 'exact' }).eq('company_name', companyName).gte('inbound_date', startDate).lte('inbound_date', endDate);
+    if (inKeyword) q = q.or(`product_name.ilike.%${inKeyword}%,spec.ilike.%${inKeyword}%`);
+    q.order('inbound_date', { ascending: false }).limit(300).then(({ data, count }) => { setInRows(data || []); setInTotalCount(count || 0); setInLoading(false); });
+  }, [companyName, startDate, endDate, inKeyword]);
+  useEffect(() => { runInSearch(); }, [companyName, startDate, endDate]);
+  const inTotalWeight = inRows.reduce((s, r) => s + Number(r.weight || 0), 0);
 
   // ---- 4) 발주하기 ----
   const submitOrder = async () => {
@@ -522,6 +613,35 @@ export default function CustomerPortalPage() {
                 {outRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
                     <td style={td}>{r.outbound_date}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td><td style={td}>{r.qty || '-'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {sub === 'inbound' && (
+        <div>
+          <PrintHeader subTitle="입고 내역 리포트" companyName={companyName} rangeLabel={rangeLabel} />
+          <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            <input style={inputStyle} placeholder="품명/규격 검색" value={inKeyword} onChange={(e) => setInKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') runInSearch(); }} />
+            <button style={{ ...btnStyle(true), whiteSpace: 'nowrap' }} onClick={runInSearch}>검색</button>
+            <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => printInboundPDF(companyName, rangeLabel, inRows)}>🖨️ 세련된 PDF로 저장</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '10px' }}>
+            {statCard('입고 건수', inTotalCount.toLocaleString() + '건')}
+            {statCard('합계 중량(표시분)', (inTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
+          </div>
+          {inTotalCount > inRows.length && <div className="no-print" style={{ fontSize: '13px', color: C.textMuted, marginBottom: '10px' }}>전체 {inTotalCount.toLocaleString()}건 중 최근 {inRows.length}건 표시 — 기간을 좁히거나 검색어를 입력하면 더 정확히 조회됩니다.</div>}
+
+          {inLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : inRows.length === 0 ? boxMsg(`${rangeLabel}에 입고 내역이 없습니다`, { justifyContent: 'center' }) : (
+            <table style={itemsTable}>
+              <thead><tr><th style={th}>입고일자</th><th style={th}>업체명</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>길이</th><th style={th}>중량</th></tr></thead>
+              <tbody>
+                {inRows.map((r, i) => (
+                  <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
+                    <td style={td}>{r.inbound_date}</td><td style={td}>{r.company_name || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.length_m || 0) > 0 ? Number(r.length_m).toLocaleString() + 'm' : '기보'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td>
                   </tr>
                 ))}
               </tbody>
