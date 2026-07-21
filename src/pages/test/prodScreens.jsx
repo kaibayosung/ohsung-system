@@ -198,12 +198,13 @@ export function InventoryList({ onOpenDetail }) {
       <p style={box.hint}>그린피 재고 모듈은 화면 수 최다(9개)이며 검색·필터 기능이 약해, 실사 시점 기준 전체재고는 위 요약치로만 확보되어 있습니다. 아래 목록은 대표 샘플이며, 10분 주기 자동연동이 구축되면 700+ 품목 전체가 실시간으로 반영됩니다.</p>
       <div style={box.card}>
         <table style={box.table}>
-          <thead><tr><th style={box.th}>업체명</th><th style={box.th}>품명</th><th style={box.th}>재고중량</th><th style={box.th}>입고일자</th><th style={box.th}></th></tr></thead>
+          <thead><tr><th style={box.th}>업체명</th><th style={box.th}>품명</th><th style={box.th}>길이</th><th style={box.th}>재고중량</th><th style={box.th}>입고일자</th><th style={box.th}></th></tr></thead>
           <tbody>
             {filtered.map((r) => (
               <tr key={r.id} style={isOld(r.received_date) ? { backgroundColor: COLORS.redBg } : undefined}>
                 <td style={{ ...box.td, color: isOld(r.received_date) ? COLORS.red : '#2d3748' }}>{r.customer_name}</td>
                 <td style={{ ...box.td, color: isOld(r.received_date) ? COLORS.red : '#2d3748' }}>{r.product_name}</td>
+                <td style={{ ...box.td, color: isOld(r.received_date) ? COLORS.red : '#2d3748' }}>{r.length_m || '-'}</td>
                 <td style={{ ...box.td, color: isOld(r.received_date) ? COLORS.red : '#2d3748' }}>{fmtNum(r.remaining_weight)}</td>
                 <td style={{ ...box.td, color: isOld(r.received_date) ? COLORS.red : '#2d3748' }}>{r.received_date}{isOld(r.received_date) ? ' · 노후재고' : ''}</td>
                 <td style={box.td}><button style={{ ...box.ghostBtn, padding: '6px 14px', fontSize: '13px' }} onClick={() => onOpenDetail(r.id)}>상세</button></td>
@@ -348,12 +349,12 @@ export function CoilFlowBoard({ onOpenDetail }) {
         <table style={box.table}>
           <thead>
             <tr>
-              <th style={box.th}>업체명</th><th style={box.th}>품명</th><th style={box.th}>규격</th><th style={box.th}>입고일자</th>
+              <th style={box.th}>업체명</th><th style={box.th}>품명</th><th style={box.th}>규격</th><th style={box.th}>길이</th><th style={box.th}>입고일자</th>
               <th style={box.th}>원중량</th><th style={box.th}>잔여중량</th><th style={box.th}>소진율</th><th style={box.th}>상태</th><th style={box.th}></th>
             </tr>
           </thead>
           <tbody>
-            {sorted.length === 0 && <tr><td style={box.td} colSpan={9}>검색 결과가 없습니다.</td></tr>}
+            {sorted.length === 0 && <tr><td style={box.td} colSpan={10}>검색 결과가 없습니다.</td></tr>}
             {sorted.slice(0, 200).map((r) => {
               const st = lotStatus(r.original_weight, r.remaining_weight);
               return (
@@ -361,6 +362,7 @@ export function CoilFlowBoard({ onOpenDetail }) {
                   <td style={box.td}>{r.customer_name}</td>
                   <td style={box.td}>{r.product_name}</td>
                   <td style={box.td}>{r.spec}</td>
+                  <td style={box.td}>{r.length_m || '-'}</td>
                   <td style={box.td}>{r.received_date}</td>
                   <td style={box.td}>{fmtNum(r.original_weight)}kg</td>
                   <td style={box.td}>{fmtNum(r.remaining_weight)}kg</td>

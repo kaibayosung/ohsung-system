@@ -83,6 +83,7 @@ function printInboundReport(company, faxNumber, dateLabel, rows) {
       <td>${r.inbound_date || '-'}</td>
       <td>${r.product_name || '-'}</td>
       <td>${r.spec || '-'}</td>
+      <td>${r.length_m || '-'}</td>
       <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
     </tr>`).join('');
   w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>입고현황 리포트 - ${company}</title>
@@ -127,9 +128,9 @@ function printInboundReport(company, faxNumber, dateLabel, rows) {
       <span>수신 FAX: <b>${faxNumber || '미등록'}</b></span>
     </div>
     <table>
-      <thead><tr><th>입고일자</th><th>품명</th><th>규격</th><th style="text-align:right">중량(kg)</th></tr></thead>
-      <tbody>${bodyRows || '<tr><td colspan="4" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="3" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+      <thead><tr><th>입고일자</th><th>품명</th><th>규격</th><th>길이</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
     </table>
     <div class="footnote">
       본 리포트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
