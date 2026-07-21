@@ -157,32 +157,38 @@ function printHTML(title, bodyHtml) {
 function SalesWorkflowPage() {
   const [role, setRole] = useState('EX');
   const [orders, setOrders] = useState([]);
-  const [coils, setCoils] = useState([]);
-  const [liveCoils, setLiveCoils] = useState([]); // 그린ERP 실재고(greenp_inventory) — 코일 자동배정용 실제 데이터
+  const [allInventory, setAllInventory] = useState([]); // 그린ERP 실재고(greenp_inventory) 전체 스냅샷(소진분 포함)
+  const [closedFlags, setClosedFlags] = useState([]);    // 코일별 수기 "마감(계산서 등록완료)" 플래그 (자연키 매칭)
   const [companies, setCompanies] = useState([]);
   const [enfaxInbox, setEnfaxInbox] = useState([]);
   const [inquiries, setInquiries] = useState([]);
   const [todayExpense, setTodayExpense] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  // 그린ERP 재고는 10분마다 전체 삭제 후 재삽입되는 스냅샷이라 id가 계속 바뀐다.
+  // 코일 배정용으로 쓸 때는 잔량>0인 것만, 마감관리 탭에서는 전체(소진분 포함)를 보여준다.
+  const liveCoils = allInventory.filter((c) => Number(c.remaining_weight) > 0);
+  const coilFlagKey = (c) => `${c.customer_name}|${c.product_name}|${c.received_date}|${c.original_weight}`;
+  const closedKeySet = new Set(closedFlags.filter((f) => f.closed).map((f) => `${f.customer_name}|${f.product_name}|${f.received_date}|${f.original_weight}`));
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
-    const [o, c, comp, fax, inq, ledger, inv] = await Promise.all([
+    const [o, comp, fax, inq, ledger, inv, flags] = await Promise.all([
       supabase.from('sales_orders').select('*, coils(*)').order('priority', { ascending: false }).order('created_at', { ascending: false }),
-      supabase.from('coils').select('*').order('thickness', { ascending: true }),
       supabase.from('companies').select('*').order('name', { ascending: true }),
       supabase.from('enfax_inbox').select('*').order('received_at', { ascending: false }).limit(50),
       supabase.from('company_inquiries').select('*').order('created_at', { ascending: false }),
       supabase.from('daily_ledger').select('amount').eq('trans_date', todayStr()).eq('type', '지출'),
-      supabase.from('greenp_inventory').select('*').gt('remaining_weight', 0).order('received_date', { ascending: true }),
+      supabase.from('greenp_inventory').select('*').order('received_date', { ascending: true }),
+      supabase.from('coil_closed_flags').select('*'),
     ]);
     setOrders(o.data || []);
-    setCoils(c.data || []);
     setCompanies(comp.data || []);
     setEnfaxInbox(fax.data || []);
     setInquiries(inq.data || []);
     setTodayExpense((ledger.data || []).reduce((s, r) => s + Number(r.amount || 0), 0));
-    setLiveCoils(inv.data || []);
+    setAllInventory(inv.data || []);
+    setClosedFlags(flags.data || []);
     setLoading(false);
   }, []);
 
@@ -278,8 +284,6 @@ function SalesWorkflowPage() {
 
   const assignToDriver = async (id) => updateOrder(id, { status: 'SEARCH' });
 
-  const selectCoil = async (orderId, coilId) => updateOrder(orderId, { coil_id: coilId, status: 'WORKING' });
-
   const completeWork = async (orderId) => updateOrder(orderId, { status: 'DONE' });
 
   const logCall = async (order) => {
@@ -320,8 +324,16 @@ function SalesWorkflowPage() {
     await fetchAll();
   };
 
+  // 그린ERP 재고(greenp_inventory)는 10분마다 통째로 재삽입되므로, "마감(계산서 등록완료)" 플래그는
+  // 별도 테이블(coil_closed_flags)에 거래처+품번+입고일+원중량 자연키로 저장해 재동기화와 무관하게 유지한다.
   const toggleCoilClosed = async (coil) => {
-    await supabase.from('coils').update({ closed: !coil.closed }).eq('id', coil.id);
+    const key = { customer_name: coil.customer_name, product_name: coil.product_name, received_date: coil.received_date, original_weight: coil.original_weight };
+    const isClosed = closedKeySet.has(coilFlagKey(coil));
+    const { error } = await supabase.from('coil_closed_flags').upsert(
+      { ...key, closed: !isClosed, closed_at: new Date().toISOString() },
+      { onConflict: 'customer_name,product_name,received_date,original_weight' }
+    );
+    if (error) { alert('마감 처리 실패: ' + error.message); return; }
     await fetchAll();
   };
 
@@ -349,11 +361,11 @@ function SalesWorkflowPage() {
         ))}
       </div>
       <div style={cardWrap}>
-        {role === 'EX' && <ExecRole orders={orders} coils={coils} companies={companies} todayExpense={todayExpense} onGoto={goto} />}
-        {role === 'MG' && <AdminRole orders={orders} coils={coils} onUpdateOrder={updateOrder} onDeleteOrder={deleteOrder} onToggleCoilClosed={toggleCoilClosed} />}
+        {role === 'EX' && <ExecRole orders={orders} companies={companies} todayExpense={todayExpense} onGoto={goto} />}
+        {role === 'MG' && <AdminRole orders={orders} allInventory={allInventory} closedKeySet={closedKeySet} coilFlagKey={coilFlagKey} onUpdateOrder={updateOrder} onDeleteOrder={deleteOrder} onToggleCoilClosed={toggleCoilClosed} />}
         {role === 'OF' && (
           <SalesRole
-            orders={orders} coils={coils} liveCoils={liveCoils} companies={companies} enfaxInbox={enfaxInbox} inquiries={inquiries}
+            orders={orders} liveCoils={liveCoils} companies={companies} enfaxInbox={enfaxInbox} inquiries={inquiries}
             onCreateOrder={createOrder} onAssignToDriver={assignToDriver} onUpdateOrder={updateOrder}
             onDeleteOrder={deleteOrder} onLogCall={logCall} onNotifyCustomer={notifyCustomer} onDispatchOrder={dispatchOrder}
             onShipOrder={shipOrder} onSaveCompanyField={saveCompanyField} onAddInquiry={addInquiry}
@@ -361,7 +373,7 @@ function SalesWorkflowPage() {
             fetchAll={fetchAll}
           />
         )}
-        {role === 'FL' && <ForkliftRole orders={orders} coils={coils} liveCoils={liveCoils} onSelectCoil={selectCoil} onSelectLiveCoil={assignLiveCoil} onCompleteOrder={completeWork} />}
+        {role === 'FL' && <ForkliftRole orders={orders} liveCoils={liveCoils} onSelectLiveCoil={assignLiveCoil} onCompleteOrder={completeWork} />}
       </div>
     </div>
   );
@@ -384,7 +396,7 @@ function aggByCompany(rows) {
   return Object.entries(m).map(([name, v]) => ({ name, ...v })).sort((a, b) => b.amount - a.amount);
 }
 
-function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
+function ExecRole({ orders, companies, todayExpense, onGoto }) {
   const todayK = kstDateStr(new Date());
   const [selStart, setSelStart] = useState(todayK);
   const [selEnd, setSelEnd] = useState(todayK);
@@ -622,7 +634,7 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
 }
 
 /* ============================== MG 관리자 ============================== */
-function AdminRole({ orders, coils, onUpdateOrder, onDeleteOrder, onToggleCoilClosed }) {
+function AdminRole({ orders, allInventory, closedKeySet, coilFlagKey, onUpdateOrder, onDeleteOrder, onToggleCoilClosed }) {
   const [sub, setSub] = useState('search');
   const [q, setQ] = useState('');
   const [detailId, setDetailId] = useState(null);
@@ -679,7 +691,7 @@ function AdminRole({ orders, coils, onUpdateOrder, onDeleteOrder, onToggleCoilCl
             <div>
               <div style={{ fontSize: '19px', fontWeight: 700, marginBottom: '4px' }}>{detail.company_name} · {detail.order_no} 전후공정 추적 {prodBadge(detail.prod_type)}</div>
               {timelineHtml(detail.status)}
-              {boxMsg(detail.coils ? `배정 코일: ${detail.coils.coil_code}` : '코일 미배정', { justifyContent: 'center' })}
+              {boxMsg((detail.assigned_coil_code || detail.coils?.coil_code) ? `배정 코일: ${detail.assigned_coil_code || detail.coils.coil_code}` : '코일 미배정', { justifyContent: 'center' })}
             </div>
           ) : boxMsg("발주를 검색하거나 '추적' 버튼을 눌러 앞뒤 공정을 확인하세요.", {})}
         </div>
@@ -687,22 +699,25 @@ function AdminRole({ orders, coils, onUpdateOrder, onDeleteOrder, onToggleCoilCl
 
       {sub === 'inventory' && (
         <div>
-          {boxMsg('코일별 현재고·위치·마감 상태(계산서 등록 완료 건은 수정 잠금)를 한눈에 확인합니다.', { marginBottom: '12px' })}
+          {boxMsg('그린ERP 실재고(전체) 기준 코일별 잔량과 마감 상태(계산서 등록 완료 건은 표시만, 수정은 그대로 가능)를 한눈에 확인합니다.', { marginBottom: '12px' })}
           <table style={itemsTable}>
-            <thead><tr><th style={th}>코일ID</th><th style={th}>두께</th><th style={th}>위치</th><th style={th}>잔량</th><th style={th}>마감 상태</th></tr></thead>
+            <thead><tr><th style={th}>거래처</th><th style={th}>코일 품번</th><th style={th}>규격</th><th style={th}>입고일</th><th style={th}>잔량</th><th style={th}>마감 상태</th></tr></thead>
             <tbody>
-              {coils.map((c) => (
-                <tr key={c.id}>
-                  <td style={td}>{c.coil_code}</td><td style={td}>{c.thickness}</td><td style={td}>Bay {c.bay_location || '-'}</td>
-                  <td style={td}>{Number(c.remain_weight || 0).toLocaleString()}Kg</td>
-                  <td style={td}>
-                    <button
-                      style={{ fontSize: '13px', padding: '2px 8px', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', background: c.closed ? C.bgSuccess : C.bgWarning, color: c.closed ? C.textSuccess : C.textWarning }}
-                      onClick={() => onToggleCoilClosed(c)}
-                    >{c.closed ? '🔒 마감(계산서 등록완료)' : '진행중(클릭 시 마감)'}</button>
-                  </td>
-                </tr>
-              ))}
+              {allInventory.map((c) => {
+                const isClosed = closedKeySet.has(coilFlagKey(c));
+                return (
+                  <tr key={c.id}>
+                    <td style={td}>{c.customer_name}</td><td style={td}>{c.product_name}</td><td style={td}>{c.spec || '-'}</td><td style={td}>{c.received_date || '-'}</td>
+                    <td style={td}>{Number(c.remaining_weight || 0).toLocaleString()}Kg</td>
+                    <td style={td}>
+                      <button
+                        style={{ fontSize: '13px', padding: '2px 8px', borderRadius: '8px', border: 'none', fontWeight: 700, cursor: 'pointer', background: isClosed ? C.bgSuccess : C.bgWarning, color: isClosed ? C.textSuccess : C.textWarning }}
+                        onClick={() => onToggleCoilClosed(c)}
+                      >{isClosed ? '🔒 마감(계산서 등록완료)' : '진행중(클릭 시 마감)'}</button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -713,7 +728,7 @@ function AdminRole({ orders, coils, onUpdateOrder, onDeleteOrder, onToggleCoilCl
 
 /* ============================== OF 영업 ============================== */
 function SalesRole(props) {
-  const { orders, coils, liveCoils, companies, enfaxInbox, inquiries, onCreateOrder, onAssignToDriver, onUpdateOrder, onDeleteOrder, onLogCall, onNotifyCustomer, onDispatchOrder, onShipOrder, onSaveCompanyField, onAddInquiry, onRequestFinanceCheck, onConfirmEnfax, onMovePriority, fetchAll } = props;
+  const { orders, liveCoils, companies, enfaxInbox, inquiries, onCreateOrder, onAssignToDriver, onUpdateOrder, onDeleteOrder, onLogCall, onNotifyCustomer, onDispatchOrder, onShipOrder, onSaveCompanyField, onAddInquiry, onRequestFinanceCheck, onConfirmEnfax, onMovePriority, fetchAll } = props;
   const [sub, setSub] = useState(window.__ofInitialSub || 'kanban');
   useEffect(() => { if (window.__ofInitialSub) { window.__ofInitialSub = null; } }, []);
 
@@ -724,7 +739,7 @@ function SalesRole(props) {
       </div>
       {sub === 'kanban' && <OFKanban orders={orders} onGoto={setSub} />}
       {sub === 'register' && <OFRegister companies={companies} enfaxInbox={enfaxInbox} onCreateOrder={onCreateOrder} onConfirmEnfax={onConfirmEnfax} onGoto={setSub} fetchAll={fetchAll} />}
-      {sub === 'assign' && <OFAssign orders={orders} coils={coils} liveCoils={liveCoils} onAssignToDriver={onAssignToDriver} />}
+      {sub === 'assign' && <OFAssign orders={orders} liveCoils={liveCoils} onAssignToDriver={onAssignToDriver} />}
       {sub === 'workorder' && <OFWorkorder orders={orders} onMovePriority={onMovePriority} onUpdateOrder={onUpdateOrder} />}
       {sub === 'monitor' && <OFMonitor orders={orders} onLogCall={onLogCall} />}
       {sub === 'notify' && <OFNotify orders={orders} onNotifyCustomer={onNotifyCustomer} onDispatchOrder={onDispatchOrder} />}
@@ -996,7 +1011,7 @@ function liveCoilTableHtmlStr(list) {
   return `<table style="width:100%;border-collapse:collapse;"><thead><tr><th>코일 품번</th><th>규격</th><th>잔량</th><th>입고일</th></tr></thead><tbody>${list.map(liveCoilRow).join('')}</tbody></table>`;
 }
 
-function OFAssign({ orders, coils, liveCoils, onAssignToDriver }) {
+function OFAssign({ orders, liveCoils, onAssignToDriver }) {
   const [fullOpen, setFullOpen] = useState(false);
   const pending = orders.filter((o) => o.status === 'RECEIVED');
   return (
@@ -1079,7 +1094,7 @@ function OFMonitor({ orders, onLogCall }) {
         const calls = Array.isArray(o.call_log) ? o.call_log : [];
         return (
           <div key={o.id} style={{ background: C.surface1, border: `1px solid ${delayed ? C.borderWarning : C.border}`, borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
-            <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '6px' }}>{o.company_name} · {o.order_no} · 코일 {o.coils?.coil_code || '-'}</div>
+            <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '6px' }}>{o.company_name} · {o.order_no} · 코일 {o.assigned_coil_code || o.coils?.coil_code || '-'}</div>
             {boxMsg(`경과 ${Math.floor(h)}시간${delayed ? ' · ⚠ 지연 의심' : ''}`, { marginBottom: '8px', ...(delayed ? { background: C.bgWarning, color: C.textWarning } : {}) })}
             {calls.length > 0 && boxMsg(`확인 기록 ${calls.length}건 · 최근: ${calls[calls.length - 1]}`, { marginBottom: '8px' })}
             <button style={{ ...smallBtn(), width: '100%' }} onClick={() => onLogCall(o)}>현장 확인 요청 기록</button>
@@ -1124,7 +1139,7 @@ function OFShipment({ orders, onShipOrder }) {
       {boxMsg('실측 중량을 확인하고 출고증을 발행합니다.', { marginBottom: '12px' })}
       {list.length === 0 ? boxMsg('출고 대기중인 발주가 없습니다', { justifyContent: 'center' }) : list.map((o) => (
         <div key={o.id} style={{ background: C.surface1, border: `1px solid ${C.border}`, borderRadius: '8px', padding: '12px', marginBottom: '10px' }}>
-          <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>{o.company_name} · {o.order_no} · 배정 코일 {o.coils?.coil_code || '-'}</div>
+          <div style={{ fontWeight: 700, fontSize: '18px', marginBottom: '8px' }}>{o.company_name} · {o.order_no} · 배정 코일 {o.assigned_coil_code || o.coils?.coil_code || '-'}</div>
           <input style={{ ...inputStyle, marginBottom: '8px' }} placeholder="실측 중량(Kg)" value={weightInput[o.id] || ''} onChange={(e) => setWeightInput((w) => ({ ...w, [o.id]: e.target.value }))} />
           <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
             <button style={{ ...smallBtn(), flex: 1 }} onClick={() => setPreview((p) => ({ ...p, [o.id]: true }))}>출고증 미리보기</button>
@@ -1134,7 +1149,7 @@ function OFShipment({ orders, onShipOrder }) {
             <div style={{ background: C.surface2, border: `1px dashed ${C.borderStrong}`, borderRadius: '8px', padding: '12px', fontSize: '15px', lineHeight: 1.7 }}>
               <div style={{ fontWeight: 700, fontSize: '18px', textAlign: 'center', marginBottom: '8px' }}>출 고 증</div>
               <div>거래처: {o.company_name}</div><div>발주번호: {o.order_no}</div><div>두께: {o.thickness}</div>
-              <div>배정 코일: {o.coils?.coil_code || '-'}</div><div>실측 중량: {weightInput[o.id] || o.weight}Kg</div><div>생산유형: {o.prod_type}</div>
+              <div>배정 코일: {o.assigned_coil_code || o.coils?.coil_code || '-'}</div><div>실측 중량: {weightInput[o.id] || o.weight}Kg</div><div>생산유형: {o.prod_type}</div>
             </div>
           )}
         </div>
@@ -1184,7 +1199,7 @@ function OFAftercare({ orders, companies, inquiries, onSaveCompanyField, onAddIn
 }
 
 /* ============================== FL 지게차 기사 ============================== */
-function ForkliftRole({ orders, coils, liveCoils, onSelectCoil, onSelectLiveCoil, onCompleteOrder }) {
+function ForkliftRole({ orders, liveCoils, onSelectLiveCoil, onCompleteOrder }) {
   const [sub, setSub] = useState('waiting');
   const [currentId, setCurrentId] = useState(null);
   const current = orders.find((o) => o.id === currentId);
