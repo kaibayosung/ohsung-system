@@ -15,6 +15,7 @@ import TestPage from './pages/TestPage';
 import SalesWorkflowPage from './pages/SalesWorkflowPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import InboundFaxPage from './pages/InboundFaxPage';
+import ScrapSalesPage from './pages/ScrapSalesPage';
 
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
@@ -98,6 +99,7 @@ function App() {
           <button className="op-nav-btn" onClick={() => setCurrentPage('monthly')} style={getBtnStyle('monthly')}>📊 월간 분석</button>
           <button className="op-nav-btn" onClick={() => setCurrentPage('ceo')} style={getBtnStyle('ceo')}>🌟 대표님 브리핑</button>
           <button className="op-nav-btn" onClick={() => setCurrentPage('accesslog')} style={getBtnStyle('accesslog')}>🔐 접속 로그</button>
+          <button className="op-nav-btn" onClick={() => setCurrentPage('scrap')} style={getBtnStyle('scrap')}>♻️ 스크랩 매출</button>
           <button className="op-nav-btn" onClick={() => setCurrentPage('expense')} style={{ ...getBtnStyle('expense'), position: 'relative' }}>
             📎 지출결의서
             {expensePendingCount > 0 && <span style={styles.navBadge}>{expensePendingCount}</span>}
@@ -123,6 +125,7 @@ function App() {
         {currentPage === 'monthly' && <MonthlyAnalysis />}
         {currentPage === 'ceo' && <CEOReport />}
         {currentPage === 'accesslog' && <AccessLog />}
+        {currentPage === 'scrap' && <ScrapSalesPage />}
         {currentPage === 'expense' && <ExpensePage />}
         {currentPage === 'test' && <TestPage />}
       </main>
