@@ -676,6 +676,22 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
   const [ct, setCt] = useState(''); const [cw, setCw] = useState(''); const [cl, setCl] = useState('');
   const [dupTarget, setDupTarget] = useState(null);
   const [ocrLoadingId, setOcrLoadingId] = useState(null);
+  const [checkingFax, setCheckingFax] = useState(false);
+
+  const checkFaxNow = async () => {
+    setCheckingFax(true);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/enfax-sync?recordCount=50`);
+      const json = await res.json();
+      if (!json.ok) { alert('FAX 정보 확인 실패: ' + (json.error || '알 수 없는 오류')); return; }
+      await fetchAll();
+      alert(json.insertedCount > 0 ? `신규 팩스 ${json.insertedCount}건을 받아왔습니다.` : '새로 수신된 팩스가 없습니다.');
+    } catch (e) {
+      alert('FAX 정보 확인 중 오류: ' + e.message);
+    } finally {
+      setCheckingFax(false);
+    }
+  };
 
   const matchedCompany = companies.find((c) => c.name === companyName);
   const unitWeight = (ct && cw && cl) ? ((parseFloat(ct) * parseFloat(cw) * parseFloat(cl) * parseFloat(material)) / 1000000) : null;
@@ -749,7 +765,12 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
 
   return (
     <div>
-      <div style={stepHead}>① 발주 원본 확인</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '8px' }}>
+        <div style={{ ...stepHead, flex: '1 1 auto' }}>① 발주 원본 확인</div>
+        <button style={{ ...smallBtn('accent'), padding: '9px 16px', marginBottom: '10px' }} disabled={checkingFax} onClick={checkFaxNow}>
+          {checkingFax ? '확인 중...' : '📠 FAX 정보 확인하기'}
+        </button>
+      </div>
       <div style={{ background: C.surface1, border: `2px solid ${C.borderAccent}`, borderRadius: '10px', padding: '16px', marginBottom: '14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
           <span style={{ fontSize: '19px', fontWeight: 700, color: C.textAccent }}>📠 엔팩스 접수함</span>
@@ -758,7 +779,7 @@ function OFRegister({ companies, enfaxInbox, onCreateOrder, onConfirmEnfax, onGo
           </span>
         </div>
         {displayFax.length === 0 ? (
-          <div style={{ fontSize: '14px', color: C.textMuted }}>엔팩스(fax.enfax.com)와 실시간 연동 중입니다 (10분 주기 자동 조회) · 수신된 팩스가 없습니다.</div>
+          <div style={{ fontSize: '14px', color: C.textMuted }}>위 "FAX 정보 확인하기" 버튼을 눌러 엔팩스(fax.enfax.com) 수신함을 조회하세요 · 수신된 팩스가 없습니다.</div>
         ) : displayFax.map((f) => (
           <div key={f.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px', background: f.status === 'new' ? C.surface0 : C.surface1, border: `1.5px solid ${f.status === 'new' ? C.borderAccent : C.border}`, borderRadius: '8px', padding: '10px 14px', marginBottom: '8px' }}>
             <div>
