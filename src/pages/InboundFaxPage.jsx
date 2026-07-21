@@ -80,7 +80,6 @@ function printInboundReport(company, faxNumber, dateLabel, rows) {
       <td>${r.inbound_date || '-'}</td>
       <td>${r.product_name || '-'}</td>
       <td>${r.spec || '-'}</td>
-      <td>${Number(r.length_m || 0) > 0 ? Number(r.length_m).toLocaleString() + 'm' : '-'}</td>
       <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
     </tr>`).join('');
   w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>입고현황 리포트 - ${company}</title>
@@ -100,9 +99,10 @@ function printInboundReport(company, faxNumber, dateLabel, rows) {
     td { padding:9px 10px; font-size:14.5px; border-bottom:1px solid #E3E8F0; }
     tfoot td { font-weight:900; font-size:16px; border-top:2px solid #16283f; border-bottom:none; padding-top:13px; }
     .footnote { margin-top:22px; font-size:13px; color:#8592A6; line-height:1.7; }
-    .stamp { display:flex; justify-content:flex-end; margin-top:34px; }
-    .stamp-box { text-align:center; font-size:14px; color:#4D5C72; }
-    .stamp-box .co { margin-top:10px; font-size:17px; font-weight:900; color:#0F1E33; }
+    .stamp { display:flex; justify-content:flex-end; margin-top:44px; }
+    .stamp-box { position:relative; text-align:right; font-size:15px; color:#4D5C72; padding-top:70px; }
+    .stamp-box .co { margin-top:6px; font-size:18px; font-weight:900; color:#0F1E33; }
+    .stamp-box .seal { position:absolute; top:0; right:8px; width:78px; height:78px; border:3px solid #C8372C; border-radius:50%; color:#C8372C; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:900; font-size:19px; letter-spacing:.05em; transform:rotate(-10deg); opacity:.85; }
     @media print { button { display:none !important; } body { padding:16px 22px; } }
     .printbar { text-align:center; margin-top:26px; }
     .printbar button { font-size:16px; padding:10px 22px; border-radius:9px; border:none; background:#E8830F; color:#fff; font-weight:800; cursor:pointer; }
@@ -125,16 +125,19 @@ function printInboundReport(company, faxNumber, dateLabel, rows) {
       <span>수신 FAX: <b>${faxNumber || '미등록'}</b></span>
     </div>
     <table>
-      <thead><tr><th>입고일자</th><th>품명</th><th>규격</th><th>길이</th><th style="text-align:right">중량(kg)</th></tr></thead>
-      <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="4" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+      <thead><tr><th>입고일자</th><th>품명</th><th>규격</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="4" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="3" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
     </table>
     <div class="footnote">
       본 리포트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
       내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
     </div>
     <div class="stamp">
-      <div class="stamp-box">확인<div class="co">오 성 철 강 사</div></div>
+      <div class="stamp-box">
+        <div class="seal">확인</div>
+        <div class="co">오 성 철 강 사</div>
+      </div>
     </div>
     <div class="printbar"><button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button></div>
   </body></html>`);

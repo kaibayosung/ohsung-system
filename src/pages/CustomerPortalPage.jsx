@@ -75,7 +75,6 @@ function printInboundPDF(company, rangeLabel, rows) {
       <td>${r.company_name || '-'}</td>
       <td>${r.product_name || '-'}</td>
       <td>${r.spec || '-'}</td>
-      <td>${Number(r.length_m || 0) > 0 ? Number(r.length_m).toLocaleString() + 'm' : '기보'}</td>
       <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
     </tr>`).join('');
   w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>입고현황 리스트 - ${company}</title>
@@ -95,10 +94,10 @@ function printInboundPDF(company, rangeLabel, rows) {
     td { padding:9px 10px; font-size:14.5px; border-bottom:1px solid #E3E8F0; }
     tfoot td { font-weight:900; font-size:16px; border-top:2px solid #16283f; border-bottom:none; padding-top:13px; }
     .footnote { margin-top:22px; font-size:13px; color:#8592A6; line-height:1.7; }
-    .stamp { display:flex; justify-content:flex-end; margin-top:34px; }
-    .stamp-box { position:relative; text-align:center; font-size:14px; color:#4D5C72; width:150px; }
-    .stamp-box .co { margin-top:10px; font-size:17px; font-weight:900; color:#0F1E33; }
-    .stamp-box .seal { position:absolute; top:-58px; right:6px; width:96px; height:96px; border:3.5px solid #C8372C; border-radius:50%; color:#C8372C; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:900; font-size:15px; line-height:1.35; transform:rotate(-8deg); opacity:.88; }
+    .stamp { display:flex; justify-content:flex-end; margin-top:44px; }
+    .stamp-box { position:relative; text-align:right; font-size:15px; color:#4D5C72; padding-top:70px; }
+    .stamp-box .co { margin-top:6px; font-size:18px; font-weight:900; color:#0F1E33; }
+    .stamp-box .seal { position:absolute; top:0; right:8px; width:78px; height:78px; border:3px solid #C8372C; border-radius:50%; color:#C8372C; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:900; font-size:19px; letter-spacing:.05em; transform:rotate(-10deg); opacity:.85; }
     @media print { button { display:none !important; } body { padding:16px 22px; } }
     .printbar { text-align:center; margin-top:26px; }
     .printbar button { font-size:16px; padding:10px 22px; border-radius:9px; border:none; background:#E8830F; color:#fff; font-weight:800; cursor:pointer; }
@@ -121,9 +120,9 @@ function printInboundPDF(company, rangeLabel, rows) {
       <span>건수: <b>${rows.length}건</b></span>
     </div>
     <table>
-      <thead><tr><th>입고일자</th><th>업체명</th><th>품명</th><th>규격</th><th>길이</th><th style="text-align:right">중량(kg)</th></tr></thead>
-      <tbody>${bodyRows || '<tr><td colspan="6" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="5" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+      <thead><tr><th>입고일자</th><th>업체명</th><th>품명</th><th>규격</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
     </table>
     <div class="footnote">
       본 리스트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
@@ -131,8 +130,8 @@ function printInboundPDF(company, rangeLabel, rows) {
     </div>
     <div class="stamp">
       <div class="stamp-box">
-        <div class="seal">확인<br/>오성<br/>철강사</div>
-        확인<div class="co">오 성 철 강 사</div>
+        <div class="seal">확인</div>
+        <div class="co">오 성 철 강 사</div>
       </div>
     </div>
     <div class="printbar"><button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button></div>
@@ -637,11 +636,11 @@ export default function CustomerPortalPage() {
 
           {inLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : inRows.length === 0 ? boxMsg(`${rangeLabel}에 입고 내역이 없습니다`, { justifyContent: 'center' }) : (
             <table style={itemsTable}>
-              <thead><tr><th style={th}>입고일자</th><th style={th}>업체명</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>길이</th><th style={th}>중량</th></tr></thead>
+              <thead><tr><th style={th}>입고일자</th><th style={th}>업체명</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>중량</th></tr></thead>
               <tbody>
                 {inRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.inbound_date}</td><td style={td}>{r.company_name || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.length_m || 0) > 0 ? Number(r.length_m).toLocaleString() + 'm' : '기보'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td>
+                    <td style={td}>{r.inbound_date}</td><td style={td}>{r.company_name || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td>
                   </tr>
                 ))}
               </tbody>
