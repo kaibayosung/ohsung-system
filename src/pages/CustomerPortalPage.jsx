@@ -66,20 +66,6 @@ function PrintButton() {
 
 /* 오성철강 실제 로고 파일 (public/ohsung-logo.jpg) — 인쇄 리포트 헤더에 사용 */
 const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" width="122" height="40" style="height:40px;width:122px;display:block;object-fit:contain;" />';
-/* 오성철강 실제 확인 도장 스캔본 (public/ohsung-stamp2.png, 배경 투명 처리) — 도장 가운데 여백에 출력 시점 날짜를 같은 잉크색으로 얹어서 표시 */
-function stampTodayLabel() {
-  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
-  const y = parts.find((p) => p.type === 'year').value;
-  const m = parts.find((p) => p.type === 'month').value;
-  const d = parts.find((p) => p.type === 'day').value;
-  return `${y}.${m}.${d}`;
-}
-function ohsungStampHTML() {
-  return `<div style="position:relative;width:200px;height:199px;">
-    <img src="${window.location.origin}/ohsung-stamp2.png" alt="오성철강사 확인" width="200" height="199" style="width:200px;height:199px;display:block;object-fit:contain;" />
-    <div style="position:absolute;left:34.8%;top:51.4%;transform:translate(-50%,-50%) rotate(-38deg);font-family:Arial,'Malgun Gothic',sans-serif;font-weight:700;font-size:12px;color:#16209c;white-space:nowrap;">${stampTodayLabel()}</div>
-  </div>`;
-}
 
 /* ---------------- 입고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함) ---------------- */
 function printInboundPDF(company, rangeLabel, rows) {
@@ -145,7 +131,6 @@ function printInboundPDF(company, rangeLabel, rows) {
       내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
     </div>
     <div class="stamp">
-      ${ohsungStampHTML()}
       <div class="stamp-box">
         <div class="co">오 성 철 강 사</div>
       </div>
@@ -219,7 +204,6 @@ function printOutboundPDF(company, rangeLabel, rows) {
       내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
     </div>
     <div class="stamp">
-      ${ohsungStampHTML()}
       <div class="stamp-box">
         <div class="co">오 성 철 강 사</div>
       </div>
