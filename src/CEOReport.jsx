@@ -10,11 +10,11 @@ import CEOMonthlyReport from './components/CEOMonthlyReport';
 function CEOReport() {
   const [viewMode, setViewMode] = useState('daily'); // 'daily' 또는 'monthly'
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [reportData, setReportData] = useState({ 
-    daily: { workSales: 0, otherIncome: 0, expense: 0, netProfit: 0 }, 
-    dailyClients: [], 
-    equipmentBar: [], 
-    dailyTrend: [] 
+  const [reportData, setReportData] = useState({
+    daily: { workSales: 0, otherIncome: 0, scrapSales: 0, expense: 0, netProfit: 0 },
+    dailyClients: [],
+    equipmentBar: [],
+    dailyTrend: []
   });
   const [notes, setNotes] = useState([]);
   const [newNote, setNewNote] = useState('');
@@ -33,6 +33,8 @@ function CEOReport() {
     const { data: dSales } = await supabase.from('sales_records').select('*').eq('work_date', selectedDate);
     const { data: dLedger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
     const { data: mSales } = await supabase.from('sales_records').select('work_date, total_price').gte('work_date', `${year}-${month}-01`).lte('work_date', selectedDate);
+    const { data: dScrap } = await supabase.from('scrap_sales').select('total_amount').eq('sale_date', selectedDate);
+    const scrapSales = dScrap?.reduce((s, r) => s + (Number(r.total_amount) || 0), 0) || 0;
     
     // 지출 내역 가공 (지불 상태 포함)
     const realtimeExpenses = dLedger?.filter(item => item.type === '지출').map(item => ({ 
@@ -62,13 +64,14 @@ function CEOReport() {
       trend.push({ name: `${i}일`, sales: Math.round(s / 1000) }); 
     }
 
-    setReportData({ 
-      daily: { 
-        workSales: calcTotal(dSales), 
-        otherIncome: calcTotal(dLedger, '수입'), 
-        expense: calcTotal(dLedger, '지출'), 
-        netProfit: (calcTotal(dSales) + calcTotal(dLedger, '수입')) - calcTotal(dLedger, '지출') 
-      }, 
+    setReportData({
+      daily: {
+        workSales: calcTotal(dSales),
+        otherIncome: calcTotal(dLedger, '수입'),
+        scrapSales,
+        expense: calcTotal(dLedger, '지출'),
+        netProfit: (calcTotal(dSales) + calcTotal(dLedger, '수입')) - calcTotal(dLedger, '지출')
+      },
       dailyClients: Object.entries(clientMap).map(([name, value]) => ({ name, value })).sort((a,b)=>b.value-a.value), 
       equipmentBar: Object.entries(eqStats).map(([name, d]) => ({ name, value: d.s, count: d.c })), 
       dailyTrend: trend 
@@ -116,8 +119,9 @@ function CEOReport() {
           </div>
 
           {/* 1단: 요약 카드 */}
-          <div style={styles.topGrid}>
+          <div style={{ ...styles.topGrid, gridTemplateColumns: 'repeat(4, 1fr)' }}>
             <div style={styles.mainCard}><h3 style={styles.cardTitle}>총 수익</h3><p style={styles.mainValue}>{(reportData.daily.workSales + reportData.daily.otherIncome).toLocaleString()}원</p></div>
+            <div style={styles.mainCard}><h3 style={styles.cardTitle}>♻️ 스크랩 매출</h3><p style={{...styles.mainValue, color:'#1C7A4D'}}>{reportData.daily.scrapSales.toLocaleString()}원</p></div>
             <div style={styles.mainCard}><h3 style={styles.cardTitle}>총 지출</h3><p style={{...styles.mainValue, color:'#e53e3e'}}>{reportData.daily.expense.toLocaleString()}원</p></div>
             <div style={styles.mainCard}><h3 style={styles.cardTitle}>영업 이익</h3><p style={{...styles.mainValue, color:'#38a169'}}>{reportData.daily.netProfit.toLocaleString()}원</p></div>
           </div>

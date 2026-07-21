@@ -22,16 +22,18 @@ function CEOMonthlyReport() {
     const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
     const endOfMonth = new Date(year, month, 0).toISOString().split('T')[0];
     
-    const [salesRes, expRes] = await Promise.all([
+    const [salesRes, expRes, scrapRes] = await Promise.all([
       supabase.from('sales_records').select('*').gte('work_date', startOfMonth).lte('work_date', endOfMonth),
-      supabase.from('daily_ledger').select('*').eq('type', '지출').gte('trans_date', startOfMonth).lte('trans_date', endOfMonth)
+      supabase.from('daily_ledger').select('*').eq('type', '지출').gte('trans_date', startOfMonth).lte('trans_date', endOfMonth),
+      supabase.from('scrap_sales').select('*').gte('sale_date', startOfMonth).lte('sale_date', endOfMonth)
     ]);
 
     const sum = (arr, key) => arr?.reduce((acc, cur) => acc + (Number(cur[key]) || 0), 0) || 0;
     const totalSales = sum(salesRes.data, 'total_price');
     const totalWeight = sum(salesRes.data, 'weight');
     const totalExpense = sum(expRes.data, 'amount');
-    const profit = totalSales - totalExpense;
+    const scrapSales = sum(scrapRes.data, 'total_amount');
+    const profit = (totalSales + scrapSales) - totalExpense;
 
     // 인사이트 데이터 계산
     const revPerTon = totalWeight > 0 ? Math.round(totalSales / (totalWeight / 1000)) : 0;
@@ -52,7 +54,7 @@ function CEOMonthlyReport() {
     });
 
     setData({
-        summary: { totalSales, totalWeight, profit },
+        summary: { totalSales, totalWeight, scrapSales, profit },
         insights: { 
             revPerTon, 
             top3Ratio: totalSales > 0 ? ((top3Sales / totalSales) * 100).toFixed(1) : 0,
@@ -82,8 +84,9 @@ function CEOMonthlyReport() {
 
       <div style={{ padding: '30px' }}>
         {/* 핵심 요약 (원 단위 적용) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
-          <div style={styles.card}><h4>월간 총 매출</h4><p style={styles.summaryVal}>{data.summary.totalSales.toLocaleString()}원</p></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '24px' }}>
+          <div style={styles.card}><h4>월간 가공 매출</h4><p style={styles.summaryVal}>{data.summary.totalSales.toLocaleString()}원</p></div>
+          <div style={styles.card}><h4>♻️ 스크랩 매출</h4><p style={{...styles.summaryVal, color: '#1C7A4D'}}>{data.summary.scrapSales.toLocaleString()}원</p></div>
           <div style={styles.card}><h4>월간 총 생산량</h4><p style={styles.summaryVal}>{Math.round(data.summary.totalWeight/1000).toLocaleString()}t</p></div>
           <div style={styles.card}><h4>월간 영업 이익</h4><p style={{...styles.summaryVal, color: data.summary.profit >= 0 ? '#38a169' : '#e53e3e'}}>{data.summary.profit.toLocaleString()}원</p></div>
         </div>
