@@ -294,18 +294,9 @@ export default function CustomerPortalPage() {
     });
   }, []);
 
-  // ---- FAX로 전송 / 예약 전송 (입고 내역 리포트) ----
+  // ---- FAX로 전송 (입고 내역 리포트, 즉시 1회 발송) ----
+  // [참고] 예약(정기) 발송 기능은 enFax 계정의 반복 로그인으로 인한 보안 강화(로그인 제한) 이슈로 제거함.
   const [faxModal, setFaxModal] = useState({ open: false, phone: '', sending: false, error: '', result: '' });
-  const [scheduleModal, setScheduleModal] = useState({ open: false, enabled: false, time: '17:00', saving: false, error: '' });
-  const [mySchedule, setMySchedule] = useState(null); // 현재 거래처의 예약전송 설정(버튼 라벨 표시용)
-
-  useEffect(() => {
-    if (!companyName) { setMySchedule(null); return; }
-    let cancelled = false;
-    supabase.from('fax_send_schedule').select('*').eq('company_name', companyName).maybeSingle()
-      .then(({ data }) => { if (!cancelled) setMySchedule(data || null); });
-    return () => { cancelled = true; };
-  }, [companyName]);
 
   async function openFaxModal() {
     let prefill = '';
@@ -334,31 +325,6 @@ export default function CustomerPortalPage() {
       setFaxModal((m) => ({ ...m, sending: false, result: `발송 완료 (${json.rowCount ?? 0}건)` }));
     } catch (e) {
       setFaxModal((m) => ({ ...m, sending: false, error: e.message || 'FAX 발송 중 오류가 발생했습니다' }));
-    }
-  }
-
-  function openScheduleModal() {
-    setScheduleModal({
-      open: true,
-      enabled: mySchedule?.enabled ?? false,
-      time: mySchedule?.send_time ? mySchedule.send_time.slice(0, 5) : '17:00',
-      saving: false,
-      error: '',
-    });
-  }
-
-  async function submitSchedule() {
-    setScheduleModal((m) => ({ ...m, saving: true, error: '' }));
-    try {
-      const { data, error } = await supabase.from('fax_send_schedule').upsert(
-        { company_name: companyName, enabled: scheduleModal.enabled, send_time: scheduleModal.time + ':00', report_type: 'inbound' },
-        { onConflict: 'company_name' }
-      ).select().maybeSingle();
-      if (error) throw error;
-      setMySchedule(data);
-      setScheduleModal((m) => ({ ...m, open: false, saving: false }));
-    } catch (e) {
-      setScheduleModal((m) => ({ ...m, saving: false, error: e.message || '저장 중 오류가 발생했습니다' }));
     }
   }
 
@@ -772,7 +738,6 @@ export default function CustomerPortalPage() {
             <button style={{ ...btnStyle(true), whiteSpace: 'nowrap' }} onClick={runInSearch}>검색</button>
             <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => printInboundPDF(companyName, rangeLabel, inRows)}>PDF저장</button>
             <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={openFaxModal}>📠 FAX로 전송</button>
-            <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={openScheduleModal}>⏰ 예약 전송{mySchedule?.enabled ? ` · ${mySchedule.send_time?.slice(0, 5)}` : ''}</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '10px' }}>
             {statCard('입고 건수', inTotalCount.toLocaleString() + '건')}
@@ -821,32 +786,7 @@ export default function CustomerPortalPage() {
               <button style={{ ...btnStyle(false), flex: 1 }} onClick={() => setFaxModal((m) => ({ ...m, open: false }))} disabled={faxModal.sending}>취소</button>
               <button style={{ ...btnStyle(true), flex: 1, opacity: faxModal.sending ? 0.6 : 1 }} onClick={submitFaxSend} disabled={faxModal.sending}>{faxModal.sending ? '전송 중...' : '전송'}</button>
             </div>
-            <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '10px' }}>입력한 번호는 이 거래처의 팩스번호로 저장되어 예약 전송에도 사용됩니다.</div>
-          </div>
-        </div>
-      )}
-
-      {scheduleModal.open && (
-        <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,51,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => !scheduleModal.saving && setScheduleModal((m) => ({ ...m, open: false }))}>
-          <div style={{ background: C.surface2, borderRadius: '14px', padding: '24px', width: '360px', maxWidth: '92vw', boxShadow: '0 12px 40px rgba(15,30,51,0.25)' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: '19px', fontWeight: 800, color: C.textPrimary, marginBottom: '4px' }}>⏰ 예약 전송</div>
-            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '14px' }}>{companyName}의 당일 입고 현황을 매일 지정 시각에 자동으로 FAX 발송합니다. (평일만, 공휴일 제외)</div>
-
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px', cursor: 'pointer' }}>
-              <input type="checkbox" checked={scheduleModal.enabled} onChange={(e) => setScheduleModal((m) => ({ ...m, enabled: e.target.checked }))} style={{ width: '18px', height: '18px' }} />
-              <span style={{ fontSize: '16px', fontWeight: 700, color: C.textPrimary }}>자동 발송 사용</span>
-            </label>
-
-            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '4px' }}>발송 시각</div>
-            <input type="time" style={inputStyle} value={scheduleModal.time} onChange={(e) => setScheduleModal((m) => ({ ...m, time: e.target.value }))} disabled={scheduleModal.saving} />
-
-            {scheduleModal.error && <div style={{ fontSize: '13px', color: C.textDanger, marginTop: '8px' }}>{scheduleModal.error}</div>}
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '18px' }}>
-              <button style={{ ...btnStyle(false), flex: 1 }} onClick={() => setScheduleModal((m) => ({ ...m, open: false }))} disabled={scheduleModal.saving}>취소</button>
-              <button style={{ ...btnStyle(true), flex: 1, opacity: scheduleModal.saving ? 0.6 : 1 }} onClick={submitSchedule} disabled={scheduleModal.saving}>{scheduleModal.saving ? '저장 중...' : '저장'}</button>
-            </div>
-            <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '10px' }}>발송 대상 팩스번호는 이 거래처에 등록된 번호(FAX 번호 관리)를 사용합니다.</div>
+            <div style={{ fontSize: '12px', color: C.textMuted, marginTop: '10px' }}>입력한 번호는 이 거래처의 팩스번호로 저장됩니다.</div>
           </div>
         </div>
       )}
