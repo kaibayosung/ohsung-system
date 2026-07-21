@@ -66,6 +66,8 @@ function PrintButton() {
 
 /* 오성철강 실제 로고 파일 (public/ohsung-logo.jpg) — 인쇄 리포트 헤더에 사용 */
 const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" width="122" height="40" style="height:40px;width:122px;display:block;object-fit:contain;" />';
+/* 오성철강 실제 확인 도장 스캔본 (public/ohsung-stamp.png, 배경 투명 처리) */
+const OHSUNG_STAMP_IMG = '<img src="' + window.location.origin + '/ohsung-stamp.png" alt="오성철강사 확인" width="98" height="88" style="width:98px;height:88px;display:block;object-fit:contain;" />';
 
 /* ---------------- 입고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함) ---------------- */
 function printInboundPDF(company, rangeLabel, rows) {
@@ -97,10 +99,9 @@ function printInboundPDF(company, rangeLabel, rows) {
     td { padding:9px 10px; font-size:14.5px; border-bottom:1px solid #E3E8F0; }
     tfoot td { font-weight:900; font-size:16px; border-top:2px solid #16283f; border-bottom:none; padding-top:13px; }
     .footnote { margin-top:22px; font-size:13px; color:#8592A6; line-height:1.7; }
-    .stamp { display:flex; justify-content:flex-end; margin-top:44px; }
-    .stamp-box { position:relative; text-align:right; font-size:15px; color:#4D5C72; padding-top:70px; }
-    .stamp-box .co { margin-top:6px; font-size:18px; font-weight:900; color:#0F1E33; }
-    .stamp-box .seal { position:absolute; top:0; right:8px; width:78px; height:78px; border:3px solid #C8372C; border-radius:50%; color:#C8372C; display:flex; align-items:center; justify-content:center; text-align:center; font-weight:900; font-size:19px; letter-spacing:.05em; transform:rotate(-10deg); opacity:.85; }
+    .stamp { display:flex; justify-content:flex-end; align-items:flex-end; gap:10px; margin-top:44px; }
+    .stamp-box { text-align:right; font-size:15px; color:#4D5C72; }
+    .stamp-box .co { margin-top:2px; font-size:18px; font-weight:900; color:#0F1E33; }
     @media print { button { display:none !important; } body { padding:16px 22px; } }
     .printbar { text-align:center; margin-top:26px; }
     .printbar button { font-size:16px; padding:10px 22px; border-radius:9px; border:none; background:#E8830F; color:#fff; font-weight:800; cursor:pointer; }
@@ -132,8 +133,8 @@ function printInboundPDF(company, rangeLabel, rows) {
       내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
     </div>
     <div class="stamp">
+      ${OHSUNG_STAMP_IMG}
       <div class="stamp-box">
-        <div class="seal">확인</div>
         <div class="co">오 성 철 강 사</div>
       </div>
     </div>
