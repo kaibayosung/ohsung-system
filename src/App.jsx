@@ -22,6 +22,7 @@ function App() {
   const [session, setSession] = useState(null);
   const [currentPage, setCurrentPage] = useState('daily'); // 기본 시작 화면: 데일리 리포트
   const [expensePendingCount, setExpensePendingCount] = useState(0);
+  const [openMenu, setOpenMenu] = useState(null); // 현재 열려있는 드롭다운 메뉴 그룹 key
 
   // 2. 로그인 상태 실시간 감시 (인증 관문)
   useEffect(() => {
@@ -75,6 +76,84 @@ function App() {
     boxShadow: currentPage === pageName ? '0 4px 12px rgba(232,131,15,0.35)' : 'none',
   });
 
+  // 3-1. [메뉴 구조] 역할별(운영자/경리/대표님/고객사)로 최적화한 카테고리 메뉴
+  //  - 워크플로우 관리: 현장 실무(입고·작업일보) — 운영자용
+  //  - 매출 관리: 매출이 발생하는 지점(영업·스크랩) — 운영자·경리용
+  //  - 비용 관리: 지출 처리·장부 기록 — 경리용
+  //  - 대표님 경영보고: 실적·인사이트 확인 — 대표님용
+  //  - 고객사 포털 / 테스트: 성격이 달라 그룹에 넣지 않고 독립 메뉴로 분리
+  const menuGroups = [
+    {
+      key: 'workflow', label: '워크플로우 관리', icon: '🔧', role: '운영자용 · 현장 실무',
+      items: [
+        { page: 'inboundfax', label: '입고 FAX 리포트', icon: '📠' },
+        { page: 'worklog', label: '작업일보', icon: '📝' },
+      ],
+    },
+    {
+      key: 'revenue', label: '매출 관리', icon: '💰', role: '운영자 · 경리용',
+      items: [
+        { page: 'sales', label: '영업 워크플로우', icon: '🚚' },
+        { page: 'scrap', label: '스크랩 매출', icon: '♻️' },
+      ],
+    },
+    {
+      key: 'cost', label: '비용 관리', icon: '📋', role: '경리용',
+      items: [
+        { page: 'expense', label: '지출결의서', icon: '📎', badge: true },
+        { page: 'ledger', label: '일계표', icon: '📒' },
+      ],
+    },
+    {
+      key: 'report', label: '대표님 경영보고', icon: '📊', role: '대표님용',
+      items: [
+        { page: 'daily', label: '데일리 리포트', icon: '📅' },
+        { page: 'monthly', label: '월간 분석', icon: '📊' },
+        { page: 'ceo', label: '대표님 브리핑', icon: '🌟' },
+        { page: 'accesslog', label: '접속 로그', icon: '🔐' },
+      ],
+    },
+  ];
+
+  const standaloneItems = [
+    { page: 'customer', label: '고객사 포털', icon: '🏢', role: '고객사 조회용' },
+    { page: 'test', label: '테스트', icon: '🧪', role: '개발자용' },
+  ];
+
+  const groupBtnStyle = (isActive, isOpen) => ({
+    padding: '13px 18px',
+    backgroundColor: isActive ? '#e8830f' : (isOpen ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.06)'),
+    color: isActive ? '#ffffff' : '#c8d3e2',
+    border: isActive ? '1px solid rgba(255,255,255,0.12)' : '1px solid rgba(255,255,255,0.05)',
+    borderRadius: '10px',
+    cursor: 'pointer',
+    fontWeight: isActive ? 800 : 600,
+    fontSize: '17px',
+    transition: 'all 0.15s ease',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    boxShadow: isActive ? '0 4px 12px rgba(232,131,15,0.35)' : 'none',
+  });
+
+  const dropdownItemStyle = (isActive) => ({
+    padding: '11px 16px',
+    backgroundColor: isActive ? 'rgba(232,131,15,0.18)' : 'transparent',
+    color: isActive ? '#ffb15c' : '#dbe4f0',
+    border: 'none',
+    borderRadius: '8px',
+    cursor: 'pointer',
+    fontWeight: isActive ? 700 : 500,
+    fontSize: '15.5px',
+    textAlign: 'left',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '10px',
+    width: '100%',
+    whiteSpace: 'nowrap',
+  });
+
   // 4. [보안 성문] 로그인이 안 되어 있으면 무조건 로그인 화면만 노출
   if (!session) {
     return <Login onLoginSuccess={() => setCurrentPage('daily')} />;
@@ -89,22 +168,60 @@ function App() {
           🏭 오성철강 <span style={{fontWeight:'300', fontSize:'16px', marginLeft:'10px'}}>SMART ERP 2.0</span>
         </div>
         
-        <nav style={styles.nav}>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('sales')} style={getBtnStyle('sales')}>🚚 영업 워크플로우</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('customer')} style={getBtnStyle('customer')}>🏢 고객사 포털</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('inboundfax')} style={getBtnStyle('inboundfax')}>📠 입고 FAX 리포트</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('worklog')} style={getBtnStyle('worklog')}>📝 작업일보</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('ledger')} style={getBtnStyle('ledger')}>📒 일계표</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('daily')} style={getBtnStyle('daily')}>📅 데일리 리포트</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('monthly')} style={getBtnStyle('monthly')}>📊 월간 분석</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('ceo')} style={getBtnStyle('ceo')}>🌟 대표님 브리핑</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('accesslog')} style={getBtnStyle('accesslog')}>🔐 접속 로그</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('scrap')} style={getBtnStyle('scrap')}>♻️ 스크랩 매출</button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('expense')} style={{ ...getBtnStyle('expense'), position: 'relative' }}>
-            📎 지출결의서
-            {expensePendingCount > 0 && <span style={styles.navBadge}>{expensePendingCount}</span>}
-          </button>
-          <button className="op-nav-btn" onClick={() => setCurrentPage('test')} style={getBtnStyle('test')}>🧪 테스트</button>
+        <nav style={styles.nav} onMouseLeave={() => setOpenMenu(null)}>
+          {menuGroups.map((group) => {
+            const isActive = group.items.some((i) => i.page === currentPage);
+            const isOpen = openMenu === group.key;
+            return (
+              <div
+                key={group.key}
+                style={styles.navGroup}
+                onMouseEnter={() => setOpenMenu(group.key)}
+              >
+                <button
+                  className="op-nav-btn"
+                  style={groupBtnStyle(isActive, isOpen)}
+                  onClick={() => setOpenMenu(isOpen ? null : group.key)}
+                  title={group.role}
+                >
+                  {group.icon} {group.label}
+                  <span style={{ fontSize: '11px', marginLeft: '2px', opacity: 0.8 }}>{isOpen ? '▲' : '▼'}</span>
+                </button>
+                {isOpen && (
+                  <div style={styles.dropdown}>
+                    <div style={styles.dropdownRole}>{group.role}</div>
+                    {group.items.map((item) => (
+                      <button
+                        key={item.page}
+                        className="op-nav-btn"
+                        style={dropdownItemStyle(currentPage === item.page)}
+                        onClick={() => { setCurrentPage(item.page); setOpenMenu(null); }}
+                      >
+                        <span>{item.icon} {item.label}</span>
+                        {item.badge && expensePendingCount > 0 && (
+                          <span style={styles.navBadgeInline}>{expensePendingCount}</span>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          <div style={styles.navDivider} />
+
+          {standaloneItems.map((item) => (
+            <button
+              key={item.page}
+              className="op-nav-btn"
+              onClick={() => { setCurrentPage(item.page); setOpenMenu(null); }}
+              style={getBtnStyle(item.page)}
+              title={item.role}
+            >
+              {item.icon} {item.label}
+            </button>
+          ))}
         </nav>
 
         <div style={styles.userSection}>
@@ -157,7 +274,50 @@ const styles = {
     borderBottom: '1px solid rgba(255,255,255,0.06)'
   },
   logo: { fontSize: '27px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', letterSpacing: '-0.01em' },
-  nav: { display: 'flex', gap: '8px' },
+  nav: { display: 'flex', gap: '8px', alignItems: 'center' },
+  navGroup: { position: 'relative' },
+  dropdown: {
+    position: 'absolute',
+    top: 'calc(100% + 8px)',
+    left: 0,
+    minWidth: '230px',
+    background: 'linear-gradient(160deg, #1c3049 0%, #0d1c30 100%)',
+    border: '1px solid rgba(255,255,255,0.1)',
+    borderRadius: '12px',
+    boxShadow: '0 12px 28px rgba(0,0,0,0.35)',
+    padding: '10px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    zIndex: 2000,
+  },
+  dropdownRole: {
+    fontSize: '12px',
+    color: '#8fa2ba',
+    fontWeight: 700,
+    padding: '2px 10px 8px',
+    borderBottom: '1px solid rgba(255,255,255,0.08)',
+    marginBottom: '4px',
+  },
+  navDivider: {
+    width: '1px',
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    margin: '0 6px',
+  },
+  navBadgeInline: {
+    backgroundColor: '#e8830f',
+    color: 'white',
+    borderRadius: '999px',
+    fontSize: '11px',
+    fontWeight: 'bold',
+    minWidth: '18px',
+    height: '18px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 5px',
+  },
   userSection: { display: 'flex', alignItems: 'center', gap: '16px' },
   userName: { fontSize: '17px', color: '#c8d3e2' },
   navBadge: {
