@@ -66,8 +66,20 @@ function PrintButton() {
 
 /* 오성철강 실제 로고 파일 (public/ohsung-logo.jpg) — 인쇄 리포트 헤더에 사용 */
 const OHSUNG_LOGO_IMG = '<img src="' + window.location.origin + '/ohsung-logo.jpg" alt="오성철강" width="122" height="40" style="height:40px;width:122px;display:block;object-fit:contain;" />';
-/* 오성철강 실제 확인 도장 스캔본 (public/ohsung-stamp.png, 배경 투명 처리) */
-const OHSUNG_STAMP_IMG = '<img src="' + window.location.origin + '/ohsung-stamp.png" alt="오성철강사 확인" width="98" height="88" style="width:98px;height:88px;display:block;object-fit:contain;" />';
+/* 오성철강 실제 확인 도장 스캔본 (public/ohsung-stamp2.png, 배경 투명 처리) — 도장 가운데 여백에 출력 시점 날짜를 같은 잉크색으로 얹어서 표시 */
+function stampTodayLabel() {
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul', year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === 'year').value;
+  const m = parts.find((p) => p.type === 'month').value;
+  const d = parts.find((p) => p.type === 'day').value;
+  return `${y}.${m}.${d}`;
+}
+function ohsungStampHTML() {
+  return `<div style="position:relative;width:200px;height:199px;">
+    <img src="${window.location.origin}/ohsung-stamp2.png" alt="오성철강사 확인" width="200" height="199" style="width:200px;height:199px;display:block;object-fit:contain;" />
+    <div style="position:absolute;left:34.8%;top:51.4%;transform:translate(-50%,-50%) rotate(-38deg);font-family:Arial,'Malgun Gothic',sans-serif;font-weight:700;font-size:12px;color:#16209c;white-space:nowrap;">${stampTodayLabel()}</div>
+  </div>`;
+}
 
 /* ---------------- 입고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함) ---------------- */
 function printInboundPDF(company, rangeLabel, rows) {
@@ -133,7 +145,81 @@ function printInboundPDF(company, rangeLabel, rows) {
       내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
     </div>
     <div class="stamp">
-      ${OHSUNG_STAMP_IMG}
+      ${ohsungStampHTML()}
+      <div class="stamp-box">
+        <div class="co">오 성 철 강 사</div>
+      </div>
+    </div>
+    <div class="printbar"><button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
+/* ---------------- 출고 내역 — 세련된 별도 창 PDF 리포트 (확인 도장 포함, 입고 리포트와 동일 양식) ---------------- */
+function printOutboundPDF(company, rangeLabel, rows) {
+  const w = window.open('', '_blank', 'width=880,height=760');
+  if (!w) { alert('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제해주세요.'); return; }
+  const totalWeight = rows.reduce((s, r) => s + Number(r.weight || 0), 0);
+  const bodyRows = rows.map((r, i) => `
+    <tr style="background:${i % 2 ? '#F7F9FC' : '#fff'}">
+      <td>${r.outbound_date || '-'}</td>
+      <td>${r.product_name || '-'}</td>
+      <td>${r.spec || '-'}</td>
+      <td style="text-align:right;">${r.qty || '-'}</td>
+      <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
+    </tr>`).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>출고현황 리스트 - ${company}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,sans-serif; color:#0F1E33; margin:0; padding:36px 42px; }
+    .head { display:flex; align-items:center; justify-content:space-between; padding-bottom:18px; border-bottom:3px solid #16283f; margin-bottom:22px; }
+    .brand { font-size:15px; font-weight:800; color:#16283f; letter-spacing:.02em; }
+    .brand .sub { font-size:12px; font-weight:600; color:#8592A6; margin-top:2px; }
+    .title { text-align:center; margin: 4px 0 20px; }
+    .title h1 { font-size:30px; margin:0; letter-spacing:.15em; font-weight:900; }
+    .title .badge { display:inline-block; margin-top:8px; background:#FDECD6; color:#C46B06; font-weight:800; font-size:13px; padding:5px 14px; border-radius:999px; }
+    .meta { display:flex; justify-content:space-between; font-size:14.5px; color:#4D5C72; margin-bottom:16px; padding:12px 16px; background:#F4F6FA; border-radius:10px; }
+    .meta b { color:#0F1E33; }
+    table { width:100%; border-collapse:collapse; margin-top:6px; }
+    th { background:#16283f; color:#fff; font-size:13.5px; padding:11px 10px; text-align:left; font-weight:700; }
+    td { padding:9px 10px; font-size:14.5px; border-bottom:1px solid #E3E8F0; }
+    tfoot td { font-weight:900; font-size:16px; border-top:2px solid #16283f; border-bottom:none; padding-top:13px; }
+    .footnote { margin-top:22px; font-size:13px; color:#8592A6; line-height:1.7; }
+    .stamp { display:flex; justify-content:flex-end; align-items:flex-end; gap:10px; margin-top:44px; }
+    .stamp-box { text-align:right; font-size:15px; color:#4D5C72; }
+    .stamp-box .co { margin-top:2px; font-size:18px; font-weight:900; color:#0F1E33; }
+    @media print { button { display:none !important; } body { padding:16px 22px; } }
+    .printbar { text-align:center; margin-top:26px; }
+    .printbar button { font-size:16px; padding:10px 22px; border-radius:9px; border:none; background:#E8830F; color:#fff; font-weight:800; cursor:pointer; }
+  </style></head>
+  <body>
+    <div class="head">
+      <div class="brand" style="display:flex;align-items:center;gap:11px;">${OHSUNG_LOGO_IMG}<div class="sub" style="align-self:flex-end;">SMART ERP 2.0</div></div>
+      <div class="brand" style="text-align:right">
+        <div class="sub">발행일시</div>
+        ${new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' })}
+      </div>
+    </div>
+    <div class="title">
+      <h1>출 고 현 황 리 스 트</h1>
+      <div class="badge">OUTBOUND COIL LIST</div>
+    </div>
+    <div class="meta">
+      <span>거래처: <b>${company}</b></span>
+      <span>기간: <b>${rangeLabel}</b></span>
+      <span>건수: <b>${rows.length}건</b></span>
+    </div>
+    <table>
+      <thead><tr><th>출고일자</th><th>품명</th><th>가공규격</th><th style="text-align:right">수량</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;color:#8592A6;padding:20px;">출고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="4" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+    </table>
+    <div class="footnote">
+      본 리스트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
+      내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.
+    </div>
+    <div class="stamp">
+      ${ohsungStampHTML()}
       <div class="stamp-box">
         <div class="co">오 성 철 강 사</div>
       </div>
@@ -574,6 +660,7 @@ export default function CustomerPortalPage() {
           <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
             <input style={inputStyle} placeholder="품명/규격 검색" value={outKeyword} onChange={(e) => setOutKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') runOutSearch(); }} />
             <button style={{ ...btnStyle(true), whiteSpace: 'nowrap' }} onClick={runOutSearch}>검색</button>
+            <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => printOutboundPDF(companyName, rangeLabel, outRows)}>🖨️ 세련된 PDF로 저장</button>
             <PrintButton />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '10px' }}>
