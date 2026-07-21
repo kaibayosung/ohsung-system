@@ -78,6 +78,7 @@ function printInboundPDF(company, rangeLabel, rows) {
       <td>${r.company_name || '-'}</td>
       <td>${r.product_name || '-'}</td>
       <td>${r.spec || '-'}</td>
+      <td>${r.length_m || '-'}</td>
       <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
     </tr>`).join('');
   w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>입고현황 리스트 - ${company}</title>
@@ -122,9 +123,9 @@ function printInboundPDF(company, rangeLabel, rows) {
       <span>건수: <b>${rows.length}건</b></span>
     </div>
     <table>
-      <thead><tr><th>입고일자</th><th>업체명</th><th>품명</th><th>규격</th><th style="text-align:right">중량(kg)</th></tr></thead>
-      <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="4" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+      <thead><tr><th>입고일자</th><th>업체명</th><th>품명</th><th>규격</th><th>길이</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="6" style="text-align:center;color:#8592A6;padding:20px;">입고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
     </table>
     <div class="footnote">
       본 리스트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
@@ -781,11 +782,11 @@ export default function CustomerPortalPage() {
 
           {inLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : inRows.length === 0 ? boxMsg(`${rangeLabel}에 입고 내역이 없습니다`, { justifyContent: 'center' }) : (
             <table style={itemsTable}>
-              <thead><tr><th style={th}>입고일자</th><th style={th}>업체명</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>중량</th></tr></thead>
+              <thead><tr><th style={th}>입고일자</th><th style={th}>업체명</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>길이</th><th style={th}>중량</th></tr></thead>
               <tbody>
                 {inRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.inbound_date}</td><td style={td}>{r.company_name || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td>
+                    <td style={td}>{r.inbound_date}</td><td style={td}>{r.company_name || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td>
                   </tr>
                 ))}
               </tbody>

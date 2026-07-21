@@ -436,7 +436,7 @@ export function CoilFlowDetail({ lotId }) {
             <thead><tr><th style={box.th}>입고일자</th><th style={box.th}>전표번호</th><th style={box.th}>중량</th><th style={box.th}>길이(m)</th></tr></thead>
             <tbody>
               {inboundRows.map((r) => (
-                <tr key={r.id}><td style={box.td}>{r.inbound_date}</td><td style={box.td}>{r.slip_no || '-'}</td><td style={box.td}>{fmtNum(r.weight)}kg</td><td style={box.td}>{fmtNum(r.length_m)}</td></tr>
+                <tr key={r.id}><td style={box.td}>{r.inbound_date}</td><td style={box.td}>{r.slip_no || '-'}</td><td style={box.td}>{fmtNum(r.weight)}kg</td><td style={box.td}>{r.length_m || '-'}</td></tr>
               ))}
             </tbody>
           </table>
