@@ -288,6 +288,8 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   const [erpJobs, setErpJobs] = useState([]);           // greenp_production (그린ERP 실적) — 선택 기간
   const [erpExpense, setErpExpense] = useState(0);       // expense_requests(결재완료) — 선택 기간
   const [monthErpJobs, setMonthErpJobs] = useState([]);  // greenp_production — 이번달 전체(추이 차트용)
+  const [erpScrap, setErpScrap] = useState([]);          // scrap_sales(스크랩 매출) — 선택 기간
+  const [monthScrap, setMonthScrap] = useState([]);      // scrap_sales — 이번달 전체(추이 차트용)
   const [loadingRange, setLoadingRange] = useState(false);
   const [lastSync, setLastSync] = useState(null);        // greenp_sync_logs 최종 성공 동기화 시각
   const [nowTick, setNowTick] = useState(Date.now());     // "n분 n초 전" 초단위 실시간 표시용
@@ -313,15 +315,19 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
     let cancelled = false;
     setLoadingRange(true);
     (async () => {
-      const [prod, exp, monthProd] = await Promise.all([
+      const [prod, exp, monthProd, scrap, monthScrapRes] = await Promise.all([
         supabase.from('greenp_production').select('*').gte('slip_date', selStart).lte('slip_date', selEnd).order('slip_date', { ascending: false }),
         supabase.from('expense_requests').select('total_amount, request_date').eq('status', '결재완료').gte('request_date', selStart).lte('request_date', selEnd),
         supabase.from('greenp_production').select('slip_date, amount').gte('slip_date', monthStartStr()),
+        supabase.from('scrap_sales').select('*').gte('sale_date', selStart).lte('sale_date', selEnd),
+        supabase.from('scrap_sales').select('sale_date, total_amount').gte('sale_date', monthStartStr()),
       ]);
       if (cancelled) return;
       setErpJobs(prod.data || []);
       setErpExpense((exp.data || []).reduce((s, r) => s + Number(r.total_amount || 0), 0));
       setMonthErpJobs(monthProd.data || []);
+      setErpScrap(scrap.data || []);
+      setMonthScrap(monthScrapRes.data || []);
       setLoadingRange(false);
     })();
     return () => { cancelled = true; };
@@ -354,8 +360,9 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   // ---- 그린ERP 실적 리포트 (greenp_production 실데이터 기준) ----
   const jobCount = erpJobs.length;
   const totalRevenue = erpJobs.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const scrapRevenue = erpScrap.reduce((s, r) => s + Number(r.total_amount || 0), 0);
   const companySet = new Set(erpJobs.map((r) => r.company_name));
-  const net = totalRevenue - erpExpense;
+  const net = (totalRevenue + scrapRevenue) - erpExpense;
 
   const jobsByType = (key) => erpJobs.filter((j) => j.work_type === key);
   const otherJobs = erpJobs.filter((j) => !WORK_TYPE_GROUPS.some((g) => g.key === j.work_type));
@@ -371,6 +378,7 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
   // 이번달 매출 추이 (일자별) — 그린ERP 실데이터 기준, 상단 기간 선택과 무관하게 항상 이번달
   const byDay = {};
   monthErpJobs.forEach((r) => { byDay[r.slip_date] = (byDay[r.slip_date] || 0) + Number(r.amount || 0); });
+  monthScrap.forEach((r) => { byDay[r.sale_date] = (byDay[r.sale_date] || 0) + Number(r.total_amount || 0); });
   const days = Object.keys(byDay).sort();
   const maxDay = Math.max(1, ...Object.values(byDay));
   const monthTotal = Object.values(byDay).reduce((a, b) => a + b, 0);
@@ -398,7 +406,8 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '10px', marginBottom: '16px' }}>
         {statCard('작업 건수', jobCount + '건')}
-        {statCard('매출액', Math.round(totalRevenue / 10000).toLocaleString() + '만원', C.textAccent)}
+        {statCard('가공 매출액', Math.round(totalRevenue / 10000).toLocaleString() + '만원', C.textAccent)}
+        {statCard('♻️ 스크랩 매출', Math.round(scrapRevenue / 10000).toLocaleString() + '만원', '#1C7A4D')}
         {statCard('거래처 수', companySet.size + '개')}
         {statCard('비용(결재완료)', Math.round(erpExpense / 10000).toLocaleString() + '만원', C.textWarning)}
         {statCard('순손익', (net >= 0 ? '+' : '') + Math.round(net / 10000).toLocaleString() + '만원', net >= 0 ? C.textSuccess : C.textDanger)}
@@ -451,9 +460,9 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
         })}
       </div>
 
-      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>📈 이번달 매출 추이 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 실데이터 기준)</span></div>
+      <div style={{ fontSize: '19px', fontWeight: 700, margin: '16px 0 8px', color: C.textSecondary }}>📈 이번달 매출 추이 <span style={{ fontSize: '14px', fontWeight: 500, color: C.textMuted }}>(그린ERP 가공 매출 + 스크랩 매출)</span></div>
       <div style={{ background: C.surface1, borderRadius: '10px', padding: '16px', marginBottom: '18px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
-        {days.length === 0 ? boxMsg('이번달 그린ERP 실적이 없습니다.', { justifyContent: 'center' }) : (
+        {days.length === 0 ? boxMsg('이번달 실적이 없습니다.', { justifyContent: 'center' }) : (
           <>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '80px', marginBottom: '4px' }}>
               {days.map((d) => (
@@ -463,7 +472,7 @@ function ExecRole({ orders, coils, companies, todayExpense, onGoto }) {
               ))}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', color: C.textSecondary, borderTop: `1px solid ${C.border}`, paddingTop: '10px' }}>
-              <span>이번달 누적 매출(그린ERP): <b style={{ color: C.textPrimary }}>{Math.round(monthTotal).toLocaleString()}원</b></span>
+              <span>이번달 누적 매출(가공+스크랩): <b style={{ color: C.textPrimary }}>{Math.round(monthTotal).toLocaleString()}원</b></span>
             </div>
           </>
         )}
