@@ -215,9 +215,9 @@ function printOutboundPDF(company, rangeLabel, rows) {
 }
 
 const WORK_TYPE_GROUPS = [
-  { key: 'SLITING', label: '슬리팅1' },
-  { key: 'SLITING2', label: '슬리팅2' },
-  { key: 'LEVELLING', label: '레벨링' },
+  { key: 'SLITING', label: '슬리팅' },
+  { key: 'SLITING2', label: '슬리팅' },
+  { key: 'LEVELLING', label: '레베링' },
 ];
 const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내역'], ['outbound', '🚚 출고 내역'], ['inbound', '📥 입고 내역'], ['place', '📝 발주하기']];
 
@@ -337,6 +337,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
   const [inv, setInv] = useState([]);
   const [invLoading, setInvLoading] = useState(false);
   const [invQuery, setInvQuery] = useState('');
+  const [invView, setInvView] = useState('stats'); // 'stats' | 'detail'
   useEffect(() => {
     if (!companyName) return;
     let cancelled = false;
@@ -368,60 +369,25 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
   const maxSpecWeight = Math.max(1, ...specRows.map((r) => r.weight));
   const thicknessChartData = thicknessRows.map((r) => ({ name: r.key, 코일수: r.count, 무게톤: +(r.weight / 1000).toFixed(2) }));
 
-  // ---- 2) 작업 내역 (greenp_production, 선택한 기간 기준 + greenp_outbound 가공규격 매칭) ----
+  // ---- 2) 작업 내역 (greenp_joborder_detail 실데이터 — 작업일자/품명/규격/원중량/중량/작업SIZE) ----
   const [workRows, setWorkRows] = useState([]);
-  const [workSpecMap, setWorkSpecMap] = useState({});
   const [workLoading, setWorkLoading] = useState(false);
+  const [workTypeFilter, setWorkTypeFilter] = useState('all'); // 'all' | '슬리팅' | '레베링'
   useEffect(() => {
     if (!companyName) return;
     let cancelled = false;
     setWorkLoading(true);
-    Promise.all([
-      supabase.from('greenp_production').select('*').eq('company_name', companyName).gte('slip_date', startDate).lte('slip_date', endDate).order('slip_date', { ascending: false }).limit(500),
-      supabase.from('greenp_joborders').select('joborder_no, joborder_date, prod_slip_no, prod_date').eq('company_name', companyName).gte('joborder_date', startDate).lte('joborder_date', endDate),
-      supabase.from('greenp_outbound').select('work_date, work_slip_no, spec').eq('company_name', companyName).gte('work_date', startDate).lte('work_date', endDate),
-    ]).then(([prod, jobs, out]) => {
-      if (cancelled) return;
-      setWorkRows(prod.data || []);
-      const outMap = {};
-      (out.data || []).forEach((r) => {
-        if (!r.work_date || !r.work_slip_no) return;
-        const key = `${r.work_date}_${r.work_slip_no}`;
-        if (!outMap[key]) outMap[key] = new Set();
-        if (r.spec) outMap[key].add(r.spec);
-      });
-      const flat = {};
-      (jobs.data || []).forEach((j) => {
-        if (!j.prod_date || !j.prod_slip_no) return;
-        const set = outMap[`${j.joborder_date}_${j.joborder_no}`];
-        if (set && set.size) flat[`${j.prod_date}_${j.prod_slip_no}`] = Array.from(set).join(', ');
-      });
-      setWorkSpecMap(flat);
-      setWorkLoading(false);
-    });
+    supabase.from('greenp_joborder_detail').select('*').eq('company_name', companyName)
+      .gte('joborder_date', startDate).lte('joborder_date', endDate)
+      .order('joborder_date', { ascending: false }).limit(500)
+      .then(({ data }) => { if (!cancelled) { setWorkRows(data || []); setWorkLoading(false); } });
     return () => { cancelled = true; };
   }, [companyName, startDate, endDate]);
-  const workTotal = workRows.reduce((s, r) => s + Number(r.amount || 0), 0);
   const workTypeLabel = (t) => { const g = WORK_TYPE_GROUPS.find((g) => g.key === t); return g ? g.label : (t || '기타'); };
-  const workSpecOf = (r) => workSpecMap[`${r.slip_date}_${r.slip_no}`] || '-';
-  // 작업유형별 비교 (막대)
-  const workTypeAgg = {};
-  workRows.forEach((r) => {
-    const label = workTypeLabel(r.work_type);
-    if (!workTypeAgg[label]) workTypeAgg[label] = { count: 0, amount: 0 };
-    workTypeAgg[label].count += 1;
-    workTypeAgg[label].amount += Number(r.amount || 0);
-  });
-  const workTypeChartData = Object.entries(workTypeAgg).map(([name, v]) => ({ name, 건수: v.count, 금액만원: Math.round(v.amount / 10000) }));
-  // 기간별 추이 (라인) — 일자별 작업 건수/금액
-  const workByDate = {};
-  workRows.forEach((r) => {
-    if (!r.slip_date) return;
-    if (!workByDate[r.slip_date]) workByDate[r.slip_date] = { date: r.slip_date, 건수: 0, 금액만원: 0 };
-    workByDate[r.slip_date].건수 += 1;
-    workByDate[r.slip_date].금액만원 += Number(r.amount || 0) / 10000;
-  });
-  const workTrendData = Object.values(workByDate).sort((a, b) => a.date.localeCompare(b.date)).map((r) => ({ ...r, 금액만원: Math.round(r.금액만원), dateLabel: fmtKDate(r.date) }));
+  const workFiltered = workRows.filter((r) => workTypeFilter === 'all' || workTypeLabel(r.work_type) === workTypeFilter);
+  const workTotalOriginal = workFiltered.reduce((s, r) => s + Number(r.original_weight || 0), 0);
+  const workTotalUsed = workFiltered.reduce((s, r) => s + Number(r.used_weight || 0), 0);
+  const workTotalAmount = workFiltered.reduce((s, r) => s + Number(r.amount || 0), 0);
 
   // ---- 3) 출고 내역 (greenp_outbound, 선택한 기간 기준 + 검색어) ----
   const [outKeyword, setOutKeyword] = useState('');
@@ -539,91 +505,105 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
             <div style={{ fontSize: '13px', color: C.textMuted }}>재고는 항상 현재 시점 기준입니다. (조회 기간은 작업 내역·출고 내역에만 적용됩니다)</div>
             <div style={{ marginLeft: 'auto' }}><PrintButton /></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '18px' }}>
-            {statCard('보유 품목수', inv.length + '건')}
-            {statCard('총 잔량', (invTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
-            {statCard('규격 종류', invSpecCount + '종')}
+
+          <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '18px' }}>
+            <button style={btnStyle(invView === 'stats')} onClick={() => setInvView('stats')}>📊 재고통계</button>
+            <button style={btnStyle(invView === 'detail')} onClick={() => setInvView('detail')}>📋 상세 재고 현황</button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', marginBottom: '14px' }}>
-            <ChartCard title="📈 두께별 재고 분포 (막대)" note="두께(T)별 잔량 무게 비교">
-              {thicknessChartData.length === 0 ? boxMsg('데이터가 없습니다', { justifyContent: 'center', minHeight: '220px' }) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={thicknessChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} label={{ value: '톤', angle: 0, position: 'top', fontSize: 11 }} />
-                    <Tooltip formatter={(v, n) => [n === '무게톤' ? `${v}톤` : `${v}개`, n]} />
-                    <Bar dataKey="무게톤" fill={C.accent} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </ChartCard>
-            <ChartCard title="🥧 두께별 비중 (파이)" note="잔량 무게 기준 구성비">
-              {thicknessChartData.length === 0 ? boxMsg('데이터가 없습니다', { justifyContent: 'center', minHeight: '220px' }) : (
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={thicknessChartData} dataKey="무게톤" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                      {thicknessChartData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(v) => `${v}톤`} />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </ChartCard>
-          </div>
+          {invView === 'stats' && (
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '18px' }}>
+                {statCard('보유 품목수', inv.length + '건')}
+                {statCard('총 잔량', (invTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
+                {statCard('규격 종류', invSpecCount + '종')}
+              </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', marginBottom: '20px' }}>
-            <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(15,30,51,0.06)' }}>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: C.textSecondary, marginBottom: '10px' }}>📊 현재 재고 통계 <span style={{ fontSize: '13px', fontWeight: 500, color: C.textMuted }}>(두께별)</span></div>
-              {thicknessRows.length === 0 ? boxMsg('재고 데이터가 없습니다', { justifyContent: 'center' }) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead><tr><th style={{ ...th, fontSize: '13px' }}>두께</th><th style={{ ...th, fontSize: '13px' }}>코일 수</th><th style={{ ...th, fontSize: '13px' }}>무게</th></tr></thead>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', marginBottom: '14px' }}>
+                <ChartCard title="📈 두께별 재고 분포 (막대)" note="두께(T)별 잔량 무게 비교">
+                  {thicknessChartData.length === 0 ? boxMsg('데이터가 없습니다', { justifyContent: 'center', minHeight: '220px' }) : (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <BarChart data={thicknessChartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
+                        <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                        <YAxis tick={{ fontSize: 12 }} label={{ value: '톤', angle: 0, position: 'top', fontSize: 11 }} />
+                        <Tooltip formatter={(v, n) => [n === '무게톤' ? `${v}톤` : `${v}개`, n]} />
+                        <Bar dataKey="무게톤" fill={C.accent} radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+                <ChartCard title="🥧 두께별 비중 (파이)" note="잔량 무게 기준 구성비">
+                  {thicknessChartData.length === 0 ? boxMsg('데이터가 없습니다', { justifyContent: 'center', minHeight: '220px' }) : (
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie data={thicknessChartData} dataKey="무게톤" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                          {thicknessChartData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip formatter={(v) => `${v}톤`} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </ChartCard>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', marginBottom: '20px' }}>
+                <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(15,30,51,0.06)' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: C.textSecondary, marginBottom: '10px' }}>📊 현재 재고 통계 <span style={{ fontSize: '13px', fontWeight: 500, color: C.textMuted }}>(두께별)</span></div>
+                  {thicknessRows.length === 0 ? boxMsg('재고 데이터가 없습니다', { justifyContent: 'center' }) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                      <thead><tr><th style={{ ...th, fontSize: '13px' }}>두께</th><th style={{ ...th, fontSize: '13px' }}>코일 수</th><th style={{ ...th, fontSize: '13px' }}>무게</th></tr></thead>
+                      <tbody>
+                        {thicknessRows.map((r, i) => (
+                          <tr key={r.key} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
+                            <td style={{ ...td, fontWeight: 700 }}>{r.key}</td>
+                            <td style={td}>{r.count}개</td>
+                            <td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{(r.weight / 1000).toFixed(1)}톤</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+                <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(15,30,51,0.06)' }}>
+                  <div style={{ fontSize: '16px', fontWeight: 800, color: C.textSecondary, marginBottom: '10px' }}>📊 미출고 재고 통계 <span style={{ fontSize: '13px', fontWeight: 500, color: C.textMuted }}>(가공규격별)</span></div>
+                  {specRows.length === 0 ? boxMsg('재고 데이터가 없습니다', { justifyContent: 'center' }) : (
+                    <div style={{ maxHeight: '210px', overflowY: 'auto' }}>
+                      {specRows.slice(0, 10).map((r) => {
+                        const pct = Math.round((r.weight / maxSpecWeight) * 100);
+                        return (
+                          <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                            <span style={{ width: '90px', fontSize: '13px', fontWeight: 700, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.key}</span>
+                            <div style={{ flex: 1, background: C.surface1, borderRadius: '5px', overflow: 'hidden', height: '13px' }}><div style={{ width: pct + '%', height: '100%', background: C.accent }} /></div>
+                            <span style={{ width: '80px', textAlign: 'right', fontSize: '13px', color: C.textSecondary }}>{r.count}개 · {(r.weight / 1000).toFixed(1)}톤</span>
+                          </div>
+                        );
+                      })}
+                      {specRows.length > 10 && <div style={{ fontSize: '12px', color: C.textMuted }}>외 {specRows.length - 10}종 더</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {invView === 'detail' && (
+            <div>
+              <div style={{ fontSize: '17px', fontWeight: 700, margin: '4px 0 8px', color: C.textSecondary }}>재고 상세 내역</div>
+              <input style={{ ...inputStyle, marginBottom: '10px' }} placeholder="품명/규격 검색" value={invQuery} onChange={(e) => setInvQuery(e.target.value)} />
+              {invLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : invFiltered.length === 0 ? boxMsg('해당 재고가 없습니다', { justifyContent: 'center' }) : (
+                <table style={itemsTable}>
+                  <thead><tr><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>길이</th><th style={th}>입고일</th><th style={th}>원중량</th><th style={th}>잔량</th></tr></thead>
                   <tbody>
-                    {thicknessRows.map((r, i) => (
-                      <tr key={r.key} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                        <td style={{ ...td, fontWeight: 700 }}>{r.key}</td>
-                        <td style={td}>{r.count}개</td>
-                        <td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{(r.weight / 1000).toFixed(1)}톤</td>
+                    {invFiltered.map((r, i) => (
+                      <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
+                        <td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               )}
             </div>
-            <div style={{ background: C.surface2, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '16px', boxShadow: '0 1px 3px rgba(15,30,51,0.06)' }}>
-              <div style={{ fontSize: '16px', fontWeight: 800, color: C.textSecondary, marginBottom: '10px' }}>📊 미출고 재고 통계 <span style={{ fontSize: '13px', fontWeight: 500, color: C.textMuted }}>(가공규격별)</span></div>
-              {specRows.length === 0 ? boxMsg('재고 데이터가 없습니다', { justifyContent: 'center' }) : (
-                <div style={{ maxHeight: '210px', overflowY: 'auto' }}>
-                  {specRows.slice(0, 10).map((r) => {
-                    const pct = Math.round((r.weight / maxSpecWeight) * 100);
-                    return (
-                      <div key={r.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <span style={{ width: '90px', fontSize: '13px', fontWeight: 700, color: C.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.key}</span>
-                        <div style={{ flex: 1, background: C.surface1, borderRadius: '5px', overflow: 'hidden', height: '13px' }}><div style={{ width: pct + '%', height: '100%', background: C.accent }} /></div>
-                        <span style={{ width: '80px', textAlign: 'right', fontSize: '13px', color: C.textSecondary }}>{r.count}개 · {(r.weight / 1000).toFixed(1)}톤</span>
-                      </div>
-                    );
-                  })}
-                  {specRows.length > 10 && <div style={{ fontSize: '12px', color: C.textMuted }}>외 {specRows.length - 10}종 더</div>}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div style={{ fontSize: '17px', fontWeight: 700, margin: '4px 0 8px', color: C.textSecondary }}>재고 상세 내역</div>
-          <input style={{ ...inputStyle, marginBottom: '10px' }} placeholder="품명/규격 검색" value={invQuery} onChange={(e) => setInvQuery(e.target.value)} />
-          {invLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : invFiltered.length === 0 ? boxMsg('해당 재고가 없습니다', { justifyContent: 'center' }) : (
-            <table style={itemsTable}>
-              <thead><tr><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>길이</th><th style={th}>입고일</th><th style={th}>원중량</th><th style={th}>잔량</th></tr></thead>
-              <tbody>
-                {invFiltered.map((r, i) => (
-                  <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           )}
         </div>
       )}
@@ -632,47 +612,24 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
         <div>
           <PrintHeader subTitle="작업 내역 리포트" companyName={companyName} rangeLabel={rangeLabel} />
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}><PrintButton /></div>
+          <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+            {['all', '슬리팅', '레베링'].map((k) => (
+              <button key={k} style={btnStyle(workTypeFilter === k)} onClick={() => setWorkTypeFilter(k)}>{k === 'all' ? '전체' : k}</button>
+            ))}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '14px' }}>
-            {statCard('작업 건수', workRows.length + '건')}
-            {statCard('합계 금액', workTotal.toLocaleString() + '원', C.textAccent)}
+            {statCard('작업 건수', workFiltered.length + '건')}
+            {statCard('원중량 합계', (workTotalOriginal / 1000).toFixed(1) + '톤')}
+            {statCard('중량 합계', (workTotalUsed / 1000).toFixed(1) + '톤', C.textAccent)}
           </div>
 
-          {workRows.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', marginBottom: '18px' }}>
-              <ChartCard title="📈 기간별 작업 추이 (라인)" note="일자별 작업 금액 추이 (만원)">
-                <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={workTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(v, n) => [n === '금액만원' ? `${v.toLocaleString()}만원` : `${v}건`, n]} />
-                    <Line type="monotone" dataKey="금액만원" stroke={C.accent} strokeWidth={2.5} dot={{ r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
-              <ChartCard title="📊 작업유형별 비교 (막대)" note="슬리팅1 / 슬리팅2 / 레벨링 등 유형별 금액">
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={workTypeChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(v, n) => [n === '금액만원' ? `${v.toLocaleString()}만원` : `${v}건`, n]} />
-                    <Bar dataKey="금액만원" radius={[4, 4, 0, 0]}>
-                      {workTypeChartData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
-          )}
-
-          {workLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : workRows.length === 0 ? boxMsg(`${rangeLabel}에 작업 내역이 없습니다`, { justifyContent: 'center' }) : (
+          {workLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : workFiltered.length === 0 ? boxMsg(`${rangeLabel}에 작업 내역이 없습니다`, { justifyContent: 'center' }) : (
             <table style={itemsTable}>
-              <thead><tr><th style={th}>일자</th><th style={th}>작업유형</th><th style={th}>가공규격</th><th style={th}>전표번호</th><th style={th}>금액</th></tr></thead>
+              <thead><tr><th style={th}>작업일자</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>원중량</th><th style={th}>중량</th><th style={th}>작업SIZE</th></tr></thead>
               <tbody>
-                {workRows.map((r, i) => (
-                  <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.slip_date}</td><td style={td}>{workTypeLabel(r.work_type)}</td><td style={td}>{workSpecOf(r)}</td><td style={td}>{r.slip_no}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.amount || 0).toLocaleString()}원</td>
+                {workFiltered.map((r) => (
+                  <tr key={r.id} style={{ background: 'transparent' }}>
+                    <td style={td}>{r.joborder_date}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.used_weight || 0).toLocaleString()}kg</td><td style={td}>{r.process_rule || '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -695,33 +652,6 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
             {statCard('합계 중량(표시분)', (outTotalWeight / 1000).toFixed(1) + '톤')}
           </div>
           {outTotalCount > outRows.length && <div className="no-print" style={{ fontSize: '13px', color: C.textMuted, marginBottom: '10px' }}>전체 {outTotalCount.toLocaleString()}건 중 최근 {outRows.length}건 표시 — 기간을 좁히거나 검색어를 입력하면 더 정확히 조회됩니다.</div>}
-
-          {outRows.length > 0 && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '14px', marginBottom: '18px' }}>
-              <ChartCard title="📊 두께별 출고 분포 (막대)" note="가공규격 선두 두께(T) 기준 출고 중량">
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={outThicknessChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(v, n) => [n === '중량톤' ? `${v}톤` : `${v}건`, n]} />
-                    <Bar dataKey="중량톤" fill={C.accent} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartCard>
-              <ChartCard title="📈 기간별 출고 추이 (라인)" note="일자별 출고 중량(톤) 추이">
-                <ResponsiveContainer width="100%" height={220}>
-                  <LineChart data={outTrendData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={C.border} />
-                    <XAxis dataKey="dateLabel" tick={{ fontSize: 11 }} />
-                    <YAxis tick={{ fontSize: 12 }} />
-                    <Tooltip formatter={(v, n) => [n === '중량톤' ? `${v}톤` : `${v}건`, n]} />
-                    <Line type="monotone" dataKey="중량톤" stroke={C.accent} strokeWidth={2.5} dot={{ r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            </div>
-          )}
 
           {outLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : outRows.length === 0 ? boxMsg(`${rangeLabel}에 출고 내역이 없습니다`, { justifyContent: 'center' }) : (
             <table style={itemsTable}>
