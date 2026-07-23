@@ -17,6 +17,7 @@ import CustomerPortalPage from './pages/CustomerPortalPage';
 import InboundFaxPage from './pages/InboundFaxPage';
 import ScrapSalesPage from './pages/ScrapSalesPage';
 import AccountManagementPage from './pages/AccountManagementPage';
+import ChangePasswordModal from './components/ChangePasswordModal';
 
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
@@ -26,6 +27,7 @@ function App() {
   const [openMenu, setOpenMenu] = useState(null); // 현재 열려있는 드롭다운 메뉴 그룹 key
   const [myStaff, setMyStaff] = useState(null); // { name, role } — staff_users 조회 결과
   const [roleChecking, setRoleChecking] = useState(true); // role 조회 중 로딩 플래그
+  const [showPwModal, setShowPwModal] = useState(false); // 비밀번호 변경 모달
 
   // 2. 로그인 상태 실시간 감시 (인증 관문)
   useEffect(() => {
@@ -271,9 +273,12 @@ function App() {
 
         <div style={styles.userSection}>
           <span style={styles.userName}>{myStaff?.name || session.user.email.split('@')[0]}{myStaff?.role === 'admin' ? ' 관리자님' : ' 님'}</span>
+          <button className="op-logout-btn" onClick={() => setShowPwModal(true)} style={{ ...styles.logoutBtn, background: 'rgba(255,255,255,0.06)' }}>비밀번호 변경</button>
           <button className="op-logout-btn" onClick={handleLogout} style={styles.logoutBtn}>로그아웃</button>
         </div>
       </header>
+
+      {showPwModal && <ChangePasswordModal onClose={() => setShowPwModal(false)} />}
 
       {/* 메인 콘텐츠 영역 (선택된 메뉴의 화면을 렌더링) */}
       <main className="app-main" style={styles.mainContent}>
