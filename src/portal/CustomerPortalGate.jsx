@@ -79,12 +79,19 @@ export default function CustomerPortalGate() {
 
     // getSession()을 별도로 호출하지 않고 onAuthStateChange 하나로 통일합니다.
     // (supabase-js v2는 subscribe 시점에 현재 세션으로 한 번 즉시 콜백을 호출해줍니다.)
+    //
+    // [핵심 수정] onAuthStateChange 콜백 "안에서" 바로 supabase.from(...) 등 다른 요청을
+    // 호출하면, Supabase 내부 세션 잠금(navigator.locks)과 경쟁하면서
+    // "signal is aborted without reason" 에러가 나는 것이 Supabase 공식적으로 알려진
+    // 이슈입니다. setTimeout으로 한 틱 미뤄서 콜백이 완전히 끝난 뒤 실행되게 합니다.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') { setRecoveryMode(true); finish(); return; }
-      handleSession(session, { logAccess: event === 'SIGNED_IN' }).catch((e) => {
-        console.error('[portal] 세션 처리 실패', e);
-        finish();
-      });
+      setTimeout(() => {
+        handleSession(session, { logAccess: event === 'SIGNED_IN' }).catch((e) => {
+          console.error('[portal] 세션 처리 실패', e);
+          finish();
+        });
+      }, 0);
     });
 
     // 어떤 이유로든 8초 안에 응답이 없으면 화면이 영구 블랭크로 남지 않도록 강제 진행
