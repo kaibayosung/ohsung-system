@@ -50,7 +50,7 @@ const TAB_ITEMS = [
 ];
 
 export default function CustomerPortalDashboard({ companyName, onNavigate }) {
-  const [stats, setStats] = useState({ inventory: 0, outbound: 0, inbound: 0, inProgress: 0 });
+  const [stats, setStats] = useState({ inventory: 0, outbound: 0, inbound: 0, inProgress: 0, invCount: 0, outCount: 0, inCount: 0 });
   const [thickness, setThickness] = useState([]); // [{label, count, color}]
   const [thicknessTotal, setThicknessTotal] = useState(0);
   const [unshipped, setUnshipped] = useState([]);
@@ -79,6 +79,9 @@ export default function CustomerPortalDashboard({ companyName, onNavigate }) {
         outbound: sum(out.data, 'weight') / 1000,
         inbound: sum(inb.data, 'weight') / 1000,
         inProgress: prog.count || 0,
+        invCount: (inv.data || []).length,
+        outCount: (out.data || []).length,
+        inCount: (inb.data || []).length,
       });
 
       // 두께별 재고 개수 집계
@@ -143,59 +146,64 @@ export default function CustomerPortalDashboard({ companyName, onNavigate }) {
         }
       `}</style>
 
-      <div style={{ fontSize: '13px', color: C.textMuted, marginBottom: '16px' }}>
+      <div style={{ fontSize: '15px', color: C.textMuted, marginBottom: '18px' }}>
         📅 {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Seoul' })} 기준
       </div>
 
-      <div className="cp-dash-cards" style={{ marginBottom: '14px' }}>
+      <div className="cp-dash-cards" style={{ marginBottom: '16px' }}>
         {[
-          { label: '총 재고 잔량', icon: '📦', value: stats.inventory.toFixed(1), unit: '톤', bg: '#E6F1FB', fg: '#0C447C' },
-          { label: '이번달 출고', icon: '🚚', value: stats.outbound.toFixed(1), unit: '톤', bg: '#FAECE7', fg: '#993C1D' },
-          { label: '이번달 입고', icon: '📥', value: stats.inbound.toFixed(1), unit: '톤', bg: '#E1F5EE', fg: '#0F6E56' },
-          { label: '진행중 작업', icon: '🛠', value: stats.inProgress, unit: '건', bg: C.surface, fg: C.textPrimary },
+          { label: '총 재고 잔량', icon: '📦', value: stats.inventory.toFixed(1), unit: '톤', count: stats.invCount, bg: '#E6F1FB', fg: '#0C447C' },
+          { label: '이번달 출고', icon: '🚚', value: stats.outbound.toFixed(1), unit: '톤', count: stats.outCount, bg: '#FAECE7', fg: '#993C1D' },
+          { label: '이번달 입고', icon: '📥', value: stats.inbound.toFixed(1), unit: '톤', count: stats.inCount, bg: '#E1F5EE', fg: '#0F6E56' },
+          { label: '진행중 작업', icon: '🛠', value: stats.inProgress, unit: '건', count: null, bg: C.surface, fg: C.textPrimary },
         ].map((c) => (
-          <div key={c.label} style={{ background: c.bg, borderRadius: '14px', padding: '16px' }}>
-            <div style={{ fontSize: '13px', color: c.fg, marginBottom: '6px' }}>{c.icon} {c.label}</div>
-            <div style={{ fontSize: '24px', fontWeight: 800, color: c.fg }}>
-              {loading ? '-' : c.value} <span style={{ fontSize: '13px', fontWeight: 500 }}>{c.unit}</span>
+          <div key={c.label} style={{ background: c.bg, borderRadius: '14px', padding: '18px' }}>
+            <div style={{ fontSize: '15px', color: c.fg, marginBottom: '8px' }}>{c.icon} {c.label}</div>
+            <div style={{ fontSize: '28px', fontWeight: 800, color: c.fg }}>
+              {loading ? '-' : c.value} <span style={{ fontSize: '15px', fontWeight: 500 }}>{c.unit}</span>
             </div>
+            {c.count !== null && (
+              <div style={{ fontSize: '14px', color: c.fg, opacity: 0.75, marginTop: '4px' }}>
+                {loading ? '' : `코일 ${c.count.toLocaleString()}개`}
+              </div>
+            )}
           </div>
         ))}
       </div>
 
-      <div className="cp-dash-actions" style={{ marginBottom: '18px' }}>
+      <div className="cp-dash-actions" style={{ marginBottom: '20px' }}>
         {QUICK_ACTIONS.map((a) => (
           <button
             key={a.sub}
             onClick={() => onNavigate(a.sub)}
-            style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: '14px', padding: '16px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+            style={{ background: C.card, border: `1.5px solid ${C.border}`, borderRadius: '14px', padding: '18px 8px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
             onMouseEnter={(e) => { e.currentTarget.style.borderColor = C.primary; e.currentTarget.style.background = '#F9F9FF'; }}
             onMouseLeave={(e) => { e.currentTarget.style.borderColor = C.border; e.currentTarget.style.background = C.card; }}
           >
-            <span style={{ fontSize: '22px' }}>{a.icon}</span>
-            <span style={{ fontSize: '13px', fontWeight: 700, color: C.textPrimary }}>{a.label}</span>
+            <span style={{ fontSize: '26px' }}>{a.icon}</span>
+            <span style={{ fontSize: '15px', fontWeight: 700, color: C.textPrimary }}>{a.label}</span>
           </button>
         ))}
       </div>
 
       <div className="cp-dash-body">
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '22px', flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', width: '150px', height: '150px', flexShrink: 0, borderRadius: '50%', background: pieGradient }}>
-            <div style={{ position: 'absolute', inset: '22px', borderRadius: '50%', background: C.card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontSize: '19px', fontWeight: 800, color: C.textPrimary }}>{loading ? '-' : thicknessTotal}</div>
-              <div style={{ fontSize: '11px', color: C.textMuted }}>총 재고 개수</div>
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: '14px', padding: '20px 22px', display: 'flex', alignItems: 'center', gap: '24px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', width: '160px', height: '160px', flexShrink: 0, borderRadius: '50%', background: pieGradient }}>
+            <div style={{ position: 'absolute', inset: '24px', borderRadius: '50%', background: C.card, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: C.textPrimary }}>{loading ? '-' : thicknessTotal}</div>
+              <div style={{ fontSize: '13px', color: C.textMuted }}>총 재고 개수</div>
             </div>
           </div>
-          <div style={{ flex: '1 1 180px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 800, color: C.textPrimary, marginBottom: '2px' }}>두께별 재고 수량</div>
+          <div style={{ flex: '1 1 200px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ fontSize: '15px', fontWeight: 800, color: C.textPrimary, marginBottom: '2px' }}>두께별 재고 수량</div>
             {loading ? (
-              <div style={{ fontSize: '13px', color: C.textMuted }}>불러오는 중...</div>
+              <div style={{ fontSize: '15px', color: C.textMuted }}>불러오는 중...</div>
             ) : thickness.length === 0 ? (
-              <div style={{ fontSize: '13px', color: C.textMuted }}>재고 데이터가 없습니다.</div>
+              <div style={{ fontSize: '15px', color: C.textMuted }}>재고 데이터가 없습니다.</div>
             ) : thickness.map((t) => (
-              <div key={t.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px' }}>
+              <div key={t.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '15px' }}>
                 <span>
-                  <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: t.color, marginRight: '8px' }} />
+                  <span style={{ display: 'inline-block', width: '9px', height: '9px', borderRadius: '50%', background: t.color, marginRight: '9px' }} />
                   {t.label}
                 </span>
                 <span style={{ color: C.textSecondary }}>{t.count}개 · {thicknessTotal ? Math.round((t.count / thicknessTotal) * 100) : 0}%</span>
@@ -204,26 +212,26 @@ export default function CustomerPortalDashboard({ companyName, onNavigate }) {
           </div>
         </div>
 
-        <div style={{ background: '#FAEEDA', borderRadius: '14px', padding: '18px 20px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 800, color: '#633806' }}>작업 완료 · 미출고 재고</div>
-          <div style={{ fontSize: '12px', color: '#854F0B', marginBottom: '12px' }}>
+        <div style={{ background: '#FAEEDA', borderRadius: '14px', padding: '20px 22px' }}>
+          <div style={{ fontSize: '15px', fontWeight: 800, color: '#633806' }}>작업 완료 · 미출고 재고</div>
+          <div style={{ fontSize: '14px', color: '#854F0B', marginBottom: '14px' }}>
             {loading ? '불러오는 중...' : `${unshipped.length}건 · ${unshippedWeight.toFixed(1)}톤 출고 대기중`}
           </div>
           {!loading && unshipped.length === 0 && (
-            <div style={{ fontSize: '13px', color: '#854F0B' }}>출고 대기중인 재고가 없습니다.</div>
+            <div style={{ fontSize: '15px', color: '#854F0B' }}>출고 대기중인 재고가 없습니다.</div>
           )}
           {unshipped.map((r) => (
-            <div key={r.product_name} style={{ background: C.card, borderRadius: '10px', padding: '10px 12px', marginBottom: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: waitDot(r.waitDays), flexShrink: 0 }} />
+            <div key={r.product_name} style={{ background: C.card, borderRadius: '10px', padding: '12px 14px', marginBottom: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: waitDot(r.waitDays), flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: '13px', color: C.textPrimary }}>{r.spec || '-'}</div>
-                  <div style={{ fontSize: '11px', color: C.textMuted }}>{fmtKDate(r.joborder_date)} 작업완료</div>
+                  <div style={{ fontSize: '15px', color: C.textPrimary }}>{r.spec || '-'}</div>
+                  <div style={{ fontSize: '13px', color: C.textMuted }}>{fmtKDate(r.joborder_date)} 작업완료</div>
                 </div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: C.textPrimary }}>{Number(r.used_weight || 0).toLocaleString()}kg</div>
-                <div style={{ fontSize: '11px', color: waitColor(r.waitDays) }}>{r.waitDays}일째 대기</div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: C.textPrimary }}>{Number(r.used_weight || 0).toLocaleString()}kg</div>
+                <div style={{ fontSize: '13px', color: waitColor(r.waitDays) }}>{r.waitDays}일째 대기</div>
               </div>
             </div>
           ))}
@@ -237,8 +245,8 @@ export default function CustomerPortalDashboard({ companyName, onNavigate }) {
             onClick={() => onNavigate(t.key === 'home' ? null : t.key)}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', minHeight: '44px', background: 'transparent', border: 'none', color: t.key === 'home' ? C.primary : C.textMuted, cursor: 'pointer' }}
           >
-            <span style={{ fontSize: '19px' }}>{t.icon}</span>
-            <span style={{ fontSize: '10.5px', fontWeight: 700 }}>{t.label}</span>
+            <span style={{ fontSize: '21px' }}>{t.icon}</span>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>{t.label}</span>
           </button>
         ))}
       </div>
