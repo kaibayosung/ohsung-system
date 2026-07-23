@@ -1,6 +1,11 @@
 // src/portal/CustomerPortalGate.jsx
 // 로그인 게이트: 세션 없으면 로그인 화면, 비밀번호 재설정 링크로 온 경우 재설정 화면,
 // 로그인 상태면 담당자의 회사로 고정된 대시보드/상세 화면을 전환하며 렌더
+//
+// [중요] customer_users 조회는 이 파일에서만(onAuthStateChange 콜백 안에서만) 수행합니다.
+// 예전엔 CustomerPortalLogin.jsx도 로그인 성공 직후 같은 조회를 따로 했는데,
+// 두 조회가 거의 동시에 실행되면서 Supabase 내부적으로 "signal is aborted without reason"
+// 에러가 나는 경쟁 상태(race condition)가 있었습니다. 조회 지점을 한 곳으로 합쳐서 해결.
 import React, { useState, useEffect } from 'react';
 import { supabase, supabaseUrl } from '../supabaseClient';
 import CustomerPortalLogin from './CustomerPortalLogin';
@@ -13,42 +18,59 @@ export default function CustomerPortalGate() {
   const [customer, setCustomer] = useState(null);
   const [checking, setChecking] = useState(true);
   const [recoveryMode, setRecoveryMode] = useState(false);
+  const [loginError, setLoginError] = useState('');
   const [view, setView] = useState(null); // null = 대시보드 홈, 문자열이면 CustomerPortalPage의 sub
 
   useEffect(() => {
-    // 어떤 이유로든(잠금 경합, 네트워크 지연 등) getSession()이 응답하지 않는 경우를 대비해
-    // 화면이 영구 블랭크로 남지 않도록 안전장치(타임아웃)를 둔다.
     let settled = false;
-    const finish = (session) => {
-      if (settled) return;
-      settled = true;
+    const finish = () => { if (!settled) { settled = true; setChecking(false); } };
+
+    const handleSession = async (session, opts = {}) => {
       setSession(session);
-      setChecking(false);
+      if (!session) { setCustomer(null); finish(); return; }
+
+      const { data: cu, error } = await supabase
+        .from('customer_users')
+        .select('company_name, contact_name, is_active')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (error || !cu || !cu.is_active) {
+        setLoginError('고객사 포털 계정이 아니거나 비활성화된 계정입니다.');
+        setCustomer(null);
+        await supabase.auth.signOut();
+        finish();
+        return;
+      }
+
+      setLoginError('');
+      setCustomer(cu);
+
+      if (opts.logAccess) {
+        // 접속 로그는 로그인 흐름을 절대 막지 않도록 fire-and-forget으로 처리
+        fetch('https://api.ipify.org?format=json')
+          .then((r) => r.json())
+          .then(({ ip }) => supabase.from('access_logs').insert([{ email: session.user.email, ip_address: ip }]))
+          .catch(() => {});
+      }
+      finish();
     };
 
-    supabase.auth.getSession()
-      .then(async ({ data: { session } }) => {
-        if (session) {
-          try { await loadCustomer(session); } catch (e) { console.error('[portal] loadCustomer 실패', e); }
-        }
-        finish(session);
-      })
-      .catch((e) => { console.error('[portal] getSession 실패', e); finish(null); });
-
-    const safetyTimer = setTimeout(() => {
-      if (!settled) console.error('[portal] getSession 응답 지연 — 5초 타임아웃으로 로그인 화면 표시');
-      finish(null);
-    }, 5000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'PASSWORD_RECOVERY') { setRecoveryMode(true); return; }
-      if (session) {
-        try { await loadCustomer(session); } catch (e) { console.error('[portal] loadCustomer 실패', e); }
-      } else {
-        setCustomer(null);
-      }
-      finish(session);
+    // getSession()을 별도로 호출하지 않고 onAuthStateChange 하나로 통일합니다.
+    // (supabase-js v2는 subscribe 시점에 현재 세션으로 한 번 즉시 콜백을 호출해줍니다.)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') { setRecoveryMode(true); finish(); return; }
+      handleSession(session, { logAccess: event === 'SIGNED_IN' }).catch((e) => {
+        console.error('[portal] 세션 처리 실패', e);
+        finish();
+      });
     });
+
+    // 어떤 이유로든 8초 안에 응답이 없으면 화면이 영구 블랭크로 남지 않도록 강제 진행
+    const safetyTimer = setTimeout(() => {
+      if (!settled) console.error('[portal] 세션 확인 지연 — 타임아웃으로 진행');
+      finish();
+    }, 8000);
 
     return () => { subscription.unsubscribe(); clearTimeout(safetyTimer); };
   }, []);
@@ -67,15 +89,6 @@ export default function CustomerPortalGate() {
     return () => window.removeEventListener('beforeunload', handler);
   }, []);
 
-  const loadCustomer = async (session) => {
-    const { data } = await supabase
-      .from('customer_users')
-      .select('company_name, contact_name')
-      .eq('id', session.user.id)
-      .maybeSingle();
-    setCustomer(data);
-  };
-
   const handleLogout = async () => {
     if (window.confirm('로그아웃 하시겠습니까?')) await supabase.auth.signOut();
   };
@@ -87,7 +100,7 @@ export default function CustomerPortalGate() {
   if (checking) return null;
 
   if (!session || !customer) {
-    return <CustomerPortalLogin onLoginSuccess={setCustomer} />;
+    return <CustomerPortalLogin error={loginError} />;
   }
 
   return (

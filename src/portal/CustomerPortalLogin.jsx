@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
-export default function CustomerPortalLogin({ onLoginSuccess }) {
+export default function CustomerPortalLogin({ error: gateError }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(true);
@@ -17,42 +17,28 @@ export default function CustomerPortalLogin({ onLoginSuccess }) {
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotError, setForgotError] = useState('');
 
+  // [중요] 로그인 성공 후의 customer_users 조회/검증은 여기서 하지 않고
+  // 전부 CustomerPortalGate.jsx의 onAuthStateChange 한 곳에서만 처리합니다.
+  // (예전엔 여기서도 같은 조회를 했었는데, Gate와 거의 동시에 실행되면서
+  //  "signal is aborted without reason" 경쟁 상태 버그가 있었습니다.)
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) throw error;
-
-      const { data: cu, error: cuErr } = await supabase
-        .from('customer_users')
-        .select('company_name, contact_name, is_active')
-        .eq('id', data.user.id)
-        .maybeSingle();
-      if (cuErr || !cu || !cu.is_active) {
-        await supabase.auth.signOut();
-        throw new Error('고객사 포털 계정이 아니거나 비활성화된 계정입니다.');
-      }
-
-      // '로그인 상태 유지'를 해제한 경우 — 탭/창을 닫을 때 세션을 정리해서
-      // 다음에 다시 열었을 때 로그인 화면부터 시작하도록 함
       if (!remember) {
         try { window.sessionStorage.setItem('cp_no_remember', '1'); } catch (_e) {}
       } else {
         try { window.sessionStorage.removeItem('cp_no_remember'); } catch (_e) {}
       }
 
-      try {
-        const ipRes = await fetch('https://api.ipify.org?format=json');
-        const { ip } = await ipRes.json();
-        await supabase.from('access_logs').insert([{ email, ip_address: ip }]);
-      } catch (_e) { /* 로그 실패는 무시 */ }
-
-      onLoginSuccess(cu);
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // 성공하면 Gate가 세션 변화를 감지해 대시보드로 전환하거나(정상 계정),
+      // 계정이 유효하지 않으면 로그아웃 후 이 화면에 에러를 다시 띄웁니다.
+      // 그 전환이 일어날 때까지는 버튼을 "인증 중..." 상태로 유지합니다.
     } catch (err) {
       setError(err.message || '로그인에 실패했습니다.');
-    } finally {
       setLoading(false);
     }
   };
@@ -117,7 +103,7 @@ export default function CustomerPortalLogin({ onLoginSuccess }) {
             </label>
             <button type="button" onClick={() => { setMode('forgot'); setForgotEmail(email); }} style={styles.forgotLink}>비밀번호를 잊으셨나요?</button>
           </div>
-          {error && <div style={styles.error}>{error}</div>}
+          {(error || gateError) && <div style={styles.error}>{error || gateError}</div>}
           <button type="submit" disabled={loading} style={styles.btn}>{loading ? '인증 중...' : '로그인'}</button>
         </form>
       </div>
