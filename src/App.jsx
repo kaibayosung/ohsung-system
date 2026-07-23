@@ -10,6 +10,7 @@ import DailyReport from './DailyReport';
 import MonthlyAnalysis from './MonthlyAnalysis';
 import AccessLog from './AccessLog';
 import CEOReport from './CEOReport';
+import CEODailyKpiPage from './pages/CEODailyKpiPage';
 import ExpensePage from './pages/ExpensePage';
 import TestPage from './pages/TestPage';
 import SalesWorkflowPage from './pages/SalesWorkflowPage';
@@ -135,6 +136,7 @@ function App() {
         { page: 'daily', label: '데일리 리포트', icon: '📅' },
         { page: 'monthly', label: '월간 분석', icon: '📊' },
         { page: 'ceo', label: '대표님 브리핑', icon: '🌟' },
+        { page: 'dailykpi', label: '카톡용 일일 요약', icon: '💬' },
         { page: 'accesslog', label: '접속 로그', icon: '🔐' },
       ],
     },
@@ -292,6 +294,7 @@ function App() {
         {currentPage === 'daily' && myStaff?.role === 'admin' && <DailyReport />}
         {currentPage === 'monthly' && myStaff?.role === 'admin' && <MonthlyAnalysis />}
         {currentPage === 'ceo' && myStaff?.role === 'admin' && <CEOReport />}
+        {currentPage === 'dailykpi' && myStaff?.role === 'admin' && <CEODailyKpiPage />}
         {currentPage === 'accesslog' && myStaff?.role === 'admin' && <AccessLog />}
         {currentPage === 'test' && myStaff?.role === 'admin' && <TestPage />}
         {currentPage === 'account' && myStaff?.role === 'admin' && <AccountManagementPage />}
