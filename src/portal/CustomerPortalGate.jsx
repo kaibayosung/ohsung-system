@@ -16,18 +16,41 @@ export default function CustomerPortalGate() {
   const [view, setView] = useState(null); // null = 대시보드 홈, 문자열이면 CustomerPortalPage의 sub
 
   useEffect(() => {
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session) await loadCustomer(session);
+    // 어떤 이유로든(잠금 경합, 네트워크 지연 등) getSession()이 응답하지 않는 경우를 대비해
+    // 화면이 영구 블랭크로 남지 않도록 안전장치(타임아웃)를 둔다.
+    let settled = false;
+    const finish = (session) => {
+      if (settled) return;
+      settled = true;
       setSession(session);
       setChecking(false);
-    });
+    };
+
+    supabase.auth.getSession()
+      .then(async ({ data: { session } }) => {
+        if (session) {
+          try { await loadCustomer(session); } catch (e) { console.error('[portal] loadCustomer 실패', e); }
+        }
+        finish(session);
+      })
+      .catch((e) => { console.error('[portal] getSession 실패', e); finish(null); });
+
+    const safetyTimer = setTimeout(() => {
+      if (!settled) console.error('[portal] getSession 응답 지연 — 5초 타임아웃으로 로그인 화면 표시');
+      finish(null);
+    }, 5000);
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'PASSWORD_RECOVERY') { setRecoveryMode(true); return; }
-      setSession(session);
-      if (session) await loadCustomer(session);
-      else setCustomer(null);
+      if (session) {
+        try { await loadCustomer(session); } catch (e) { console.error('[portal] loadCustomer 실패', e); }
+      } else {
+        setCustomer(null);
+      }
+      finish(session);
     });
-    return () => subscription.unsubscribe();
+
+    return () => { subscription.unsubscribe(); clearTimeout(safetyTimer); };
   }, []);
 
   // '로그인 상태 유지'를 껐을 때 — 탭/창을 닫으면 이 브라우저의 세션을 지워서
