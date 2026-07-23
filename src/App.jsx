@@ -78,6 +78,18 @@ function App() {
     return () => clearInterval(timer);
   }, [session]);
 
+  // 상단 메뉴 바깥을 클릭하면 열려있는 드롭다운을 닫음 (호버 방식은 하위 메뉴 선택이 어려워 클릭 방식으로 변경)
+  // [주의] 이 useEffect는 반드시 아래의 조건부 return(로그인/로딩 화면)보다 위에 있어야 합니다.
+  // React Hooks 규칙상 렌더마다 훅 호출 순서/개수가 같아야 하는데, return 이후에 두면
+  // 로그인 상태에 따라 훅 개수가 달라져 "Rendered more hooks than during the previous render" 오류가 납니다.
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   // 로그아웃 처리 함수
   const handleLogout = async () => {
     if (window.confirm("로그아웃 하시겠습니까?")) {
@@ -209,15 +221,6 @@ function App() {
       </div>
     );
   }
-
-  // 상단 메뉴 바깥을 클릭하면 열려있는 드롭다운을 닫음 (호버 방식은 하위 메뉴 선택이 어려워 클릭 방식으로 변경)
-  useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null);
-    };
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
-  }, []);
 
   // 5. [메인 시스템] 로그인 성공 시에만 진입 가능한 영역
   return (
