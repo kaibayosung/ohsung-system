@@ -20,6 +20,8 @@ function CEOReport() {
   const [newNote, setNewNote] = useState('');
   const [expenseList, setExpenseList] = useState([]);
   const EQ_COLORS = { '슬리팅 1': '#3182ce', '슬리팅 2': '#805ad5', '레베링': '#38a169', '기타': '#718096' };
+  const WORK_TYPE_LABELS = { SLITING: '슬리팅 1', SLITING2: '슬리팅 2', LEVELLING: '레베링' };
+  const workTypeLabel = (t) => WORK_TYPE_LABELS[t] || (t || '기타');
 
   useEffect(() => { 
     if (viewMode === 'daily') { 
@@ -30,9 +32,11 @@ function CEOReport() {
 
   const fetchCEOData = async () => {
     const [year, month] = selectedDate.split('-');
-    const { data: dSales } = await supabase.from('sales_records').select('*').eq('work_date', selectedDate);
+    // [수정] 그린ERP 동기화 테이블(greenp_production) 기준 — sales_records는 2026-07-16 이후
+    // 갱신되지 않는 옛 수기입력 테이블이라 최근 날짜를 조회하면 항상 0으로 나왔습니다.
+    const { data: dSales } = await supabase.from('greenp_production').select('*').eq('slip_date', selectedDate);
     const { data: dLedger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
-    const { data: mSales } = await supabase.from('sales_records').select('work_date, total_price').gte('work_date', `${year}-${month}-01`).lte('work_date', selectedDate);
+    const { data: mSales } = await supabase.from('greenp_production').select('slip_date, amount').gte('slip_date', `${year}-${month}-01`).lte('slip_date', selectedDate);
     const { data: dScrap } = await supabase.from('scrap_sales').select('total_amount').eq('sale_date', selectedDate);
     const scrapSales = dScrap?.reduce((s, r) => s + (Number(r.total_amount) || 0), 0) || 0;
     
@@ -46,21 +50,21 @@ function CEOReport() {
     setExpenseList(realtimeExpenses);
 
     // 총 합계 계산 (지불완료된 건만 실제 이익에 반영)
-    const calcTotal = (arr, type) => arr?.filter(r => (!type || r.type === type) && r.status !== '지불예정').reduce((sum, r) => sum + (Number(r.total_price || r.amount) || 0), 0) || 0;
+    const calcTotal = (arr, type) => arr?.filter(r => (!type || r.type === type) && r.status !== '지불예정').reduce((sum, r) => sum + (Number(r.amount || r.total_price) || 0), 0) || 0;
     
     const clientMap = {}; 
     dSales?.forEach(s => { 
-      const n = s.customer_name || '미지정'; 
-      clientMap[n] = (clientMap[n] || 0) + s.total_price; 
+      const n = s.company_name || '미지정'; 
+      clientMap[n] = (clientMap[n] || 0) + Number(s.amount || 0); 
     });
 
     const eqStats = { '슬리팅 1': { s:0, c:0 }, '슬리팅 2': { s:0, c:0 }, '레베링': { s:0, c:0 } };
-    dSales?.forEach(s => { if(eqStats[s.work_type]) { eqStats[s.work_type].s += s.total_price; eqStats[s.work_type].c += 1; } });
+    dSales?.forEach(s => { const label = workTypeLabel(s.work_type); if(eqStats[label]) { eqStats[label].s += Number(s.amount || 0); eqStats[label].c += 1; } });
     
     const trend = []; 
     for (let i = 1; i <= new Date(selectedDate).getDate(); i++) { 
       const d = `${year}-${month}-${i.toString().padStart(2, '0')}`; 
-      const s = mSales?.filter(x => x.work_date === d).reduce((a, b) => a + b.total_price, 0) || 0; 
+      const s = mSales?.filter(x => x.slip_date === d).reduce((a, b) => a + Number(b.amount || 0), 0) || 0; 
       trend.push({ name: `${i}일`, sales: Math.round(s / 1000) }); 
     }
 

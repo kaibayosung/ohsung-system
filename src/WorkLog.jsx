@@ -107,6 +107,11 @@ function WorkLog() {
 
   return (
     <div style={styles.container}>
+      <div style={{ background: '#FFF7E6', border: '1px solid #F5D08A', borderRadius: '10px', padding: '14px 18px', marginBottom: '18px', fontSize: '14px', color: '#8a5a00', lineHeight: 1.6 }}>
+        ⚠️ 이 화면에서 입력한 데이터는 <b>sales_records</b> 테이블에만 저장되며, 2026-07-16 이후로는 대표님 경영보고
+        화면들(데일리 리포트/월간 분석/대표님 브리핑 등)이 그린ERP 자동 동기화 데이터(greenp_production)를 기준으로
+        바뀌어서 <b>여기서 입력해도 경영보고 리포트에는 반영되지 않습니다.</b> 참고용 수기 기록이 필요할 때만 사용하세요.
+      </div>
       <div style={styles.topSection}>
         <div style={styles.card}>
           <h3 style={styles.cardTitle}>📄 매출 엑셀 붙여넣기</h3>

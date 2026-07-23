@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from './supabaseClient';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  Cell, LineChart, Line, Legend
-} from 'recharts';
+
+// 작업유형 매핑 — greenp_production.work_type 실제 값(SLITING/SLITING2/LEVELLING) 기준
+// (예전엔 sales_records.work_type이 '슬리팅 1' 같은 한글 텍스트였는데, 그린ERP 동기화 테이블은
+//  영문 코드로 들어와서 표시용 라벨을 별도로 매핑합니다.)
+const WORK_TYPE_LABELS = { SLITING: '슬리팅 1', SLITING2: '슬리팅 2', LEVELLING: '레베링' };
+function workTypeLabel(t) { return WORK_TYPE_LABELS[t] || (t || '기타'); }
 
 function DailyReport() {
   const [loading, setLoading] = useState(false);
@@ -13,7 +15,8 @@ function DailyReport() {
   const [selectedYear, setSelectedYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
 
-  const [dailySales, setDailySales] = useState([]);
+  const [dailySales, setDailySales] = useState([]);   // greenp_production(가공 매출)
+  const [dailyScrap, setDailyScrap] = useState(0);     // scrap_sales(스크랩 매출) 합계
   const [dailyLedger, setDailyLedger] = useState([]);
   const [prevDaySales, setPrevDaySales] = useState(0);
 
@@ -25,17 +28,25 @@ function DailyReport() {
   const fetchDaily = async () => {
     setLoading(true);
     try {
-      // [수정] customer_name 컬럼이 포함되도록 쿼리 확인
-      const { data: sales } = await supabase.from('sales_records').select('*, companies(name)').eq('work_date', selectedDate);
+      // [수정] 그린ERP 동기화 테이블(greenp_production) 기준으로 조회 — sales_records는
+      // 2026-07-16 이후로 갱신되지 않는 옛 수기입력 테이블이라 최신 데이터가 항상 0으로 보였습니다.
+      const { data: sales } = await supabase.from('greenp_production').select('*').eq('slip_date', selectedDate).order('id', { ascending: false });
+      const { data: scrap } = await supabase.from('scrap_sales').select('total_amount').eq('sale_date', selectedDate);
       const { data: ledger } = await supabase.from('daily_ledger').select('*').eq('trans_date', selectedDate);
 
       const prevDate = new Date(selectedDate);
       prevDate.setDate(prevDate.getDate() - 1);
-      const { data: pSales } = await supabase.from('sales_records').select('total_price').eq('work_date', prevDate.toISOString().split('T')[0]);
+      const prevDateStr = prevDate.toISOString().split('T')[0];
+      const { data: pSales } = await supabase.from('greenp_production').select('amount').eq('slip_date', prevDateStr);
+      const { data: pScrap } = await supabase.from('scrap_sales').select('total_amount').eq('sale_date', prevDateStr);
 
       setDailySales(sales || []);
+      setDailyScrap((scrap || []).reduce((sum, r) => sum + Number(r.total_amount || 0), 0));
       setDailyLedger(ledger || []);
-      setPrevDaySales(pSales?.reduce((sum, r) => sum + r.total_price, 0) || 0);
+      setPrevDaySales(
+        (pSales || []).reduce((sum, r) => sum + Number(r.amount || 0), 0)
+        + (pScrap || []).reduce((sum, r) => sum + Number(r.total_amount || 0), 0)
+      );
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
 
@@ -49,7 +60,7 @@ function DailyReport() {
   const expenseList = dailyLedger.filter(r => r.type === '지출');
 
   const dTotals = {
-    sales: dailySales.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0),
+    sales: dailySales.reduce((sum, r) => sum + (Number(r.amount) || 0), 0) + dailyScrap,
     income: incomeList.reduce((sum, r) => sum + (Number(r.amount) || 0), 0),
     expense: expenseList.reduce((sum, r) => sum + (Number(r.amount) || 0), 0),
   };
@@ -64,10 +75,10 @@ function DailyReport() {
   };
 
   dailySales.forEach(s => {
-    const type = s.work_type || '기타';
-    if (!workTypeAnalysis[type]) workTypeAnalysis[type] = { count: 0, sales: 0, color: '#718096' };
-    workTypeAnalysis[type].count += 1;
-    workTypeAnalysis[type].sales += (Number(s.total_price) || 0);
+    const label = workTypeLabel(s.work_type);
+    if (!workTypeAnalysis[label]) workTypeAnalysis[label] = { count: 0, sales: 0, color: '#718096' };
+    workTypeAnalysis[label].count += 1;
+    workTypeAnalysis[label].sales += (Number(s.amount) || 0);
   });
 
   return (
@@ -86,8 +97,8 @@ function DailyReport() {
       {viewMode === 'daily' && (
         <div style={styles.content}>
           <div style={styles.statGrid}>
-            <StatCard title="금일 총 매출" value={dTotals.sales} sub={`전일 대비: ${salesDiff.toLocaleString()}원`} subColor={salesDiff>=0?'#38a169':'#e53e3e'} icon="🏗️" color="#3182ce" bg="#ebf8ff" />
-            <StatCard title="최종 순수익" value={netProfit} sub="매출+수입-지출" icon="💎" color="#805ad5" bg="#faf5ff" isBold={true} />
+            <StatCard title="금일 총 매출" value={dTotals.sales} sub={`전일 대비: ${salesDiff.toLocaleString()}원 (가공+스크랩)`} subColor={salesDiff>=0?'#38a169':'#e53e3e'} icon="🏗️" color="#3182ce" bg="#ebf8ff" />
+            <StatCard title="최종 순수익" value={netProfit} sub="매출(가공+스크랩)+수입-지출" icon="💎" color="#805ad5" bg="#faf5ff" isBold={true} />
           </div>
 
           <div style={styles.card}>
@@ -113,23 +124,24 @@ function DailyReport() {
 
           <div style={styles.mainGrid}>
             <div style={{...styles.card, gridColumn: 'span 2'}}>
-              <h3 style={styles.cardTitle}>📋 작업 상세 내역</h3>
+              <h3 style={styles.cardTitle}>📋 작업 상세 내역 <span style={{fontSize:'14px', fontWeight:500, color:'#a0aec0'}}>(그린ERP 실적)</span></h3>
               <div style={styles.tableScroll}>
                 <table style={styles.table} className="dr-table">
                   <thead style={styles.thead}>
-                    <tr><th>업체명</th><th>품명/규격</th><th>중량</th><th>금액</th><th>구분</th></tr>
+                    <tr><th>업체명</th><th>전표번호</th><th>금액</th><th>구분</th></tr>
                   </thead>
                   <tbody>
                     {dailySales.map(r => (
                       <tr key={r.id} style={styles.tr}>
-                        {/* [수정] 직접 입력한 업체명을 우선 표시 */}
-                        <td style={{fontWeight:'bold'}}>{r.customer_name || r.companies?.name || '미지정'}</td>
-                        <td style={{textAlign:'left', fontSize:'15px'}}>{r.management_no}</td>
-                        <td>{r.weight.toLocaleString()}</td>
-                        <td style={{fontWeight:'bold', color:'#2b6cb0'}}>{r.total_price.toLocaleString()}</td>
-                        <td><span style={{...styles.badge, backgroundColor: workTypeAnalysis[r.work_type]?.color + '22', color: workTypeAnalysis[r.work_type]?.color}}>{r.work_type}</span></td>
+                        <td style={{fontWeight:'bold'}}>{r.company_name || '미지정'}</td>
+                        <td style={{fontSize:'15px'}}>{r.slip_no || '-'}</td>
+                        <td style={{fontWeight:'bold', color:'#2b6cb0'}}>{Number(r.amount || 0).toLocaleString()}</td>
+                        <td><span style={{...styles.badge, backgroundColor: (workTypeAnalysis[workTypeLabel(r.work_type)]?.color || '#718096') + '22', color: workTypeAnalysis[workTypeLabel(r.work_type)]?.color || '#718096'}}>{workTypeLabel(r.work_type)}</span></td>
                       </tr>
                     ))}
+                    {dailySales.length === 0 && (
+                      <tr><td colSpan="4" style={{textAlign:'center', color:'#a0aec0', padding:'20px'}}>해당일 작업 실적이 없습니다</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>

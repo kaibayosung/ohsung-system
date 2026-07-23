@@ -12,6 +12,8 @@ function CEOMonthlyReport() {
   const [loading, setLoading] = useState(true);
 
   const EQ_COLORS = { '슬리팅 1': '#3182ce', '슬리팅 2': '#805ad5', '레베링': '#38a169' };
+  const WORK_TYPE_LABELS = { SLITING: '슬리팅 1', SLITING2: '슬리팅 2', LEVELLING: '레베링' };
+  const workTypeLabel = (t) => WORK_TYPE_LABELS[t] || (t || '기타');
   const PIE_COLORS = ['#3182ce', '#63b3ed', '#4299e1', '#90cdf4'];
 
   useEffect(() => { fetchMonthlyData(); }, [selectedMonth]);
@@ -22,15 +24,19 @@ function CEOMonthlyReport() {
     const startOfMonth = `${year}-${String(month).padStart(2, '0')}-01`;
     const endOfMonth = new Date(year, month, 0).toISOString().split('T')[0];
     
-    const [salesRes, expRes, scrapRes] = await Promise.all([
-      supabase.from('sales_records').select('*').gte('work_date', startOfMonth).lte('work_date', endOfMonth),
+    // [수정] 그린ERP 동기화 테이블(greenp_production) 기준 — sales_records는 2026-07-16
+    // 이후 갱신되지 않는 옛 수기입력 테이블입니다.
+    const [salesRes, expRes, scrapRes, outboundRes] = await Promise.all([
+      supabase.from('greenp_production').select('*').gte('slip_date', startOfMonth).lte('slip_date', endOfMonth),
       supabase.from('daily_ledger').select('*').eq('type', '지출').gte('trans_date', startOfMonth).lte('trans_date', endOfMonth),
-      supabase.from('scrap_sales').select('*').gte('sale_date', startOfMonth).lte('sale_date', endOfMonth)
+      supabase.from('scrap_sales').select('*').gte('sale_date', startOfMonth).lte('sale_date', endOfMonth),
+      supabase.from('greenp_outbound').select('weight').gte('outbound_date', startOfMonth).lte('outbound_date', endOfMonth),
     ]);
 
     const sum = (arr, key) => arr?.reduce((acc, cur) => acc + (Number(cur[key]) || 0), 0) || 0;
-    const totalSales = sum(salesRes.data, 'total_price');
-    const totalWeight = sum(salesRes.data, 'weight');
+    const totalSales = sum(salesRes.data, 'amount');
+    // greenp_production에는 중량 정보가 없어, 출고 중량(greenp_outbound)을 생산량 근사치로 사용합니다.
+    const totalWeight = sum(outboundRes.data, 'weight');
     const totalExpense = sum(expRes.data, 'amount');
     const scrapSales = sum(scrapRes.data, 'total_amount');
     const profit = (totalSales + scrapSales) - totalExpense;
@@ -38,19 +44,19 @@ function CEOMonthlyReport() {
     // 인사이트 데이터 계산
     const revPerTon = totalWeight > 0 ? Math.round(totalSales / (totalWeight / 1000)) : 0;
     const clientMap = {};
-    salesRes.data?.forEach(s => { const n = s.customer_name || '미지정'; clientMap[n] = (clientMap[n] || 0) + s.total_price; });
+    salesRes.data?.forEach(s => { const n = s.company_name || '미지정'; clientMap[n] = (clientMap[n] || 0) + Number(s.amount || 0); });
     const sortedClients = Object.entries(clientMap).sort((a,b) => b[1] - a[1]);
     const top3Sales = sortedClients.slice(0, 3).reduce((acc, cur) => acc + cur[1], 0);
 
     const eqStats = { '슬리팅 1': { s:0, w:0 }, '슬리팅 2': { s:0, w:0 }, '레베링': { s:0, w:0 } };
-    salesRes.data?.forEach(s => { if(eqStats[s.work_type]) { eqStats[s.work_type].s += s.total_price; eqStats[s.work_type].w += s.weight; } });
+    salesRes.data?.forEach(s => { const label = workTypeLabel(s.work_type); if(eqStats[label]) { eqStats[label].s += Number(s.amount || 0); } });
 
     // 주간 추이 (백만원 단위가 작을 경우를 대비해 원 단위로 유지하되 그래프 축 최적화)
     const weeklyData = Array(4).fill(0).map((_, i) => ({ name: `${i+1}주`, sales: 0 }));
     salesRes.data?.forEach(s => {
-        const d = new Date(s.work_date);
+        const d = new Date(s.slip_date);
         const w = Math.min(Math.floor((d.getDate() - 1) / 7), 3);
-        weeklyData[w].sales += s.total_price;
+        weeklyData[w].sales += Number(s.amount || 0);
     });
 
     setData({
@@ -63,7 +69,7 @@ function CEOMonthlyReport() {
         equipment: Object.entries(eqStats).map(([name, d]) => ({ 
             name, 
             sales: d.s, 
-            label: `${d.s.toLocaleString()}원 / ${Math.round(d.w/1000)}t` 
+            label: `${d.s.toLocaleString()}원` 
         })),
         weekly: weeklyData,
         expenses: Object.entries(expRes.data?.reduce((acc,cur)=>{acc[cur.description]=(acc[cur.description]||0)+cur.amount; return acc;}, {}) || {}).map(([name, value]) => ({ name, value }))
@@ -87,7 +93,7 @@ function CEOMonthlyReport() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '24px' }}>
           <div style={styles.card}><h4>월간 가공 매출</h4><p style={styles.summaryVal}>{data.summary.totalSales.toLocaleString()}원</p></div>
           <div style={styles.card}><h4>♻️ 스크랩 매출</h4><p style={{...styles.summaryVal, color: '#1C7A4D'}}>{data.summary.scrapSales.toLocaleString()}원</p></div>
-          <div style={styles.card}><h4>월간 총 생산량</h4><p style={styles.summaryVal}>{Math.round(data.summary.totalWeight/1000).toLocaleString()}t</p></div>
+          <div style={styles.card}><h4>월간 총 생산량 <span style={{fontSize:'12px', color:'#a0aec0'}}>(출고 기준)</span></h4><p style={styles.summaryVal}>{Math.round(data.summary.totalWeight/1000).toLocaleString()}t</p></div>
           <div style={styles.card}><h4>월간 영업 이익</h4><p style={{...styles.summaryVal, color: data.summary.profit >= 0 ? '#38a169' : '#e53e3e'}}>{data.summary.profit.toLocaleString()}원</p></div>
         </div>
 

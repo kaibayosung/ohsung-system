@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 
 // 1. 모든 부품(컴포넌트) 불러오기
@@ -26,6 +26,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState('daily'); // 기본 시작 화면: 데일리 리포트
   const [expensePendingCount, setExpensePendingCount] = useState(0);
   const [openMenu, setOpenMenu] = useState(null); // 현재 열려있는 드롭다운 메뉴 그룹 key
+  const navRef = useRef(null); // 메뉴 바깥 클릭 감지용
   const [myStaff, setMyStaff] = useState(null); // { name, role } — staff_users 조회 결과
   const [roleChecking, setRoleChecking] = useState(true); // role 조회 중 로딩 플래그
   const [showPwModal, setShowPwModal] = useState(false); // 비밀번호 변경 모달
@@ -170,14 +171,15 @@ function App() {
   });
 
   const dropdownItemStyle = (isActive) => ({
-    padding: '11px 16px',
+    padding: '14px 18px',
+    minHeight: '46px',
     backgroundColor: isActive ? 'rgba(232,131,15,0.18)' : 'transparent',
     color: isActive ? '#ffb15c' : '#dbe4f0',
     border: 'none',
-    borderRadius: '8px',
+    borderRadius: '9px',
     cursor: 'pointer',
     fontWeight: isActive ? 700 : 500,
-    fontSize: '15.5px',
+    fontSize: '16px',
     textAlign: 'left',
     display: 'flex',
     alignItems: 'center',
@@ -208,6 +210,15 @@ function App() {
     );
   }
 
+  // 상단 메뉴 바깥을 클릭하면 열려있는 드롭다운을 닫음 (호버 방식은 하위 메뉴 선택이 어려워 클릭 방식으로 변경)
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (navRef.current && !navRef.current.contains(e.target)) setOpenMenu(null);
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   // 5. [메인 시스템] 로그인 성공 시에만 진입 가능한 영역
   return (
     <div className="app-shell" style={styles.appContainer}>
@@ -217,7 +228,7 @@ function App() {
           🏭 오성철강 <span style={{fontWeight:'300', fontSize:'16px', marginLeft:'10px'}}>SMART ERP 2.0</span>
         </div>
         
-        <nav style={styles.nav} onMouseLeave={() => setOpenMenu(null)}>
+        <nav style={styles.nav} ref={navRef}>
           {visibleMenuGroups.map((group) => {
             const isActive = group.items.some((i) => i.page === currentPage);
             const isOpen = openMenu === group.key;
@@ -225,7 +236,6 @@ function App() {
               <div
                 key={group.key}
                 style={styles.navGroup}
-                onMouseEnter={() => setOpenMenu(group.key)}
               >
                 <button
                   className="op-nav-btn"
@@ -333,7 +343,7 @@ const styles = {
   navGroup: { position: 'relative' },
   dropdown: {
     position: 'absolute',
-    top: 'calc(100% + 8px)',
+    top: 'calc(100% + 4px)',
     left: 0,
     minWidth: '230px',
     background: 'linear-gradient(160deg, #1c3049 0%, #0d1c30 100%)',

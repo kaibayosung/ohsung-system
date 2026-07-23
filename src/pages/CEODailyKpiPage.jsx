@@ -1,12 +1,16 @@
 // src/pages/CEODailyKpiPage.jsx
 // 대표님 일일 경영 리포트 — 카카오톡 공유용 (화면 캡처 방식)
 // 반응형: 좁은 화면(모바일)에서는 세로 카드 1열, 넓은 화면(PC)에서는 3열 그리드로 자동 전환됩니다.
-// 필요한 데이터는 전부 기존 화면(영업 워크플로우 · 월간 분석)에서 이미 쓰고 있는 테이블을 그대로 재사용합니다:
-//  - 오늘/월 매출: sales_records(가공 매출) + scrap_sales(스크랩 매출)
-//  - 월 고정비: monthly_fixed_costs (월간 분석 화면에서 입력/저장)
-//  - 오늘 거래처 TOP2: sales_records를 거래처별로 합산 후 상위 2건
+//
+// 데이터 소스 (그린ERP 동기화 테이블 기준으로 통일):
+//  - 오늘/월 매출: greenp_production(가공 매출, slip_date/amount/company_name 실시간 동기화) + scrap_sales(스크랩 매출)
+//    ※ 예전에는 sales_records(수기 입력 테이블)를 썼는데, 2026-07-16 이후로 아무도 입력하지 않아
+//      그 이후 날짜는 전부 0원으로 표시되는 문제가 있어 greenp_production으로 교체했습니다.
+//  - 월 고정비: expense_requests(정기지출, 결재완료) 기준 자동 집계 — src/lib/fixedCosts.js 참고
+//  - 오늘 거래처 TOP2: greenp_production을 거래처별로 합산 후 상위 2건
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { fetchMonthlyFixedCosts } from '../lib/fixedCosts';
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -26,7 +30,7 @@ function nowLabel() {
 
 export default function CEODailyKpiPage() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ todaySales: 0, monthSales: 0, monthFixedCost: 0, topCompanies: [] });
+  const [data, setData] = useState({ todaySales: 0, monthSales: 0, monthFixedCost: 0, fixedCostByCategory: [], topCompanies: [] });
 
   useEffect(() => { load(); }, []);
 
@@ -38,40 +42,45 @@ export default function CEODailyKpiPage() {
     const monthStart = `${yearMonth}-01`;
 
     const [
-      { data: todaySalesRows },
+      { data: todayProdRows },
       { data: todayScrapRows },
-      { data: monthSalesRows },
+      { data: monthProdRows },
       { data: monthScrapRows },
-      { data: fixedRow },
+      fixedCostRes,
     ] = await Promise.all([
-      supabase.from('sales_records').select('total_price, customer_name').eq('work_date', today),
+      supabase.from('greenp_production').select('amount, company_name').eq('slip_date', today),
       supabase.from('scrap_sales').select('total_amount').eq('sale_date', today),
-      supabase.from('sales_records').select('total_price').gte('work_date', monthStart).lte('work_date', today),
+      supabase.from('greenp_production').select('amount').gte('slip_date', monthStart).lte('slip_date', today),
       supabase.from('scrap_sales').select('total_amount').gte('sale_date', monthStart).lte('sale_date', today),
-      supabase.from('monthly_fixed_costs').select('amount').eq('year_month', yearMonth).maybeSingle(),
+      fetchMonthlyFixedCosts(monthStart, today),
     ]);
 
-    const todaySales = (todaySalesRows || []).reduce((s, r) => s + Number(r.total_price || 0), 0)
+    const todaySales = (todayProdRows || []).reduce((s, r) => s + Number(r.amount || 0), 0)
       + (todayScrapRows || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const monthSales = (monthSalesRows || []).reduce((s, r) => s + Number(r.total_price || 0), 0)
+    const monthSales = (monthProdRows || []).reduce((s, r) => s + Number(r.amount || 0), 0)
       + (monthScrapRows || []).reduce((s, r) => s + Number(r.total_amount || 0), 0);
-    const monthFixedCost = fixedRow ? Number(fixedRow.amount || 0) : 0;
 
     const companyMap = {};
-    (todaySalesRows || []).forEach((r) => {
-      const n = r.customer_name || '미지정';
-      companyMap[n] = (companyMap[n] || 0) + Number(r.total_price || 0);
+    (todayProdRows || []).forEach((r) => {
+      const n = r.company_name || '미지정';
+      companyMap[n] = (companyMap[n] || 0) + Number(r.amount || 0);
     });
     const topCompanies = Object.entries(companyMap)
       .map(([name, amount]) => ({ name, amount }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 2);
 
-    setData({ todaySales, monthSales, monthFixedCost, topCompanies });
+    setData({
+      todaySales,
+      monthSales,
+      monthFixedCost: fixedCostRes.total,
+      fixedCostByCategory: fixedCostRes.byCategory,
+      topCompanies,
+    });
     setLoading(false);
   };
 
-  const { todaySales, monthSales, monthFixedCost, topCompanies } = data;
+  const { todaySales, monthSales, monthFixedCost, fixedCostByCategory, topCompanies } = data;
   const diff = monthSales - monthFixedCost;
   const isProfit = diff >= 0;
   const ratio = monthFixedCost > 0 ? Math.round((monthSales / monthFixedCost) * 100) : null;
@@ -98,12 +107,12 @@ export default function CEODailyKpiPage() {
             <div style={styles.kpiCard}>
               <div style={styles.kpiLabel}>📅 오늘 매출</div>
               <div style={styles.kpiValue}>{fmtManwon(todaySales)}<span style={styles.kpiUnit}>만원</span></div>
-              <div style={styles.kpiSub}>가공 매출 + 스크랩</div>
+              <div style={styles.kpiSub}>가공 매출 + 스크랩 (그린ERP)</div>
             </div>
             <div style={{ ...styles.kpiCard, background: '#F5F7FF' }}>
               <div style={styles.kpiLabel}>월 매출 − 월 고정비</div>
               <div style={{ ...styles.kpiValue, color: isProfit ? '#1E8E4F' : '#D93B2B' }}>{isProfit ? '+' : ''}{fmtManwon(diff)}<span style={styles.kpiUnit}>만원</span></div>
-              <div style={styles.kpiSub}>{ratio !== null ? `고정비 대비 매출 ${ratio}%` : '월 고정비 미입력'}</div>
+              <div style={styles.kpiSub}>{ratio !== null ? `고정비 대비 매출 ${ratio}%` : '이번달 승인된 고정비 없음'}</div>
             </div>
             <div style={styles.kpiCard}>
               <div style={styles.kpiLabel}>월 매출</div>
@@ -113,7 +122,17 @@ export default function CEODailyKpiPage() {
             <div style={styles.kpiCard}>
               <div style={styles.kpiLabel}>월 고정비</div>
               <div style={styles.kpiValue}>{fmtManwon(monthFixedCost)}<span style={styles.kpiUnit}>만원</span></div>
-              {monthFixedCost === 0 && <div style={styles.kpiSub}>※ '월간 분석' 화면에서 입력하세요</div>}
+              {fixedCostByCategory.length > 0 ? (
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                  {fixedCostByCategory.slice(0, 4).map((c) => (
+                    <div key={c.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11.5px', color: '#8592A6' }}>
+                      <span>{c.name}</span><span>{fmtManwon(c.amount)}만원</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={styles.kpiSub}>※ 지출결의서에 승인된 정기 지출 없음</div>
+              )}
             </div>
             <div style={styles.kpiCard}>
               <div style={styles.kpiLabel}>🏆 오늘 거래처 TOP2</div>
