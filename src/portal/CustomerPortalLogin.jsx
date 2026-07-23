@@ -3,6 +3,16 @@
 import React, { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
+// 로그인 입력값 -> 실제 Supabase Auth 이메일로 변환.
+// 이메일 형식("@" 포함)을 입력하면 그대로 사용(기존 이메일 기반 계정과 호환),
+// 이메일이 아닌 순수 아이디를 입력하면 관리자 계정생성 화면과 동일한 규칙으로
+// {아이디}@ohsungportal.local 형태의 내부 전용 주소로 변환합니다.
+function resolveLoginEmail(input) {
+  const v = (input || '').trim();
+  if (v.includes('@')) return v;
+  return `${v.toLowerCase()}@ohsungportal.local`;
+}
+
 export default function CustomerPortalLogin({ error: gateError }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -32,7 +42,7 @@ export default function CustomerPortalLogin({ error: gateError }) {
         try { window.sessionStorage.removeItem('cp_no_remember'); } catch (_e) {}
       }
 
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email: resolveLoginEmail(email), password });
       if (error) throw error;
       // 성공하면 Gate가 세션 변화를 감지해 대시보드로 전환하거나(정상 계정),
       // 계정이 유효하지 않으면 로그아웃 후 이 화면에 에러를 다시 띄웁니다.
@@ -66,7 +76,7 @@ export default function CustomerPortalLogin({ error: gateError }) {
         <div style={styles.card}>
           <img src="/ohsung-logo.jpg" alt="오성철강" style={{ width: 200, marginBottom: 34 }} />
           <h2 style={styles.title}>비밀번호 찾기</h2>
-          <p style={styles.sub}>가입하신 이메일 주소로 재설정 링크를 보내드립니다</p>
+          <p style={styles.sub}>가입 시 이메일 주소를 등록한 경우에만 재설정 링크를 보내드립니다. 아이디로만 가입한 경우 오성철강 담당자에게 문의해 비밀번호를 재설정해주세요.</p>
           {forgotSent ? (
             <div>
               <div style={{ background: '#E2F5EA', color: '#1C7A4D', padding: '14px', borderRadius: 12, fontSize: 14, textAlign: 'left', marginBottom: 16 }}>
@@ -92,9 +102,9 @@ export default function CustomerPortalLogin({ error: gateError }) {
       <div style={styles.card}>
         <img src="/ohsung-logo.jpg" alt="오성철강" style={{ width: 200, marginBottom: 34 }} />
         <h2 style={styles.title}>고객사 포털 로그인</h2>
-        <p style={styles.sub}>거래처 담당자 계정으로 로그인하세요</p>
+        <p style={styles.sub}>거래처 담당자 아이디로 로그인하세요</p>
         <form onSubmit={handleLogin} style={styles.form}>
-          <input type="email" placeholder="이메일 주소" value={email} onChange={(e) => setEmail(e.target.value)} style={styles.input} required />
+          <input type="text" placeholder="아이디 또는 이메일" value={email} onChange={(e) => setEmail(e.target.value)} style={styles.input} autoCapitalize="none" autoCorrect="off" required />
           <input type="password" placeholder="비밀번호" value={password} onChange={(e) => setPassword(e.target.value)} style={styles.input} required />
           <div style={styles.rowBetween}>
             <label style={styles.checkLabel}>

@@ -26,6 +26,8 @@ const th = { padding: '10px 12px', fontSize: '14px', textAlign: 'left', borderBo
 const td = { padding: '10px 12px', fontSize: '15px', borderBottom: `1px solid ${C.border}` };
 const pill = (active) => ({ padding: '4px 10px', borderRadius: '999px', fontSize: '12.5px', fontWeight: 700, background: active ? C.bgSuccess : C.bgDanger, color: active ? C.textSuccess : C.textDanger, display: 'inline-block' });
 
+const LOGIN_ID_RE = /^[a-zA-Z0-9._-]{3,30}$/;
+
 export default function AccountManagementPage() {
   const [tab, setTab] = useState('staff'); // 'staff' | 'customer'
   const [staffList, setStaffList] = useState([]);
@@ -33,8 +35,8 @@ export default function AccountManagementPage() {
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [form, setForm] = useState({ email: '', name: '', role: 'staff', company_name: '', contact_name: '', phone: '' });
-  const [resultInfo, setResultInfo] = useState(null); // { tempPassword, email }
+  const [form, setForm] = useState({ email: '', name: '', role: 'staff', company_name: '', contact_name: '', phone: '', login_id: '', password: '' });
+  const [resultInfo, setResultInfo] = useState(null); // { tempPassword?, email?, login_id? }
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -62,25 +64,51 @@ export default function AccountManagementPage() {
     loadAll();
   };
 
+  const resetPassword = async (row) => {
+    const label = row.name || row.company_name || row.login_id || row.email;
+    const newPw = window.prompt(`${label} 계정의 새 비밀번호를 입력하세요 (4자 이상):`);
+    if (!newPw) return;
+    if (newPw.length < 4) { alert('비밀번호는 4자 이상이어야 합니다.'); return; }
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-reset-password', {
+        body: { target_user_id: row.id, new_password: newPw },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || '비밀번호 재설정에 실패했습니다.');
+      alert('비밀번호가 재설정되었습니다.');
+    } catch (e) {
+      alert('비밀번호 재설정 실패: ' + (e.message || e));
+    }
+  };
+
   const openCreateModal = () => {
-    setForm({ email: '', name: '', role: 'staff', company_name: '', contact_name: '', phone: '' });
+    setForm({ email: '', name: '', role: 'staff', company_name: '', contact_name: '', phone: '', login_id: '', password: '' });
     setResultInfo(null);
     setModalOpen(true);
   };
 
   const submitCreate = async () => {
-    if (!form.email) { alert('이메일은 필수입니다.'); return; }
-    if (tab === 'staff' && !form.name) { alert('이름은 필수입니다.'); return; }
-    if (tab === 'customer' && !form.company_name) { alert('거래처명은 필수입니다.'); return; }
+    if (tab === 'staff') {
+      if (!form.email) { alert('이메일은 필수입니다.'); return; }
+      if (!form.name) { alert('이름은 필수입니다.'); return; }
+    } else {
+      if (!form.login_id || !LOGIN_ID_RE.test(form.login_id)) { alert('아이디는 영문/숫자/.-_ 조합 3~30자로 입력해주세요.'); return; }
+      if (!form.password || form.password.length < 4) { alert('비밀번호는 4자 이상 입력해주세요.'); return; }
+      if (!form.company_name) { alert('거래처명은 필수입니다.'); return; }
+    }
     setCreating(true);
     try {
       const payload = tab === 'staff'
         ? { type: 'staff', email: form.email, name: form.name, role: form.role }
-        : { type: 'customer', email: form.email, company_name: form.company_name, contact_name: form.contact_name, phone: form.phone };
+        : { type: 'customer', login_id: form.login_id, password: form.password, email: form.email || null, company_name: form.company_name, contact_name: form.contact_name, phone: form.phone };
       const { data, error } = await supabase.functions.invoke('admin-create-account', { body: payload });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.error || '계정 생성에 실패했습니다.');
-      setResultInfo({ tempPassword: data.tempPassword, email: form.email });
+      setResultInfo(
+        tab === 'staff'
+          ? { tempPassword: data.tempPassword, email: form.email }
+          : { login_id: form.login_id, password: form.password }
+      );
       loadAll();
     } catch (e) {
       alert('계정 생성 실패: ' + (e.message || e));
@@ -124,7 +152,10 @@ export default function AccountManagementPage() {
                 <td style={td}><span style={pill(r.is_active)}>{r.is_active ? '활성' : '비활성'}</span></td>
                 <td style={{ ...td, color: C.textMuted, fontSize: '13px' }}>{r.created_at?.slice(0, 10)}</td>
                 <td style={td}>
-                  <button style={btn()} onClick={() => toggleStaffActive(r)}>{r.is_active ? '비활성화' : '활성화'}</button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button style={btn()} onClick={() => toggleStaffActive(r)}>{r.is_active ? '비활성화' : '활성화'}</button>
+                    <button style={btn()} onClick={() => resetPassword(r)}>비번 재설정</button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -134,22 +165,26 @@ export default function AccountManagementPage() {
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse', background: C.surface2, borderRadius: '10px', overflow: 'hidden' }}>
           <thead><tr>
-            <th style={th}>거래처명</th><th style={th}>담당자</th><th style={th}>이메일</th><th style={th}>연락처</th><th style={th}>상태</th><th style={th}></th>
+            <th style={th}>거래처명</th><th style={th}>담당자</th><th style={th}>아이디</th><th style={th}>이메일</th><th style={th}>연락처</th><th style={th}>상태</th><th style={th}></th>
           </tr></thead>
           <tbody>
             {customerList.map((r) => (
               <tr key={r.id}>
                 <td style={{ ...td, fontWeight: 700 }}>{r.company_name}</td>
                 <td style={td}>{r.contact_name || '-'}</td>
-                <td style={td}>{r.email}</td>
+                <td style={{ ...td, fontFamily: 'monospace' }}>{r.login_id || '-'}</td>
+                <td style={td}>{r.email || '-'}</td>
                 <td style={td}>{r.phone || '-'}</td>
                 <td style={td}><span style={pill(r.is_active)}>{r.is_active ? '활성' : '비활성'}</span></td>
                 <td style={td}>
-                  <button style={btn()} onClick={() => toggleCustomerActive(r)}>{r.is_active ? '비활성화' : '활성화'}</button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button style={btn()} onClick={() => toggleCustomerActive(r)}>{r.is_active ? '비활성화' : '활성화'}</button>
+                    <button style={btn()} onClick={() => resetPassword(r)}>비번 재설정</button>
+                  </div>
                 </td>
               </tr>
             ))}
-            {customerList.length === 0 && <tr><td style={td} colSpan={6}>등록된 고객사 계정이 없습니다.</td></tr>}
+            {customerList.length === 0 && <tr><td style={td} colSpan={7}>등록된 고객사 계정이 없습니다.</td></tr>}
           </tbody>
         </table>
       )}
@@ -163,9 +198,9 @@ export default function AccountManagementPage() {
 
             {!resultInfo ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <input style={inputStyle} placeholder="이메일 주소" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
                 {tab === 'staff' ? (
                   <>
+                    <input style={inputStyle} placeholder="이메일 주소" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
                     <input style={inputStyle} placeholder="이름" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                     <select style={inputStyle} value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
                       <option value="staff">일반직원</option>
@@ -174,9 +209,12 @@ export default function AccountManagementPage() {
                   </>
                 ) : (
                   <>
+                    <input style={inputStyle} placeholder="아이디 (영문/숫자, 이메일 아니어도 됨)" value={form.login_id} onChange={(e) => setForm((f) => ({ ...f, login_id: e.target.value.trim() }))} />
+                    <input style={inputStyle} placeholder="비밀번호" type="text" value={form.password} onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))} />
                     <input style={inputStyle} placeholder="거래처명 (greenp_customers의 회사명과 일치해야 함)" value={form.company_name} onChange={(e) => setForm((f) => ({ ...f, company_name: e.target.value }))} />
                     <input style={inputStyle} placeholder="담당자명" value={form.contact_name} onChange={(e) => setForm((f) => ({ ...f, contact_name: e.target.value }))} />
                     <input style={inputStyle} placeholder="연락처" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
+                    <input style={inputStyle} placeholder="이메일 (선택, 없으면 비워두세요)" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
                   </>
                 )}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '10px', justifyContent: 'flex-end' }}>
@@ -187,11 +225,13 @@ export default function AccountManagementPage() {
             ) : (
               <div>
                 <div style={{ background: C.bgSuccess, color: C.textSuccess, padding: '14px', borderRadius: '10px', fontSize: '14px', marginBottom: '14px' }}>
-                  계정이 생성되었습니다. 아래 임시 비밀번호는 <b>지금만</b> 표시되며 다시 볼 수 없으니, 담당자에게 안전한 방법으로 전달하고 로그인 후 반드시 비밀번호를 변경하도록 안내하세요.
+                  {resultInfo.tempPassword
+                    ? <>계정이 생성되었습니다. 아래 임시 비밀번호는 <b>지금만</b> 표시되며 다시 볼 수 없으니, 담당자에게 안전한 방법으로 전달하고 로그인 후 반드시 비밀번호를 변경하도록 안내하세요.</>
+                    : <>계정이 생성되었습니다. 아래 아이디/비밀번호를 담당자에게 전달해주세요.</>}
                 </div>
                 <div style={{ ...inputStyle, height: 'auto', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontFamily: 'monospace', fontSize: '17px' }}>
-                  <span>{resultInfo.email}</span>
-                  <b>{resultInfo.tempPassword}</b>
+                  <span>{resultInfo.email || resultInfo.login_id}</span>
+                  <b>{resultInfo.tempPassword || resultInfo.password}</b>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '14px' }}>
                   <button style={btn('primary')} onClick={() => setModalOpen(false)}>닫기</button>
