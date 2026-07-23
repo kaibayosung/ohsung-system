@@ -495,7 +495,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
       </div>
 
       <div className="no-print" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '18px' }}>
-        {CP_SUBS.map(([k, label]) => <button key={k} style={{ ...btnStyle(sub === k), fontSize: '16px', padding: '11px 18px' }} onClick={() => setSub(k)}>{label}</button>)}
+        {CP_SUBS.filter(([k]) => !lockedCompanyName || k !== 'place').map(([k, label]) => <button key={k} style={{ ...btnStyle(sub === k), fontSize: '16px', padding: '11px 18px' }} onClick={() => setSub(k)}>{label}</button>)}
       </div>
 
       {sub === 'inventory' && (
