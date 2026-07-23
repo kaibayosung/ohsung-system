@@ -151,6 +151,7 @@ function printOutboundPDF(company, rangeLabel, rows) {
       <td>${r.outbound_date || '-'}</td>
       <td>${r.product_name || '-'}</td>
       <td>${r.spec || '-'}</td>
+      <td>${r.description || '-'}</td>
       <td style="text-align:right;">${r.qty || '-'}</td>
       <td style="text-align:right;font-weight:700;">${Number(r.weight || 0).toLocaleString()}</td>
     </tr>`).join('');
@@ -196,9 +197,9 @@ function printOutboundPDF(company, rangeLabel, rows) {
       <span>건수: <b>${rows.length}건</b></span>
     </div>
     <table>
-      <thead><tr><th>출고일자</th><th>품명</th><th>가공규격</th><th style="text-align:right">수량</th><th style="text-align:right">중량(kg)</th></tr></thead>
-      <tbody>${bodyRows || '<tr><td colspan="5" style="text-align:center;color:#8592A6;padding:20px;">출고 내역이 없습니다</td></tr>'}</tbody>
-      <tfoot><tr><td colspan="4" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
+      <thead><tr><th>출고일자</th><th>품명</th><th>가공규격</th><th>가공SIZE</th><th style="text-align:right">수량</th><th style="text-align:right">중량(kg)</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="6" style="text-align:center;color:#8592A6;padding:20px;">출고 내역이 없습니다</td></tr>'}</tbody>
+      <tfoot><tr><td colspan="5" style="text-align:right;">중량 합계</td><td style="text-align:right;">${totalWeight.toLocaleString()} kg</td></tr></tfoot>
     </table>
     <div class="footnote">
       본 리스트는 오성철강 스마트 ERP 2.0에서 그린ERP 실시간 연동 데이터를 기반으로 자동 생성되었습니다.<br/>
@@ -347,6 +348,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
     return () => { cancelled = true; };
   }, [companyName]);
   const invFiltered = inv.filter((r) => !invQuery || (r.product_name || '').includes(invQuery) || (r.spec || '').includes(invQuery));
+  const invFilteredWeight = invFiltered.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
   const invTotalWeight = inv.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
   const invSpecCount = new Set(inv.map((r) => r.spec).filter(Boolean)).size;
   const byThickness = {};
@@ -591,13 +593,22 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
             <div>
               <div style={{ fontSize: '17px', fontWeight: 700, margin: '4px 0 8px', color: C.textSecondary }}>재고 상세 내역</div>
               <input style={{ ...inputStyle, marginBottom: '10px' }} placeholder="품명/규격 검색" value={invQuery} onChange={(e) => setInvQuery(e.target.value)} />
+              <table style={{ ...itemsTable, maxWidth: '360px', marginBottom: '14px' }}>
+                <thead><tr><th style={th}>총 갯수</th><th style={th}>총 중량</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td style={{ ...td, fontWeight: 700 }}>{invFiltered.length}개</td>
+                    <td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{(invFilteredWeight / 1000).toFixed(1)}톤</td>
+                  </tr>
+                </tbody>
+              </table>
               {invLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : invFiltered.length === 0 ? boxMsg('해당 재고가 없습니다', { justifyContent: 'center' }) : (
                 <table style={itemsTable}>
-                  <thead><tr><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>길이</th><th style={th}>입고일</th><th style={th}>원중량</th><th style={th}>잔량</th></tr></thead>
+                  <thead><tr><th style={th}>No</th><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>길이</th><th style={th}>입고일</th><th style={th}>원중량</th><th style={th}>잔량</th></tr></thead>
                   <tbody>
                     {invFiltered.map((r, i) => (
                       <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                        <td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td>
+                        <td style={td}>{i + 1}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td>
                       </tr>
                     ))}
                   </tbody>
@@ -655,11 +666,11 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
 
           {outLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : outRows.length === 0 ? boxMsg(`${rangeLabel}에 출고 내역이 없습니다`, { justifyContent: 'center' }) : (
             <table style={itemsTable}>
-              <thead><tr><th style={th}>출고일</th><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>중량</th><th style={th}>수량</th></tr></thead>
+              <thead><tr><th style={th}>출고일</th><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>가공SIZE</th><th style={th}>중량</th><th style={th}>수량</th></tr></thead>
               <tbody>
                 {outRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.outbound_date}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td><td style={td}>{r.qty || '-'}</td>
+                    <td style={td}>{r.outbound_date}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.description || '-'}</td><td style={{ ...td, fontWeight: 700 }}>{Number(r.weight || 0).toLocaleString()}kg</td><td style={td}>{r.qty || '-'}</td>
                   </tr>
                 ))}
               </tbody>
