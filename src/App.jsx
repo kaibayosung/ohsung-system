@@ -16,6 +16,7 @@ import SalesWorkflowPage from './pages/SalesWorkflowPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import InboundFaxPage from './pages/InboundFaxPage';
 import ScrapSalesPage from './pages/ScrapSalesPage';
+import AccountManagementPage from './pages/AccountManagementPage';
 
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
@@ -23,6 +24,8 @@ function App() {
   const [currentPage, setCurrentPage] = useState('daily'); // 기본 시작 화면: 데일리 리포트
   const [expensePendingCount, setExpensePendingCount] = useState(0);
   const [openMenu, setOpenMenu] = useState(null); // 현재 열려있는 드롭다운 메뉴 그룹 key
+  const [myStaff, setMyStaff] = useState(null); // { name, role } — staff_users 조회 결과
+  const [roleChecking, setRoleChecking] = useState(true); // role 조회 중 로딩 플래그
 
   // 2. 로그인 상태 실시간 감시 (인증 관문)
   useEffect(() => {
@@ -38,6 +41,26 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // 2-1. [계정 기반 접근 제어] 로그인한 사용자가 staff_users에 등록된 직원인지 확인.
+  // customer_users 계정으로 내부 URL에 잘못 로그인했거나, 아직 staff_users에 등록되지
+  // 않은 계정(레거시 공유 로그인 포함)은 아래 4-2에서 접근거부 화면을 보게 됩니다.
+  useEffect(() => {
+    if (!session) { setMyStaff(null); setRoleChecking(false); return; }
+    setRoleChecking(true);
+    supabase.from('staff_users').select('name, role, is_active').eq('id', session.user.id).maybeSingle()
+      .then(({ data }) => {
+        setMyStaff(data && data.is_active ? data : null);
+        setRoleChecking(false);
+      });
+  }, [session]);
+
+  // 2-2. 일반직원 계정은 대표님 경영보고(admin 전용)가 아닌 실무 화면을 기본 화면으로
+  useEffect(() => {
+    if (myStaff && myStaff.role !== 'admin' && currentPage === 'daily') {
+      setCurrentPage('sales');
+    }
+  }, [myStaff]);
 
   // 지출결의서 결재대기 건수 — 상단 메뉴 알림 배지용 (1분마다 갱신)
   useEffect(() => {
@@ -105,7 +128,7 @@ function App() {
       ],
     },
     {
-      key: 'report', label: '대표님 경영보고', icon: '📊', role: '대표님용',
+      key: 'report', label: '대표님 경영보고', icon: '📊', role: '대표님용', adminOnly: true,
       items: [
         { page: 'daily', label: '데일리 리포트', icon: '📅' },
         { page: 'monthly', label: '월간 분석', icon: '📊' },
@@ -117,8 +140,14 @@ function App() {
 
   const standaloneItems = [
     { page: 'customer', label: '고객사 포털', icon: '🏢', role: '고객사 조회용' },
-    { page: 'test', label: '테스트', icon: '🧪', role: '개발자용' },
+    { page: 'account', label: '계정 관리', icon: '🔑', role: '관리자용', adminOnly: true },
+    { page: 'test', label: '테스트', icon: '🧪', role: '개발자용', adminOnly: true },
   ];
+
+  // admin이 아니면 adminOnly로 표시된 그룹/메뉴는 목록 자체에서 제외 (버튼을 숨기는 것뿐 아니라
+  // 아래 4-2/5에서 currentPage 기준으로도 한 번 더 막습니다 — 이중 방어)
+  const visibleMenuGroups = menuGroups.filter((g) => !g.adminOnly || myStaff?.role === 'admin');
+  const visibleStandaloneItems = standaloneItems.filter((i) => !i.adminOnly || myStaff?.role === 'admin');
 
   const groupBtnStyle = (isActive, isOpen) => ({
     padding: '13px 18px',
@@ -159,6 +188,22 @@ function App() {
     return <Login onLoginSuccess={() => setCurrentPage('daily')} />;
   }
 
+  // 4-1. staff_users 조회가 끝나기 전까지는 아무 화면도 보여주지 않음
+  // (권한 확인 전 깜빡임으로 admin 전용 화면이 잠깐 노출되는 것을 방지)
+  if (roleChecking) return null;
+
+  // 4-2. 로그인은 됐지만 staff_users에 등록되지 않았거나 비활성화된 계정 — 접근 거부
+  // (고객사 포털 계정으로 내부 URL에 잘못 로그인한 경우도 여기서 걸러집니다)
+  if (!myStaff) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '14px', background: '#0a1524', color: '#fff' }}>
+        <div style={{ fontSize: '20px', fontWeight: 800 }}>⛔ 접근 권한이 없습니다</div>
+        <div style={{ fontSize: '15px', color: '#c8d3e2' }}>이 계정은 내부 시스템 사용자로 등록되어 있지 않습니다. 관리자에게 계정 등록을 요청하세요.</div>
+        <button onClick={handleLogout} style={{ marginTop: '10px', padding: '10px 20px', borderRadius: '10px', border: 'none', background: '#e8830f', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>로그아웃</button>
+      </div>
+    );
+  }
+
   // 5. [메인 시스템] 로그인 성공 시에만 진입 가능한 영역
   return (
     <div className="app-shell" style={styles.appContainer}>
@@ -169,7 +214,7 @@ function App() {
         </div>
         
         <nav style={styles.nav} onMouseLeave={() => setOpenMenu(null)}>
-          {menuGroups.map((group) => {
+          {visibleMenuGroups.map((group) => {
             const isActive = group.items.some((i) => i.page === currentPage);
             const isOpen = openMenu === group.key;
             return (
@@ -211,7 +256,7 @@ function App() {
 
           <div style={styles.navDivider} />
 
-          {standaloneItems.map((item) => (
+          {visibleStandaloneItems.map((item) => (
             <button
               key={item.page}
               className="op-nav-btn"
@@ -225,7 +270,7 @@ function App() {
         </nav>
 
         <div style={styles.userSection}>
-          <span style={styles.userName}>{session.user.email.split('@')[0]} 실장님</span>
+          <span style={styles.userName}>{myStaff?.name || session.user.email.split('@')[0]}{myStaff?.role === 'admin' ? ' 관리자님' : ' 님'}</span>
           <button className="op-logout-btn" onClick={handleLogout} style={styles.logoutBtn}>로그아웃</button>
         </div>
       </header>
@@ -238,13 +283,15 @@ function App() {
         {currentPage === 'worklog' && <WorkLog />}
         {/* [수정됨] 이제 구버전이 아닌 새로운 LedgerPage를 보여줍니다. */}
         {currentPage === 'ledger' && <LedgerPage />} 
-        {currentPage === 'daily' && <DailyReport />}
-        {currentPage === 'monthly' && <MonthlyAnalysis />}
-        {currentPage === 'ceo' && <CEOReport />}
-        {currentPage === 'accesslog' && <AccessLog />}
+        {/* 대표님 경영보고 그룹 + 테스트 + 계정관리 — admin 전용 */}
+        {currentPage === 'daily' && myStaff?.role === 'admin' && <DailyReport />}
+        {currentPage === 'monthly' && myStaff?.role === 'admin' && <MonthlyAnalysis />}
+        {currentPage === 'ceo' && myStaff?.role === 'admin' && <CEOReport />}
+        {currentPage === 'accesslog' && myStaff?.role === 'admin' && <AccessLog />}
+        {currentPage === 'test' && myStaff?.role === 'admin' && <TestPage />}
+        {currentPage === 'account' && myStaff?.role === 'admin' && <AccountManagementPage />}
         {currentPage === 'scrap' && <ScrapSalesPage />}
         {currentPage === 'expense' && <ExpensePage />}
-        {currentPage === 'test' && <TestPage />}
       </main>
     </div>
   );
