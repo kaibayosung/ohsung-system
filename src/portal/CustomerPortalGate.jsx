@@ -147,7 +147,7 @@ export default function CustomerPortalGate() {
 }
 
 const styles = {
-  bar: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 14, padding: '12px 24px', background: '#fff', borderBottom: '1px solid #ECEEF2' },
-  company: { fontSize: 14, color: '#4D5C72', fontWeight: 700, marginRight: 'auto' },
-  logout: { border: '1px solid #E7E9EE', background: '#fff', color: '#6B7280', fontSize: 13, fontWeight: 700, padding: '8px 16px', borderRadius: 9, cursor: 'pointer' },
+  bar: { display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 14, padding: '16px 24px', background: '#fff', borderBottom: '1px solid #ECEEF2' },
+  company: { fontSize: 17, color: '#4D5C72', fontWeight: 700, marginRight: 'auto' },
+  logout: { border: '1px solid #E7E9EE', background: '#fff', color: '#6B7280', fontSize: 15, fontWeight: 700, padding: '9px 18px', borderRadius: 9, cursor: 'pointer' },
 };
