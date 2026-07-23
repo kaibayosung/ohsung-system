@@ -271,10 +271,10 @@ function CompanySearchBox({ companies, value, onChange }) {
   );
 }
 
-export default function CustomerPortalPage() {
+export default function CustomerPortalPage({ lockedCompanyName, onBack, initialSub } = {}) {
   const [companies, setCompanies] = useState([]); // 그린ERP 실거래 회사명 전체 목록
   const [companyName, setCompanyName] = useState('');
-  const [sub, setSub] = useState('inventory');
+  const [sub, setSub] = useState(initialSub || 'inventory');
   const [startDate, setStartDate] = useState(todayStr());
   const [endDate, setEndDate] = useState(todayStr());
   const [form, setForm] = useState({ thick: '', width: '', weight: '', qty: '', slit: '' });
@@ -287,12 +287,17 @@ export default function CustomerPortalPage() {
   const setPreset = (start) => { setStartDate(start); setEndDate(todayStr()); };
 
   useEffect(() => {
+    if (lockedCompanyName) {
+      setCompanies([lockedCompanyName]);
+      setCompanyName(lockedCompanyName);
+      return;
+    }
     supabase.from('greenp_customers').select('name').order('name', { ascending: true }).then(({ data }) => {
       const names = (data || []).map((r) => r.name);
       setCompanies(names);
       if (names.length) setCompanyName((prev) => prev || names[0]);
     });
-  }, []);
+  }, [lockedCompanyName]);
 
   // ---- FAX로 전송 (입고 내역 리포트, 즉시 1회 발송) ----
   // [참고] 예약(정기) 발송 기능은 enFax 계정의 반복 로그인으로 인한 보안 강화(로그인 제한) 이슈로 제거함.
@@ -499,11 +504,14 @@ export default function CustomerPortalPage() {
       `}</style>
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: C.navyGradient, borderRadius: '14px', padding: '18px 22px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(15,30,51,0.18)', flexWrap: 'wrap' }}>
         <span style={{ fontSize: '26px' }}>🏢</span>
+        {onBack && (
+          <button className="no-print" onClick={onBack} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff', borderRadius: '10px', padding: '8px 14px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}>← 홈으로</button>
+        )}
         <div style={{ flex: 1, minWidth: '160px' }}>
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginBottom: '2px' }}>고객사 포털 <span style={{ color: 'rgba(255,255,255,0.4)' }}>· 거래처 {companies.length}곳</span></div>
           <div style={{ fontSize: '21px', fontWeight: 800, color: '#fff' }}>{companyName || '거래처를 선택하세요'}</div>
         </div>
-        <CompanySearchBox companies={companies} value={companyName} onChange={setCompanyName} />
+        {!lockedCompanyName && <CompanySearchBox companies={companies} value={companyName} onChange={setCompanyName} />}
       </div>
 
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '8px', background: C.surface1, border: `1px solid ${C.border}`, borderRadius: '12px', padding: '12px 16px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(15,30,51,0.05)' }}>
