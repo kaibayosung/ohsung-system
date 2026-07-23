@@ -25,17 +25,38 @@ export default function CustomerPortalGate() {
     let settled = false;
     const finish = () => { if (!settled) { settled = true; setChecking(false); } };
 
+    // customer_users 조회 — 드물게 브라우저 탭 간 인증 락 경합 등으로 일시적인
+    // AbortError가 날 수 있어(실제 계정 문제가 아님), 최대 2회까지 재시도한다.
+    const fetchCustomer = async (userId) => {
+      let lastErr = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const { data, error } = await supabase
+          .from('customer_users')
+          .select('company_name, contact_name, is_active')
+          .eq('id', userId)
+          .maybeSingle();
+        if (!error) return { data, error: null };
+        lastErr = error;
+        await new Promise((r) => setTimeout(r, 400));
+      }
+      return { data: null, error: lastErr };
+    };
+
     const handleSession = async (session, opts = {}) => {
       setSession(session);
       if (!session) { setCustomer(null); finish(); return; }
 
-      const { data: cu, error } = await supabase
-        .from('customer_users')
-        .select('company_name, contact_name, is_active')
-        .eq('id', session.user.id)
-        .maybeSingle();
+      const { data: cu, error } = await fetchCustomer(session.user.id);
 
-      if (error || !cu || !cu.is_active) {
+      if (error) {
+        // 계정이 없는 게 아니라 일시적인 조회 오류 — 로그아웃시키지 않고 재시도를 안내
+        console.error('[portal] customer_users 조회 실패(재시도 후에도)', error);
+        setLoginError('일시적인 오류가 발생했습니다. 다시 로그인해주세요.');
+        finish();
+        return;
+      }
+
+      if (!cu || !cu.is_active) {
         setLoginError('고객사 포털 계정이 아니거나 비활성화된 계정입니다.');
         setCustomer(null);
         await supabase.auth.signOut();
