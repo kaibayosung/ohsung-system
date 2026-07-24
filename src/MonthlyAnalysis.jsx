@@ -151,7 +151,7 @@ function MonthlyAnalysis() {
         </h3>
         {data.fixedCostConfirmed && (
           <p style={{ margin: '-6px 0 14px', fontSize: '13px', color: '#718096' }}>
-            5~6월 통장 출금내역 기준 대표님 확정 고정비({data.fixedCostTotal.toLocaleString()}원/월, 급여 포함)를 적용했습니다.
+            통장 2개 계좌 통합 기준 대표님 확정 고정비({data.fixedCostTotal.toLocaleString()}원/월, 급여 포함)를 적용했습니다.
             {data.fixedCostComputedTotal !== data.fixedCostTotal && ` (참고: 지출결의서 입력분 ${data.fixedCostComputedTotal.toLocaleString()}원)`}
           </p>
         )}
