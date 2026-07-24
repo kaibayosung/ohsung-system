@@ -1,6 +1,7 @@
 // src/components/CEOMonthlyReport.jsx
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { fetchMonthlyFixedCosts } from '../lib/fixedCosts';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, LabelList
@@ -26,11 +27,12 @@ function CEOMonthlyReport() {
     
     // [수정] 그린ERP 동기화 테이블(greenp_production) 기준 — sales_records는 2026-07-16
     // 이후 갱신되지 않는 옛 수기입력 테이블입니다.
-    const [salesRes, expRes, scrapRes, outboundRes] = await Promise.all([
+    const [salesRes, expRes, scrapRes, outboundRes, fixedCostRes] = await Promise.all([
       supabase.from('greenp_production').select('*').gte('slip_date', startOfMonth).lte('slip_date', endOfMonth),
       supabase.from('daily_ledger').select('*').eq('type', '지출').gte('trans_date', startOfMonth).lte('trans_date', endOfMonth),
       supabase.from('scrap_sales').select('*').gte('sale_date', startOfMonth).lte('sale_date', endOfMonth),
       supabase.from('greenp_outbound').select('weight').gte('outbound_date', startOfMonth).lte('outbound_date', endOfMonth),
+      fetchMonthlyFixedCosts(startOfMonth, endOfMonth),
     ]);
 
     const sum = (arr, key) => arr?.reduce((acc, cur) => acc + (Number(cur[key]) || 0), 0) || 0;
@@ -59,8 +61,12 @@ function CEOMonthlyReport() {
         weeklyData[w].sales += Number(s.amount || 0);
     });
 
+    // 대표님 확정 월 고정비 기준 손익 (통장 실적 기반, 일계표 지출과는 별개 지표)
+    const fixedCost = fixedCostRes.total;
+    const profitVsFixedCost = (totalSales + scrapSales) - fixedCost;
+
     setData({
-        summary: { totalSales, totalWeight, scrapSales, profit },
+        summary: { totalSales, totalWeight, scrapSales, profit, fixedCost, profitVsFixedCost, fixedCostConfirmed: fixedCostRes.isConfirmed },
         insights: { 
             revPerTon, 
             top3Ratio: totalSales > 0 ? ((top3Sales / totalSales) * 100).toFixed(1) : 0,
@@ -94,7 +100,26 @@ function CEOMonthlyReport() {
           <div style={styles.card}><h4>월간 가공 매출</h4><p style={styles.summaryVal}>{data.summary.totalSales.toLocaleString()}원</p></div>
           <div style={styles.card}><h4>♻️ 스크랩 매출</h4><p style={{...styles.summaryVal, color: '#1C7A4D'}}>{data.summary.scrapSales.toLocaleString()}원</p></div>
           <div style={styles.card}><h4>월간 총 생산량 <span style={{fontSize:'12px', color:'#a0aec0'}}>(출고 기준)</span></h4><p style={styles.summaryVal}>{Math.round(data.summary.totalWeight/1000).toLocaleString()}t</p></div>
-          <div style={styles.card}><h4>월간 영업 이익</h4><p style={{...styles.summaryVal, color: data.summary.profit >= 0 ? '#38a169' : '#e53e3e'}}>{data.summary.profit.toLocaleString()}원</p></div>
+          <div style={styles.card}><h4>월간 영업 이익 <span style={{fontSize:'11px', color:'#a0aec0'}}>(일계표 지출 기준)</span></h4><p style={{...styles.summaryVal, color: data.summary.profit >= 0 ? '#38a169' : '#e53e3e'}}>{data.summary.profit.toLocaleString()}원</p></div>
+        </div>
+
+        {/* 확정 월 고정비 기준 밸런스 — 통장 실적을 분석해 대표님이 확정한 고정비(급여/4대보험/
+            대출이자/카드대금/수도광열비/통신비/위탁대행 등, 계좌 2개 통합) 기준. 위 "월간 영업
+            이익"은 일계표(daily_ledger) 지출 기준이라 미기록 지출이 있으면 실제보다 부풀어 보일
+            수 있어, 이 카드를 신뢰할 수 있는 손익 지표로 함께 봐주세요. */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px', marginBottom: '24px' }}>
+          <div style={{...styles.card, backgroundColor: '#f5f7ff'}}>
+            <h4>월 고정비{data.summary.fixedCostConfirmed && <span style={{marginLeft:'6px', fontSize:'11px', color:'#1E8E4F', fontWeight:900}}>확정</span>}</h4>
+            <p style={{...styles.summaryVal, color: '#c53030'}}>{data.summary.fixedCost.toLocaleString()}원</p>
+          </div>
+          <div style={{...styles.card, backgroundColor: data.summary.profitVsFixedCost >= 0 ? '#EAF7EF' : '#FCEAEA'}}>
+            <h4>매출 − 고정비 <span style={{fontSize:'11px', color:'#a0aec0'}}>(확정 고정비 기준 손익)</span></h4>
+            <p style={{...styles.summaryVal, color: data.summary.profitVsFixedCost >= 0 ? '#1E8E4F' : '#D93B2B'}}>{data.summary.profitVsFixedCost >= 0 ? '+' : ''}{data.summary.profitVsFixedCost.toLocaleString()}원</p>
+          </div>
+          <div style={{...styles.card, backgroundColor: '#fff'}}>
+            <h4>고정비 대비 매출 비율</h4>
+            <p style={styles.summaryVal}>{data.summary.fixedCost > 0 ? Math.round(((data.summary.totalSales + data.summary.scrapSales) / data.summary.fixedCost) * 100) : 0}%</p>
+          </div>
         </div>
 
         {/* 인사이트 대시보드 */}
