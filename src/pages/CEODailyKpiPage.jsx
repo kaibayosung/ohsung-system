@@ -125,7 +125,7 @@ export default function CEODailyKpiPage() {
             <div style={styles.kpiCard}>
               <div style={styles.kpiLabel}>월 고정비{fixedCostConfirmed && <span style={{ marginLeft: '6px', fontSize: '10.5px', color: '#1E8E4F', fontWeight: 700 }}>확정</span>}</div>
               <div style={styles.kpiValue}>{fmtManwon(monthFixedCost)}<span style={styles.kpiUnit}>만원</span></div>
-              {fixedCostConfirmed && <div style={styles.kpiSub}>통장 실적 기준 확정값 (5~6월 평균)</div>}
+              {fixedCostConfirmed && <div style={styles.kpiSub}>통장 실적 기준 확정값 (5~6월 평균, 급여 포함)</div>}
               {fixedCostByCategory.length > 0 ? (
                 <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   {fixedCostByCategory.slice(0, 4).map((c) => (
