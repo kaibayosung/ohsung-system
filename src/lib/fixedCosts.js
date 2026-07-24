@@ -6,15 +6,14 @@
 // 공식 기준으로 확정함. 급여는 2026-05부터 두번째 계좌로 지급 방식이 바뀐 것을 확인,
 // 그 계좌의 실제 급여이체 내역(월평균 33,977,900원)을 사용 -- 첫 계좌 기준 추정치(10개월
 // 평균 60,007,524원)는 임가공/장비비 등이 섞인 오분류였음이 밝혀져 폐기함.
-// ("5월부터 나가니까" → "급여를 포함해서" → "급여가 그렇게 안나와, 6/7월 다른 계좌 자료로 재계산")
 //
-// 문제: 지출결의서(expense_requests)에 실제 입력된 금액이 통장 실적보다 항상 작음
-// (카드대금/위탁대행 등 일부 미입력 건 존재). 따라서 expense_requests 기준 자동
-// 집계만으로는 대표님이 확정한 기준과 어긋날 수 있음.
+// 항목별 상세(인건비/4대보험/대출이자/수도광열비/카드대금/법인카드대금/단체보험·적립/
+// 보험료/공제부금(노란우산)/통신·렌탈·경비비/위탁대행기타/통신비, 총 12개 항목)는
+// monthly_fixed_cost_items 테이블에 저장되어 있으며, "최소 월 필요 자금" 표(대표님 확정본)와
+// 정확히 일치합니다.
 //
-// 해결: monthly_fixed_costs 테이블(총액 1건/월)에 "확정 고정비" 값을 기록해두고,
-// 조회 시 해당 월(또는 값이 없으면 가장 최근 확정월)의 확정값을 total로 우선 사용.
-// byCategory는 여전히 expense_requests 기준 상세 내역(참고용)으로 표시.
+// 우선순위: monthly_fixed_cost_items(확정 상세 내역) > monthly_fixed_costs(확정 총액만) >
+// expense_requests(정기지출 결재완료 자동집계, 폴백)
 import { supabase } from '../supabaseClient';
 
 export const FIXED_COST_CATEGORY_ORDER = ['급여', '4대보험', '퇴직연금', '대출이자', '카드대금', '수도광열비', '통신비', '위탁대행/기타'];
@@ -22,7 +21,7 @@ export const FIXED_COST_CATEGORY_ORDER = ['급여', '4대보험', '퇴직연금'
 export async function fetchMonthlyFixedCosts(startDate, endDate) {
   const yearMonth = (startDate || '').slice(0, 7);
 
-  const [expenseRes, confirmedRes] = await Promise.all([
+  const [expenseRes, confirmedRes, itemsRes] = await Promise.all([
     supabase
       .from('expense_requests')
       .select('id, request_date, status, is_recurring, recurring_key, expense_request_items(amount, vendor_name, item_name)')
@@ -37,6 +36,13 @@ export async function fetchMonthlyFixedCosts(startDate, endDate) {
           .lte('year_month', yearMonth)
           .order('year_month', { ascending: false })
           .limit(1)
+      : Promise.resolve({ data: null, error: null }),
+    yearMonth
+      ? supabase
+          .from('monthly_fixed_cost_items')
+          .select('year_month, category, amount, account_label, note')
+          .lte('year_month', yearMonth)
+          .order('year_month', { ascending: false })
       : Promise.resolve({ data: null, error: null }),
   ]);
 
@@ -57,7 +63,7 @@ export async function fetchMonthlyFixedCosts(startDate, endDate) {
     });
   }
 
-  const byCategory = Object.entries(byCategoryMap)
+  const computedByCategory = Object.entries(byCategoryMap)
     .map(([name, amount]) => ({ name, amount }))
     .sort((a, b) => {
       const ia = FIXED_COST_CATEGORY_ORDER.indexOf(a.name);
@@ -72,14 +78,30 @@ export async function fetchMonthlyFixedCosts(startDate, endDate) {
   const confirmedTotal = confirmedRow ? Number(confirmedRow.amount) : null;
   const confirmedMonth = confirmedRow ? confirmedRow.year_month : null;
 
+  // 확정 상세 항목: 가장 최근 확정월(confirmedMonth)의 12개 항목만 사용
+  let itemRows = itemsRes && !itemsRes.error && itemsRes.data ? itemsRes.data : [];
+  if (confirmedMonth) {
+    itemRows = itemRows.filter((r) => r.year_month === confirmedMonth);
+  } else {
+    itemRows = [];
+  }
+  const confirmedByCategory = itemRows
+    .map((r) => ({ name: r.category, amount: Number(r.amount), account: r.account_label, note: r.note }))
+    .sort((a, b) => b.amount - a.amount);
+
+  const hasConfirmedItems = confirmedByCategory.length > 0;
+
   return {
-    // 대표님 확정 기준(통장 실적 기반)이 있으면 그 값을 사용, 없으면 지출결의서 자동집계값 사용
+    // 확정 상세 항목이 있으면 그걸 우선 사용(항목 합계가 total과 정확히 일치),
+    // 없으면 확정 총액만 사용, 그마저 없으면 지출결의서 자동집계값 사용
     total: confirmedTotal != null ? confirmedTotal : computedTotal,
     computedTotal,
     confirmedTotal,
     confirmedMonth,
     isConfirmed: confirmedTotal != null,
-    byCategory,
+    byCategory: hasConfirmedItems ? confirmedByCategory : computedByCategory,
+    isBreakdownConfirmed: hasConfirmedItems,
+    computedByCategory,
     rows,
   };
 }
