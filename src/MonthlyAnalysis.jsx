@@ -100,6 +100,8 @@ function MonthlyAnalysis() {
         companyData,
         fixedCostTotal: fixedCostRes.total,
         fixedCostByCategory: fixedCostRes.byCategory,
+        fixedCostConfirmed: fixedCostRes.isConfirmed,
+        fixedCostComputedTotal: fixedCostRes.computedTotal,
       });
     } catch (e) { console.error(e); } finally { setLoading(false); }
   };
@@ -143,7 +145,16 @@ function MonthlyAnalysis() {
           수도광열비/통신비/위탁대행 등, 결재완료 건)를 기준으로 삼은 별도 손익 지표입니다.
           위 "총 지출액"(일계표 기준)과는 다른 기준이므로 서로 더하거나 빼지 않습니다. */}
       <div style={{...styles.card, marginBottom: '30px'}}>
-        <h3 style={styles.cardTitle}>⚖️ {selectedMonth}월 밸런스 (고정비 기준)</h3>
+        <h3 style={styles.cardTitle}>
+          ⚖️ {selectedMonth}월 밸런스 (고정비 기준)
+          {data.fixedCostConfirmed && <span style={{ marginLeft: '10px', fontSize: '13px', color: '#2f855a', background: '#f0fff4', padding: '3px 10px', borderRadius: '999px', fontWeight: 700 }}>통장 실적 확정값 사용중</span>}
+        </h3>
+        {data.fixedCostConfirmed && (
+          <p style={{ margin: '-6px 0 14px', fontSize: '13px', color: '#718096' }}>
+            5~6월 통장 출금내역 기준 대표님 확정 고정비({data.fixedCostTotal.toLocaleString()}원/월, 급여 제외)를 적용했습니다.
+            {data.fixedCostComputedTotal !== data.fixedCostTotal && ` (참고: 지출결의서 입력분 ${data.fixedCostComputedTotal.toLocaleString()}원)`}
+          </p>
+        )}
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
           <div style={{ flex: '1 1 260px' }}>
             <table style={styles.balanceTable}>

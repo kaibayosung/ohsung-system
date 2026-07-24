@@ -6,7 +6,9 @@
 //  - 오늘/월 매출: greenp_production(가공 매출, slip_date/amount/company_name 실시간 동기화) + scrap_sales(스크랩 매출)
 //    ※ 예전에는 sales_records(수기 입력 테이블)를 썼는데, 2026-07-16 이후로 아무도 입력하지 않아
 //      그 이후 날짜는 전부 0원으로 표시되는 문제가 있어 greenp_production으로 교체했습니다.
-//  - 월 고정비: expense_requests(정기지출, 결재완료) 기준 자동 집계 — src/lib/fixedCosts.js 참고
+//  - 월 고정비: 통장 실적 기반 확정 기준(monthly_fixed_costs, 대표님 확인 완료 2026-07-24)을
+//    우선 사용하고, 확정값이 없으면 expense_requests(정기지출, 결재완료) 자동집계로 대체
+//    — src/lib/fixedCosts.js 참고
 //  - 오늘 거래처 TOP2: greenp_production을 거래처별로 합산 후 상위 2건
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../supabaseClient';
@@ -30,7 +32,7 @@ function nowLabel() {
 
 export default function CEODailyKpiPage() {
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState({ todaySales: 0, monthSales: 0, monthFixedCost: 0, fixedCostByCategory: [], topCompanies: [] });
+  const [data, setData] = useState({ todaySales: 0, monthSales: 0, monthFixedCost: 0, fixedCostByCategory: [], topCompanies: [], fixedCostConfirmed: false });
 
   useEffect(() => { load(); }, []);
 
@@ -75,12 +77,13 @@ export default function CEODailyKpiPage() {
       monthSales,
       monthFixedCost: fixedCostRes.total,
       fixedCostByCategory: fixedCostRes.byCategory,
+      fixedCostConfirmed: fixedCostRes.isConfirmed,
       topCompanies,
     });
     setLoading(false);
   };
 
-  const { todaySales, monthSales, monthFixedCost, fixedCostByCategory, topCompanies } = data;
+  const { todaySales, monthSales, monthFixedCost, fixedCostByCategory, topCompanies, fixedCostConfirmed } = data;
   const diff = monthSales - monthFixedCost;
   const isProfit = diff >= 0;
   const ratio = monthFixedCost > 0 ? Math.round((monthSales / monthFixedCost) * 100) : null;
@@ -120,8 +123,9 @@ export default function CEODailyKpiPage() {
               <div style={styles.kpiSub}>이번달 1일 ~ 오늘 누적</div>
             </div>
             <div style={styles.kpiCard}>
-              <div style={styles.kpiLabel}>월 고정비</div>
+              <div style={styles.kpiLabel}>월 고정비{fixedCostConfirmed && <span style={{ marginLeft: '6px', fontSize: '10.5px', color: '#1E8E4F', fontWeight: 700 }}>확정</span>}</div>
               <div style={styles.kpiValue}>{fmtManwon(monthFixedCost)}<span style={styles.kpiUnit}>만원</span></div>
+              {fixedCostConfirmed && <div style={styles.kpiSub}>통장 실적 기준 확정값 (5~6월 평균)</div>}
               {fixedCostByCategory.length > 0 ? (
                 <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   {fixedCostByCategory.slice(0, 4).map((c) => (
