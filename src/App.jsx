@@ -18,6 +18,7 @@ import CustomerPortalPage from './pages/CustomerPortalPage';
 import InboundFaxPage from './pages/InboundFaxPage';
 import ScrapSalesPage from './pages/ScrapSalesPage';
 import AccountManagementPage from './pages/AccountManagementPage';
+import InternalSystemsPage from './pages/InternalSystemsPage';
 import ChangePasswordModal from './components/ChangePasswordModal';
 
 function App() {
@@ -287,6 +288,14 @@ function App() {
         </nav>
 
         <div style={styles.userSection}>
+          <button
+            className="op-nav-btn"
+            onClick={() => setCurrentPage('internal')}
+            title="오성철강 내부 시스템 — 대시보드·PAD·품질측정 바로가기"
+            style={{ ...styles.iconBtn, ...(currentPage === 'internal' ? styles.iconBtnActive : {}) }}
+          >
+            🔗
+          </button>
           <span style={styles.userName}>{myStaff?.name || session.user.email.split('@')[0]}{myStaff?.role === 'admin' ? ' 관리자님' : ' 님'}</span>
           <button className="op-logout-btn" onClick={() => setShowPwModal(true)} style={{ ...styles.logoutBtn, background: 'rgba(255,255,255,0.06)' }}>비밀번호 변경</button>
           <button className="op-logout-btn" onClick={handleLogout} style={styles.logoutBtn}>로그아웃</button>
@@ -313,6 +322,7 @@ function App() {
         {currentPage === 'account' && myStaff?.role === 'admin' && <AccountManagementPage />}
         {currentPage === 'scrap' && <ScrapSalesPage />}
         {currentPage === 'expense' && <ExpensePage />}
+        {currentPage === 'internal' && <InternalSystemsPage />}
       </main>
     </div>
   );
@@ -388,6 +398,17 @@ const styles = {
   },
   userSection: { display: 'flex', alignItems: 'center', gap: '16px' },
   userName: { fontSize: '17px', color: '#c8d3e2' },
+  iconBtn: {
+    width: '44px', height: '44px', borderRadius: '12px',
+    background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
+    color: '#c8d3e2', fontSize: '20px', cursor: 'pointer',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    transition: 'all 0.15s ease',
+  },
+  iconBtnActive: {
+    background: '#e8830f', color: '#ffffff', borderColor: 'rgba(255,255,255,0.12)',
+    boxShadow: '0 4px 12px rgba(232,131,15,0.35)',
+  },
   navBadge: {
     position: 'absolute',
     top: '-8px',
