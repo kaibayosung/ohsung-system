@@ -300,17 +300,18 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
     });
   }, [lockedCompanyName]);
 
-  // ---- FAX로 전송 (입고 내역 리포트, 즉시 1회 발송) ----
+  // ---- FAX로 전송 (입고 내역 / 작업 내역 리포트, 즉시 1회 발송) ----
   // [참고] 예약(정기) 발송 기능은 enFax 계정의 반복 로그인으로 인한 보안 강화(로그인 제한) 이슈로 제거함.
-  const [faxModal, setFaxModal] = useState({ open: false, phone: '', sending: false, error: '', result: '' });
+  const FAX_REPORT_LABELS = { inbound: '입고 내역', work: '작업 내역' };
+  const [faxModal, setFaxModal] = useState({ open: false, phone: '', sending: false, error: '', result: '', reportType: 'inbound' });
 
-  async function openFaxModal() {
+  async function openFaxModal(reportType = 'inbound') {
     let prefill = '';
     try {
       const { data } = await supabase.from('customer_fax_numbers').select('fax_number').eq('company_name', companyName).eq('active', true).maybeSingle();
       if (data) prefill = data.fax_number;
     } catch (_e) { /* 무시 — 빈 값으로 시작 */ }
-    setFaxModal({ open: true, phone: prefill, sending: false, error: '', result: '' });
+    setFaxModal({ open: true, phone: prefill, sending: false, error: '', result: '', reportType });
   }
 
   async function submitFaxSend() {
@@ -324,7 +325,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
       );
     } catch (_e) { /* 저장 실패해도 발송은 계속 시도 */ }
     try {
-      const params = new URLSearchParams({ step: 'send', company: companyName, startDate, endDate, fax: phone, faxName: companyName.replace(/^\(주\)/, '') });
+      const params = new URLSearchParams({ step: 'send', reportType: faxModal.reportType, company: companyName, startDate, endDate, fax: phone, faxName: companyName.replace(/^\(주\)/, '') });
       const res = await fetch(`${supabaseUrl}/functions/v1/enfax-inbound-daily?${params.toString()}`);
       const json = await res.json();
       if (!json.ok) throw new Error(json.error || 'FAX 발송 실패');
@@ -622,7 +623,10 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
       {sub === 'work' && (
         <div>
           <PrintHeader subTitle="작업 내역 리포트" companyName={companyName} rangeLabel={rangeLabel} />
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}><PrintButton /></div>
+          <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '10px' }}>
+            <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => openFaxModal('work')}>📠 FAX로 전송</button>
+            <PrintButton />
+          </div>
           <div className="no-print" style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
             {['all', '슬리팅', '레베링'].map((k) => (
               <button key={k} style={btnStyle(workTypeFilter === k)} onClick={() => setWorkTypeFilter(k)}>{k === 'all' ? '전체' : k}</button>
@@ -686,7 +690,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
             <input style={inputStyle} placeholder="품명/규격 검색" value={inKeyword} onChange={(e) => setInKeyword(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') runInSearch(); }} />
             <button style={{ ...btnStyle(true), whiteSpace: 'nowrap' }} onClick={runInSearch}>검색</button>
             <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => printInboundPDF(companyName, rangeLabel, inRows)}>PDF저장</button>
-            <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={openFaxModal}>📠 FAX로 전송</button>
+            <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => openFaxModal('inbound')}>📠 FAX로 전송</button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '10px' }}>
             {statCard('입고 건수', inTotalCount.toLocaleString() + '건')}
@@ -726,7 +730,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
         <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,51,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => !faxModal.sending && setFaxModal((m) => ({ ...m, open: false }))}>
           <div style={{ background: C.surface2, borderRadius: '14px', padding: '24px', width: '360px', maxWidth: '92vw', boxShadow: '0 12px 40px rgba(15,30,51,0.25)' }} onClick={(e) => e.stopPropagation()}>
             <div style={{ fontSize: '19px', fontWeight: 800, color: C.textPrimary, marginBottom: '4px' }}>📠 FAX로 전송</div>
-            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '14px' }}>{companyName} · {rangeLabel} 입고 내역을 팩스로 즉시 전송합니다.</div>
+            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '14px' }}>{companyName} · {rangeLabel} {FAX_REPORT_LABELS[faxModal.reportType] || '내역'}을 팩스로 즉시 전송합니다.</div>
             <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '4px' }}>팩스번호</div>
             <input style={inputStyle} value={faxModal.phone} onChange={(e) => setFaxModal((m) => ({ ...m, phone: e.target.value, error: '' }))} placeholder="예: 031-432-2111" disabled={faxModal.sending} />
             {faxModal.error && <div style={{ fontSize: '13px', color: C.textDanger, marginTop: '8px' }}>{faxModal.error}</div>}
