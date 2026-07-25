@@ -727,8 +727,8 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
       )}
 
       {faxModal.open && (
-        <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,51,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} onClick={() => !faxModal.sending && setFaxModal((m) => ({ ...m, open: false }))}>
-          <div style={{ background: C.surface2, borderRadius: '14px', padding: '24px', width: '360px', maxWidth: '92vw', boxShadow: '0 12px 40px rgba(15,30,51,0.25)' }} onClick={(e) => e.stopPropagation()}>
+        <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,51,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+          <div style={{ background: C.surface2, borderRadius: '14px', padding: '24px', width: '360px', maxWidth: '92vw', boxShadow: '0 12px 40px rgba(15,30,51,0.25)' }}>
             <div style={{ fontSize: '19px', fontWeight: 800, color: C.textPrimary, marginBottom: '4px' }}>📠 FAX로 전송</div>
             <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '14px' }}>{companyName} · {rangeLabel} {FAX_REPORT_LABELS[faxModal.reportType] || '내역'}을 팩스로 즉시 전송합니다.</div>
             <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '4px' }}>팩스번호</div>

@@ -95,12 +95,26 @@ function seoulDateStr(d = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(d);
 }
 
+// [중요] app_assets.ohsung-kr-font는 원래 입고 리포트에 쓰인 글자만 담은 "서브셋" 폰트라
+// 작업지시서 상세(품명/규격/작업SIZE 등 자유 입력 텍스트)에 나오는 "작", "머" 같은 글자가
+// 없어서 팩스 PDF에서 글자가 통째로 사라지는 문제가 있었습니다.
+// 완전한 한글 글리프를 담은 Pretendard 전체 폰트를 CDN에서 받아 함수 인스턴스 동안 캐싱해 사용합니다.
+const KR_FONT_URL = "https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/public/static/alternative/Pretendard-Regular.ttf";
 let cachedFontB64: string | null = null;
-async function getKrFontB64(supabase: any): Promise<string> {
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 8192;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+async function getKrFontB64(_supabase: any): Promise<string> {
   if (cachedFontB64) return cachedFontB64;
-  const { data, error } = await supabase.from("app_assets").select("content_b64").eq("key", "ohsung-kr-font").single();
-  if (error || !data) throw new Error("한글 폰트 로드 실패: " + (error?.message || "not found"));
-  cachedFontB64 = data.content_b64 as string;
+  const res = await fetch(KR_FONT_URL);
+  if (!res.ok) throw new Error("한글 폰트 로드 실패: CDN " + res.status);
+  const buf = new Uint8Array(await res.arrayBuffer());
+  cachedFontB64 = bytesToBase64(buf);
   return cachedFontB64;
 }
 
@@ -122,6 +136,7 @@ const META_BG: [number, number, number] = [244, 246, 250];
 const META_TX: [number, number, number] = [77, 92, 114];
 const ALT_ROW: [number, number, number] = [247, 249, 252];
 const BORDER: [number, number, number] = [227, 232, 240];
+const C_TH_BG: [number, number, number] = [244, 246, 250];
 
 async function buildInboundPdf(supabase: any, companyName: string, dateLabel: string, rows: { inbound_date: string; product_name: string; spec: string; length_m: string | null; weight: number }[]): Promise<Uint8Array> {
   const { jsPDF } = await import("npm:jspdf@2.5.2");
@@ -249,115 +264,133 @@ async function fetchWorkRows(supabase: any, companyName: string, startDate: stri
   return (data || []) as { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[];
 }
 
+// 작업 내역 PDF — CustomerPortalPage.jsx의 "인쇄/PDF 저장" 화면(오성철강사에서 제공하는
+// 리포트 · 통계 카드 · 표)과 동일한 레이아웃으로 구성합니다. 작업SIZE 칸은 자유 입력 텍스트라
+// 길이가 들쭉날쭉하므로 줄바꿈 처리해 다른 칸과 절대 겹치지 않게 합니다.
 async function buildWorkPdf(supabase: any, companyName: string, dateLabel: string, rows: { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[]): Promise<Uint8Array> {
   const { jsPDF } = await import("npm:jspdf@2.5.2");
-  const [krFont, logoB64] = await Promise.all([getKrFontB64(supabase), getLogoB64(supabase)]);
+  const krFont = await getKrFontB64(supabase);
   const doc = new jsPDF();
   doc.addFileToVFS("ohsung-kr.ttf", krFont);
   doc.addFont("ohsung-kr.ttf", "OhsungKR", "normal");
+  doc.setFont("OhsungKR", "normal");
 
   const pageW = 210, marginX = 15, right = 210 - marginX;
+  const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
 
   const drawHeader = () => {
-    doc.addImage("data:image/jpeg;base64," + logoB64, "JPEG", marginX, 13, 30, 9.83);
-    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
-    doc.text("SMART ERP 2.0", marginX + 34, 20);
-
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(15); doc.setTextColor(...DARK);
+    doc.text("오성철강사에서 제공하는 리포트", marginX, 20);
+    doc.setFontSize(9.5); doc.setTextColor(...META_TX);
+    doc.text(`작업 내역 리포트 · 거래처: ${companyName} · 조회기간: ${dateLabel}`, marginX, 27);
     doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
-    doc.text("발행일시", right, 16, { align: "right" });
-    doc.setFontSize(9.5); doc.setTextColor(...NAVY);
-    const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
-    doc.text(now, right, 21, { align: "right" });
-
+    doc.text(`출력일시: ${now}`, marginX, 32.5);
     doc.setDrawColor(...NAVY); doc.setLineWidth(0.9);
-    doc.line(marginX, 26, right, 26);
+    doc.line(marginX, 37, right, 37);
   };
 
   drawHeader();
 
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(22); doc.setTextColor(...DARK);
-  doc.text("작 업 내 역 리 스 트", pageW / 2, 39, { align: "center" });
+  // 통계 카드 3개 (작업 건수 / 원중량 합계 / 중량 합계)
+  const totalOriginal = rows.reduce((s, r) => s + (Number(r.original_weight) || 0), 0);
+  const totalUsed = rows.reduce((s, r) => s + (Number(r.used_weight) || 0), 0);
+  const cardY = 43, cardH = 20, cardGap = 5, cardW = (right - marginX - cardGap * 2) / 3;
+  const cards: [string, string, [number, number, number]][] = [
+    ["작업 건수", `${rows.length}건`, DARK],
+    ["원중량 합계", `${(totalOriginal / 1000).toFixed(1)}톤`, DARK],
+    ["중량 합계", `${(totalUsed / 1000).toFixed(1)}톤`, BADGE_TX],
+  ];
+  cards.forEach(([label, val, color], i) => {
+    const cx = marginX + i * (cardW + cardGap);
+    doc.setFillColor(...META_BG);
+    doc.roundedRect(cx, cardY, cardW, cardH, 2, 2, "F");
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8.5); doc.setTextColor(...GRAY_SUB);
+    doc.text(label, cx + 5, cardY + 7.5);
+    doc.setFontSize(14); doc.setTextColor(...color);
+    doc.text(val, cx + 5, cardY + 15.5);
+  });
 
-  const badgeW = 46, badgeH = 7, badgeX = pageW / 2 - badgeW / 2, badgeY = 44;
-  doc.setFillColor(...BADGE_BG);
-  doc.roundedRect(badgeX, badgeY, badgeW, badgeH, 3.5, 3.5, "F");
-  doc.setFont("helvetica", "bold"); doc.setFontSize(9.5); doc.setTextColor(...BADGE_TX);
-  doc.text("WORK ORDER LIST", pageW / 2, badgeY + 4.8, { align: "center" });
-
-  const metaY = 56;
-  doc.setFillColor(...META_BG);
-  doc.roundedRect(marginX, metaY, right - marginX, 10, 2, 2, "F");
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(9.5); doc.setTextColor(...META_TX);
-  doc.text(`거래처: ${companyName}`, marginX + 5, metaY + 6.5);
-  doc.text(`기간: ${dateLabel}`, pageW / 2, metaY + 6.5, { align: "center" });
-  doc.text(`건수: ${rows.length}건`, right - 5, metaY + 6.5, { align: "right" });
-
-  let y = metaY + 18;
-  const colX = { date: marginX + 3, name: marginX + 32, spec: marginX + 66, orig: marginX + 108, used: marginX + 138, size: right - 3 };
+  let y = cardY + cardH + 8;
+  // date(작업일자) | name(품명) | spec(규격) | orig(원중량) | used(중량) | size(작업SIZE, 줄바꿈)
+  const colW = { date: 22, name: 34, spec: 22, orig: 24, used: 24 };
+  const colX = {
+    date: marginX,
+    name: marginX + colW.date,
+    spec: marginX + colW.date + colW.name,
+    orig: marginX + colW.date + colW.name + colW.spec,
+    used: marginX + colW.date + colW.name + colW.spec + colW.orig,
+    size: marginX + colW.date + colW.name + colW.spec + colW.orig + colW.used,
+  };
+  const sizeColW = right - colX.size - 2;
 
   const drawTableHeader = () => {
-    doc.setFillColor(...NAVY);
-    doc.rect(marginX, y, right - marginX, 8, "F");
-    doc.setFont("OhsungKR", "normal"); doc.setFontSize(9.5); doc.setTextColor(255, 255, 255);
-    doc.text("작업일자", colX.date, y + 5.5);
-    doc.text("품명", colX.name, y + 5.5);
-    doc.text("규격", colX.spec, y + 5.5);
-    doc.text("원중량", colX.orig, y + 5.5, { align: "right" });
-    doc.text("중량", colX.used, y + 5.5, { align: "right" });
-    doc.text("작업SIZE", colX.size, y + 5.5, { align: "right" });
-    y += 8;
+    doc.setFillColor(...C_TH_BG);
+    doc.rect(marginX, y, right - marginX, 7.5, "F");
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8.5); doc.setTextColor(...META_TX);
+    doc.text("작업일자", colX.date + 1.5, y + 5.2);
+    doc.text("품명", colX.name + 1.5, y + 5.2);
+    doc.text("규격", colX.spec + 1.5, y + 5.2);
+    doc.text("원중량", colX.orig + colW.orig - 1.5, y + 5.2, { align: "right" });
+    doc.text("중량", colX.used + colW.used - 1.5, y + 5.2, { align: "right" });
+    doc.text("작업SIZE", colX.size + 1.5, y + 5.2);
+    y += 7.5;
+  };
+
+  const ensureSpace = (need: number) => {
+    if (y + need > 280) {
+      doc.addPage();
+      y = 16;
+      drawHeader();
+      y = 43;
+      drawTableHeader();
+    }
   };
 
   drawTableHeader();
 
-  let totalOriginal = 0, totalUsed = 0;
-  doc.setFontSize(9);
+  doc.setFontSize(8.3);
   if (rows.length === 0) {
     doc.setFont("OhsungKR", "normal"); doc.setTextColor(...GRAY_SUB);
     doc.text("작업 내역이 없습니다", pageW / 2, y + 6, { align: "center" });
     y += 9;
   }
   rows.forEach((r, i) => {
-    const rowH = 7;
-    if (y + rowH > 275) {
-      doc.addPage();
-      y = 20;
-      drawHeader();
-      y = 32;
-      drawTableHeader();
-    }
+    const sizeText = String(r.process_rule ?? "") || "-";
+    const sizeLines = doc.splitTextToSize(sizeText, sizeColW);
+    const rowH = Math.max(7, sizeLines.length * 4 + 3);
+    ensureSpace(rowH);
     if (i % 2 === 1) { doc.setFillColor(...ALT_ROW); doc.rect(marginX, y, right - marginX, rowH, "F"); }
     doc.setFont("OhsungKR", "normal"); doc.setTextColor(...DARK);
-    doc.text(String(r.joborder_date ?? ""), colX.date, y + 5);
-    doc.text(String(r.product_name ?? ""), colX.name, y + 5);
-    doc.text(String(r.spec ?? ""), colX.spec, y + 5);
-    doc.text(Number(r.original_weight || 0).toLocaleString(), colX.orig, y + 5, { align: "right" });
-    doc.text(Number(r.used_weight || 0).toLocaleString(), colX.used, y + 5, { align: "right" });
-    doc.text(String(r.process_rule ?? "") || "-", colX.size, y + 5, { align: "right" });
-    totalOriginal += Number(r.original_weight) || 0;
-    totalUsed += Number(r.used_weight) || 0;
+    const textY = y + 5;
+    doc.text(String(r.joborder_date ?? ""), colX.date + 1.5, textY);
+    doc.text(String(r.product_name ?? ""), colX.name + 1.5, textY, { maxWidth: colW.name - 2 });
+    doc.text(String(r.spec ?? ""), colX.spec + 1.5, textY, { maxWidth: colW.spec - 2 });
+    doc.text(`${Number(r.original_weight || 0).toLocaleString()}kg`, colX.orig + colW.orig - 1.5, textY, { align: "right" });
+    doc.setFont("OhsungKR", "normal");
+    doc.text(`${Number(r.used_weight || 0).toLocaleString()}kg`, colX.used + colW.used - 1.5, textY, { align: "right" });
+    doc.text(sizeLines, colX.size + 1.5, textY);
     doc.setDrawColor(...BORDER); doc.setLineWidth(0.15);
     doc.line(marginX, y + rowH, right, y + rowH);
     y += rowH;
   });
 
   y += 2;
+  ensureSpace(20);
   doc.setDrawColor(...NAVY); doc.setLineWidth(0.6);
   doc.line(marginX, y, right, y);
   y += 7;
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(11); doc.setTextColor(...DARK);
-  doc.text("원중량 합계", colX.used - 28, y, { align: "right" });
-  doc.text(`${totalOriginal.toLocaleString()} kg`, colX.used, y, { align: "right" });
-  doc.text(`중량 합계 ${totalUsed.toLocaleString()} kg`, right, y, { align: "right" });
+  doc.setFont("OhsungKR", "normal"); doc.setFontSize(10.5); doc.setTextColor(...DARK);
+  doc.text(`원중량 계  ${totalOriginal.toLocaleString()} kg`, colX.used + colW.used, y, { align: "right" });
+  doc.text(`중량 계  ${totalUsed.toLocaleString()} kg`, right, y, { align: "right" });
 
-  y += 14;
+  y += 13;
   doc.setFont("OhsungKR", "normal"); doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
   doc.text("본 리스트는 오성철강 스마트 이알피에서 자동 생성되었습니다.", marginX, y);
   y += 5;
   doc.text("내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.", marginX, y);
 
-  y += 18;
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(13); doc.setTextColor(...DARK);
+  y += 16;
+  doc.setFont("OhsungKR", "normal"); doc.setFontSize(12); doc.setTextColor(...DARK);
   doc.text("오 성 철 강 사", right, y, { align: "right" });
 
   return new Uint8Array(doc.output("arraybuffer"));
