@@ -113,6 +113,7 @@ export const teamBadgeColors = {
   '경리/재무': { bg: COLORS.amberBg, color: COLORS.amber },
   공통: { bg: '#e9edf3', color: COLORS.steel },
   '고객사 포털': { bg: '#ece5f9', color: '#5a3d99' },
+  'AI 신규제안': { bg: COLORS.accentBg, color: COLORS.accentDark },
 };
 
 export function fmtWon(n) {

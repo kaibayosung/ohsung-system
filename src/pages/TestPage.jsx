@@ -19,6 +19,7 @@ import {
   LoginHomeLauncher, NotificationCenter, GlobalSearch, AdminSettings,
 } from './test/commonScreens';
 import { CustomerPortal } from './test/customerPortal';
+import { OcrDocumentIntake, KakaoOrderChannel } from './test/proposalScreens';
 
 const TEAM_ICONS = {
   경영: '📊',
@@ -27,6 +28,7 @@ const TEAM_ICONS = {
   '경리/재무': '💰',
   공통: '⚙️',
   '고객사 포털': '🤝',
+  'AI 신규제안': '🤖',
 };
 
 const TEAM_GROUPS = [
@@ -85,6 +87,12 @@ const TEAM_GROUPS = [
   {
     key: 'portal', label: '고객사 포털', screens: [
       { key: 'customer-portal', label: '31 고객사 포털 (데모)' },
+    ],
+  },
+  {
+    key: 'proposal', label: 'AI 신규제안', screens: [
+      { key: 'ocr-intake', label: '32 OCR 문서인식 (제안)' },
+      { key: 'kakao-order', label: '33 카카오톡 주문접수 (제안)' },
     ],
   },
 ];
@@ -164,6 +172,9 @@ function TestPage() {
       case 'admin': return <AdminSettings />;
 
       case 'customer-portal': return <CustomerPortal />;
+
+      case 'ocr-intake': return <OcrDocumentIntake />;
+      case 'kakao-order': return <KakaoOrderChannel />;
       default: return null;
     }
   };

@@ -12,7 +12,7 @@ import AccessLog from './AccessLog';
 import CEOReport from './CEOReport';
 import CEODailyKpiPage from './pages/CEODailyKpiPage';
 import ExpensePage from './pages/ExpensePage';
-import TestPage from './pages/TestPage';
+import LabPage from './pages/LabPage';
 import SalesWorkflowPage from './pages/SalesWorkflowPage';
 import CustomerPortalPage from './pages/CustomerPortalPage';
 import InboundFaxPage from './pages/InboundFaxPage';
@@ -121,7 +121,8 @@ function App() {
   //  - 매출 관리: 매출이 발생하는 지점(영업·스크랩) — 운영자·경리용
   //  - 비용 관리: 지출 처리·장부 기록 — 경리용
   //  - 대표님 경영보고: 실적·인사이트 확인 — 대표님용
-  //  - 고객사 포털 / 테스트: 성격이 달라 그룹에 넣지 않고 독립 메뉴로 분리
+  //  - 오성철강 연구실: AI 신규제안 프로토타입 미리보기 — 맨 앞에 독립 메뉴로 분리
+  //  - 고객사 포털: 성격이 달라 그룹에 넣지 않고 독립 메뉴로 분리
   const menuGroups = [
     {
       key: 'workflow', label: '워크플로우 관리', icon: '🔧', role: '운영자용 · 현장 실무',
@@ -156,10 +157,11 @@ function App() {
     },
   ];
 
+  const labItem = { page: 'lab', label: '오성철강 연구실', icon: '🔬', role: 'AI 신규제안 프로토타입 미리보기' };
+
   const standaloneItems = [
     { page: 'customer', label: '고객사 포털', icon: '🏢', role: '고객사 조회용' },
     { page: 'account', label: '계정 관리', icon: '🔑', role: '관리자용', adminOnly: true },
-    { page: 'test', label: '테스트', icon: '🧪', role: '개발자용', adminOnly: true },
   ];
 
   // admin이 아니면 adminOnly로 표시된 그룹/메뉴는 목록 자체에서 제외 (버튼을 숨기는 것뿐 아니라
@@ -233,6 +235,18 @@ function App() {
         </div>
         
         <nav style={styles.nav} ref={navRef}>
+          <button
+            key={labItem.page}
+            className="op-nav-btn"
+            onClick={() => { setCurrentPage(labItem.page); setOpenMenu(null); }}
+            style={getBtnStyle(labItem.page)}
+            title={labItem.role}
+          >
+            {labItem.icon} {labItem.label}
+          </button>
+
+          <div style={styles.navDivider} />
+
           {visibleMenuGroups.map((group) => {
             const isActive = group.items.some((i) => i.page === currentPage);
             const isOpen = openMenu === group.key;
@@ -318,7 +332,7 @@ function App() {
         {currentPage === 'ceo' && myStaff?.role === 'admin' && <CEOReport />}
         {currentPage === 'dailykpi' && myStaff?.role === 'admin' && <CEODailyKpiPage />}
         {currentPage === 'accesslog' && myStaff?.role === 'admin' && <AccessLog />}
-        {currentPage === 'test' && myStaff?.role === 'admin' && <TestPage />}
+        {currentPage === 'lab' && <LabPage />}
         {currentPage === 'account' && myStaff?.role === 'admin' && <AccountManagementPage />}
         {currentPage === 'scrap' && <ScrapSalesPage />}
         {currentPage === 'expense' && <ExpensePage />}
