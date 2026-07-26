@@ -3,6 +3,7 @@
 // ⚠️ 아직 실제 OCR 엔진·카카오 비즈니스 API·그린ERP 쓰기 연동은 연결되지 않은 "UI 선공개" 프로토타입입니다.
 // 오성철강_AI도입계획안.docx 우선순위 제안 ①·②·③에 해당하는 화면 흐름을 미리 보여주기 위해
 // 샘플 데이터로 동작합니다. 실제 개발 시 OCR 인식/카카오 API/그린ERP 저장 로직이 이 화면 뒤에 연결됩니다.
+// 추가: OrderFlowV2 (파일 하단) — 이해관계자 검토회의(1~5차) 12개 결정사항을 반영한 통합 흐름입니다.
 import React, { useState, useEffect } from 'react';
 import { COLORS, box, pill } from './theme';
 import { supabase, supabaseUrl } from '../../supabaseClient';
@@ -650,6 +651,487 @@ export function FieldCoilConfirm({ drafts, onConfirmCoil }) {
             )}
           </tbody>
         </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------- 신규서비스 통합 흐름 v2 ----------
+// 2026-07 이해관계자 검토회의(1~5차, 이원춘 이사/지게차 기사/고객사 담당자/멜벤/대표님/정대균 실장)에서
+// 확정한 12개 결정사항을 반영한 통합 프로토타입입니다. 기존 'FAX 작업요청서 접수'·'현장 코일확정' 탭은
+// 그대로 남겨두고(결정12: 언제든 기존 방식과 병행 가능), 이 화면은 회의에서 새로 확정된 요구사항을
+// 반영한 버전입니다.
+//  결정3 초안 등록 화면에 원본 팩스 대조 UI 추가
+//        (※ 엔팩스 파일은 로그인 세션이 있어야 열람 가능해 지금 당장 <img>로 띄울 수 없습니다.
+//         이미지 프록시 Edge Function은 아직 없다는 점을 화면에 그대로 안내하고, "대조 확인" 체크를
+//         받는 방식으로 우선 구현했습니다.)
+//  결정5 거래처는 자동확정하지 않고, "원본과 대조 확인" 체크를 완료해야 초안 등록 버튼이 활성화됨
+//  결정6 현장 코일확정 화면에 요청 규격을 태블릿에서 큼직하게 참고 표시 (자동 필터링 아님)
+//  결정7 확정된 코일 정보를 멜벤용 라인 대시보드에도 표시
+//  결정8 1차 상용화 범위 = 슬리팅2 라인 (화면 상단 배지로 명시)
+//  결정9 지게차 기사는 정식 로그인 대신 "기사 이름 선택 + 확정 이력 기록"으로 최소 추적성 확보
+const DRIVER_NAMES = ['김철수', '박영수', '이만호'];
+
+const V2_SUBTABS = [
+  { key: 'intake', label: '① 주문접수 · 초안', icon: '📠' },
+  { key: 'field', label: '② 현장 코일확정 (태블릿)', icon: '🚜' },
+  { key: 'line', label: '③ 라인 대시보드 · 멜벤', icon: '🖥️' },
+];
+
+export function OrderFlowV2({ drafts, onCreateDraft, onApprove, onConfirmCoil }) {
+  const [sub, setSub] = useState('intake');
+  return (
+    <div style={box.page}>
+      <div>
+        <h2 style={box.title}>
+          신규서비스 통합 흐름
+          <span style={{ marginLeft: '10px', verticalAlign: 'middle' }}>
+            <span style={pill(COLORS.accentBg, COLORS.accentDark)}>v2 · 이해관계자 검토회의 반영</span>
+          </span>
+        </h2>
+        <p style={box.hint}>이원춘 이사 · 지게차 기사 · 고객사 담당자 · 멜벤 · 대표님 · 정대균 실장 5차 검토회의에서 확정한 12개 결정사항을 반영했습니다. 1차 시범 범위: 슬리팅2 라인 · 거래처 1~2곳 · 2주.</p>
+      </div>
+      <ProposalBanner text="이 화면은 기존 'FAX 작업요청서 접수' · '현장 코일확정' 탭을 대체하지 않습니다. 언제든 기존 방식과 병행 운영할 수 있도록(결정12) 별도 메뉴로 추가했습니다." />
+
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        {V2_SUBTABS.map((t) => (
+          <button key={t.key} onClick={() => setSub(t.key)} style={{
+            ...box.ghostBtn, padding: '11px 20px', fontSize: '15px',
+            ...(sub === t.key ? { backgroundColor: COLORS.navy, color: '#fff', borderColor: COLORS.navy } : {}),
+          }}>
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {sub === 'intake' && <IntakeSectionV2 drafts={drafts} onCreateDraft={onCreateDraft} onApprove={onApprove} />}
+      {sub === 'field' && <FieldConfirmTablet drafts={drafts} onConfirmCoil={onConfirmCoil} />}
+      {sub === 'line' && <LineDashboardMelben drafts={drafts} />}
+    </div>
+  );
+}
+
+function IntakeSectionV2({ drafts, onCreateDraft, onApprove }) {
+  const [inbox, setInbox] = useState([]);
+  const [loadingInbox, setLoadingInbox] = useState(true);
+  const [checkingFax, setCheckingFax] = useState(false);
+  const [ocrLoadingId, setOcrLoadingId] = useState(null);
+  const [ocrError, setOcrError] = useState('');
+  const [form, setForm] = useState(null);
+  const [sourceChecked, setSourceChecked] = useState(false);
+
+  const loadInbox = async () => {
+    setLoadingInbox(true);
+    const { data, error } = await supabase.from('enfax_inbox').select('*').order('received_at', { ascending: false }).limit(20);
+    if (!error) setInbox(data || []);
+    setLoadingInbox(false);
+  };
+
+  useEffect(() => { loadInbox(); }, []);
+
+  const checkFaxNow = async () => {
+    setCheckingFax(true);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/enfax-sync?recordCount=50`);
+      const json = await res.json();
+      if (!json.ok) { alert('FAX 정보 확인 실패: ' + (json.error || '알 수 없는 오류')); return; }
+      await loadInbox();
+      alert(json.insertedCount > 0 ? `신규 팩스 ${json.insertedCount}건을 받아왔습니다.` : '새로 수신된 팩스가 없습니다.');
+    } catch (e) {
+      alert('FAX 정보 확인 중 오류: ' + e.message);
+    } finally {
+      setCheckingFax(false);
+    }
+  };
+
+  const runOcr = async (f) => {
+    if (!f.file_path) { alert('파일 경로 정보가 없습니다.'); return; }
+    setOcrLoadingId(f.id);
+    setOcrError('');
+    setSourceChecked(false);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/enfax-ocr?filePath=${encodeURIComponent(f.file_path)}`);
+      const json = await res.json();
+      if (!json.ok) { setOcrError('AI 인식 실패: ' + (json.error || '알 수 없는 오류')); return; }
+      const ex = json.extracted || {};
+      const first = Array.isArray(ex.items) && ex.items.length > 0 ? ex.items[0] : {};
+      setForm({
+        fax: f,
+        customer_name: ex.company_name || f.sender || '',
+        material: first.maker || '',
+        spec: [first.thick, first.width].filter(Boolean).join(' X ') || '',
+        qty_weight: first.weight != null ? String(first.weight) : '',
+        work_type: first.slit || '',
+        due_date: ex.due_date || '',
+      });
+    } catch (e) {
+      setOcrError('AI 인식 중 오류: ' + e.message);
+    } finally {
+      setOcrLoadingId(null);
+    }
+  };
+
+  const createDraft = () => {
+    onCreateDraft({
+      customer_name: form.customer_name, material: form.material, spec: form.spec,
+      qty_weight: form.qty_weight, work_type: form.work_type, due_date: form.due_date,
+      source: 'FAX(엔팩스 실연동)', sourceDoc: form.fax.file_name, confidence: null,
+    });
+    setForm(null);
+    setSourceChecked(false);
+  };
+
+  const FIELD_LABELS = [
+    ['customer_name', '거래처'], ['material', '강종/재질(메이커 값 참고)'], ['spec', '규격(두께 X 폭)'],
+    ['qty_weight', '요청중량(kg)'], ['work_type', '가공내용(슬릿규격 참고)'], ['due_date', '희망납기일'],
+  ];
+
+  function statusPill(s) {
+    if (s === '배정완료') return pill(COLORS.greenBg, COLORS.green);
+    if (s === '배차대기') return pill(COLORS.amberBg, COLORS.amber);
+    return pill('#edf2f7', COLORS.steel);
+  }
+
+  return (
+    <>
+      <div style={box.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ ...box.subtitle, border: 'none', margin: 0, padding: 0 }}>엔팩스 수신함 (실제 데이터)</h3>
+          <button style={{ ...box.primaryBtn, padding: '10px 20px', fontSize: '15px' }} disabled={checkingFax} onClick={checkFaxNow}>
+            {checkingFax ? '확인 중...' : '📠 FAX 정보 확인하기'}
+          </button>
+        </div>
+        {loadingInbox ? (
+          <p style={box.loadingText}>불러오는 중...</p>
+        ) : inbox.length === 0 ? (
+          <p style={box.emptyText}>수신된 팩스가 없습니다. 위 버튼을 눌러 엔팩스(fax.enfax.com) 수신함을 조회해보세요.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {inbox.map((f) => (
+              <div key={f.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
+                background: f.status === 'new' ? COLORS.accentSoft : COLORS.bg,
+                border: `1px solid ${f.status === 'new' ? COLORS.accentBg : COLORS.border}`,
+                borderRadius: '10px', padding: '12px 16px',
+              }}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: f.status === 'new' ? 800 : 600, color: '#243040' }}>
+                    {f.sender || '(발신자 미상)'} {f.status === 'new' && <span style={{ fontSize: '11px', color: COLORS.accentDark, marginLeft: '6px' }}>NEW</span>}
+                  </div>
+                  <div style={{ fontSize: '13px', color: COLORS.steelLight, marginTop: '2px' }}>
+                    {f.fax_number} · {f.received_at ? new Date(f.received_at).toLocaleString('ko-KR') : ''} · {f.pages}페이지 · {f.file_name}
+                  </div>
+                </div>
+                <button style={{ ...box.ghostBtn, padding: '9px 16px', fontSize: '14px' }} disabled={!f.file_path || ocrLoadingId === f.id} onClick={() => runOcr(f)}>
+                  {ocrLoadingId === f.id ? '인식 중...' : '🤖 AI 자동인식'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {ocrError && (
+          <div style={{ marginTop: '14px', backgroundColor: COLORS.redBg, color: COLORS.red, padding: '12px 16px', borderRadius: '10px', fontSize: '14px', fontWeight: 700 }}>⚠️ {ocrError}</div>
+        )}
+      </div>
+
+      {form && (
+        <div style={box.card}>
+          <h3 style={box.subtitle}>인식 결과 확인 · 원본 대조 후 초안 등록 <span style={{ marginLeft: '8px' }}><span style={pill(COLORS.greenBg, COLORS.green)}>결정3·5 반영</span></span></h3>
+          <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+            <div style={{ width: '280px', flexShrink: 0 }}>
+              <label style={box.label}>원본 팩스</label>
+              <div style={{
+                border: `1.5px dashed ${COLORS.border}`, borderRadius: '12px', padding: '18px', textAlign: 'center',
+                backgroundColor: COLORS.bg, minHeight: '220px', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center', gap: '10px',
+              }}>
+                <span style={{ fontSize: '28px' }}>📠</span>
+                <span style={{ fontSize: '14px', color: COLORS.steel, fontWeight: 700 }}>{form.fax.file_name}</span>
+                <span style={{ fontSize: '13px', color: COLORS.steelLight }}>발신 {form.fax.sender} · {form.fax.pages}페이지</span>
+                <span style={{ fontSize: '12px', color: COLORS.amber, marginTop: '6px' }}>⚠ 엔팩스 원본은 로그인 세션이 필요해 아직 화면에서 바로 열람할 수 없습니다 (이미지 프록시 별도 개발 필요)</span>
+              </div>
+              <label style={{ display: 'flex', gap: '8px', alignItems: 'flex-start', marginTop: '12px', fontSize: '14px', color: COLORS.steel, cursor: 'pointer' }}>
+                <input type="checkbox" checked={sourceChecked} onChange={(e) => setSourceChecked(e.target.checked)} style={{ marginTop: '3px' }} />
+                엔팩스 원본(발신자·품목)과 아래 인식 결과를 대조 확인했습니다
+              </label>
+            </div>
+            <div style={{ flex: 1, minWidth: '340px' }}>
+              <p style={box.hint}>원본 팩스: {form.fax.file_name} · 발신 {form.fax.sender}</p>
+              <div style={box.formGrid}>
+                {FIELD_LABELS.map(([key, label]) => (
+                  <div key={key}>
+                    <label style={box.label}>{label}</label>
+                    <input style={box.input} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+                  </div>
+                ))}
+              </div>
+              <p style={box.hint}>거래처는 자동으로 확정하지 않습니다 — 왼쪽 체크를 완료해야 등록 버튼이 활성화됩니다(3자 거래 사례 대응).</p>
+              <div style={{ marginTop: '18px', display: 'flex', gap: '10px' }}>
+                <button style={{ ...box.primaryBtn, opacity: sourceChecked ? 1 : 0.45, cursor: sourceChecked ? 'pointer' : 'not-allowed' }} disabled={!sourceChecked} onClick={createDraft}>작업지시서 초안 등록</button>
+                <button style={box.ghostBtn} onClick={() => { setForm(null); setSourceChecked(false); }}>취소</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={box.card}>
+        <h3 style={box.subtitle}>작업지시서 초안 목록</h3>
+        <table style={box.table}>
+          <thead>
+            <tr>
+              <th style={box.th}>거래처</th><th style={box.th}>강종/규격</th><th style={box.th}>요청중량</th>
+              <th style={box.th}>가공내용</th><th style={box.th}>희망납기일</th><th style={box.th}>상태</th><th style={box.th}>승인</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drafts.map((d) => (
+              <tr key={d.id}>
+                <td style={box.td}>{d.customer_name}</td>
+                <td style={box.td}>{d.material} · {d.spec}</td>
+                <td style={box.td}>{d.qty_weight}kg</td>
+                <td style={box.td}>{d.work_type}</td>
+                <td style={box.td}>{d.due_date}</td>
+                <td style={box.td}><span style={statusPill(d.status)}>{d.status}</span></td>
+                <td style={box.td}>
+                  {d.status === '초안' ? (
+                    <button style={{ ...box.ghostBtn, padding: '7px 14px', fontSize: '13px' }} onClick={() => onApprove(d.id)}>배차 승인</button>
+                  ) : d.status === '배차대기' ? (
+                    <span style={{ color: COLORS.steelLight, fontSize: '13px' }}>현장 확정 대기중</span>
+                  ) : (
+                    <span style={{ color: COLORS.steelLight, fontSize: '13px' }}>코일 {d.assigned_coil_id}</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {drafts.length === 0 && (
+              <tr><td style={box.td} colSpan={7}><span style={box.emptyText}>등록된 작업지시서 초안이 없습니다.</span></td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+// 태블릿(지게차 거치) 전용 — 큰 글씨·큰 터치영역·단일 컬럼. 실제 재고 데이터/동시배정 방지 로직은
+// 기존 FieldCoilConfirm과 동일하며, 여기서는 '검색 결과를 탭하면 선택되고, 하단의 확정 버튼을
+// 눌러야 실제로 확정'되는 2단계 방식으로 오조작을 줄였습니다.
+function FieldConfirmTablet({ drafts, onConfirmCoil }) {
+  const waiting = drafts.filter((d) => d.status === '배차대기');
+  const [activeId, setActiveId] = useState(waiting[0]?.id ?? null);
+  const active = drafts.find((d) => d.id === activeId) || waiting[0];
+  const [mode, setMode] = useState('search'); // 결정1: QR 없이 코일ID 검색을 기본으로
+  const [scannedCoil, setScannedCoil] = useState(null);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [inventory, setInventory] = useState([]);
+  const [loadingInv, setLoadingInv] = useState(true);
+  const [takenIds, setTakenIds] = useState(new Set());
+  const [driverName, setDriverName] = useState('');
+
+  useEffect(() => {
+    (async () => {
+      const { data, error: err } = await supabase
+        .from('greenp_inventory')
+        .select('*')
+        .gt('remaining_weight', 0)
+        .order('received_date', { ascending: false })
+        .limit(30);
+      if (!err && data) {
+        setInventory(data);
+        if (data.length > 0) setTakenIds(new Set([data[0].product_name]));
+      }
+      setLoadingInv(false);
+    })();
+  }, []);
+
+  const simulateScan = () => {
+    const candidates = inventory.filter((c) => !takenIds.has(c.product_name));
+    if (candidates.length === 0) return;
+    const picked = candidates[Math.floor(Math.random() * candidates.length)];
+    setScannedCoil(picked.product_name);
+    setError('');
+  };
+
+  const filteredInventory = inventory.filter((c) =>
+    query.trim() === '' || (c.product_name || '').toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  const confirmCoil = (coilId) => {
+    if (!driverName) { setError('먼저 기사 이름을 선택해주세요.'); return; }
+    const coil = inventory.find((c) => c.product_name === coilId);
+    if (!coil) return;
+    if (takenIds.has(coilId)) {
+      setError(`코일 ${coilId}는 이미 다른 작업에 배정되어 있습니다. 다른 코일을 선택해주세요.`);
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setTimeout(() => {
+      setTakenIds((prev) => new Set(prev).add(coilId));
+      onConfirmCoil(active.id, coilId, driverName);
+      setSaving(false);
+      setScannedCoil(null);
+      setDriverName('');
+      const next = drafts.find((d) => d.status === '배차대기' && d.id !== active.id);
+      setActiveId(next ? next.id : null);
+    }, 700);
+  };
+
+  const tabletCard = { backgroundColor: COLORS.white, border: `1px solid ${COLORS.border}`, borderRadius: '20px', padding: '22px', boxShadow: COLORS.shadow };
+  const bigBtnStyle = (isActive) => ({
+    flex: 1, padding: '22px', borderRadius: '16px', fontSize: '18px', fontWeight: 800,
+    border: `2px solid ${isActive ? COLORS.navy : COLORS.border}`,
+    backgroundColor: isActive ? COLORS.navy : COLORS.white, color: isActive ? '#fff' : COLORS.steel,
+    cursor: 'pointer', textAlign: 'center',
+  });
+
+  if (!active) {
+    return <div style={tabletCard}><p style={box.emptyText}>배차대기 중인 작업지시서가 없습니다.</p></div>;
+  }
+
+  return (
+    <div style={{ maxWidth: '880px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+        <span style={pill(COLORS.amberBg, COLORS.amber)}>배차대기 {waiting.length}건</span>
+        <span style={pill(COLORS.blueBg, COLORS.blue)}>1차 시범 · 슬리팅2 라인 (결정8)</span>
+      </div>
+
+      {waiting.length > 1 && (
+        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '4px' }}>
+          {waiting.map((d) => (
+            <button key={d.id} onClick={() => { setActiveId(d.id); setScannedCoil(null); setQuery(''); setError(''); }}
+              style={{
+                flexShrink: 0, padding: '12px 18px', borderRadius: '14px', fontSize: '15px', fontWeight: 700,
+                border: `2px solid ${activeId === d.id ? COLORS.accent : COLORS.border}`,
+                backgroundColor: activeId === d.id ? COLORS.accentSoft : COLORS.white, color: COLORS.steel, cursor: 'pointer',
+              }}>
+              {d.customer_name}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div style={{ ...tabletCard, textAlign: 'center', backgroundColor: COLORS.bg }}>
+        <div style={{ fontSize: '20px', fontWeight: 800, color: COLORS.navy, marginBottom: '10px' }}>{active.customer_name}</div>
+        <div style={{ fontSize: '13px', color: COLORS.steelLight, fontWeight: 700, letterSpacing: '0.04em', marginBottom: '6px' }}>요청 규격 (참고용 · 자동 필터 아님 · 결정6)</div>
+        <div style={{ fontSize: '34px', fontWeight: 900, color: COLORS.accentDark, lineHeight: 1.2 }}>{active.material} / {active.spec}</div>
+        <div style={{ fontSize: '16px', color: COLORS.steel, marginTop: '10px' }}>요청중량 {active.qty_weight}kg · {active.work_type} · 납기 {active.due_date}</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={bigBtnStyle(mode === 'qr')} onClick={() => setMode('qr')}>📷 QR 스캔</div>
+        <div style={bigBtnStyle(mode === 'search')} onClick={() => setMode('search')}>🔎 코일ID 검색</div>
+      </div>
+
+      {mode === 'qr' ? (
+        <div style={{ ...tabletCard, textAlign: 'center' }}>
+          {!scannedCoil ? (
+            <>
+              <p style={{ color: COLORS.steel, fontSize: '16px', marginBottom: '16px' }}>스캐너로 코일에 붙은 QR을 스캔하세요. (회사 보유 스캐너 모델 확인 전이라 시뮬레이션 버튼으로 대체)</p>
+              <button style={{ ...box.primaryBtn, padding: '18px 32px', fontSize: '17px' }} onClick={simulateScan}>QR 스캔 시뮬레이션</button>
+            </>
+          ) : (
+            <>
+              <p style={{ color: COLORS.steel, fontSize: '14px', marginBottom: '8px' }}>스캔된 코일ID</p>
+              <p style={{ fontSize: '28px', fontWeight: 900, color: COLORS.navy, marginBottom: '10px' }}>{scannedCoil}</p>
+              <button style={{ ...box.ghostBtn, padding: '10px 20px' }} onClick={() => setScannedCoil(null)}>다시 스캔</button>
+            </>
+          )}
+        </div>
+      ) : (
+        <div style={tabletCard}>
+          <input style={{ ...box.input, marginBottom: '14px', padding: '16px', fontSize: '18px' }} placeholder="코일ID로 검색 (예: H3D)" value={query} onChange={(e) => setQuery(e.target.value)} />
+          {loadingInv ? (
+            <p style={box.loadingText}>실제 재고(그린ERP) 불러오는 중...</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto' }}>
+              {filteredInventory.map((c) => {
+                const taken = takenIds.has(c.product_name);
+                const isSelected = scannedCoil === c.product_name;
+                return (
+                  <div key={c.product_code || c.product_name} onClick={() => !taken && !saving && setScannedCoil(c.product_name)}
+                    style={{
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 18px',
+                      borderRadius: '14px', border: `2px solid ${isSelected ? COLORS.accent : COLORS.border}`,
+                      backgroundColor: taken ? '#f4f5f7' : (isSelected ? COLORS.accentSoft : COLORS.white),
+                      cursor: taken ? 'not-allowed' : 'pointer', opacity: taken ? 0.6 : 1,
+                    }}>
+                    <div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: COLORS.navy }}>{c.product_name}</div>
+                      <div style={{ fontSize: '14px', color: COLORS.steel, marginTop: '2px' }}>{c.customer_name} · {c.spec} · 잔량 {Number(c.remaining_weight || 0).toLocaleString()}kg</div>
+                    </div>
+                    {taken ? <span style={pill(COLORS.redBg, COLORS.red)}>배정됨</span> : <span style={pill(COLORS.greenBg, COLORS.green)}>가용</span>}
+                  </div>
+                );
+              })}
+              {filteredInventory.length === 0 && <p style={box.emptyText}>검색된 재고가 없습니다.</p>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {error && (
+        <div style={{ backgroundColor: COLORS.redBg, color: COLORS.red, padding: '14px 18px', borderRadius: '14px', fontSize: '15px', fontWeight: 700 }}>⚠️ {error}</div>
+      )}
+
+      <div style={{ ...tabletCard, display: 'flex', gap: '14px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 220px' }}>
+          <label style={box.label}>기사 이름 (결정9 · 로그인 대신 이름선택으로 책임소재 기록)</label>
+          <select style={{ ...box.input, padding: '14px', fontSize: '17px' }} value={driverName} onChange={(e) => setDriverName(e.target.value)}>
+            <option value="">선택하세요</option>
+            {DRIVER_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <button
+          style={{ ...box.primaryBtn, flex: '2 1 260px', padding: '22px', fontSize: '19px', opacity: (scannedCoil && driverName && !saving) ? 1 : 0.5, cursor: (scannedCoil && driverName && !saving) ? 'pointer' : 'not-allowed' }}
+          disabled={!scannedCoil || !driverName || saving}
+          onClick={() => confirmCoil(scannedCoil)}
+        >
+          {saving ? '확정 처리중...' : '✓ 코일 확정'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 멜벤(장비 운용 담당)이 보는 라인 대시보드 — 결정7. 기존 설비 운전현황 화면은 그대로 두고,
+// 지게차 기사가 확정한 코일 정보만 새 패널로 덧붙입니다(실제 개발 시 기존 대시보드 화면에 삽입).
+function LineDashboardMelben({ drafts }) {
+  const assigned = drafts.filter((d) => d.status === '배정완료');
+  return (
+    <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+      <div style={{ ...box.card, flex: '1 1 380px' }}>
+        <h3 style={{ ...box.subtitle, border: 'none', margin: 0, padding: '0 0 12px' }}>슬리팅2 라인 · 설비 운전현황 (기존 화면)</h3>
+        <div style={{
+          border: `1.5px dashed ${COLORS.border}`, borderRadius: '14px', padding: '40px', textAlign: 'center',
+          color: COLORS.steelLight, fontSize: '15px', backgroundColor: COLORS.bg,
+        }}>
+          기존 설비 대시보드 영역 (변경 없음)
+        </div>
+      </div>
+      <div style={{ ...box.card, flex: '1 1 320px' }}>
+        <h3 style={{ ...box.subtitle, border: 'none', margin: 0, padding: '0 0 12px' }}>
+          현재 투입 예정 코일 <span style={{ marginLeft: '8px' }}><span style={pill(COLORS.greenBg, COLORS.green)}>결정7 신규</span></span>
+        </h3>
+        {assigned.length === 0 ? (
+          <p style={box.emptyText}>아직 확정된 작업이 없습니다. 지게차 기사가 코일을 확정하면 여기 표시됩니다.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {assigned.map((d) => (
+              <div key={d.id} style={{ border: `1px solid ${COLORS.border}`, borderRadius: '14px', padding: '16px 18px', backgroundColor: COLORS.white }}>
+                <span style={pill(COLORS.greenBg, COLORS.green)}>배정완료 · 지게차 확정</span>
+                <div style={{ fontSize: '18px', fontWeight: 800, color: COLORS.navy, marginTop: '8px' }}>{d.assigned_coil_id}</div>
+                <div style={{ fontSize: '14px', color: COLORS.steel, marginTop: '2px' }}>{d.material} · {d.spec} · {d.customer_name}</div>
+                <div style={{ fontSize: '12px', color: COLORS.steelLight, marginTop: '8px' }}>
+                  확정: {d.assigned_driver_name || '-'} {d.confirmed_at ? `· ${new Date(d.confirmed_at).toLocaleTimeString('ko-KR')}` : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

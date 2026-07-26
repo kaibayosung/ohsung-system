@@ -4,13 +4,14 @@
 // 기존 '테스트' 메뉴를 대체합니다.
 import React, { useState } from 'react';
 import { COLORS } from './test/theme';
-import { OcrDocumentIntake, KakaoOrderChannel, FaxJoborderIntake, FieldCoilConfirm } from './test/proposalScreens';
+import { OcrDocumentIntake, KakaoOrderChannel, FaxJoborderIntake, FieldCoilConfirm, OrderFlowV2 } from './test/proposalScreens';
 
 const TABS = [
   { key: 'ocr', label: 'OCR 문서인식', icon: '📄' },
   { key: 'kakao', label: '카카오톡 주문접수', icon: '💬' },
   { key: 'fax-joborder', label: 'FAX 작업요청서 접수', icon: '📠' },
   { key: 'field-confirm', label: '현장 코일확정', icon: '🚜' },
+  { key: 'order-flow-v2', label: '신규서비스 통합흐름 (v2)', icon: '🔄' },
 ];
 
 // FAX 작업요청서 접수(No.13-1)와 현장 코일확정(No.13-2)은 하나의 흐름(초안 → 배차대기 → 배정완료)을
@@ -38,8 +39,11 @@ function LabPage() {
   const approveDraft = (id) => {
     setJoborderDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, status: '배차대기' } : d)));
   };
-  const confirmCoil = (id, coilId) => {
-    setJoborderDrafts((prev) => prev.map((d) => (d.id === id ? { ...d, status: '배정완료', assigned_coil_id: coilId } : d)));
+  const confirmCoil = (id, coilId, driverName) => {
+    setJoborderDrafts((prev) => prev.map((d) => (d.id === id ? {
+      ...d, status: '배정완료', assigned_coil_id: coilId,
+      assigned_driver_name: driverName || null, confirmed_at: new Date().toISOString(),
+    } : d)));
   };
 
   return (
@@ -70,6 +74,9 @@ function LabPage() {
       )}
       {tab === 'field-confirm' && (
         <FieldCoilConfirm drafts={joborderDrafts} onConfirmCoil={confirmCoil} />
+      )}
+      {tab === 'order-flow-v2' && (
+        <OrderFlowV2 drafts={joborderDrafts} onCreateDraft={createDraft} onApprove={approveDraft} onConfirmCoil={confirmCoil} />
       )}
     </div>
   );
