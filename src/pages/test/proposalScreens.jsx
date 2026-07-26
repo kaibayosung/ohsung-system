@@ -1,10 +1,11 @@
 // src/pages/test/proposalScreens.jsx
-// AI 신규제안 화면 2종: OCR 문서인식(No.7) / 카카오톡 주문접수 채널(No.12)
-// ⚠️ 아직 실제 OCR 엔진·카카오 비즈니스 API는 연동되지 않은 "UI 선공개" 프로토타입입니다.
-// 오성철강_AI도입계획안.docx 우선순위 제안 ①·②에 해당하는 화면 흐름을 미리 보여주기 위해
-// 샘플 데이터로 동작합니다. 실제 개발 시 OCR 인식/카카오 API 연동 로직이 이 화면 뒤에 연결됩니다.
-import React, { useState } from 'react';
+// AI 신규제안 화면 3종: OCR 문서인식(No.7) / 카카오톡 주문접수 채널(No.12) / 현장 코일 확정(No.13)
+// ⚠️ 아직 실제 OCR 엔진·카카오 비즈니스 API·그린ERP 쓰기 연동은 연결되지 않은 "UI 선공개" 프로토타입입니다.
+// 오성철강_AI도입계획안.docx 우선순위 제안 ①·②·③에 해당하는 화면 흐름을 미리 보여주기 위해
+// 샘플 데이터로 동작합니다. 실제 개발 시 OCR 인식/카카오 API/그린ERP 저장 로직이 이 화면 뒤에 연결됩니다.
+import React, { useState, useEffect } from 'react';
 import { COLORS, box, pill } from './theme';
+import { supabase, supabaseUrl } from '../../supabaseClient';
 
 function ProposalBanner({ text }) {
   return (
@@ -248,6 +249,407 @@ export function KakaoOrderChannel() {
             </>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------- FAX 작업요청서 접수 → 작업지시서 초안 (No.13-1) ----------
+// 주문접수 자동화 상세 시나리오 STEP 1·2에 해당. 카카오톡 계정이 아직 없어 우선 FAX 접수분만 다룹니다.
+// 여기서 만든 초안은 ERP2.0 내부에만 존재하며(그린ERP에는 아직 반영 안 함), 담당자 승인 후 '배차대기'로
+// 바뀌어야 현장 코일확정(No.13-2) 화면에 노출됩니다 — 사람 확인 절차를 유지하기 위함입니다.
+export function FaxJoborderIntake({ drafts, onCreateDraft, onApprove }) {
+  // 이 화면은 이제 샘플 문서가 아니라, 이미 운영 중인 실제 FAX 수신 기능(엔팩스 enfax.com 연동,
+  // SalesWorkflowPage.jsx의 영업(OF) 발주등록 화면과 동일한 enfax-sync / enfax-ocr Edge Function)을
+  // 그대로 재사용합니다. 다른 점은 딱 하나 — 여기서는 enfax_inbox.status를 건드리지 않습니다.
+  // (그 값은 실제 영업 담당자의 발주등록 화면이 같이 쓰는 큐 상태라서, 이 프로토타입에서 'done'
+  // 처리해버리면 실제 업무 화면에서 그 팩스가 사라져 보이는 문제가 생기기 때문입니다.)
+  const [inbox, setInbox] = useState([]);
+  const [loadingInbox, setLoadingInbox] = useState(true);
+  const [checkingFax, setCheckingFax] = useState(false);
+  const [ocrLoadingId, setOcrLoadingId] = useState(null);
+  const [ocrError, setOcrError] = useState('');
+  const [form, setForm] = useState(null); // { fax, customer_name, material, spec, qty_weight, work_type, due_date }
+
+  const loadInbox = async () => {
+    setLoadingInbox(true);
+    const { data, error } = await supabase.from('enfax_inbox').select('*').order('received_at', { ascending: false }).limit(20);
+    if (!error) setInbox(data || []);
+    setLoadingInbox(false);
+  };
+
+  useEffect(() => { loadInbox(); }, []);
+
+  const checkFaxNow = async () => {
+    setCheckingFax(true);
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/enfax-sync?recordCount=50`);
+      const json = await res.json();
+      if (!json.ok) { alert('FAX 정보 확인 실패: ' + (json.error || '알 수 없는 오류')); return; }
+      await loadInbox();
+      alert(json.insertedCount > 0 ? `신규 팩스 ${json.insertedCount}건을 받아왔습니다.` : '새로 수신된 팩스가 없습니다.');
+    } catch (e) {
+      alert('FAX 정보 확인 중 오류: ' + e.message);
+    } finally {
+      setCheckingFax(false);
+    }
+  };
+
+  const runOcr = async (f) => {
+    if (!f.file_path) { alert('파일 경로 정보가 없습니다.'); return; }
+    setOcrLoadingId(f.id);
+    setOcrError('');
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/enfax-ocr?filePath=${encodeURIComponent(f.file_path)}`);
+      const json = await res.json();
+      if (!json.ok) { setOcrError('AI 인식 실패: ' + (json.error || '알 수 없는 오류')); return; }
+      const ex = json.extracted || {};
+      const first = Array.isArray(ex.items) && ex.items.length > 0 ? ex.items[0] : {};
+      setForm({
+        fax: f,
+        customer_name: ex.company_name || f.sender || '',
+        // 실제 OCR 결과는 두께/폭/중량/메이커/슬릿규격/수량(품목표) 단위입니다.
+        // 작업지시서 초안 필드(강종·규격·가공내용)로 근사 매핑한 것으로, 담당자 확인이 꼭 필요합니다.
+        material: first.maker || '',
+        spec: [first.thick, first.width].filter(Boolean).join(' X ') || '',
+        qty_weight: first.weight != null ? String(first.weight) : '',
+        work_type: first.slit || '',
+        due_date: ex.due_date || '',
+      });
+    } catch (e) {
+      setOcrError('AI 인식 중 오류: ' + e.message);
+    } finally {
+      setOcrLoadingId(null);
+    }
+  };
+
+  const createDraft = () => {
+    onCreateDraft({
+      customer_name: form.customer_name, material: form.material, spec: form.spec,
+      qty_weight: form.qty_weight, work_type: form.work_type, due_date: form.due_date,
+      source: 'FAX(엔팩스 실연동)', sourceDoc: form.fax.file_name, confidence: null,
+    });
+    setForm(null);
+  };
+
+  const FIELD_LABELS = [
+    ['customer_name', '거래처'], ['material', '강종/재질(메이커 값 참고)'], ['spec', '규격(두께 X 폭)'],
+    ['qty_weight', '요청중량(kg)'], ['work_type', '가공내용(슬릿규격 참고)'], ['due_date', '희망납기일'],
+  ];
+
+  function statusPill(s) {
+    if (s === '배정완료') return pill(COLORS.greenBg, COLORS.green);
+    if (s === '배차대기') return pill(COLORS.amberBg, COLORS.amber);
+    return pill('#edf2f7', COLORS.steel); // 초안
+  }
+
+  return (
+    <div style={box.page}>
+      <div>
+        <h2 style={box.title}>FAX 작업요청서 접수 · 작업지시서 초안 <span style={{ marginLeft: '10px', verticalAlign: 'middle' }}><span style={pill(COLORS.accentBg, COLORS.accentDark)}>제안 · No.13-1</span></span></h2>
+        <p style={box.hint}>실제 운영 중인 엔팩스 FAX 수신함(엔팩스)과 AI 자동인식을 그대로 사용해, ERP2.0 안에 작업지시서 초안을 만듭니다. 그린ERP에는 아직 반영하지 않고, 담당자 승인 후 지게차 기사 화면(현장 코일확정)에 노출됩니다.</p>
+      </div>
+      <ProposalBanner text="카카오톡 채널은 아직 계정이 없어 이번 1차 개발 범위에서 제외했습니다. 대신 이미 만들어져 있는 실제 FAX 수신(엔팩스) + AI 자동인식 기능을 그대로 재사용합니다 — 아래 목록은 실제 수신함 데이터입니다." />
+
+      <div style={box.card}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <h3 style={{ ...box.subtitle, border: 'none', margin: 0, padding: 0 }}>1. 엔팩스 수신함 (실제 데이터)</h3>
+          <button style={{ ...box.primaryBtn, padding: '10px 20px', fontSize: '15px' }} disabled={checkingFax} onClick={checkFaxNow}>
+            {checkingFax ? '확인 중...' : '📠 FAX 정보 확인하기'}
+          </button>
+        </div>
+        {loadingInbox ? (
+          <p style={box.loadingText}>불러오는 중...</p>
+        ) : inbox.length === 0 ? (
+          <p style={box.emptyText}>수신된 팩스가 없습니다. 위 버튼을 눌러 엔팩스(fax.enfax.com) 수신함을 조회해보세요.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {inbox.map((f) => (
+              <div key={f.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '10px',
+                background: f.status === 'new' ? COLORS.accentSoft : COLORS.bg,
+                border: `1px solid ${f.status === 'new' ? COLORS.accentBg : COLORS.border}`,
+                borderRadius: '10px', padding: '12px 16px',
+              }}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: f.status === 'new' ? 800 : 600, color: '#243040' }}>
+                    {f.sender || '(발신자 미상)'} {f.status === 'new' && <span style={{ fontSize: '11px', color: COLORS.accentDark, marginLeft: '6px' }}>NEW</span>}
+                  </div>
+                  <div style={{ fontSize: '13px', color: COLORS.steelLight, marginTop: '2px' }}>
+                    {f.fax_number} · {f.received_at ? new Date(f.received_at).toLocaleString('ko-KR') : ''} · {f.pages}페이지 · {f.file_name}
+                  </div>
+                </div>
+                <button style={{ ...box.ghostBtn, padding: '9px 16px', fontSize: '14px' }} disabled={!f.file_path || ocrLoadingId === f.id} onClick={() => runOcr(f)}>
+                  {ocrLoadingId === f.id ? '인식 중...' : '🤖 AI 자동인식'}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {ocrError && (
+          <div style={{ marginTop: '14px', backgroundColor: COLORS.redBg, color: COLORS.red, padding: '12px 16px', borderRadius: '10px', fontSize: '14px', fontWeight: 700 }}>⚠️ {ocrError}</div>
+        )}
+      </div>
+
+      {form && (
+        <div style={box.card}>
+          <h3 style={box.subtitle}>2. 인식 결과 확인 · 작업지시서 초안으로 변환</h3>
+          <p style={box.hint}>원본 팩스: {form.fax.file_name} · 발신 {form.fax.sender}</p>
+          <div style={box.formGrid}>
+            {FIELD_LABELS.map(([key, label]) => (
+              <div key={key}>
+                <label style={box.label}>{label}</label>
+                <input style={box.input} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} />
+              </div>
+            ))}
+          </div>
+          <p style={box.hint}>거래처는 자동으로 확정하지 않습니다 — 담당자가 이 화면에서 직접 확인한 뒤 등록해야 합니다(3자 거래 사례 대응). AI 인식 항목은 실제 발주등록 화면의 품목 스키마(두께·폭·메이커·슬릿규격)를 강종/규격/가공내용으로 근사 매핑한 값이라 반드시 원본과 대조해주세요.</p>
+          <div style={{ marginTop: '18px', display: 'flex', gap: '10px' }}>
+            <button style={box.primaryBtn} onClick={createDraft}>작업지시서 초안 등록</button>
+            <button style={box.ghostBtn} onClick={() => setForm(null)}>취소</button>
+          </div>
+        </div>
+      )}
+
+      <div style={box.card}>
+        <h3 style={box.subtitle}>작업지시서 초안 목록</h3>
+        <table style={box.table}>
+          <thead>
+            <tr>
+              <th style={box.th}>거래처</th><th style={box.th}>강종/규격</th><th style={box.th}>요청중량</th>
+              <th style={box.th}>가공내용</th><th style={box.th}>희망납기일</th><th style={box.th}>상태</th><th style={box.th}>승인</th>
+            </tr>
+          </thead>
+          <tbody>
+            {drafts.map((d) => (
+              <tr key={d.id}>
+                <td style={box.td}>{d.customer_name}</td>
+                <td style={box.td}>{d.material} · {d.spec}</td>
+                <td style={box.td}>{d.qty_weight}kg</td>
+                <td style={box.td}>{d.work_type}</td>
+                <td style={box.td}>{d.due_date}</td>
+                <td style={box.td}><span style={statusPill(d.status)}>{d.status}</span></td>
+                <td style={box.td}>
+                  {d.status === '초안' ? (
+                    <button style={{ ...box.ghostBtn, padding: '7px 14px', fontSize: '13px' }} onClick={() => onApprove(d.id)}>배차 승인</button>
+                  ) : d.status === '배차대기' ? (
+                    <span style={{ color: COLORS.steelLight, fontSize: '13px' }}>현장 확정 대기중</span>
+                  ) : (
+                    <span style={{ color: COLORS.steelLight, fontSize: '13px' }}>코일 {d.assigned_coil_id}</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+            {drafts.length === 0 && (
+              <tr><td style={box.td} colSpan={7}><span style={box.emptyText}>등록된 작업지시서 초안이 없습니다.</span></td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------- 현장 코일확정 (No.13-2) — 지게차 기사 화면 ----------
+// 시나리오 STEP 3·4 통합본: 코일 선택은 전적으로 지게차 기사의 역할입니다. 사무실이 후보를 미리
+// 걸러두지 않고, 기사가 QR 스캔 또는 코일ID 검색 중 편한 방식으로 실물 코일을 확정합니다.
+// 재고 목록은 샘플이 아니라 그린ERP에서 실시간 동기화되는 실제 재고(greenp_inventory)를 그대로
+// 읽어옵니다 — 품명(product_name) 필드가 곧 실물 코일ID입니다(6장 코일ID 정정 확인 참고).
+// 동시배정은 '확정' 순간 재고 상태를 다시 검사하는 원자적 체크로 방지합니다 — 처음 불러온 재고 중
+// 하나를 데모용으로 '이미 배정됨'으로 표시해 그 처리를 시연합니다. (실제로는 서버측 조건부 UPDATE로 대체)
+export function FieldCoilConfirm({ drafts, onConfirmCoil }) {
+  const waiting = drafts.filter((d) => d.status === '배차대기');
+  const [activeId, setActiveId] = useState(waiting[0]?.id ?? null);
+  const active = drafts.find((d) => d.id === activeId);
+  const [mode, setMode] = useState('qr'); // qr | search
+  const [scannedCoil, setScannedCoil] = useState(null);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [inventory, setInventory] = useState([]);
+  const [loadingInv, setLoadingInv] = useState(true);
+  const [takenIds, setTakenIds] = useState(new Set());
+
+  useEffect(() => {
+    (async () => {
+      const { data, error: err } = await supabase
+        .from('greenp_inventory')
+        .select('*')
+        .gt('remaining_weight', 0)
+        .order('received_date', { ascending: false })
+        .limit(30);
+      if (!err && data) {
+        setInventory(data);
+        // 데모용 — 방금 불러온 재고 중 첫 번째를 이미 다른 작업에 배정된 것으로 가정해
+        // 동시배정 방지 흐름을 바로 확인할 수 있게 합니다.
+        if (data.length > 0) setTakenIds(new Set([data[0].product_name]));
+      }
+      setLoadingInv(false);
+    })();
+  }, []);
+
+  const openOrder = (id) => {
+    setActiveId(id);
+    setScannedCoil(null);
+    setQuery('');
+    setError('');
+    setMode('qr');
+  };
+
+  const simulateScan = () => {
+    // 데모용 — 매번 아직 배정되지 않은 코일 중 하나를 스캔한 것으로 시뮬레이션
+    const candidates = inventory.filter((c) => !takenIds.has(c.product_name));
+    if (candidates.length === 0) return;
+    const picked = candidates[Math.floor(Math.random() * candidates.length)];
+    setScannedCoil(picked.product_name);
+    setError('');
+  };
+
+  const filteredInventory = inventory.filter((c) =>
+    query.trim() === '' || (c.product_name || '').toLowerCase().includes(query.trim().toLowerCase())
+  );
+
+  const confirmCoil = (coilId) => {
+    const coil = inventory.find((c) => c.product_name === coilId);
+    if (!coil) return;
+    if (takenIds.has(coilId)) {
+      // 원자적 체크 실패 시나리오 — 이미 다른 작업지시서에 배정된 코일
+      setError(`코일 ${coilId}는 이미 다른 작업에 배정되어 있습니다. 다른 코일을 선택해주세요.`);
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setTimeout(() => {
+      setTakenIds((prev) => new Set(prev).add(coilId)); // 데모용 즉시 잠금 (실제로는 서버측 조건부 UPDATE)
+      onConfirmCoil(active.id, coilId);
+      setSaving(false);
+      setScannedCoil(null);
+      const next = drafts.find((d) => d.status === '배차대기' && d.id !== active.id);
+      setActiveId(next ? next.id : null);
+    }, 700);
+  };
+
+  return (
+    <div style={box.page}>
+      <div>
+        <h2 style={box.title}>현장 코일확정 · 지게차 기사용 <span style={{ marginLeft: '10px', verticalAlign: 'middle' }}><span style={pill(COLORS.accentBg, COLORS.accentDark)}>제안 · No.13-2</span></span></h2>
+        <p style={box.hint}>배차대기 중인 작업지시서에서, 실제로 어떤 코일을 쓸지는 지게차 기사가 야드에서 직접 확정합니다. QR 스캔 또는 코일ID 검색 중 편한 방식을 쓸 수 있습니다.</p>
+      </div>
+      <ProposalBanner text="지게차 기사가 코일을 확정하는 순간 재고 상태를 다시 검사해, 이미 다른 작업에 배정된 코일이면 즉시 막습니다(동시배정 방지). 사무실이 후보를 미리 걸러두지 않아도 안전합니다." />
+
+      <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        <div style={{ ...box.card, width: '300px', flexShrink: 0, padding: '14px' }}>
+          <h3 style={{ ...box.subtitle, fontSize: '17px', border: 'none', padding: '4px 8px 12px', margin: 0 }}>배차대기 · {waiting.length}건</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {waiting.map((d) => (
+              <div key={d.id} onClick={() => openOrder(d.id)} style={{
+                padding: '12px 14px', borderRadius: '12px', cursor: 'pointer',
+                backgroundColor: activeId === d.id ? COLORS.accentSoft : 'transparent',
+                border: activeId === d.id ? `1px solid ${COLORS.accentBg}` : '1px solid transparent',
+              }}>
+                <div style={{ fontWeight: 800, fontSize: '15px', color: '#243040' }}>{d.customer_name}</div>
+                <div style={{ fontSize: '13px', color: COLORS.steel, marginTop: '4px' }}>{d.material} · {d.spec}</div>
+                <div style={{ fontSize: '12px', color: COLORS.steelLight, marginTop: '2px' }}>{d.work_type} · 납기 {d.due_date}</div>
+              </div>
+            ))}
+            {waiting.length === 0 && <p style={box.emptyText}>배차대기 중인 작업지시서가 없습니다.</p>}
+          </div>
+        </div>
+
+        <div style={{ ...box.card, flex: 1, minWidth: '380px' }}>
+          {!active ? <p style={box.emptyText}>왼쪽에서 작업지시서를 선택하세요.</p> : (
+            <>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                <h3 style={{ ...box.subtitle, border: 'none', margin: 0, padding: 0 }}>{active.customer_name}</h3>
+                <span style={pill(COLORS.amberBg, COLORS.amber)}>배차대기</span>
+              </div>
+              <p style={{ fontSize: '15px', color: '#2d3748', lineHeight: 1.8, margin: '0 0 18px' }}>
+                요청규격: {active.material} · {active.spec}<br />
+                요청중량: {active.qty_weight}kg &nbsp;·&nbsp; 가공내용: {active.work_type} &nbsp;·&nbsp; 희망납기: {active.due_date}
+              </p>
+
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                <button onClick={() => setMode('qr')} style={{ ...box.ghostBtn, padding: '9px 18px', fontSize: '14px', ...(mode === 'qr' ? { backgroundColor: COLORS.navy, color: '#fff', borderColor: COLORS.navy } : {}) }}>📷 QR 스캔</button>
+                <button onClick={() => setMode('search')} style={{ ...box.ghostBtn, padding: '9px 18px', fontSize: '14px', ...(mode === 'search' ? { backgroundColor: COLORS.navy, color: '#fff', borderColor: COLORS.navy } : {}) }}>🔎 코일ID 검색</button>
+              </div>
+
+              {mode === 'qr' ? (
+                <div style={{ backgroundColor: COLORS.bg, borderRadius: '14px', padding: '20px', textAlign: 'center' }}>
+                  {!scannedCoil ? (
+                    <>
+                      <p style={{ color: COLORS.steel, fontSize: '15px', marginBottom: '14px' }}>스캐너로 코일에 붙은 QR을 스캔하세요. (현재는 회사 보유 스캐너 모델 확인 전이라 시뮬레이션 버튼으로 대체)</p>
+                      <button style={box.primaryBtn} onClick={simulateScan}>QR 스캔 시뮬레이션</button>
+                    </>
+                  ) : (
+                    <>
+                      <p style={{ color: COLORS.steel, fontSize: '14px', marginBottom: '8px' }}>스캔된 코일ID</p>
+                      <p style={{ fontSize: '24px', fontWeight: 900, color: COLORS.navy, marginBottom: '18px' }}>{scannedCoil}</p>
+                      <button style={box.primaryBtn} onClick={() => confirmCoil(scannedCoil)} disabled={saving}>{saving ? '확정 처리중...' : '이 코일로 확정'}</button>
+                      <button style={{ ...box.ghostBtn, marginLeft: '10px' }} onClick={() => setScannedCoil(null)}>다시 스캔</button>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <input style={{ ...box.input, marginBottom: '12px' }} placeholder="코일ID로 검색 (예: H3D)" value={query} onChange={(e) => setQuery(e.target.value)} />
+                  {loadingInv ? (
+                    <p style={box.loadingText}>실제 재고(그린ERP) 불러오는 중...</p>
+                  ) : (
+                    <table style={box.table}>
+                      <thead><tr><th style={box.th}>코일ID(품명)</th><th style={box.th}>거래처</th><th style={box.th}>규격</th><th style={box.th}>잔량</th><th style={box.th}>상태</th><th style={box.th}></th></tr></thead>
+                      <tbody>
+                        {filteredInventory.map((c) => {
+                          const taken = takenIds.has(c.product_name);
+                          return (
+                            <tr key={c.product_code || c.product_name}>
+                              <td style={box.td}>{c.product_name}</td>
+                              <td style={box.td}>{c.customer_name}</td>
+                              <td style={box.td}>{c.spec}</td>
+                              <td style={box.td}>{Number(c.remaining_weight || 0).toLocaleString()}kg</td>
+                              <td style={box.td}>{taken ? <span style={pill(COLORS.redBg, COLORS.red)}>배정됨</span> : <span style={pill(COLORS.greenBg, COLORS.green)}>가용</span>}</td>
+                              <td style={box.td}>
+                                <button style={{ ...box.ghostBtn, padding: '7px 14px', fontSize: '13px' }} disabled={taken || saving} onClick={() => confirmCoil(c.product_name)}>확정</button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {filteredInventory.length === 0 && (
+                          <tr><td style={box.td} colSpan={6}><span style={box.emptyText}>검색된 재고가 없습니다.</span></td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              )}
+
+              {error && (
+                <div style={{ marginTop: '14px', backgroundColor: COLORS.redBg, color: COLORS.red, padding: '12px 16px', borderRadius: '10px', fontSize: '14px', fontWeight: 700 }}>
+                  ⚠️ {error}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div style={box.card}>
+        <h3 style={box.subtitle}>확정 완료 · 그린ERP 반영 대기</h3>
+        <table style={box.table}>
+          <thead><tr><th style={box.th}>거래처</th><th style={box.th}>확정 코일ID</th><th style={box.th}>가공내용</th><th style={box.th}>상태</th></tr></thead>
+          <tbody>
+            {drafts.filter((d) => d.status === '배정완료').map((d) => (
+              <tr key={d.id}>
+                <td style={box.td}>{d.customer_name}</td>
+                <td style={box.td}>{d.assigned_coil_id}</td>
+                <td style={box.td}>{d.work_type}</td>
+                <td style={box.td}><span style={pill(COLORS.greenBg, COLORS.green)}>배정완료 · 그린ERP 반영 대기(1차: 입력보조)</span></td>
+              </tr>
+            ))}
+            {drafts.filter((d) => d.status === '배정완료').length === 0 && (
+              <tr><td style={box.td} colSpan={4}><span style={box.emptyText}>아직 확정된 작업이 없습니다.</span></td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
