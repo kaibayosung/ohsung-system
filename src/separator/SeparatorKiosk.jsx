@@ -155,10 +155,8 @@ function SetupScreen({ job, strips, stationResults, onBack }) {
         <InfoCol label="회사명" value={job.company_name} border />
         <InfoCol label="중량" value={Number(job.original_weight || 0).toLocaleString()} border />
       </div>
-      <div style={styles.infoRowSingle}>
-        <div style={styles.infoLabelInline}>가공규격</div>
-        <div style={styles.infoValueInline}>{job.process_rule}</div>
-      </div>
+      {/* "가공규격" 요약 줄은 뺐습니다 — 세퍼레이터①②마다 "가닥폭 + 보정 = 목표폭" 계산식에
+          원래 규격이 그대로 나오므로 중복입니다. 그 공간을 숫자 크기 키우는 데 씁니다. */}
 
       <div style={styles.stationGrid}>
         {stationResults.map((st) => (
@@ -216,11 +214,11 @@ function InfoCol({ label, value, border }) {
 
 function PieceBig({ size }) {
   const isPlastic = size < DEFAULT_PLASTIC_THRESHOLD;
-  const width = Math.max(64, 40 + size * 0.9);
+  const width = Math.max(84, 50 + size * 1.05);
   return (
     <div style={{
-      height: '84px', minWidth: `${width}px`, borderRadius: '14px', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontWeight: 900, fontSize: '38px', flexShrink: 0, padding: '0 12px',
+      height: '104px', minWidth: `${width}px`, borderRadius: '16px', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', fontWeight: 900, fontSize: '48px', flexShrink: 0, padding: '0 14px',
       backgroundColor: isPlastic ? '#3f8fe0' : '#d7dce4', color: isPlastic ? '#fff' : '#1c2b3f',
       boxShadow: '0 2px 6px rgba(20,30,50,.12)',
     }}>
@@ -249,31 +247,28 @@ const styles = {
   goArrow: { width: '58px', height: '58px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
   infoRowSplit3: { display: 'flex', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', marginBottom: '14px' },
-  infoCol: { flex: 1, padding: '18px 28px', textAlign: 'center' },
+  infoCol: { flex: 1, padding: '14px 24px', textAlign: 'center' },
   infoColBorder: { borderLeft: '2px solid #eef0f3' },
-  infoLabel: { fontSize: '18px', color: '#98a2b3', fontWeight: 800, marginBottom: '6px' },
-  infoValue: { fontSize: '52px', fontWeight: 900, color: '#1c2b3f', lineHeight: 1.05 },
-  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '16px 30px', marginBottom: '14px' },
-  infoLabelInline: { fontSize: '20px', color: '#98a2b3', fontWeight: 800 },
-  infoValueInline: { fontSize: '40px', fontWeight: 900, color: '#1c2b3f' },
+  infoLabel: { fontSize: '19px', color: '#98a2b3', fontWeight: 800, marginBottom: '4px' },
+  infoValue: { fontSize: '58px', fontWeight: 900, color: '#1c2b3f', lineHeight: 1.05 },
 
   stationGrid: { display: 'flex', gap: '16px', flex: 1, minHeight: 0 },
-  stationCol: { flex: 1, background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '18px 22px 22px', display: 'flex', flexDirection: 'column' },
-  stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingBottom: '12px', borderBottom: '3px solid #eef0f3' },
-  stationBadge: { width: '58px', height: '58px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '28px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stationNameBig: { fontSize: '32px', fontWeight: 900, color: '#1c2b3f' },
+  stationCol: { flex: 1, background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '16px 22px 20px', display: 'flex', flexDirection: 'column', minHeight: 0 },
+  stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px', paddingBottom: '10px', borderBottom: '3px solid #eef0f3', flex: '0 0 auto' },
+  stationBadge: { width: '60px', height: '60px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '30px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  stationNameBig: { fontSize: '34px', fontWeight: 900, color: '#1c2b3f' },
   stationOffBig: { fontSize: '22px', color: '#98a2b3', fontWeight: 800, marginLeft: 'auto' },
-  comboBlock: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f6f7f9', borderRadius: '16px', padding: '18px 22px', marginBottom: '14px' },
-  comboMeta: { fontSize: '17px', fontWeight: 800, color: '#8b98ac', marginBottom: '6px' },
-  comboEquation: { fontSize: '30px', fontWeight: 900, color: '#4d5c72', marginBottom: '14px', display: 'flex', alignItems: 'baseline', gap: '8px' },
+  comboBlock: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f6f7f9', borderRadius: '16px', padding: '14px 22px', marginBottom: '12px' },
+  comboMeta: { fontSize: '16px', fontWeight: 800, color: '#8b98ac', marginBottom: '4px' },
+  comboEquation: { fontSize: '34px', fontWeight: 900, color: '#4d5c72', marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '10px' },
   eqOp: { color: '#98a2b3' },
-  comboTarget: { fontSize: '38px', color: '#e8830f' },
-  comboPieces: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
-  plusSm: { color: '#98a2b3', fontWeight: 900, fontSize: '30px' },
-  remainderWarn: { marginTop: '12px', fontSize: '19px', color: '#c8372c', fontWeight: 900 },
+  comboTarget: { fontSize: '48px', color: '#e8830f' },
+  comboPieces: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
+  plusSm: { color: '#98a2b3', fontWeight: 900, fontSize: '36px' },
+  remainderWarn: { marginTop: '10px', fontSize: '19px', color: '#c8372c', fontWeight: 900 },
 
-  btnFooter: { display: 'flex', gap: '18px', marginTop: '16px' },
-  btnBig: { flex: 1, textAlign: 'center', padding: '32px', borderRadius: '18px', fontSize: '38px', fontWeight: 900, cursor: 'pointer' },
+  btnFooter: { display: 'flex', gap: '18px', marginTop: '14px', flex: '0 0 auto' },
+  btnBig: { flex: 1, textAlign: 'center', padding: '26px', borderRadius: '18px', fontSize: '40px', fontWeight: 900, cursor: 'pointer' },
   btnOutline: { background: '#fff', border: '4px solid #d7dce4', color: '#4d5c72' },
   btnSolid: { background: '#1b2f52', color: '#fff' },
 };
