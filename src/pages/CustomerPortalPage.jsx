@@ -220,7 +220,7 @@ const WORK_TYPE_GROUPS = [
   { key: 'SLITING2', label: '슬리팅' },
   { key: 'LEVELLING', label: '레베링' },
 ];
-const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내역'], ['outbound', '🚚 출고 내역'], ['inbound', '📥 입고 내역'], ['place', '📝 발주하기']];
+const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내역'], ['unshipped', '🚛 미출고 리스트'], ['outbound', '🚚 출고 내역'], ['inbound', '📥 입고 내역'], ['place', '📝 발주하기']];
 
 function kstDateStr(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
 function todayStr() { return kstDateStr(new Date()); }
@@ -302,7 +302,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
 
   // ---- FAX로 전송 (입고 내역 / 작업 내역 리포트, 즉시 1회 발송) ----
   // [참고] 예약(정기) 발송 기능은 enFax 계정의 반복 로그인으로 인한 보안 강화(로그인 제한) 이슈로 제거함.
-  const FAX_REPORT_LABELS = { inbound: '입고 내역', work: '작업 내역' };
+  const FAX_REPORT_LABELS = { inbound: '입고 내역', work: '작업 내역', unshipped: '미출고 리스트' };
   const [faxModal, setFaxModal] = useState({ open: false, phone: '', sending: false, error: '', result: '', reportType: 'inbound' });
 
   async function openFaxModal(reportType = 'inbound') {
@@ -371,6 +371,12 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
   const specRows = Object.entries(bySpec).map(([k, v]) => ({ key: k, ...v })).sort((a, b) => b.weight - a.weight);
   const maxSpecWeight = Math.max(1, ...specRows.map((r) => r.weight));
   const thicknessChartData = thicknessRows.map((r) => ({ name: r.key, 코일수: r.count, 무게톤: +(r.weight / 1000).toFixed(2) }));
+
+  // ---- 1.5) 미출고 리스트 (greenp_inventory 중 잔량이 남아 아직 출고되지 않은 건 — 그린ERP의
+  //          "재고 미출고 현황(invtNoOutStatListPop)" 팝업과 동일한 개념. 재고와 같은 실시간 데이터를
+  //          재사용하므로 별도 조회 없이 잔량>0인 행만 걸러서 보여줍니다. 항상 현재 시점 기준입니다.)
+  const unshippedRows = inv.filter((r) => Number(r.remaining_weight || 0) > 0);
+  const unshippedTotalWeight = unshippedRows.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
 
   // ---- 2) 작업 내역 (greenp_joborder_detail 실데이터 — 작업일자/품명/규격/원중량/중량/작업SIZE) ----
   const [workRows, setWorkRows] = useState([]);
@@ -653,6 +659,36 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
         </div>
       )}
 
+      {sub === 'unshipped' && (
+        <div>
+          <PrintHeader subTitle="미출고 리스트" companyName={companyName} rangeLabel="현재 시점 기준" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+            <div className="no-print" style={{ fontSize: '13px', color: C.textMuted }}>미출고 재고는 항상 현재 시점 기준입니다 — 오성철강 창고에 입고되어 아직 출고되지 않은 잔량이 남은 코일 목록입니다.</div>
+            <div className="no-print" style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
+              <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => openFaxModal('unshipped')}>📠 FAX로 전송</button>
+              <PrintButton />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '14px' }}>
+            {statCard('미출고 건수', unshippedRows.length + '건')}
+            {statCard('미출고 잔량 합계', (unshippedTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
+          </div>
+
+          {invLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : unshippedRows.length === 0 ? boxMsg('출고 대기중인 재고가 없습니다', { justifyContent: 'center' }) : (
+            <table style={itemsTable}>
+              <thead><tr><th style={th}>No</th><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>길이</th><th style={th}>입고일</th><th style={th}>잔량</th></tr></thead>
+              <tbody>
+                {unshippedRows.map((r, i) => (
+                  <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
+                    <td style={td}>{i + 1}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
       {sub === 'outbound' && (
         <div>
           <PrintHeader subTitle="출고 내역 리포트" companyName={companyName} rangeLabel={rangeLabel} />
@@ -730,7 +766,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
         <div className="no-print" style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,51,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
           <div style={{ background: C.surface2, borderRadius: '14px', padding: '24px', width: '360px', maxWidth: '92vw', boxShadow: '0 12px 40px rgba(15,30,51,0.25)' }}>
             <div style={{ fontSize: '19px', fontWeight: 800, color: C.textPrimary, marginBottom: '4px' }}>📠 FAX로 전송</div>
-            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '14px' }}>{companyName} · {rangeLabel} {FAX_REPORT_LABELS[faxModal.reportType] || '내역'}을 팩스로 즉시 전송합니다.</div>
+            <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '14px' }}>{companyName} · {faxModal.reportType === 'unshipped' ? '현재 시점 기준' : rangeLabel} {FAX_REPORT_LABELS[faxModal.reportType] || '내역'}을 팩스로 즉시 전송합니다.</div>
             <div style={{ fontSize: '14px', color: C.textMuted, marginBottom: '4px' }}>팩스번호</div>
             <input style={inputStyle} value={faxModal.phone} onChange={(e) => setFaxModal((m) => ({ ...m, phone: e.target.value, error: '' }))} placeholder="예: 031-432-2111" disabled={faxModal.sending} />
             {faxModal.error && <div style={{ fontSize: '13px', color: C.textDanger, marginTop: '8px' }}>{faxModal.error}</div>}
