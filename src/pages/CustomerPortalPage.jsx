@@ -372,11 +372,29 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
   const maxSpecWeight = Math.max(1, ...specRows.map((r) => r.weight));
   const thicknessChartData = thicknessRows.map((r) => ({ name: r.key, 코일수: r.count, 무게톤: +(r.weight / 1000).toFixed(2) }));
 
-  // ---- 1.5) 미출고 리스트 (greenp_inventory 중 잔량이 남아 아직 출고되지 않은 건 — 그린ERP의
-  //          "재고 미출고 현황(invtNoOutStatListPop)" 팝업과 동일한 개념. 재고와 같은 실시간 데이터를
-  //          재사용하므로 별도 조회 없이 잔량>0인 행만 걸러서 보여줍니다. 항상 현재 시점 기준입니다.)
-  const unshippedRows = inv.filter((r) => Number(r.remaining_weight || 0) > 0);
-  const unshippedTotalWeight = unshippedRows.reduce((s, r) => s + Number(r.remaining_weight || 0), 0);
+  // ---- 1.5) 미출고 리스트 — 그린ERP의 "미출고현황 리스트(invtNoOutStatListPop)" 팝업과 동일한 개념.
+  //          재고(입고 원본)가 아니라, "작업(생산)은 완료됐지만 출고 기록이 아직 없는 코일" 목록입니다.
+  //          greenp_joborder_detail(작업 완료분) 중 product_name이 greenp_outbound(출고 기록)에
+  //          없는 것만 걸러냅니다. 재고와 마찬가지로 날짜 범위와 무관하게 항상 현재 시점 기준입니다.
+  const [unshippedRows, setUnshippedRows] = useState([]);
+  const [unshippedLoading, setUnshippedLoading] = useState(false);
+  useEffect(() => {
+    if (!companyName) return;
+    let cancelled = false;
+    setUnshippedLoading(true);
+    Promise.all([
+      supabase.from('greenp_joborder_detail').select('id,joborder_date,product_name,spec,original_weight,used_weight,process_rule').eq('company_name', companyName).order('joborder_date', { ascending: false }).limit(1000),
+      supabase.from('greenp_outbound').select('product_name').eq('company_name', companyName),
+    ]).then(([jobRes, outRes]) => {
+      if (cancelled) return;
+      const shippedSet = new Set((outRes.data || []).map((r) => r.product_name).filter(Boolean));
+      const rows = (jobRes.data || []).filter((d) => d.product_name && !shippedSet.has(d.product_name));
+      setUnshippedRows(rows);
+      setUnshippedLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [companyName]);
+  const unshippedTotalWeight = unshippedRows.reduce((s, r) => s + Number(r.original_weight || 0), 0);
 
   // ---- 2) 작업 내역 (greenp_joborder_detail 실데이터 — 작업일자/품명/규격/원중량/중량/작업SIZE) ----
   const [workRows, setWorkRows] = useState([]);
@@ -663,7 +681,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
         <div>
           <PrintHeader subTitle="미출고 리스트" companyName={companyName} rangeLabel="현재 시점 기준" />
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
-            <div className="no-print" style={{ fontSize: '13px', color: C.textMuted }}>미출고 재고는 항상 현재 시점 기준입니다 — 오성철강 창고에 입고되어 아직 출고되지 않은 잔량이 남은 코일 목록입니다.</div>
+            <div className="no-print" style={{ fontSize: '13px', color: C.textMuted }}>작업(생산)은 완료됐지만 아직 출고되지 않은 코일 목록입니다 — 그린ERP 미출고현황 리스트와 동일한 기준이며, 항상 현재 시점 기준입니다.</div>
             <div className="no-print" style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
               <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => openFaxModal('unshipped')}>📠 FAX로 전송</button>
               <PrintButton />
@@ -671,16 +689,16 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '14px' }}>
             {statCard('미출고 건수', unshippedRows.length + '건')}
-            {statCard('미출고 잔량 합계', (unshippedTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
+            {statCard('미출고 원중량 합계', (unshippedTotalWeight / 1000).toFixed(1) + '톤', C.textAccent)}
           </div>
 
-          {invLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : unshippedRows.length === 0 ? boxMsg('출고 대기중인 재고가 없습니다', { justifyContent: 'center' }) : (
+          {unshippedLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : unshippedRows.length === 0 ? boxMsg('출고 대기중인 재고가 없습니다', { justifyContent: 'center' }) : (
             <table style={itemsTable}>
-              <thead><tr><th style={th}>No</th><th style={th}>품명</th><th style={th}>가공규격</th><th style={th}>길이</th><th style={th}>입고일</th><th style={th}>잔량</th></tr></thead>
+              <thead><tr><th style={th}>생산일자</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>원중량</th><th style={th}>작업SIZE</th><th style={th}>수량</th></tr></thead>
               <tbody>
                 {unshippedRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{i + 1}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{r.length_m || '-'}</td><td style={td}>{r.received_date || '-'}</td><td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{Number(r.remaining_weight || 0).toLocaleString()}kg</td>
+                    <td style={td}>{r.joborder_date || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={td}>{r.process_rule || '-'}</td><td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{Number(r.used_weight || 0).toLocaleString()}kg</td>
                   </tr>
                 ))}
               </tbody>
