@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { COLORS } from './test/theme';
 import { OcrDocumentIntake, KakaoOrderChannel, FaxJoborderIntake, FieldCoilConfirm, OrderFlowV2 } from './test/proposalScreens';
+import { SeparatorSetupScreen } from './test/separatorSetup';
 
 const TABS = [
   { key: 'ocr', label: 'OCR 문서인식', icon: '📄' },
@@ -12,6 +13,7 @@ const TABS = [
   { key: 'fax-joborder', label: 'FAX 작업요청서 접수', icon: '📠' },
   { key: 'field-confirm', label: '현장 코일확정', icon: '🚜' },
   { key: 'order-flow-v2', label: '신규서비스 통합흐름 (v2)', icon: '🔄' },
+  { key: 'separator-setup', label: '세퍼레이터 셋팅', icon: '📐' },
 ];
 
 // FAX 작업요청서 접수(No.13-1)와 현장 코일확정(No.13-2)은 하나의 흐름(초안 → 배차대기 → 배정완료)을
@@ -78,6 +80,7 @@ function LabPage() {
       {tab === 'order-flow-v2' && (
         <OrderFlowV2 drafts={joborderDrafts} onCreateDraft={createDraft} onApprove={approveDraft} onConfirmCoil={confirmCoil} />
       )}
+      {tab === 'separator-setup' && <SeparatorSetupScreen />}
     </div>
   );
 }
