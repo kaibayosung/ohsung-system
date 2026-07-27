@@ -274,7 +274,7 @@ const styles = {
   stationNameBig: { fontSize: '34px', fontWeight: 900, color: PURPLE.text },
   stationOffBig: { fontSize: '26px', color: PURPLE.accent, fontWeight: 900, marginLeft: 'auto' },
   comboBlock: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' },
-  comboMeta: { fontSize: '16px', fontWeight: 800, color: PURPLE.textMuted, marginBottom: '6px' },
+  comboMeta: { fontSize: '32px', fontWeight: 900, color: PURPLE.textMuted, marginBottom: '6px' },
   comboEquation: { fontSize: '38px', fontWeight: 900, color: PURPLE.text, marginBottom: '12px', display: 'flex', alignItems: 'baseline', gap: '10px' },
   eqSign: { color: PURPLE.text },
   eqOp: { color: PURPLE.textMuted },
