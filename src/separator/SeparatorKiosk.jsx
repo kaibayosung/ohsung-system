@@ -11,6 +11,13 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { DEFAULT_DENOMS, DEFAULT_PLASTIC_THRESHOLD, DEFAULT_STATIONS, parseProcessRule, computeStationResults } from '../lib/separatorCalc';
 
+// 클라이언트가 전달한 디자인 시안(claude.ai/design)에 맞춘 라벤더/퍼플 톤 팔레트.
+// 기존 오렌지 포인트 컬러 대신 이 색으로 전체 화면을 통일합니다.
+const PURPLE = {
+  accent: '#6C5FCF', accentDark: '#5A4FC4', panelBg: '#EEF0FB', chipBg: '#E7E6F4',
+  border: '#E6E3F5', text: '#22283A', textMuted: '#8A8FA8',
+};
+
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5분
 const KIOSK_STATIONS = DEFAULT_STATIONS.filter((s) => s.key === 1 || s.key === 2); // ③은 화면에서 아예 제외
 const DENOMS_DESC = [...DEFAULT_DENOMS].sort((a, b) => b - a);
@@ -161,40 +168,42 @@ function SetupScreen({ job, strips, stationResults, onBack }) {
       </div>
 
       <div style={styles.stationGrid}>
-        {stationResults.map((st) => (
-          <div key={st.key} style={styles.stationCol}>
-            <div style={styles.stationColHead}>
-              <div style={styles.stationBadge}>{st.key === 1 ? '①' : '②'}</div>
-              <div style={styles.stationNameBig}>{st.label}</div>
-              <div style={styles.stationOffBig}>{st.offset >= 0 ? '+' : ''}{st.offset}</div>
+        <div style={styles.stationCard}>
+          {stationResults.map((st, idx) => (
+            <div key={st.key} style={{ ...styles.stationCol, ...(idx > 0 ? styles.stationColDivider : {}) }}>
+              <div style={styles.stationColHead}>
+                <div style={styles.stationBadge}>{st.key}</div>
+                <div style={styles.stationNameBig}>세퍼레이터{st.key}</div>
+                <div style={styles.stationOffBig}>{st.offset >= 0 ? '+' : ''}{st.offset}</div>
+              </div>
+              {strips.length === 0 ? (
+                <div style={styles.loadingText}>가공규격을 읽을 수 없습니다.</div>
+              ) : st.rows.map((r, i) => {
+                // 조합에 필요한 낱개 규격 전체를 펼쳐서 보여줍니다 (같은 규격이 2개 필요하면 2개 다 표시).
+                const flatPieces = r.pieces.flatMap((p) => Array(p.count).fill(p.size));
+                return (
+                  <div key={i} style={styles.comboBlock}>
+                    <div style={styles.comboMeta}>{r.width}mm × {r.qty}가닥</div>
+                    <div style={styles.comboEquation}>
+                      {r.width} <span style={styles.eqSign}>{st.offset >= 0 ? '+' : '−'}</span> {Math.abs(st.offset)} <span style={styles.eqOp}>=</span> <span style={styles.comboTarget}>{r.target}</span>
+                    </div>
+                    <div style={styles.comboPieces}>
+                      {flatPieces.map((size, pi) => (
+                        <React.Fragment key={pi}>
+                          {pi > 0 && <span style={styles.plusSm}>+</span>}
+                          <PieceBig size={size} />
+                        </React.Fragment>
+                      ))}
+                    </div>
+                    {r.remainder > 0 && (
+                      <div style={styles.remainderWarn}>⚠ {r.remainder}mm 부족 — 더 작은 규격 필요</div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-            {strips.length === 0 ? (
-              <div style={styles.loadingText}>가공규격을 읽을 수 없습니다.</div>
-            ) : st.rows.map((r, i) => {
-              // 조합에 필요한 낱개 규격 전체를 펼쳐서 보여줍니다 (같은 규격이 2개 필요하면 2개 다 표시).
-              const flatPieces = r.pieces.flatMap((p) => Array(p.count).fill(p.size));
-              return (
-                <div key={i} style={styles.comboBlock}>
-                  <div style={styles.comboMeta}>{r.width}mm × {r.qty}가닥</div>
-                  <div style={styles.comboEquation}>
-                    {r.width} {st.offset >= 0 ? '+' : '−'} {Math.abs(st.offset)} <span style={styles.eqOp}>=</span> <span style={styles.comboTarget}>{r.target}</span>
-                  </div>
-                  <div style={styles.comboPieces}>
-                    {flatPieces.map((size, pi) => (
-                      <React.Fragment key={pi}>
-                        {pi > 0 && <span style={styles.plusSm}>+</span>}
-                        <PieceBig size={size} />
-                      </React.Fragment>
-                    ))}
-                  </div>
-                  {r.remainder > 0 && (
-                    <div style={styles.remainderWarn}>⚠ {r.remainder}mm 부족 — 더 작은 규격 필요</div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <div style={styles.btnFooter}>
@@ -221,8 +230,7 @@ function PieceBig({ size }) {
     <div style={{
       height: '104px', minWidth: `${width}px`, borderRadius: '16px', display: 'flex', alignItems: 'center',
       justifyContent: 'center', fontWeight: 900, fontSize: '48px', flexShrink: 0, padding: '0 14px',
-      backgroundColor: isPlastic ? '#3f8fe0' : '#d7dce4', color: isPlastic ? '#fff' : '#1c2b3f',
-      boxShadow: '0 2px 6px rgba(20,30,50,.12)',
+      backgroundColor: isPlastic ? PURPLE.accent : PURPLE.chipBg, color: isPlastic ? '#fff' : '#1c2b3f',
     }}>
       {size}
     </div>
@@ -230,50 +238,53 @@ function PieceBig({ size }) {
 }
 
 const styles = {
-  page: { minHeight: '100vh', background: '#eef0f3', display: 'flex', flexDirection: 'column' },
-  topStrip: { background: '#14161a', color: '#c3cad8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 26px', fontSize: '16px', fontWeight: 700 },
+  page: { minHeight: '100vh', background: '#FAFAFE', display: 'flex', flexDirection: 'column' },
+  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 28px', fontSize: '16px', fontWeight: 700, borderBottom: `1px solid ${PURPLE.border}` },
   topStripText: {},
-  logoutBtn: { background: 'rgba(255,255,255,0.08)', color: '#c3cad8', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' },
+  logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '8px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' },
   screenPad: { padding: '22px 30px 28px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
 
   topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  topBarTitle: { fontSize: '30px', fontWeight: 900, color: '#16283F' },
+  topBarTitle: { fontSize: '30px', fontWeight: 900, color: PURPLE.text },
   syncPill: { background: '#dff7ea', color: '#1c7a4d', fontWeight: 800, fontSize: '18px', padding: '10px 18px', borderRadius: '22px' },
-  loadingText: { fontSize: '20px', color: '#8b98ac', padding: '30px 0' },
+  loadingText: { fontSize: '20px', color: PURPLE.textMuted, padding: '30px 0' },
 
   jobList: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  jobRow: { background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '22px 30px', display: 'flex', alignItems: 'center', gap: '26px', cursor: 'pointer' },
+  jobRow: { background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '18px', padding: '22px 30px', display: 'flex', alignItems: 'center', gap: '26px', cursor: 'pointer' },
   jobCol: {},
-  jobLabel: { fontSize: '15px', color: '#98a2b3', fontWeight: 700, marginBottom: '4px' },
-  jobValue: { fontSize: '30px', fontWeight: 900, color: '#1c2b3f' },
-  goArrow: { width: '58px', height: '58px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  jobLabel: { fontSize: '15px', color: PURPLE.textMuted, fontWeight: 700, marginBottom: '4px' },
+  jobValue: { fontSize: '30px', fontWeight: 900, color: PURPLE.text },
+  goArrow: { width: '58px', height: '58px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
-  infoRowSplit3: { display: 'flex', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', marginBottom: '14px' },
+  infoRowSplit3: { display: 'flex', background: PURPLE.panelBg, borderRadius: '16px', marginBottom: '14px' },
   infoCol: { flex: 1, padding: '14px 24px', textAlign: 'center' },
-  infoColBorder: { borderLeft: '2px solid #eef0f3' },
-  infoLabel: { fontSize: '19px', color: '#98a2b3', fontWeight: 800, marginBottom: '4px' },
-  infoValue: { fontSize: '58px', fontWeight: 900, color: '#1c2b3f', lineHeight: 1.05 },
-  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '12px 28px', marginBottom: '14px', flex: '0 0 auto' },
-  infoLabelInline: { fontSize: '20px', color: '#98a2b3', fontWeight: 800 },
-  infoValueInline: { fontSize: '38px', fontWeight: 900, color: '#1c2b3f' },
+  infoColBorder: {},
+  infoLabel: { fontSize: '19px', color: PURPLE.textMuted, fontWeight: 800, marginBottom: '4px' },
+  infoValue: { fontSize: '58px', fontWeight: 900, color: PURPLE.text, lineHeight: 1.05 },
+  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '16px', padding: '12px 28px', marginBottom: '14px', flex: '0 0 auto' },
+  infoLabelInline: { fontSize: '20px', color: PURPLE.textMuted, fontWeight: 800 },
+  infoValueInline: { fontSize: '38px', fontWeight: 900, color: PURPLE.text },
 
   stationGrid: { display: 'flex', gap: '16px', flex: 1, minHeight: 0 },
-  stationCol: { flex: 1, background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '16px 22px 20px', display: 'flex', flexDirection: 'column', minHeight: 0 },
-  stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px', paddingBottom: '10px', borderBottom: '3px solid #eef0f3', flex: '0 0 auto' },
-  stationBadge: { width: '60px', height: '60px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '30px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stationNameBig: { fontSize: '34px', fontWeight: 900, color: '#1c2b3f' },
-  stationOffBig: { fontSize: '22px', color: '#98a2b3', fontWeight: 800, marginLeft: 'auto' },
-  comboBlock: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f6f7f9', borderRadius: '16px', padding: '14px 22px', marginBottom: '12px' },
-  comboMeta: { fontSize: '16px', fontWeight: 800, color: '#8b98ac', marginBottom: '4px' },
-  comboEquation: { fontSize: '34px', fontWeight: 900, color: '#4d5c72', marginBottom: '10px', display: 'flex', alignItems: 'baseline', gap: '10px' },
-  eqOp: { color: '#98a2b3' },
-  comboTarget: { fontSize: '48px', color: '#e8830f' },
+  stationCard: { flex: 1, minHeight: 0, display: 'flex', background: '#fff', border: `2px solid ${PURPLE.border}`, borderRadius: '20px' },
+  stationCol: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '18px 26px 20px' },
+  stationColDivider: { borderLeft: `2px solid ${PURPLE.border}` },
+  stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px', paddingBottom: '10px', borderBottom: `2px solid ${PURPLE.border}`, flex: '0 0 auto' },
+  stationBadge: { width: '52px', height: '52px', borderRadius: '50%', background: PURPLE.panelBg, color: PURPLE.accentDark, fontSize: '26px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  stationNameBig: { fontSize: '34px', fontWeight: 900, color: PURPLE.text },
+  stationOffBig: { fontSize: '26px', color: PURPLE.accent, fontWeight: 900, marginLeft: 'auto' },
+  comboBlock: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' },
+  comboMeta: { fontSize: '16px', fontWeight: 800, color: PURPLE.textMuted, marginBottom: '6px' },
+  comboEquation: { fontSize: '38px', fontWeight: 900, color: PURPLE.text, marginBottom: '12px', display: 'flex', alignItems: 'baseline', gap: '10px' },
+  eqSign: { color: PURPLE.text },
+  eqOp: { color: PURPLE.textMuted },
+  comboTarget: { fontSize: '48px', color: PURPLE.accent },
   comboPieces: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-  plusSm: { color: '#98a2b3', fontWeight: 900, fontSize: '36px' },
+  plusSm: { color: PURPLE.textMuted, fontWeight: 900, fontSize: '36px' },
   remainderWarn: { marginTop: '10px', fontSize: '19px', color: '#c8372c', fontWeight: 900 },
 
   btnFooter: { display: 'flex', gap: '18px', marginTop: '14px', flex: '0 0 auto' },
   btnBig: { flex: 1, textAlign: 'center', padding: '26px', borderRadius: '18px', fontSize: '40px', fontWeight: 900, cursor: 'pointer' },
-  btnOutline: { background: '#fff', border: '4px solid #d7dce4', color: '#4d5c72' },
-  btnSolid: { background: '#1b2f52', color: '#fff' },
+  btnOutline: { background: '#fff', border: `4px solid ${PURPLE.border}`, color: PURPLE.accentDark },
+  btnSolid: { background: PURPLE.accent, color: '#fff' },
 };
