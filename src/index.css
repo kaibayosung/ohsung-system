@@ -48,6 +48,16 @@ textarea.excel-input:focus {
   background-color: rgba(255, 255, 255, 0.16) !important;
 }
 
+/* 연구실 카드형 대시보드: 프로젝트 카드 호버 시 살짝 떠오르는 효과 */
+.op-project-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.op-project-card:hover {
+  transform: translateY(-3px);
+  border-color: #e8830f !important;
+  box-shadow: 0 10px 24px rgba(20, 30, 50, 0.12) !important;
+}
+
 /* 테스트 메뉴 콘텐츠 영역 내부 표: 줄무늬 배경 + 행 호버 강조 */
 .test-content table tbody tr:nth-child(even) td {
   background-color: #f8fafc;

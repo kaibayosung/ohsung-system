@@ -14,6 +14,14 @@ const C = {
   navyGradient: 'linear-gradient(160deg, #16283f 0%, #0a1524 100%)',
 };
 
+const ERP2_SERVICES = [
+  {
+    icon: '🖥️', name: '세퍼레이터 태블릿 키오스크 (슬리터2)', status: '운영중',
+    url: '/separator',
+    desc: '슬리터2 현장 태블릿에 배포된 세퍼레이터 셋팅 화면 — 오늘 작업만 표시, 가닥폭+보정=목표폭 계산식과 스페이서 조합을 큰 글씨로 보여줍니다.',
+  },
+];
+
 const INTERNAL_SYSTEMS = [
   {
     icon: '📊', name: '슬리팅 대시보드', status: '운영중',
@@ -126,6 +134,13 @@ export default function InternalSystemsPage() {
           <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.65)', marginBottom: '2px' }}>오성철강 내부 시스템</div>
           <div style={{ fontSize: '21px', fontWeight: 800, color: '#fff' }}>대시보드 · PAD · 품질측정 등 사내 시스템 바로가기</div>
         </div>
+      </div>
+
+      <div style={{ fontSize: '15px', fontWeight: 800, color: C.textSecondary, margin: '4px 0 12px' }}>
+        ERP 2.0 현장 배포 서비스
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px', marginBottom: '28px' }}>
+        {ERP2_SERVICES.map((item) => <SystemCard key={item.url} item={item} />)}
       </div>
 
       <div style={{ fontSize: '15px', fontWeight: 800, color: C.textSecondary, margin: '4px 0 12px' }}>
