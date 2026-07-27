@@ -155,8 +155,10 @@ function SetupScreen({ job, strips, stationResults, onBack }) {
         <InfoCol label="회사명" value={job.company_name} border />
         <InfoCol label="중량" value={Number(job.original_weight || 0).toLocaleString()} border />
       </div>
-      {/* "가공규격" 요약 줄은 뺐습니다 — 세퍼레이터①②마다 "가닥폭 + 보정 = 목표폭" 계산식에
-          원래 규격이 그대로 나오므로 중복입니다. 그 공간을 숫자 크기 키우는 데 씁니다. */}
+      <div style={styles.infoRowSingle}>
+        <div style={styles.infoLabelInline}>가공규격</div>
+        <div style={styles.infoValueInline}>{job.process_rule}</div>
+      </div>
 
       <div style={styles.stationGrid}>
         {stationResults.map((st) => (
@@ -251,6 +253,9 @@ const styles = {
   infoColBorder: { borderLeft: '2px solid #eef0f3' },
   infoLabel: { fontSize: '19px', color: '#98a2b3', fontWeight: 800, marginBottom: '4px' },
   infoValue: { fontSize: '58px', fontWeight: 900, color: '#1c2b3f', lineHeight: 1.05 },
+  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '12px 28px', marginBottom: '14px', flex: '0 0 auto' },
+  infoLabelInline: { fontSize: '20px', color: '#98a2b3', fontWeight: 800 },
+  infoValueInline: { fontSize: '38px', fontWeight: 900, color: '#1c2b3f' },
 
   stationGrid: { display: 'flex', gap: '16px', flex: 1, minHeight: 0 },
   stationCol: { flex: 1, background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '16px 22px 20px', display: 'flex', flexDirection: 'column', minHeight: 0 },
