@@ -22,6 +22,15 @@ function minutesAgoLabel(date) {
   return `${mins}분 전`;
 }
 
+// 태블릿 기기의 시스템 시간대 설정과 무관하게 항상 한국시간 기준 "오늘" 날짜를 계산합니다.
+// (그린ERP 동기화 자체가 한국 업무시간 기준으로 도는 것과 맞춰야 날짜가 어긋나지 않습니다.)
+function todayKST() {
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const kst = new Date(utcMs + 9 * 3600000);
+  return kst.toISOString().slice(0, 10);
+}
+
 export default function SeparatorKiosk({ staffName, onLogout }) {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,8 +44,8 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
       .from('greenp_joborder_detail')
       .select('*')
       .eq('work_type', 'SLITING2')
+      .eq('joborder_date', todayKST())
       .not('process_rule', 'is', null)
-      .order('joborder_date', { ascending: false })
       .order('id', { ascending: false })
       .limit(40);
     if (!error) {
