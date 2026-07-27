@@ -14,6 +14,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, 'index.html'),
         portal: resolve(__dirname, 'portal.html'),
+        separator: resolve(__dirname, 'separator.html'),
       },
     },
   },

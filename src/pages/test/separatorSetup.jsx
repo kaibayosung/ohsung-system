@@ -21,46 +21,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { COLORS, box, pill } from './theme';
 import { supabase } from '../../supabaseClient';
+import { DEFAULT_DENOMS, DEFAULT_COUNTS, DEFAULT_STATIONS, DEFAULT_PLASTIC_THRESHOLD, parseProcessRule, decompose, groupPieces } from '../../lib/separatorCalc';
 
-const DEFAULT_DENOMS = [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
-const DEFAULT_COUNTS = Object.fromEntries(DEFAULT_DENOMS.map((d) => [d, 50]));
-const DEFAULT_STATIONS = [
-  { key: 1, label: '세퍼레이터 ①', offset: 1 },
-  { key: 2, label: '세퍼레이터 ②', offset: -25 },
-  { key: 3, label: '세퍼레이터 ③', offset: -25 },
-];
-const DEFAULT_PLASTIC_THRESHOLD = 10; // 이 값 미만은 플라스틱(파랑), 이상은 금속(회색)
-
-function parseProcessRule(rule) {
-  if (!rule) return [];
-  return rule.split(',').map((tok) => {
-    const [w, q] = tok.split('=');
-    const width = parseFloat(w);
-    const qty = parseInt(q, 10);
-    if (!Number.isFinite(width) || !Number.isFinite(qty)) return null;
-    return { width, qty };
-  }).filter(Boolean);
-}
-
-// 가장 큰 규격부터 채워나가는 방식(손글씨 메모의 30+30+10+5 예시와 동일한 방식)
-function decompose(target, denomsDesc) {
-  let remaining = Math.round(target);
-  const pieces = [];
-  if (remaining <= 0) return { pieces, remainder: remaining };
-  for (const d of denomsDesc) {
-    while (remaining >= d) {
-      pieces.push(d);
-      remaining -= d;
-    }
-  }
-  return { pieces, remainder: remaining };
-}
-
-function groupPieces(pieces) {
-  const map = new Map();
-  pieces.forEach((p) => map.set(p, (map.get(p) || 0) + 1));
-  return [...map.entries()].sort((a, b) => b[0] - a[0]).map(([size, count]) => ({ size, count }));
-}
+// 현장 태블릿 키오스크(전용 URL: /separator)는 이 계산 로직을 src/lib/separatorCalc.js로
+// 공유해서 사용합니다 — 두 화면이 각자 계산식을 따로 들고 있으면 값이 어긋날 수 있어 하나로 모았습니다.
 
 function Chip({ size, count, plasticThreshold }) {
   const isPlastic = size < plasticThreshold;
@@ -175,7 +139,7 @@ export function SeparatorSetupScreen() {
         display: 'flex', gap: '10px', alignItems: 'flex-start',
       }}>
         <span style={{ fontSize: '16px' }}>💡</span>
-        <span>세퍼레이터 셋팅 가이드 메모를 바탕으로 자동 계산한 값입니다. 실제 셋팅 전 담당자가 반드시 검증해주세요. 보유 규격·재고·보정값이 다르면 위 "⚙ 규격·보정값 설정"에서 수정할 수 있습니다.</span>
+        <span>세퍼레이터 셋팅 가이드 메모를 바탕으로 자동 계산한 값입니다. 실제 셋팅 전 담당자가 반드시 검증해주세요. 보유 규격·재고·보정값이 다르면 위 "⚙ 규격·보정값 설정"에서 수정할 수 있습니다. 현장 슬리터2 태블릿용 전용 화면은 <a href="/separator" target="_blank" rel="noopener" style={{ color: COLORS.accentDark, fontWeight: 800 }}>/separator</a> 주소로 바로 접속할 수 있습니다 (①·② 두 스테이션만 큰 글씨로 표시).</span>
       </div>
 
       {showSettings && (
