@@ -170,22 +170,29 @@ function SetupScreen({ job, strips, stationResults, onBack }) {
             </div>
             {strips.length === 0 ? (
               <div style={styles.loadingText}>가공규격을 읽을 수 없습니다.</div>
-            ) : st.rows.map((r, i) => (
-              <div key={i} style={styles.comboBlock}>
-                <div style={styles.comboQty}>{r.width}mm × {r.qty}</div>
-                <div style={styles.comboPieces}>
-                  {r.pieces.map((p, pi) => (
-                    <React.Fragment key={pi}>
-                      {pi > 0 && <span style={styles.plusSm}>+</span>}
-                      <PieceBig size={p.size} />
-                    </React.Fragment>
-                  ))}
+            ) : st.rows.map((r, i) => {
+              // 조합에 필요한 낱개 규격 전체를 펼쳐서 보여줍니다 (같은 규격이 2개 필요하면 2개 다 표시).
+              const flatPieces = r.pieces.flatMap((p) => Array(p.count).fill(p.size));
+              return (
+                <div key={i} style={styles.comboBlock}>
+                  <div style={styles.comboMeta}>{r.width}mm × {r.qty}가닥</div>
+                  <div style={styles.comboEquation}>
+                    {r.width} {st.offset >= 0 ? '+' : '−'} {Math.abs(st.offset)} <span style={styles.eqOp}>=</span> <span style={styles.comboTarget}>{r.target}</span>
+                  </div>
+                  <div style={styles.comboPieces}>
+                    {flatPieces.map((size, pi) => (
+                      <React.Fragment key={pi}>
+                        {pi > 0 && <span style={styles.plusSm}>+</span>}
+                        <PieceBig size={size} />
+                      </React.Fragment>
+                    ))}
+                  </div>
+                  {r.remainder > 0 && (
+                    <div style={styles.remainderWarn}>⚠ {r.remainder}mm 부족 — 더 작은 규격 필요</div>
+                  )}
                 </div>
-                {r.remainder > 0 && (
-                  <div style={styles.remainderWarn}>⚠ {r.remainder}mm 부족 — 더 작은 규격 필요</div>
-                )}
-              </div>
-            ))}
+              );
+            })}
           </div>
         ))}
       </div>
@@ -209,12 +216,13 @@ function InfoCol({ label, value, border }) {
 
 function PieceBig({ size }) {
   const isPlastic = size < DEFAULT_PLASTIC_THRESHOLD;
-  const width = Math.max(30, 22 + size * 0.5);
+  const width = Math.max(64, 40 + size * 0.9);
   return (
     <div style={{
-      height: '42px', minWidth: `${width}px`, borderRadius: '8px', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontWeight: 900, fontSize: '18px', flexShrink: 0, padding: '0 6px',
+      height: '84px', minWidth: `${width}px`, borderRadius: '14px', display: 'flex', alignItems: 'center',
+      justifyContent: 'center', fontWeight: 900, fontSize: '38px', flexShrink: 0, padding: '0 12px',
       backgroundColor: isPlastic ? '#3f8fe0' : '#d7dce4', color: isPlastic ? '#fff' : '#1c2b3f',
+      boxShadow: '0 2px 6px rgba(20,30,50,.12)',
     }}>
       {size}
     </div>
@@ -226,7 +234,7 @@ const styles = {
   topStrip: { background: '#14161a', color: '#c3cad8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 26px', fontSize: '16px', fontWeight: 700 },
   topStripText: {},
   logoutBtn: { background: 'rgba(255,255,255,0.08)', color: '#c3cad8', border: '1px solid rgba(255,255,255,0.15)', padding: '8px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' },
-  screenPad: { padding: '26px 32px 34px', flex: 1 },
+  screenPad: { padding: '22px 30px 28px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
 
   topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   topBarTitle: { fontSize: '30px', fontWeight: 900, color: '#16283F' },
@@ -240,29 +248,32 @@ const styles = {
   jobValue: { fontSize: '30px', fontWeight: 900, color: '#1c2b3f' },
   goArrow: { width: '58px', height: '58px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
-  infoRowSplit3: { display: 'flex', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', marginBottom: '16px' },
-  infoCol: { flex: 1, padding: '22px 28px', textAlign: 'center' },
+  infoRowSplit3: { display: 'flex', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', marginBottom: '14px' },
+  infoCol: { flex: 1, padding: '18px 28px', textAlign: 'center' },
   infoColBorder: { borderLeft: '2px solid #eef0f3' },
-  infoLabel: { fontSize: '17px', color: '#98a2b3', fontWeight: 700, marginBottom: '8px' },
-  infoValue: { fontSize: '40px', fontWeight: 900, color: '#1c2b3f' },
-  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '20px 30px', marginBottom: '18px' },
-  infoLabelInline: { fontSize: '19px', color: '#98a2b3', fontWeight: 700 },
-  infoValueInline: { fontSize: '32px', fontWeight: 900, color: '#1c2b3f' },
+  infoLabel: { fontSize: '18px', color: '#98a2b3', fontWeight: 800, marginBottom: '6px' },
+  infoValue: { fontSize: '52px', fontWeight: 900, color: '#1c2b3f', lineHeight: 1.05 },
+  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', borderRadius: '16px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '16px 30px', marginBottom: '14px' },
+  infoLabelInline: { fontSize: '20px', color: '#98a2b3', fontWeight: 800 },
+  infoValueInline: { fontSize: '40px', fontWeight: 900, color: '#1c2b3f' },
 
-  stationGrid: { display: 'flex', gap: '18px' },
-  stationCol: { flex: 1, background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '20px 22px 24px' },
-  stationColHead: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', paddingBottom: '14px', borderBottom: '2px solid #eef0f3' },
-  stationBadge: { width: '50px', height: '50px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '24px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  stationNameBig: { fontSize: '24px', fontWeight: 900, color: '#1c2b3f' },
-  stationOffBig: { fontSize: '17px', color: '#98a2b3', fontWeight: 800, marginLeft: 'auto' },
-  comboBlock: { background: '#f6f7f9', borderRadius: '14px', padding: '16px 18px', marginBottom: '12px' },
-  comboQty: { fontSize: '20px', fontWeight: 900, color: '#e8830f', marginBottom: '10px' },
-  comboPieces: { display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' },
-  plusSm: { color: '#98a2b3', fontWeight: 900, fontSize: '18px' },
-  remainderWarn: { marginTop: '8px', fontSize: '15px', color: '#c8372c', fontWeight: 800 },
+  stationGrid: { display: 'flex', gap: '16px', flex: 1, minHeight: 0 },
+  stationCol: { flex: 1, background: '#fff', borderRadius: '18px', boxShadow: '0 2px 10px rgba(20,30,50,.08)', padding: '18px 22px 22px', display: 'flex', flexDirection: 'column' },
+  stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px', paddingBottom: '12px', borderBottom: '3px solid #eef0f3' },
+  stationBadge: { width: '58px', height: '58px', borderRadius: '50%', background: '#e8830f', color: '#fff', fontSize: '28px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  stationNameBig: { fontSize: '32px', fontWeight: 900, color: '#1c2b3f' },
+  stationOffBig: { fontSize: '22px', color: '#98a2b3', fontWeight: 800, marginLeft: 'auto' },
+  comboBlock: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: '#f6f7f9', borderRadius: '16px', padding: '18px 22px', marginBottom: '14px' },
+  comboMeta: { fontSize: '17px', fontWeight: 800, color: '#8b98ac', marginBottom: '6px' },
+  comboEquation: { fontSize: '30px', fontWeight: 900, color: '#4d5c72', marginBottom: '14px', display: 'flex', alignItems: 'baseline', gap: '8px' },
+  eqOp: { color: '#98a2b3' },
+  comboTarget: { fontSize: '38px', color: '#e8830f' },
+  comboPieces: { display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' },
+  plusSm: { color: '#98a2b3', fontWeight: 900, fontSize: '30px' },
+  remainderWarn: { marginTop: '12px', fontSize: '19px', color: '#c8372c', fontWeight: 900 },
 
-  btnFooter: { display: 'flex', gap: '18px', marginTop: '22px' },
-  btnBig: { flex: 1, textAlign: 'center', padding: '28px', borderRadius: '18px', fontSize: '32px', fontWeight: 900, cursor: 'pointer' },
-  btnOutline: { background: '#fff', border: '3px solid #d7dce4', color: '#4d5c72' },
+  btnFooter: { display: 'flex', gap: '18px', marginTop: '16px' },
+  btnBig: { flex: 1, textAlign: 'center', padding: '32px', borderRadius: '18px', fontSize: '38px', fontWeight: 900, cursor: 'pointer' },
+  btnOutline: { background: '#fff', border: '4px solid #d7dce4', color: '#4d5c72' },
   btnSolid: { background: '#1b2f52', color: '#fff' },
 };
