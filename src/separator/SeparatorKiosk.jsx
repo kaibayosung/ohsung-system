@@ -40,11 +40,32 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   const [selectedId, setSelectedId] = useState(null);
 
   const loadJobs = useCallback(async () => {
+    const today = todayKST();
+    // 그린ERP 작업목록(list) 기준으로 오늘 슬리터2 중 "작업완료"가 아닌 건만 추려냅니다.
+    // (상세 테이블에는 진행상태가 없어서, 이미 끝난 작업이 계속 목록에 남는 문제가 있었습니다.)
+    const { data: orders, error: ordersError } = await supabase
+      .from('greenp_joborders')
+      .select('joborder_no, status')
+      .eq('work_type', 'SLITING2')
+      .eq('joborder_date', today)
+      .neq('status', '작업완료');
+    if (ordersError) {
+      setLoading(false);
+      return;
+    }
+    const activeNos = (orders || []).map((o) => o.joborder_no);
+    if (activeNos.length === 0) {
+      setJobs([]);
+      setLastSyncAt(new Date());
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('greenp_joborder_detail')
       .select('*')
       .eq('work_type', 'SLITING2')
-      .eq('joborder_date', todayKST())
+      .eq('joborder_date', today)
+      .in('joborder_no', activeNos)
       .not('process_rule', 'is', null)
       .order('id', { ascending: false })
       .limit(40);
