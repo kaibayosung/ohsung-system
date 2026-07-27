@@ -30,18 +30,18 @@ const INTERNAL_SYSTEMS = [
   },
   {
     icon: '🖥️', name: '작업선택 PAD — 슬리팅1', status: '운영중',
-    url: 'http://osungsteel.servehttp.com:38080/pad/sliting1',
-    desc: 'PLC 데이터와 ERP 데이터를 합치기 위한 작업 선택',
+    url: 'http://osungsteel.servehttp.com:38080/pad/sliting',
+    desc: 'PLC 데이터와 ERP 데이터를 합치기 위한 작업 선택 (태블릿 화면)',
   },
   {
     icon: '🖥️', name: '작업선택 PAD — 슬리팅2', status: '운영중',
     url: 'http://osungsteel.servehttp.com:38080/pad/sliting2',
-    desc: 'PLC 데이터와 ERP 데이터를 합치기 위한 작업 선택',
+    desc: 'PLC 데이터와 ERP 데이터를 합치기 위한 작업 선택 (태블릿 화면)',
   },
   {
     icon: '🖥️', name: '작업선택 PAD — 레벨링', status: '운영중',
-    url: 'http://osungsteel.servehttp.com:38080/pad/levelling',
-    desc: 'PLC 데이터와 ERP 데이터를 합치기 위한 작업 선택',
+    url: 'http://osungsteel.servehttp.com:38080/pad/leveling',
+    desc: 'PLC 데이터와 ERP 데이터를 합치기 위한 작업 선택 (태블릿 화면)',
   },
   {
     icon: '🔌', name: 'PLC 데이터 통합저장', status: '운영중',
