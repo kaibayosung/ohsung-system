@@ -215,6 +215,56 @@ function printOutboundPDF(company, rangeLabel, rows) {
   w.document.close(); w.focus();
 }
 
+/* ---------------- 미출고 현황 — 그린ERP 원본 인쇄 양식과 100% 동일한 별도 창 리포트 ----------------
+ * 고객사가 그린ERP에서 직접 출력하던 "미출고 현황" 인쇄본(제목/거래처·기준일자 줄/표 6개 컬럼:
+ * 생산일자·품명·규격·원중량·작업SIZE·수량/전체 그리드 테두리)을 그대로 재현합니다.
+ * 오성철강 로고·확인도장 등 우리 쪽 브랜딩은 넣지 않습니다 — 고객사가 원한 것은 그린ERP 양식 그대로입니다. */
+function printUnshippedPDF(company, rows) {
+  const w = window.open('', '_blank', 'width=880, height=760');
+  if (!w) { alert('팝업이 차단되었습니다. 브라우저의 팝업 차단을 해제해주세요.'); return; }
+  const asOf = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }).replace(/-/g, '.');
+  const bodyRows = rows.map((r) => `
+    <tr>
+      <td>${r.production_date || '-'}</td>
+      <td>${r.product_name || '-'}</td>
+      <td>${r.spec || '-'}</td>
+      <td class="num">${Number(r.original_weight || 0).toLocaleString()}</td>
+      <td>${r.description || '-'}</td>
+      <td class="num">${r.qty ? Number(r.qty).toLocaleString() : '-'}</td>
+    </tr>`).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="UTF-8"><title>미출고 현황 - ${company}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: "맑은 고딕", "Malgun Gothic", sans-serif; color:#000; margin:0; padding:28px 34px; }
+    .title { text-align:center; margin: 4px 0 20px; }
+    .title h1 { display:inline-block; font-size:25px; font-weight:800; letter-spacing:.25em; margin:0; padding-bottom:6px; border-bottom:3px double #000; }
+    .meta { display:flex; justify-content:space-between; align-items:baseline; padding-bottom:6px; border-bottom:1.5px solid #000; margin-bottom:0; }
+    .meta .company { font-size:17px; font-weight:700; }
+    .meta .asof { font-size:13.5px; }
+    table { width:100%; border-collapse:collapse; margin-top:0; }
+    th, td { border:1px solid #999; padding:7px 9px; font-size:13.5px; }
+    th { background:#f2f2f2; font-weight:700; text-align:center; }
+    td.num, th.num { text-align:right; }
+    @page { margin: 15mm; @bottom-right { content: "Page: " counter(page) " of " counter(pages); font-size: 10px; color:#666; } }
+    @media print { button { display:none !important; } body { padding:12px 16px; } }
+    .printbar { text-align:center; margin-top:22px; }
+    .printbar button { font-size:16px; padding:10px 22px; border-radius:9px; border:none; background:#E8830F; color:#fff; font-weight:800; cursor:pointer; }
+  </style></head>
+  <body>
+    <div class="title"><h1>미 출고 현황</h1></div>
+    <div class="meta">
+      <span class="company">${company}</span>
+      <span class="asof">${asOf} 현재</span>
+    </div>
+    <table>
+      <thead><tr><th>생산일자</th><th>품명</th><th>규격</th><th class="num">원중량</th><th>작업SIZE</th><th class="num">수량</th></tr></thead>
+      <tbody>${bodyRows || '<tr><td colspan="6" style="text-align:center;color:#888;padding:20px;">미출고 재고가 없습니다</td></tr>'}</tbody>
+    </table>
+    <div class="printbar"><button onclick="window.print()">🖨️ 인쇄 / PDF 저장</button></div>
+  </body></html>`);
+  w.document.close(); w.focus();
+}
+
 const WORK_TYPE_GROUPS = [
   { key: 'SLITING', label: '슬리팅' },
   { key: 'SLITING2', label: '슬리팅' },
@@ -414,7 +464,20 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
     let cancelled = false;
     setUnshippedLoading(true);
     fetchAllRows('greenp_unshipped', 'id,production_date,job_slip_no,product_name,spec,original_weight,description,qty', (q) => q.eq('company_name', companyName).order('production_date', { ascending: true }))
-      .then((rows) => { if (!cancelled) { setUnshippedRows(rows || []); setUnshippedLoading(false); } })
+      .then((rows) => {
+        if (cancelled) return;
+        // 그린ERP 원본 인쇄본(미출고현황)과 동일한 정렬 — 생산일자 오름차순, 같은 날짜 안에서는
+        // 작업전표번호(job_slip_no) 오름차순(숫자 기준). 서버 order()는 production_date까지만
+        // 보장하므로, 같은 날짜 그룹 내 순서는 여기서 안정적으로 재정렬합니다.
+        const sorted = [...(rows || [])].sort((a, b) => {
+          if (a.production_date !== b.production_date) return (a.production_date || '') < (b.production_date || '') ? -1 : 1;
+          const an = parseInt(a.job_slip_no, 10), bn = parseInt(b.job_slip_no, 10);
+          if (isNaN(an) || isNaN(bn)) return 0;
+          return an - bn;
+        });
+        setUnshippedRows(sorted);
+        setUnshippedLoading(false);
+      })
       .catch(() => { if (!cancelled) setUnshippedLoading(false); });
     return () => { cancelled = true; };
   }, [companyName]);
@@ -709,7 +772,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
             <div className="no-print" style={{ fontSize: '13px', color: C.textMuted }}>작업(생산)은 완료됐지만 아직 출고되지 않은 코일 목록입니다 — 그린ERP 미출고현황 리스트와 동일한 기준이며, 항상 현재 시점 기준입니다.</div>
             <div className="no-print" style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
               <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => openFaxModal('unshipped')}>📠 FAX로 전송</button>
-              <PrintButton />
+              <button style={{ ...btnStyle(false), whiteSpace: 'nowrap' }} onClick={() => printUnshippedPDF(companyName, unshippedRows)}>🖨️ 미출고현황 인쇄 (그린ERP 양식)</button>
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: '10px', marginBottom: '14px' }}>
