@@ -302,12 +302,17 @@ async function fetchAllRows(
   return all;
 }
 
-// ---------------- 미출고 리스트 PDF ----------------
-// [수정] 처음에는 greenp_inventory(입고 원본 재고)를 그대로 쓨으나, 실제로는 "작업(생산)은
-// 끝났지만 아직 출고되지 않은 코일" 목록이어야 한다는 확인을 받아 greenp_joborder_detail(작업 완료분)
-// 중 greenp_outbound(출고 기록)에 없는 것만 거러내는 방식으로 다시 작성했습니다.
-// 그린ERP의 "미출고현황 리스트(invtNoOutStatListPop)" 팝업과 동일한 컴럼(생산일자/품명/규격/원중량/작업SIZE/수량)입니다.
-async function buildUnshippedPdf(supabase: any, companyName: string, dateLabel: string, rows: { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[]): Promise<Uint8Array> {
+// ---------------- 미출고 현황 PDF ----------------
+// [v18 — 그린ERP 원본 인쇄 양식과 100% 동일] 고객사가 그린ERP에서 직접 출력하던 "미출고 현황"
+// 인쇄본(제목 "미 출고 현황" · 거래처명+기준일자 줄 · 6개 컬럼 생산일자/품명/규격/원중량/작업SIZE/수량 ·
+// 전체 셀 그리드 테두리)을 그대로 재현합니다. CustomerPortalPage.jsx의 printUnshippedPDF()(브라우저
+// 인쇄용)와 동일한 원칙 — 오성철강 자체 브랜딩(로고/통계카드/도장/안내문구)은 전부 빼고, 그린ERP가
+// 보여주던 그대로만 그립니다. FAX로 전송되는 문서이므로 고객이 받아보는 모양이 원본과 같아야 합니다.
+const BLACK: [number, number, number] = [0, 0, 0];
+const GRID: [number, number, number] = [130, 130, 130];
+const TH_BG_PLAIN: [number, number, number] = [242, 242, 242];
+
+async function buildUnshippedPdf(supabase: any, companyName: string, _dateLabel: string, rows: { production_date: string; job_slip_no: string | null; product_name: string; spec: string; original_weight: number; description: string | null; qty: number | null }[]): Promise<Uint8Array> {
   const { jsPDF } = await import("npm:jspdf@2.5.2");
   const krFont = await getKrFontB64(supabase);
   const doc = new jsPDF();
@@ -316,41 +321,10 @@ async function buildUnshippedPdf(supabase: any, companyName: string, dateLabel: 
   doc.setFont("OhsungKR", "normal");
 
   const pageW = 210, marginX = 15, right = 210 - marginX;
-  const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+  const asOf = seoulDateStr().replace(/-/g, ".");
 
-  const drawHeader = () => {
-    doc.setFont("OhsungKR", "normal"); doc.setFontSize(15); doc.setTextColor(...DARK);
-    doc.text("오성철강사에서 제공하는 리포트", marginX, 20);
-    doc.setFontSize(9.5); doc.setTextColor(...META_TX);
-    doc.text(`미출고 리스트 · 거래처: ${companyName} · 기준: ${dateLabel}`, marginX, 27);
-    doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
-    doc.text(`출력일시: ${now}`, marginX, 32.5);
-    doc.setDrawColor(...NAVY); doc.setLineWidth(0.9);
-    doc.line(marginX, 37, right, 37);
-  };
-
-  drawHeader();
-
-  // 통계 카드 2개 (미출고 건수 / 원중량 합계) — 작업 내역 리포트와 동일한 카드 톤
-  const totalOriginal = rows.reduce((s, r) => s + (Number(r.original_weight) || 0), 0);
-  const cardY = 43, cardH = 20, cardGap = 5, cardW = (right - marginX - cardGap * 1) / 2;
-  const cards: [string, string, [number, number, number]][] = [
-    ["미출고 건수", `${rows.length}건`, DARK],
-    ["원중량 합계", `${(totalOriginal / 1000).toFixed(1)}톤`, BADGE_TX],
-  ];
-  cards.forEach(([label, val, color], i) => {
-    const cx = marginX + i * (cardW + cardGap);
-    doc.setFillColor(...META_BG);
-    doc.roundedRect(cx, cardY, cardW, cardH, 2, 2, "F");
-    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8.5); doc.setTextColor(...GRAY_SUB);
-    doc.text(label, cx + 5, cardY + 7.5);
-    doc.setFontSize(14); doc.setTextColor(...color);
-    doc.text(val, cx + 5, cardY + 15.5);
-  });
-
-  let y = cardY + cardH + 8;
-  // date(생산일자) | name(품명) | spec(규격) | orig(원중량) | size(작업SIZE, 줄바꿈) | qty(수량)
-  const colW = { date: 22, name: 32, spec: 20, orig: 22, qty: 22 };
+  // date(생산일자) | name(품명) | spec(규격) | orig(원중량, 우측정렬) | size(작업SIZE) | qty(수량, 우측정렬)
+  const colW = { date: 24, name: 34, spec: 24, orig: 22, qty: 22 };
   const colX = {
     date: marginX,
     name: marginX + colW.date,
@@ -358,79 +332,91 @@ async function buildUnshippedPdf(supabase: any, companyName: string, dateLabel: 
     orig: marginX + colW.date + colW.name + colW.spec,
     size: marginX + colW.date + colW.name + colW.spec + colW.orig,
   };
-  const qtyX = right;
-  const sizeColW = right - colW.qty - colX.size - 3;
+  const qtyColX = right - colW.qty;
+  const sizeColW = qtyColX - colX.size;
+  const colXs = [marginX, colX.name, colX.spec, colX.orig, colX.size, qtyColX, right];
 
+  const drawHeader = () => {
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(19); doc.setTextColor(...BLACK);
+    const title = "미 출고 현황";
+    doc.text(title, pageW / 2, 22, { align: "center" });
+    const tw = doc.getTextWidth(title);
+    doc.setDrawColor(...BLACK); doc.setLineWidth(0.6);
+    doc.line(pageW / 2 - tw / 2 - 2, 24.5, pageW / 2 + tw / 2 + 2, 24.5);
+    doc.line(pageW / 2 - tw / 2 - 2, 25.6, pageW / 2 + tw / 2 + 2, 25.6);
+
+    doc.setFontSize(12.5); doc.setTextColor(...BLACK);
+    doc.text(companyName, marginX, 34);
+    doc.setFontSize(9.5);
+    doc.text(`${asOf} 현재`, right, 34, { align: "right" });
+    doc.setDrawColor(...BLACK); doc.setLineWidth(0.4);
+    doc.line(marginX, 36.5, right, 36.5);
+  };
+
+  let y = 0;
+  const headerRowH = 8;
   const drawTableHeader = () => {
-    doc.setFillColor(...C_TH_BG);
-    doc.rect(marginX, y, right - marginX, 7.5, "F");
-    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8.5); doc.setTextColor(...META_TX);
-    doc.text("생산일자", colX.date + 1.5, y + 5.2);
-    doc.text("품명", colX.name + 1.5, y + 5.2);
-    doc.text("규격", colX.spec + 1.5, y + 5.2);
-    doc.text("원중량", colX.size - 1.5, y + 5.2, { align: "right" });
-    doc.text("작업SIZE", colX.size + 1.5, y + 5.2);
-    doc.text("수량", qtyX - 1.5, y + 5.2, { align: "right" });
-    y += 7.5;
+    y = 44;
+    doc.setFillColor(...TH_BG_PLAIN);
+    doc.rect(marginX, y, right - marginX, headerRowH, "F");
+    doc.setDrawColor(...GRID); doc.setLineWidth(0.2);
+    doc.rect(marginX, y, right - marginX, headerRowH);
+    colXs.slice(1, -1).forEach((x) => doc.line(x, y, x, y + headerRowH));
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(9); doc.setTextColor(...BLACK);
+    const midY = y + headerRowH / 2 + 1.4;
+    doc.text("생산일자", colX.date + colW.date / 2, midY, { align: "center" });
+    doc.text("품명", colX.name + colW.name / 2, midY, { align: "center" });
+    doc.text("규격", colX.spec + colW.spec / 2, midY, { align: "center" });
+    doc.text("원중량", colX.orig + colW.orig / 2, midY, { align: "center" });
+    doc.text("작업SIZE", colX.size + sizeColW / 2, midY, { align: "center" });
+    doc.text("수량", qtyColX + colW.qty / 2, midY, { align: "center" });
+    y += headerRowH;
   };
 
   const ensureSpace = (need: number) => {
     if (y + need > 280) {
       doc.addPage();
-      y = 16;
       drawHeader();
-      y = 43;
       drawTableHeader();
     }
   };
 
+  drawHeader();
   drawTableHeader();
 
-  doc.setFontSize(8.3);
-  let totalQty = 0;
+  doc.setFontSize(8.6);
   if (rows.length === 0) {
-    doc.setFont("OhsungKR", "normal"); doc.setTextColor(...GRAY_SUB);
-    doc.text("출고 대기중인 재고가 없습니다", pageW / 2, y + 6, { align: "center" });
-    y += 9;
+    doc.setFont("OhsungKR", "normal"); doc.setTextColor(...GRID);
+    doc.text("미출고 재고가 없습니다", pageW / 2, y + 8, { align: "center" });
+    doc.setDrawColor(...GRID); doc.setLineWidth(0.2);
+    doc.rect(marginX, y, right - marginX, 10);
+    y += 10;
   }
-  rows.forEach((r, i) => {
-    const sizeText = String(r.process_rule ?? "") || "-";
-    const sizeLines = doc.splitTextToSize(sizeText, sizeColW);
-    const rowH = Math.max(7, sizeLines.length * 4 + 3);
+  rows.forEach((r) => {
+    const sizeText = String(r.description ?? "") || "-";
+    const sizeLines = doc.splitTextToSize(sizeText, sizeColW - 3);
+    const rowH = Math.max(7.2, sizeLines.length * 3.8 + 3.2);
     ensureSpace(rowH);
-    if (i % 2 === 1) { doc.setFillColor(...ALT_ROW); doc.rect(marginX, y, right - marginX, rowH, "F"); }
-    doc.setFont("OhsungKR", "normal"); doc.setTextColor(...DARK);
+    doc.setFont("OhsungKR", "normal"); doc.setTextColor(...BLACK);
     const textY = y + 5;
-    doc.text(String(r.joborder_date ?? ""), colX.date + 1.5, textY);
+    doc.text(String(r.production_date ?? ""), colX.date + 1.5, textY);
     doc.text(String(r.product_name ?? ""), colX.name + 1.5, textY, { maxWidth: colW.name - 2 });
     doc.text(String(r.spec ?? ""), colX.spec + 1.5, textY, { maxWidth: colW.spec - 2 });
-    doc.text(`${Number(r.original_weight || 0).toLocaleString()}`, colX.size - 1.5, textY, { align: "right" });
+    doc.text(`${Number(r.original_weight || 0).toLocaleString()}`, colX.orig + colW.orig - 1.5, textY, { align: "right" });
     doc.text(sizeLines, colX.size + 1.5, textY);
-    doc.text(`${Number(r.used_weight || 0).toLocaleString()}`, qtyX - 1.5, textY, { align: "right" });
-    totalQty += Number(r.used_weight) || 0;
-    doc.setDrawColor(...BORDER); doc.setLineWidth(0.15);
-    doc.line(marginX, y + rowH, right, y + rowH);
+    doc.text(r.qty ? `${Number(r.qty).toLocaleString()}` : "-", right - 1.5, textY, { align: "right" });
+    doc.setDrawColor(...GRID); doc.setLineWidth(0.2);
+    doc.rect(marginX, y, right - marginX, rowH);
+    colXs.slice(1, -1).forEach((x) => doc.line(x, y, x, y + rowH));
     y += rowH;
   });
 
-  y += 2;
-  ensureSpace(20);
-  doc.setDrawColor(...NAVY); doc.setLineWidth(0.6);
-  doc.line(marginX, y, right, y);
-  y += 7;
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(10.5); doc.setTextColor(...DARK);
-  doc.text(`원중량 계  ${totalOriginal.toLocaleString()} kg`, colX.size, y, { align: "right" });
-  doc.text(`수량 계  ${totalQty.toLocaleString()} kg`, right, y, { align: "right" });
-
-  y += 13;
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
-  doc.text("본 리스트는 오성철강 스마트 이알피에서 자동 생성되었습니다.", marginX, y);
-  y += 5;
-  doc.text("내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.", marginX, y);
-
-  y += 16;
-  doc.setFont("OhsungKR", "normal"); doc.setFontSize(12); doc.setTextColor(...DARK);
-  doc.text("오 성 철 강 사", right, y, { align: "right" });
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8); doc.setTextColor(...GRID);
+    doc.text(`Page: ${p} of ${pageCount}`, right, 289, { align: "right" });
+  }
 
   return new Uint8Array(doc.output("arraybuffer"));
 }
@@ -447,17 +433,26 @@ async function fetchUnshippedRows(supabase: any, companyName: string) {
     supabase,
     "greenp_unshipped",
     "production_date,job_slip_no,product_name,spec,original_weight,description,qty",
-    (q) => q.eq("company_name", companyName).order("production_date", { ascending: false }),
+    (q) => q.eq("company_name", companyName).order("production_date", { ascending: true }),
   );
-  return (rows as any[]).map((r) => ({
-    joborder_date: r.production_date,
+  // 그린ERP 원본 인쇄본과 동일한 정렬 — 생산일자 오름차순, 같은 날짜 안에서는 작업전표번호
+  // (job_slip_no) 숫자 오름차순. CustomerPortalPage.jsx printUnshippedPDF()의 정렬 로직과 동일.
+  const sorted = [...(rows as any[])].sort((a, b) => {
+    if (a.production_date !== b.production_date) return (a.production_date || "") < (b.production_date || "") ? -1 : 1;
+    const an = parseInt(a.job_slip_no, 10), bn = parseInt(b.job_slip_no, 10);
+    if (isNaN(an) || isNaN(bn)) return 0;
+    return an - bn;
+  });
+  return sorted.map((r) => ({
+    production_date: r.production_date,
+    job_slip_no: r.job_slip_no,
     product_name: r.product_name,
     spec: r.spec,
     original_weight: Number(r.original_weight) || 0,
-    used_weight: r.qty ? Number(r.qty) : 0,
-    process_rule: r.description,
+    description: r.description,
+    qty: r.qty ? Number(r.qty) : null,
   })) as {
-    joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null;
+    production_date: string; job_slip_no: string | null; product_name: string; spec: string; original_weight: number; description: string | null; qty: number | null;
   }[];
 }
 
