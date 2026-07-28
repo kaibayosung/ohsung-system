@@ -222,6 +222,29 @@ const WORK_TYPE_GROUPS = [
 ];
 const CP_SUBS = [['inventory', '📦 재고 현황'], ['work', '🛠 작업 내역'], ['unshipped', '🚛 미출고 리스트'], ['outbound', '🚚 출고 내역'], ['inbound', '📥 입고 내역'], ['place', '📝 발주하기']];
 
+// [버그 수정] Supabase(PostgREST)는 .range()를 명시하지 않으면 기본 최대 1000행까지만 반환합니다.
+// greenp_outbound처럼 계속 쌓이는 테이블을 거래처 기준으로 "전부" 가져와야 하는 화면(미출고 리스트 등)에서
+// 이 캡에 걸려 일부만 조회되면, 이미 출고된 코일까지 미출고로 잘못 표시되는 문제가 생깁니다.
+// (실측: 대한강재 — outbound 1,787건 중 1000건만 반영되어 미출고가 232건으로 과다 표시, 실제는 68건)
+// 결과가 페이지 크기보다 작을 때까지 .range()로 반복 조회하는 공용 헬퍼입니다.
+async function fetchAllRows(table, selectCols, applyFilters) {
+  const pageSize = 1000;
+  let all = [];
+  let from = 0;
+  for (;;) {
+    let q = supabase.from(table).select(selectCols);
+    q = applyFilters(q);
+    q = q.range(from, from + pageSize - 1);
+    const { data, error } = await q;
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 function kstDateStr(d) { return new Date(d).toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' }); }
 function todayStr() { return kstDateStr(new Date()); }
 function daysAgoStr(n) { const d = new Date(); d.setDate(d.getDate() - n); return kstDateStr(d); }
@@ -383,15 +406,15 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
     let cancelled = false;
     setUnshippedLoading(true);
     Promise.all([
-      supabase.from('greenp_joborder_detail').select('id,joborder_date,product_name,spec,original_weight,used_weight,process_rule').eq('company_name', companyName).order('joborder_date', { ascending: false }).limit(1000),
-      supabase.from('greenp_outbound').select('product_name').eq('company_name', companyName),
-    ]).then(([jobRes, outRes]) => {
+      fetchAllRows('greenp_joborder_detail', 'id,joborder_date,product_name,spec,original_weight,used_weight,process_rule', (q) => q.eq('company_name', companyName).order('joborder_date', { ascending: false })),
+      fetchAllRows('greenp_outbound', 'product_name', (q) => q.eq('company_name', companyName)),
+    ]).then(([jobRows, outRows]) => {
       if (cancelled) return;
-      const shippedSet = new Set((outRes.data || []).map((r) => r.product_name).filter(Boolean));
-      const rows = (jobRes.data || []).filter((d) => d.product_name && !shippedSet.has(d.product_name));
+      const shippedSet = new Set(outRows.map((r) => r.product_name).filter(Boolean));
+      const rows = jobRows.filter((d) => d.product_name && !shippedSet.has(d.product_name));
       setUnshippedRows(rows);
       setUnshippedLoading(false);
-    });
+    }).catch(() => { if (!cancelled) setUnshippedLoading(false); });
     return () => { cancelled = true; };
   }, [companyName]);
   const unshippedTotalWeight = unshippedRows.reduce((s, r) => s + Number(r.original_weight || 0), 0);
@@ -404,10 +427,9 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
     if (!companyName) return;
     let cancelled = false;
     setWorkLoading(true);
-    supabase.from('greenp_joborder_detail').select('*').eq('company_name', companyName)
-      .gte('joborder_date', startDate).lte('joborder_date', endDate)
-      .order('joborder_date', { ascending: false }).limit(500)
-      .then(({ data }) => { if (!cancelled) { setWorkRows(data || []); setWorkLoading(false); } });
+    fetchAllRows('greenp_joborder_detail', '*', (q) => q.eq('company_name', companyName).gte('joborder_date', startDate).lte('joborder_date', endDate).order('joborder_date', { ascending: false }))
+      .then((data) => { if (!cancelled) { setWorkRows(data || []); setWorkLoading(false); } })
+      .catch(() => { if (!cancelled) setWorkLoading(false); });
     return () => { cancelled = true; };
   }, [companyName, startDate, endDate]);
   const workTypeLabel = (t) => { const g = WORK_TYPE_GROUPS.find((g) => g.key === t); return g ? g.label : (t || '기타'); };
