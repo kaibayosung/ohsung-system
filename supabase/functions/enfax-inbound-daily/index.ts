@@ -1,7 +1,20 @@
-// enfax-inbound-daily v11: [작업 내역(작업지시서 상세) FAX 리포트 신규 데이터 모델 반영]
-// reportType 파라미터로 "inbound"(입고 내역, 기본값) / "work"(작업 내역)를 선택합니다.
+// enfax-inbound-daily v15: [중대 버그 수정] 미출고 리스트가 실제보다 훨씬 많이 나오는 문제
+// reportType 파라미터로 "inbound"(입고 내역, 기본값) / "work"(작업 내역) / "unshipped"(미출고 리스트)를 선택합니다.
 // 작업 내역은 greenp_joborder_detail(작업일자/품명/규격/원중량/중량/작업SIZE) 기준으로,
 // CustomerPortalPage.jsx의 "작업 내역" 탭 화면과 동일한 데이터를 사용합니다.
+// 미출고 리스트는 greenp_joborder_detail(작업 완료분) 중 product_name이 greenp_outbound(출고 기록)에
+// 없는 것만 거러낸 목록입니다 — 그린ERP의 "미출고현황 리스트(invtNoOutStatListPop)" 팝업과 동일한
+// 개념(생산일자/품명/규격/원중량/작업SIZE/수량)이며, 재고와 마찬가지로 날짜 범위와 무관하게
+// 항상 현재 시점 기준 스냅샷입니다.
+//
+// v15: fetchUnshippedRows가 greenp_outbound를 조회할 때 .limit()을 지정하지 않아 Supabase(PostgREST)의
+// 기본 최대 행 수(1000행)에 걸려 있었음이 실측으로 확인됨 — 대한강재처럼 2년치 출고 이력이 누적되어
+// 1,787건이 넘는 거래처는 출고 기록의 "일부"만 shippedSet에 들어가, 실제로는 이미 출고된 코일까지
+// 미출고로 잘못 표시됨(실측: 232건 vs 실제 68건). greenp_joborder_detail 조회도 .limit(1000)로
+// 고정되어 있어 전체 이력 백필 후 같은 문제가 재발할 수 있음. 두 조회 모두 fetchAllRows() 헬퍼로
+// .range() 기반 페이지네이션을 적용해 결과 개수와 무관하게 전체 행을 안전하게 가져오도록 수정.
+// fetchWorkRows의 .limit(500)도 같은 이유로 페이지네이션으로 교체.
+//
 // enFax 계정의 반복 로그인으로 인해 enFax측 로그인 보안이 강화되는 문제가 있어,
 // 5분마다 서버가 자동으로 로그인 시도를 하던 예약전송(check-schedule) 기능은 완전히 제거되어 있습니다.
 // 이 함수는 (1) 즉시 1회 발송(step=send), (2) PDF 미리보기(step=pdf), (3) 변환 폴링(step=poll) 만 지원합니다.
@@ -98,7 +111,7 @@ function seoulDateStr(d = new Date()): string {
 // [중요] app_assets.ohsung-kr-font는 원래 입고 리포트에 쓰인 글자만 담은 "서브셋" 폰트라
 // 작업지시서 상세(품명/규격/작업SIZE 등 자유 입력 텍스트)에 나오는 "작", "머" 같은 글자가
 // 없어서 팩스 PDF에서 글자가 통째로 사라지는 문제가 있었습니다.
-// 완전한 한글 글리프를 담은 Pretendard 전체 폰트를 CDN에서 받아 함수 인스턴스 동안 캐싱해 사용합니다.
+// 완전한 한글 글리프를 담은 Pretendard 전체 폰트를 CDN에서 받아 함수 인스턴스 동안 캠싱해 사용합니다.
 const KR_FONT_URL = "https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/public/static/alternative/Pretendard-Regular.ttf";
 let cachedFontB64: string | null = null;
 function bytesToBase64(bytes: Uint8Array): string {
@@ -248,25 +261,202 @@ async function buildInboundPdf(supabase: any, companyName: string, dateLabel: st
   return new Uint8Array(doc.output("arraybuffer"));
 }
 
+// v15: Supabase(PostgREST)는 명시적으로 .range()를 주지 않으면 기본 최대 1000행까지만 반환합니다.
+// 데이터가 계속 쌓이는 greenp_outbound/greenp_joborder_detail 같은 테이블을 특정 거래처 기준으로
+// "전부" 가져와야 하는 경우(미출고 계산 등) 이 최대치에 걸려 일부만 조회되는 문제가 생길 수 있어,
+// 결과가 페이지 크기보다 작을 때까지 .range()로 반복 조회하는 공용 헬퍼를 둡니다.
+async function fetchAllRows(
+  supabase: any,
+  table: string,
+  selectCols: string,
+  applyFilters: (q: any) => any,
+): Promise<any[]> {
+  const pageSize = 1000;
+  let all: any[] = [];
+  let from = 0;
+  for (;;) {
+    let q = supabase.from(table).select(selectCols);
+    q = applyFilters(q);
+    q = q.range(from, from + pageSize - 1);
+    const { data, error } = await q;
+    if (error) throw new Error(`${table} 조회 실패: ` + error.message);
+    if (!data || data.length === 0) break;
+    all = all.concat(data);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
+// ---------------- 미출고 리스트 PDF ----------------
+// [수정] 처음에는 greenp_inventory(입고 원본 재고)를 그대로 쓨으나, 실제로는 "작업(생산)은
+// 끝났지만 아직 출고되지 않은 코일" 목록이어야 한다는 확인을 받아 greenp_joborder_detail(작업 완료분)
+// 중 greenp_outbound(출고 기록)에 없는 것만 거러내는 방식으로 다시 작성했습니다.
+// 그린ERP의 "미출고현황 리스트(invtNoOutStatListPop)" 팝업과 동일한 컴럼(생산일자/품명/규격/원중량/작업SIZE/수량)입니다.
+async function buildUnshippedPdf(supabase: any, companyName: string, dateLabel: string, rows: { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[]): Promise<Uint8Array> {
+  const { jsPDF } = await import("npm:jspdf@2.5.2");
+  const krFont = await getKrFontB64(supabase);
+  const doc = new jsPDF();
+  doc.addFileToVFS("ohsung-kr.ttf", krFont);
+  doc.addFont("ohsung-kr.ttf", "OhsungKR", "normal");
+  doc.setFont("OhsungKR", "normal");
+
+  const pageW = 210, marginX = 15, right = 210 - marginX;
+  const now = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+
+  const drawHeader = () => {
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(15); doc.setTextColor(...DARK);
+    doc.text("오성철강사에서 제공하는 리포트", marginX, 20);
+    doc.setFontSize(9.5); doc.setTextColor(...META_TX);
+    doc.text(`미출고 리스트 · 거래처: ${companyName} · 기준: ${dateLabel}`, marginX, 27);
+    doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
+    doc.text(`출력일시: ${now}`, marginX, 32.5);
+    doc.setDrawColor(...NAVY); doc.setLineWidth(0.9);
+    doc.line(marginX, 37, right, 37);
+  };
+
+  drawHeader();
+
+  // 통계 카드 2개 (미출고 건수 / 원중량 합계) — 작업 내역 리포트와 동일한 카드 톤
+  const totalOriginal = rows.reduce((s, r) => s + (Number(r.original_weight) || 0), 0);
+  const cardY = 43, cardH = 20, cardGap = 5, cardW = (right - marginX - cardGap * 1) / 2;
+  const cards: [string, string, [number, number, number]][] = [
+    ["미출고 건수", `${rows.length}건`, DARK],
+    ["원중량 합계", `${(totalOriginal / 1000).toFixed(1)}톤`, BADGE_TX],
+  ];
+  cards.forEach(([label, val, color], i) => {
+    const cx = marginX + i * (cardW + cardGap);
+    doc.setFillColor(...META_BG);
+    doc.roundedRect(cx, cardY, cardW, cardH, 2, 2, "F");
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8.5); doc.setTextColor(...GRAY_SUB);
+    doc.text(label, cx + 5, cardY + 7.5);
+    doc.setFontSize(14); doc.setTextColor(...color);
+    doc.text(val, cx + 5, cardY + 15.5);
+  });
+
+  let y = cardY + cardH + 8;
+  // date(생산일자) | name(품명) | spec(규격) | orig(원중량) | size(작업SIZE, 줄바꿈) | qty(수량)
+  const colW = { date: 22, name: 32, spec: 20, orig: 22, qty: 22 };
+  const colX = {
+    date: marginX,
+    name: marginX + colW.date,
+    spec: marginX + colW.date + colW.name,
+    orig: marginX + colW.date + colW.name + colW.spec,
+    size: marginX + colW.date + colW.name + colW.spec + colW.orig,
+  };
+  const qtyX = right;
+  const sizeColW = right - colW.qty - colX.size - 3;
+
+  const drawTableHeader = () => {
+    doc.setFillColor(...C_TH_BG);
+    doc.rect(marginX, y, right - marginX, 7.5, "F");
+    doc.setFont("OhsungKR", "normal"); doc.setFontSize(8.5); doc.setTextColor(...META_TX);
+    doc.text("생산일자", colX.date + 1.5, y + 5.2);
+    doc.text("품명", colX.name + 1.5, y + 5.2);
+    doc.text("규격", colX.spec + 1.5, y + 5.2);
+    doc.text("원중량", colX.size - 1.5, y + 5.2, { align: "right" });
+    doc.text("작업SIZE", colX.size + 1.5, y + 5.2);
+    doc.text("수량", qtyX - 1.5, y + 5.2, { align: "right" });
+    y += 7.5;
+  };
+
+  const ensureSpace = (need: number) => {
+    if (y + need > 280) {
+      doc.addPage();
+      y = 16;
+      drawHeader();
+      y = 43;
+      drawTableHeader();
+    }
+  };
+
+  drawTableHeader();
+
+  doc.setFontSize(8.3);
+  let totalQty = 0;
+  if (rows.length === 0) {
+    doc.setFont("OhsungKR", "normal"); doc.setTextColor(...GRAY_SUB);
+    doc.text("출고 대기중인 재고가 없습니다", pageW / 2, y + 6, { align: "center" });
+    y += 9;
+  }
+  rows.forEach((r, i) => {
+    const sizeText = String(r.process_rule ?? "") || "-";
+    const sizeLines = doc.splitTextToSize(sizeText, sizeColW);
+    const rowH = Math.max(7, sizeLines.length * 4 + 3);
+    ensureSpace(rowH);
+    if (i % 2 === 1) { doc.setFillColor(...ALT_ROW); doc.rect(marginX, y, right - marginX, rowH, "F"); }
+    doc.setFont("OhsungKR", "normal"); doc.setTextColor(...DARK);
+    const textY = y + 5;
+    doc.text(String(r.joborder_date ?? ""), colX.date + 1.5, textY);
+    doc.text(String(r.product_name ?? ""), colX.name + 1.5, textY, { maxWidth: colW.name - 2 });
+    doc.text(String(r.spec ?? ""), colX.spec + 1.5, textY, { maxWidth: colW.spec - 2 });
+    doc.text(`${Number(r.original_weight || 0).toLocaleString()}`, colX.size - 1.5, textY, { align: "right" });
+    doc.text(sizeLines, colX.size + 1.5, textY);
+    doc.text(`${Number(r.used_weight || 0).toLocaleString()}`, qtyX - 1.5, textY, { align: "right" });
+    totalQty += Number(r.used_weight) || 0;
+    doc.setDrawColor(...BORDER); doc.setLineWidth(0.15);
+    doc.line(marginX, y + rowH, right, y + rowH);
+    y += rowH;
+  });
+
+  y += 2;
+  ensureSpace(20);
+  doc.setDrawColor(...NAVY); doc.setLineWidth(0.6);
+  doc.line(marginX, y, right, y);
+  y += 7;
+  doc.setFont("OhsungKR", "normal"); doc.setFontSize(10.5); doc.setTextColor(...DARK);
+  doc.text(`원중량 계  ${totalOriginal.toLocaleString()} kg`, colX.size, y, { align: "right" });
+  doc.text(`수량 계  ${totalQty.toLocaleString()} kg`, right, y, { align: "right" });
+
+  y += 13;
+  doc.setFont("OhsungKR", "normal"); doc.setFontSize(8); doc.setTextColor(...GRAY_SUB);
+  doc.text("본 리스트는 오성철강 스마트 이알피에서 자동 생성되었습니다.", marginX, y);
+  y += 5;
+  doc.text("내용에 이상이 있으신 경우 오성철강사로 연락 주시기 바랍니다.", marginX, y);
+
+  y += 16;
+  doc.setFont("OhsungKR", "normal"); doc.setFontSize(12); doc.setTextColor(...DARK);
+  doc.text("오 성 철 강 사", right, y, { align: "right" });
+
+  return new Uint8Array(doc.output("arraybuffer"));
+}
+
+// v15: greenp_joborder_detail(작업 완료분)과 greenp_outbound(출고 기록)를 각각 fetchAllRows로
+// 전부(페이지네이션) 가져온 뒤 product_name 기준으로 차집합을 구합니다. 이전에는 outbound 조회에
+// .limit()이 없어 Supabase 기본 1000행 캡에 걸려 있었고, joborder_detail도 .limit(1000) 고정이라
+// 전체 이력 백필 후 다시 문제가 될 수 있었습니다.
+async function fetchUnshippedRows(supabase: any, companyName: string) {
+  const [jobRows, outRows] = await Promise.all([
+    fetchAllRows(
+      supabase,
+      "greenp_joborder_detail",
+      "joborder_date,product_name,spec,original_weight,used_weight,process_rule",
+      (q) => q.eq("company_name", companyName).order("joborder_date", { ascending: false }),
+    ),
+    fetchAllRows(supabase, "greenp_outbound", "product_name", (q) => q.eq("company_name", companyName)),
+  ]);
+  const shippedSet = new Set(outRows.map((r: any) => r.product_name).filter(Boolean));
+  return (jobRows as any[]).filter((d) => d.product_name && !shippedSet.has(d.product_name)) as {
+    joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null;
+  }[];
+}
+
 /* ---------------- 작업 내역(작업지시서 상세) PDF — 입고 리포트와 동일 양식 ----------------
  * greenp_joborder_detail 기준: 작업일자/품명/규격/원중량/중량/작업SIZE
- * (CustomerPortalPage.jsx "작업 내역" 탭과 동일 데이터/컬럼) */
+ * (CustomerPortalPage.jsx "작업 내역" 탭과 동일 데이터/컴럼) */
 async function fetchWorkRows(supabase: any, companyName: string, startDate: string, endDate: string) {
-  const { data, error } = await supabase
-    .from("greenp_joborder_detail")
-    .select("joborder_date,product_name,spec,original_weight,used_weight,process_rule")
-    .eq("company_name", companyName)
-    .gte("joborder_date", startDate)
-    .lte("joborder_date", endDate)
-    .order("joborder_date", { ascending: false })
-    .limit(500);
-  if (error) throw new Error("작업 내역 조회 실패: " + error.message);
-  return (data || []) as { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[];
+  const rows = await fetchAllRows(
+    supabase,
+    "greenp_joborder_detail",
+    "joborder_date,product_name,spec,original_weight,used_weight,process_rule",
+    (q) => q.eq("company_name", companyName).gte("joborder_date", startDate).lte("joborder_date", endDate).order("joborder_date", { ascending: false }),
+  );
+  return rows as { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[];
 }
 
 // 작업 내역 PDF — CustomerPortalPage.jsx의 "인쇄/PDF 저장" 화면(오성철강사에서 제공하는
-// 리포트 · 통계 카드 · 표)과 동일한 레이아웃으로 구성합니다. 작업SIZE 칸은 자유 입력 텍스트라
-// 길이가 들쭉날쭉하므로 줄바꿈 처리해 다른 칸과 절대 겹치지 않게 합니다.
+// 리포트 · 통계 카드 · 표)와 동일한 레이아웃으로 구성합니다. 작업SIZE 칸은 자유 입력 텍스트라
+// 길이가 들은날둘하므로 줄바꿈 처리해 다른 칸과 절대 격치지 않게 합니다.
 async function buildWorkPdf(supabase: any, companyName: string, dateLabel: string, rows: { joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null }[]): Promise<Uint8Array> {
   const { jsPDF } = await import("npm:jspdf@2.5.2");
   const krFont = await getKrFontB64(supabase);
@@ -483,7 +673,7 @@ Deno.serve(async (req) => {
 
   const url = new URL(req.url);
   const step = url.searchParams.get("step") || "send";
-  const reportType = (url.searchParams.get("reportType") || "inbound") as "inbound" | "work";
+  const reportType = (url.searchParams.get("reportType") || "inbound") as "inbound" | "work" | "unshipped";
   const dryRun = url.searchParams.get("dryRun") === "1";
   const targetDate = url.searchParams.get("date") || seoulDateStr();
   const startDate = url.searchParams.get("startDate") || targetDate;
@@ -496,7 +686,8 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const supabase = createClient(supabaseUrl, serviceKey);
-  const dateLabel = startDate === endDate ? startDate : `${startDate} ~ ${endDate}`;
+  // 미출고 리스트는 재고와 마찬가지로 날짜 범위와 무관한 "현재 시점" 스냅샷입니다.
+  const dateLabel = reportType === "unshipped" ? "현재 시점 기준" : (startDate === endDate ? startDate : `${startDate} ~ ${endDate}`);
   const out: Record<string, any> = { step, reportType, startDate, endDate, companyName, dryRun };
 
   try {
@@ -518,6 +709,11 @@ Deno.serve(async (req) => {
         const pdfBytes = await buildWorkPdf(supabase, companyName, dateLabel, rows);
         return new Response(pdfBytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="work_${startDate}.pdf"`, ...CORS_HEADERS } });
       }
+      if (reportType === "unshipped") {
+        const rows = await fetchUnshippedRows(supabase, companyName);
+        const pdfBytes = await buildUnshippedPdf(supabase, companyName, dateLabel, rows);
+        return new Response(pdfBytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="unshipped_${seoulDateStr()}.pdf"`, ...CORS_HEADERS } });
+      }
       const { data: rows } = await supabase.from("greenp_inbound").select("inbound_date,product_name,spec,length_m,weight").eq("company_name", companyName).gte("inbound_date", startDate).lte("inbound_date", endDate).order("id");
       const pdfBytes = await buildInboundPdf(supabase, companyName, dateLabel, (rows || []) as any);
       return new Response(pdfBytes, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="inbound_${startDate}.pdf"`, ...CORS_HEADERS } });
@@ -535,6 +731,11 @@ Deno.serve(async (req) => {
         out.rowCount = rows.length;
         pdfBytes = await buildWorkPdf(supabase, companyName, dateLabel, rows);
         filePrefix = "work";
+      } else if (reportType === "unshipped") {
+        const rows = await fetchUnshippedRows(supabase, companyName);
+        out.rowCount = rows.length;
+        pdfBytes = await buildUnshippedPdf(supabase, companyName, dateLabel, rows);
+        filePrefix = "unshipped";
       } else {
         const { data: rows, error: rowsErr } = await supabase.from("greenp_inbound").select("inbound_date,product_name,spec,length_m,weight").eq("company_name", companyName).gte("inbound_date", startDate).lte("inbound_date", endDate).order("id");
         if (rowsErr) throw new Error("입고 데이터 조회 실패: " + rowsErr.message);
