@@ -16,6 +16,17 @@
 //   GET/POST ?mode=hourly                  -> 오늘 하루치 작업지시서 상세만 재동기화 (기본값)
 //   GET/POST ?mode=backfill&fr=YYYY-MM-DD&to=YYYY-MM-DD -> 지정 기간 전체 백필
 //   GET/POST ?mode=custom&fr=YYYY-MM-DD&to=YYYY-MM-DD
+//
+// v5: greenp_joborder_detail 업서트 성공 후, 같은 상세 데이터를 ERP2.0의 sales_records(매출원장)에도
+// 함께 upsert합니다. greenp_joborder_no를 자연키로 사용해 중복 없이 갱신되며,
+// 담당자/연락처 같은 사람이 직접 입력하는 필드는 건드리지 않습니다.
+//
+// v6: [버그 수정] joborder_no(mjunp)는 greenp_outbound의 outbound_no와 마찬가지로 전체 기간에서
+// 유일하지 않고 날짜별로 초기화되는 일련번호임. 조회 기간이 넓어지면(예: 2주 이상) 같은 joborder_no가
+// 서로 다른 날짜에 반복 등장해 sales_records upsert 시 "ON CONFLICT DO UPDATE command cannot affect
+// row a second time" 오류가 발생함(실측: 2026-07-01~07-15 백필에서 재현, joborderListCount=221에서 실패).
+// 배치 내에서 greenp_joborder_no 기준으로 먼저 중복 제거(같은 키면 더 나중 날짜 것으로 덮어씀)한 뒤
+// upsert하도록 수정.
 
 import forge from "npm:node-forge@1.3.1";
 import * as XLSX from "npm:xlsx@0.18.5";
@@ -238,6 +249,48 @@ Deno.serve(async (req) => {
         .upsert(detailRows, { onConflict: "joborder_no,joborder_date,work_type" });
       if (error) throw new Error("greenp_joborder_detail upsert 실패: " + error.message);
     }
+
+    // ---------- ERP2.0 sales_records(매출원장) 동기화 (v5) ----------
+    // 같은 상세 데이터를 이용해 sales_records에도 반영. greenp_joborder_no를 자연키로 쓰므로
+    // 같은 작업지시서를 다시 동기화해도 중복 생성되지 않고 갱신만 됩니다.
+    //
+    // v6: joborder_no(mjunp)는 날짜별로 초기화되는 일련번호라 넓은 기간을 한번에 조회하면 같은
+    // joborder_no가 여러 날짜에 걸쳐 중복 등장할 수 있음. sales_records의 UNIQUE 키는
+    // greenp_joborder_no 하나뿐이라, 같은 배치 안에 중복 키가 있으면 upsert가
+    // "ON CONFLICT DO UPDATE command cannot affect row a second time" 오류로 실패함.
+    // 배치 내 중복은 더 나중(최근) joborder_date를 가진 것으로 덮어써서 하나만 남깁니다.
+    const salesRecordMap = new Map<string, {
+      work_date: string; customer_name: string | null; management_no: string; greenp_joborder_no: string;
+      weight: number; unit_price: number; total_price: number; work_type: string; remarks: string | null;
+    }>();
+    for (const d of detailRows) {
+      if (!d.joborder_date || d.amount == null) continue;
+      const key = d.joborder_no;
+      const existing = salesRecordMap.get(key);
+      if (existing && existing.work_date > d.joborder_date) continue; // 이미 더 최신 날짜 것이 있으면 유지
+      salesRecordMap.set(key, {
+        work_date: d.joborder_date,
+        customer_name: d.company_name,
+        management_no: d.joborder_no,
+        greenp_joborder_no: d.joborder_no,
+        weight: d.used_weight ?? d.original_weight ?? 0,
+        unit_price: d.unit_price ?? 0,
+        total_price: d.amount ?? 0,
+        work_type: d.work_type,
+        remarks: d.spec ? `규격 ${d.spec}` : null,
+      });
+    }
+    const salesRecordRows = [...salesRecordMap.values()];
+
+    let salesSyncedCount = 0;
+    if (salesRecordRows.length > 0) {
+      const { error } = await supabase
+        .from("sales_records")
+        .upsert(salesRecordRows, { onConflict: "greenp_joborder_no" });
+      if (error) throw new Error("sales_records upsert 실패: " + error.message);
+      salesSyncedCount = salesRecordRows.length;
+    }
+    result.salesRecordsSynced = salesSyncedCount;
 
     result.detailCount = detailRows.length;
     result.errorCount = errors.length;
