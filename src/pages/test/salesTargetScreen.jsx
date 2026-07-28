@@ -242,7 +242,7 @@ export function SalesTargetCustomerList() {
                     return (
                       <tr key={r.customer_name}>
                         <td style={{ ...box.td, fontWeight: 700 }}>{r.customer_name}</td>
-                        <td style={box.td}>{(r.stockWeight / 1000).toFixed(1)}톤 <span style={{ color: COLORS.steelLight, fontSize: '13px' }}>({r.stockCount}건)</span></td>
+                        <td style={box.td}>{r.stockCount}건 · {(r.stockWeight / 1000).toFixed(1)}톤</td>
                         <td style={box.td}>{r.lastReceived || '-'}</td>
                         <td style={box.td}>{r.lastWork || '이력 없음'}</td>
                         <td style={box.td}>{r.idle === null ? '-' : `${r.idle}일`}</td>
