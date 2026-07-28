@@ -413,7 +413,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
     if (!companyName) return;
     let cancelled = false;
     setUnshippedLoading(true);
-    fetchAllRows('greenp_unshipped', 'id,production_date,job_slip_no,product_name,spec,original_weight,description,qty', (q) => q.eq('company_name', companyName).order('production_date', { ascending: false }))
+    fetchAllRows('greenp_unshipped', 'id,production_date,job_slip_no,product_name,spec,original_weight,description,qty', (q) => q.eq('company_name', companyName).order('production_date', { ascending: true }))
       .then((rows) => { if (!cancelled) { setUnshippedRows(rows || []); setUnshippedLoading(false); } })
       .catch(() => { if (!cancelled) setUnshippedLoading(false); });
     return () => { cancelled = true; };
@@ -716,12 +716,12 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
           </div>
 
           {unshippedLoading ? boxMsg('불러오는 중...', { justifyContent: 'center' }) : unshippedRows.length === 0 ? boxMsg('출고 대기중인 재고가 없습니다', { justifyContent: 'center' }) : (
-            <table style={itemsTable}>
-              <thead><tr><th style={th}>생산일자</th><th style={th}>품명</th><th style={th}>규격</th><th style={th}>원중량</th><th style={th}>작업SIZE</th><th style={th}>수량</th></tr></thead>
+            <table style={{ ...itemsTable, borderRadius: 0 }}>
+              <thead><tr><th style={{ ...th, border: `1px solid ${C.borderStrong}`, textAlign: 'center', width: '44px' }}>No</th><th style={{ ...th, border: `1px solid ${C.borderStrong}` }}>생산일자</th><th style={{ ...th, border: `1px solid ${C.borderStrong}` }}>품명</th><th style={{ ...th, border: `1px solid ${C.borderStrong}` }}>규격</th><th style={{ ...th, border: `1px solid ${C.borderStrong}` }}>원중량</th><th style={{ ...th, border: `1px solid ${C.borderStrong}` }}>작업SIZE</th><th style={{ ...th, border: `1px solid ${C.borderStrong}` }}>수량</th></tr></thead>
               <tbody>
                 {unshippedRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.production_date || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={td}>{r.description || '-'}</td><td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{r.qty ? Number(r.qty).toLocaleString() : '-'}</td>
+                    <td style={{ ...td, border: `1px solid ${C.border}`, textAlign: 'center', color: C.textMuted }}>{i + 1}</td><td style={{ ...td, border: `1px solid ${C.border}` }}>{r.production_date || '-'}</td><td style={{ ...td, border: `1px solid ${C.border}` }}>{r.product_name || '-'}</td><td style={{ ...td, border: `1px solid ${C.border}` }}>{r.spec || '-'}</td><td style={{ ...td, border: `1px solid ${C.border}` }}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={{ ...td, border: `1px solid ${C.border}` }}>{r.description || '-'}</td><td style={{ ...td, border: `1px solid ${C.border}`, fontWeight: 700, color: C.textAccent }}>{r.qty ? Number(r.qty).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>
