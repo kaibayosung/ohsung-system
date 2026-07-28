@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { COLORS } from './test/theme';
 import { OcrDocumentIntake, KakaoOrderChannel, FaxJoborderIntake, FieldCoilConfirm, OrderFlowV2 } from './test/proposalScreens';
 import { SeparatorSetupScreen } from './test/separatorSetup';
+import { SalesTargetCustomerList } from './test/salesTargetScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // external을 채우면(별도 배포 URL이 있는 경우) 카드 클릭 시 새 탭으로 열리고, 없으면 이 페이지 안에서 바로 열립니다.
@@ -20,6 +21,7 @@ const PROJECTS = [
   { key: 'field-confirm', label: '현장 코일확정', icon: '🚜', category: '주문접수 자동화', desc: '지게차 기사가 태블릿에서 코일을 확정합니다.' },
   { key: 'separator-setup', label: '세퍼레이터 셋팅 계산기', icon: '📐', category: '생산현장 도구', desc: '가공규격에 맞춰 스페이서 조합을 자동 계산합니다. (사무실용)' },
   { key: 'separator-kiosk', label: '세퍼레이터 태블릿 키오스크', icon: '🖥️', category: '생산현장 도구', desc: '슬리터2 현장에 배포된 실제 서비스로 이동합니다.', external: '/separator', badge: '현장 배포중' },
+  { key: 'sales-target', label: '영업대상 고객사 리스트', icon: '📋', category: '영업 지원', desc: '재고를 맡겨둔 거래처 중 최근 작업이 뜸한 곳을 자동으로 찾아줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
 ];
 
 // FAX 작업요청서 접수(No.13-1)와 현장 코일확정(No.13-2)은 하나의 흐름(초안 → 배차대기 → 배정완료)을
@@ -134,6 +136,7 @@ function LabPage() {
             <OrderFlowV2 drafts={joborderDrafts} onCreateDraft={createDraft} onApprove={approveDraft} onConfirmCoil={confirmCoil} />
           )}
           {view === 'separator-setup' && <SeparatorSetupScreen />}
+          {view === 'sales-target' && <SalesTargetCustomerList />}
         </div>
       )}
     </div>
