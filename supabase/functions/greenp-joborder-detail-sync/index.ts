@@ -27,6 +27,15 @@
 // row a second time" 오류가 발생함(실측: 2026-07-01~07-15 백필에서 재현, joborderListCount=221에서 실패).
 // 배치 내에서 greenp_joborder_no 기준으로 먼저 중복 제거(같은 키면 더 나중 날짜 것으로 덮어씀)한 뒤
 // upsert하도록 수정.
+//
+// v7: "그린ERP↔ERP2.0 동기화 문제점분석" 문서(6.2절)에 따른 방어 강화.
+// (1) 개별 작업지시서 엑셀 다운로드(fetchJoborderExcel)는 지금까지 실패 시 바로 errors 배열에
+// 기록하고 재시도 없이 넘어갔음 — 일시적 네트워크 오류로 특정 작업지시서 상세가 통째로 누락될
+// 수 있어, greenp-sync-v2와 동일한 패턴(최대 2회, 700ms*시도 백오프)으로 재시도를 추가함.
+// (2) 목록 조회(osungProdJoborderListAction.php)는 전수조사에서 sh_value가 비어 있어도 현재
+// 데이터량에서는 잘림이 없음을 확인했지만, 데이터가 누적되면 출고 API와 같은 문제가 재발할 수
+// 있어 예방적으로 totalRecord 대비 실제 수신 건수를 비교해 부족하면 날짜 구간을 재귀 분할
+// 재조회하는 fetchJoborderListSplit()을 추가함(greenp-sync-v2의 fetchDateRangeSplit과 동일 패턴).
 
 import forge from "npm:node-forge@1.3.1";
 import * as XLSX from "npm:xlsx@0.18.5";
@@ -102,7 +111,7 @@ async function greenpLogin(): Promise<string> {
   return [keyCookie, loginCookie].filter(Boolean).join("; ");
 }
 
-async function fetchJoborderList(cookie: string, dateFr: string, dateTo: string): Promise<any[]> {
+async function fetchJoborderListWithMeta(cookie: string, dateFr: string, dateTo: string): Promise<{ data: any[]; totalRecord: number }> {
   const res = await fetch(`${GREENP_BASE}/greenp/prod/osung/osungProdJoborderListAction.php`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Cookie: cookie },
@@ -123,7 +132,51 @@ async function fetchJoborderList(cookie: string, dateFr: string, dateTo: string)
   });
   const json = await res.json();
   if (json.result_cd !== "OK") throw new Error("작업지시서 목록 조회 실패: " + json.message);
-  return json.data || [];
+  const data = json.data || [];
+  const totalRecord = parseInt(String(json.totalRecord ?? data.length), 10);
+  return { data, totalRecord: isNaN(totalRecord) ? data.length : totalRecord };
+}
+
+async function fetchJoborderListWithRetry(cookie: string, dateFr: string, dateTo: string, retries = 2): Promise<{ data: any[]; totalRecord: number }> {
+  let lastErr: unknown;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fetchJoborderListWithMeta(cookie, dateFr, dateTo);
+    } catch (e) {
+      lastErr = e;
+      if (i < retries) await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
+function addDaysStr(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetweenStr(fr: string, to: string): number {
+  const a = new Date(fr + "T00:00:00Z").getTime();
+  const b = new Date(to + "T00:00:00Z").getTime();
+  return Math.round((b - a) / 86400000);
+}
+
+// v7: totalRecord 대비 실제 수신 건수가 부족하면(응답 잘림) 날짜 구간을 절반으로 나눠 재귀
+// 재조회 후 합칩니다. greenp-sync-v2의 fetchDateRangeSplit과 동일한 예방적 방어 패턴.
+async function fetchJoborderListSplit(cookie: string, dateFr: string, dateTo: string, depth = 0): Promise<any[]> {
+  try {
+    const { data, totalRecord } = await fetchJoborderListWithRetry(cookie, dateFr, dateTo);
+    if (data.length >= totalRecord || dateFr === dateTo || depth > 20) return data;
+    const span = daysBetweenStr(dateFr, dateTo);
+    const leftTo = addDaysStr(dateFr, Math.floor(span / 2));
+    const rightFr = addDaysStr(leftTo, 1);
+    const left = await fetchJoborderListSplit(cookie, dateFr, leftTo, depth + 1);
+    const right = await fetchJoborderListSplit(cookie, rightFr, dateTo, depth + 1);
+    return [...left, ...right];
+  } catch (_e) {
+    return [];
+  }
 }
 
 // 다운로드 버튼(fn_downloadBtn)이 호출하는 것과 동일한 요청.
@@ -157,6 +210,30 @@ async function fetchJoborderExcel(
   });
   if (!res.ok) throw new Error(`엑셀 다운로드 실패 (mjunp=${mjunpVal}): HTTP ${res.status}`);
   return await res.arrayBuffer();
+}
+
+// v7: 개별 작업지시서 엑셀 다운로드가 일시적 네트워크 오류로 실패하면 최대 retries회
+// (700ms*시도 백오프) 재시도합니다. 지금까지는 실패 시 바로 errors에 기록하고 넘어갔어서
+// 일시적 오류로도 해당 작업지시서의 상세 데이터가 영구히 누락될 수 있었습니다.
+async function fetchJoborderExcelWithRetry(
+  cookie: string,
+  mjunpVal: string,
+  mdateVal: string,
+  mgubunVal: string,
+  dateFr: string,
+  dateTo: string,
+  retries = 2,
+): Promise<ArrayBuffer> {
+  let lastErr: unknown;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fetchJoborderExcel(cookie, mjunpVal, mdateVal, mgubunVal, dateFr, dateTo);
+    } catch (e) {
+      lastErr = e;
+      if (i < retries) await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+    }
+  }
+  throw lastErr;
 }
 
 function toNum(v: any): number | null {
@@ -207,7 +284,7 @@ Deno.serve(async (req) => {
     const cookie = await greenpLogin();
     result.loginOk = true;
 
-    const jobList = await fetchJoborderList(cookie, dateFr, dateTo);
+    const jobList = await fetchJoborderListSplit(cookie, dateFr, dateTo);
     result.joborderListCount = jobList.length;
 
     const detailRows: any[] = [];
@@ -220,7 +297,7 @@ Deno.serve(async (req) => {
       if (!mjunp || !mdate || !mgubun) continue;
 
       try {
-        const buf = await fetchJoborderExcel(cookie, mjunp, mdate, mgubun, dateFr, dateTo);
+        const buf = await fetchJoborderExcelWithRetry(cookie, mjunp, mdate, mgubun, dateFr, dateTo);
         const rec = parseJoborderExcel(buf);
         if (!rec) { errors.push(`mjunp=${mjunp}: 엑셀 파싱 결과 없음`); continue; }
 

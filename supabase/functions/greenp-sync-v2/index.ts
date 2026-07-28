@@ -56,6 +56,29 @@
 // (예: 대한강재 최근 1주일 출고가 14건 있었는데 3건으로 덮어써짐). 거래처별 조회는 요청 수가 늘어나
 // 시간이 더 걸리므로, 거래처가 아주 많아지면 fetchOutboundForAllCompanies의 동시 처리 수(CONCURRENCY)를
 // 조정할 수 있게 함.
+//
+// v14: [중대 버그 수정 #2] 거래처 필터(sh_value)를 지정해도, 해당 거래처의 조회 기간 내 매칭 건수가
+// 많을 때(정확한 임계치는 불명 — 실측: 대한강재 2026-05-01~05-31 전체 조회 시 totalRecord는 정확히
+// "246"으로 보고되지만 실제 응답 body의 data 배열은 24건에서 끊김) 서버 응답이 중간에서 잘리는
+// 별개의 버그가 있음을 추가로 확인함. 이 잘림은 조회 기간 크기에 단순 비례하지 않아(예: 15일 조회가
+// 31일 조회보다 더 많은 바이트를 반환한 사례도 있어, 고정 청크 크기로는 안전하게 회피 불가) 고정된
+// 날짜 청크 크기로는 근본 해결이 안 됨. 그래서 매 응답마다 함께 내려오는 totalRecord와 실제
+// data.length를 비교해 잘림을 감지하고, 잘렸으면 요청한 날짜 구간을 절반으로 쪼개 재귀적으로
+// (최대 하루 단위까지) 다시 조회해 합치는 방식(fetchOutboundForCompanyWindow)으로 변경함.
+// 하루 단위까지 쪼개도 여전히 totalRecord와 안 맞으면(극히 드묾) 그 이상은 포기하고 받은 만큼만 반환.
+//
+// v15: "그린ERP↔ERP2.0 동기화 문제점분석" 문서(6.2/6.3절)에 따른 확대 적용.
+// (1) 전수조사 결과 출고 조회만 잘림이 있었지만, 데이터가 누적되면 다른 목록 조회(입고/작업지시서
+// 목록/생산전표)도 같은 임계치에 도달할 수 있어 동일한 totalRecord 검증 + 날짜구간 재귀분할을
+// fetchDateRangeSplit()로 일반화해 세 곳 모두에 적용함(이 세 엔드포인트는 거래처 필터가 없어 회사별
+// 순회 없이 날짜 구간만 쪼갬).
+// (2) 재고/미수금(invtListAction/accountDepositStatListAction)은 날짜·거래처 필터 자체가 없는 전체
+// 스냅샷이라 쪼갤 축이 없음 — 대신 fetchActionWithRetry로 최소 1회 재시도는 보장하고, totalRecord와
+// 실제 수신 건수가 다르면 result에 명시적으로 플래그(inventoryComplete/receivablesComplete)를 남겨
+// 잘림이 재발해도 로그로 바로 드러나도록 함.
+// (3) 재귀 분할 중 개별 요청이 네트워크 오류 등으로 실패하면 기존에는 바로 포기하고 빈 배열을
+// 반환했음 — fetchActionWithRetry로 짧은 대기 후 최대 2회 재시도를 먼저 시도하도록 바꿔, 일시적
+// 오류로 인한 데이터 누락 가능성을 줄임.
 
 import forge from "npm:node-forge@1.3.1";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -144,6 +167,39 @@ async function fetchAction(cookie: string, path: string, params: Record<string, 
   return json.data || [];
 }
 
+// v14: totalRecord까지 함께 반환하는 버전 — 응답이 중간에서 잘렸는지(data.length < totalRecord)
+// 판단하는 데 사용합니다.
+async function fetchActionWithMeta(cookie: string, path: string, params: Record<string, string>): Promise<{ data: any[]; totalRecord: number }> {
+  const res = await fetch(`${GREENP_BASE}${path}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Cookie: cookie,
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+  const json = await res.json();
+  if (json.result_cd !== "OK") throw new Error(`${path} 실패: ${json.message}`);
+  const data = json.data || [];
+  const totalRecord = parseInt(String(json.totalRecord ?? data.length), 10);
+  return { data, totalRecord: isNaN(totalRecord) ? data.length : totalRecord };
+}
+
+// v15: 네트워크 순간 오류 등으로 요청이 실패하면 짧은 대기 후 최대 retries회 재시도합니다.
+// 재귀 날짜분할 도중 개별 leaf 요청이 조용히 실패해 데이터가 누락되는 것을 줄이기 위함입니다.
+async function fetchActionWithRetry(cookie: string, path: string, params: Record<string, string>, retries = 2): Promise<{ data: any[]; totalRecord: number }> {
+  let lastErr: unknown;
+  for (let i = 0; i <= retries; i++) {
+    try {
+      return await fetchActionWithMeta(cookie, path, params);
+    } catch (e) {
+      lastErr = e;
+      if (i < retries) await new Promise((r) => setTimeout(r, 700 * (i + 1)));
+    }
+  }
+  throw lastErr;
+}
+
 function toNum(v: any): number {
   const n = parseFloat(String(v ?? "0").replace(/,/g, ""));
   return isNaN(n) ? 0 : n;
@@ -162,8 +218,91 @@ function toTextOrNull(v: any): string | null {
   return s === "" ? null : s;
 }
 
+function addDaysStr(dateStr: string, days: number): string {
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function daysBetweenStr(fr: string, to: string): number {
+  const a = new Date(fr + "T00:00:00Z").getTime();
+  const b = new Date(to + "T00:00:00Z").getTime();
+  return Math.round((b - a) / 86400000);
+}
+
+// v14: 거래처 하나에 대해 [dateFr, dateTo] 구간을 조회하고, totalRecord보다 실제로 받은 행 수가
+// 적으면(서버측 응답 잘림) 구간을 절반으로 쪼개 재귀 조회해 합칩니다. 하루 단위까지 쪼개도 여전히
+// 못 맞추면(매우 드묾) 그 이상은 포기하고 받은 만큼만 반환합니다. 그린ERP 서버에 과도한 동시
+// 요청을 보내지 않도록 순차적으로 처리합니다.
+async function fetchOutboundForCompanyWindow(
+  cookie: string,
+  companyName: string,
+  dateFr: string,
+  dateTo: string,
+  depth = 0,
+): Promise<any[]> {
+  try {
+    const { data, totalRecord } = await fetchActionWithRetry(cookie, "/greenp/out/outJunpPumListAction.php", {
+      submitType: "select",
+      sort_field: "",
+      sort_asc: "",
+      mid: "1001",
+      uid: "5",
+      sh_date_fr: dateFr,
+      sh_date_to: dateTo,
+      sh_value: companyName,
+      sh_value2: "",
+    });
+    if (data.length >= totalRecord || dateFr === dateTo || depth > 20) {
+      return data;
+    }
+    const span = daysBetweenStr(dateFr, dateTo);
+    const leftTo = addDaysStr(dateFr, Math.floor(span / 2));
+    const rightFr = addDaysStr(leftTo, 1);
+    const left = await fetchOutboundForCompanyWindow(cookie, companyName, dateFr, leftTo, depth + 1);
+    const right = await fetchOutboundForCompanyWindow(cookie, companyName, rightFr, dateTo, depth + 1);
+    return [...left, ...right];
+  } catch (_e) {
+    return [];
+  }
+}
+
+// v15: 거래처 필터가 없는 목록 조회(입고/작업지시서목록/생산전표)용 범용 날짜분할 재조회 헬퍼.
+// 회사별 순회 없이 날짜 구간만 totalRecord 기준으로 재귀 분할합니다. 3절 전수조사에서 이 세 엔드포인트는
+// 현재 데이터량에서 잘림이 없음을 확인했지만, 데이터가 누적되면 출고와 같은 문제가 재발할 수 있어
+// 예방적으로 동일한 방어 로직을 적용합니다.
+async function fetchDateRangeSplit(
+  cookie: string,
+  path: string,
+  baseParams: Record<string, string>,
+  dateFr: string,
+  dateTo: string,
+  depth = 0,
+): Promise<any[]> {
+  try {
+    const { data, totalRecord } = await fetchActionWithRetry(cookie, path, {
+      ...baseParams,
+      sh_date_fr: dateFr,
+      sh_date_to: dateTo,
+    });
+    if (data.length >= totalRecord || dateFr === dateTo || depth > 20) {
+      return data;
+    }
+    const span = daysBetweenStr(dateFr, dateTo);
+    const leftTo = addDaysStr(dateFr, Math.floor(span / 2));
+    const rightFr = addDaysStr(leftTo, 1);
+    const left = await fetchDateRangeSplit(cookie, path, baseParams, dateFr, leftTo, depth + 1);
+    const right = await fetchDateRangeSplit(cookie, path, baseParams, rightFr, dateTo, depth + 1);
+    return [...left, ...right];
+  } catch (_e) {
+    return [];
+  }
+}
+
 // v13: 출고 조회는 거래처(sh_value)를 비워두면 서버가 최근 3건으로 응답을 잘라버리는 버그가 있어,
-// 거래처별로 순회하며 조회합니다. 순차 호출(하나씩)로 그린ERP 서버에 과도한 동시 요청을 보내지 않습니다.
+// 거래처별로 순회하며 조회합니다. v14부터는 각 거래처 조회 자체도 totalRecord 기반으로 잘림을
+// 감지해 필요할 때만 날짜 구간을 쪼개 재조회합니다(fetchOutboundForCompanyWindow). 순차 호출(하나씩)로
+// 그린ERP 서버에 과도한 동시 요청을 보내지 않습니다.
 async function fetchOutboundForAllCompanies(
   cookie: string,
   dateFr: string,
@@ -173,22 +312,8 @@ async function fetchOutboundForAllCompanies(
   const all: any[] = [];
   for (const cname of companyNames) {
     if (!cname) continue;
-    try {
-      const rows = await fetchAction(cookie, "/greenp/out/outJunpPumListAction.php", {
-        submitType: "select",
-        sort_field: "",
-        sort_asc: "",
-        mid: "1001",
-        uid: "5",
-        sh_date_fr: dateFr,
-        sh_date_to: dateTo,
-        sh_value: cname,
-        sh_value2: "",
-      });
-      if (Array.isArray(rows) && rows.length > 0) all.push(...rows);
-    } catch (_e) {
-      // 개별 거래처 조회 실패는 건너뛰고 계속 진행(다른 거래처 조회는 계속되어야 하므로 throw하지 않음)
-    }
+    const rows = await fetchOutboundForCompanyWindow(cookie, cname, dateFr, dateTo);
+    if (rows.length > 0) all.push(...rows);
   }
   return all;
 }
@@ -235,16 +360,15 @@ Deno.serve(async (req) => {
     result.loginOk = true;
 
     // ---------- 상품입고 ----------
-    const inboundRaw = await fetchAction(cookie, "/greenp/ibgo/ibgoJunpListAction.php", {
+    // v15: fetchDateRangeSplit으로 totalRecord 검증 + 필요시 날짜분할 재조회 적용(예방적 조치).
+    const inboundRaw = await fetchDateRangeSplit(cookie, "/greenp/ibgo/ibgoJunpListAction.php", {
       submitType: "select",
       sort_field: "",
       sort_asc: "",
       mid: "1001",
       uid: "5",
       selectMjunp: "",
-      sh_date_fr: dateFr,
-      sh_date_to: dateTo,
-    });
+    }, dateFr, dateTo);
     const inboundRows = inboundRaw.map((r: any) => ({
       inbound_no: String(r.mjunp ?? ""),
       inbound_date: toDateOrNull(r.mdate),
@@ -267,8 +391,9 @@ Deno.serve(async (req) => {
     result.inboundCount = inboundRows.length;
 
     // ---------- 출고 (품목단위) ----------
-    // v13: 거래처(sh_value) 없이 조회하면 서버가 응답을 3건으로 잘라버리는 버그가 있어(위 주석 참고),
-    // companies 테이블의 거래처 목록을 순회하며 거래처별로 조회해 합칩니다.
+    // v13/v14: 거래처(sh_value) 없이 조회하면 서버가 응답을 3건으로 잘라버리는 버그, 그리고
+    // 거래처를 지정해도 매칭 건수가 많으면 응답이 중간에서 잘리는 버그(위 주석 참고)가 있어,
+    // companies 테이블의 거래처 목록을 순회하며 거래처별로, 필요하면 날짜 구간까지 쪼개 조회합니다.
     const { data: companyRowsForOutbound } = await supabase.from("companies").select("name");
     const companyNamesForOutbound = (companyRowsForOutbound || []).map((c: any) => c.name).filter(Boolean);
     const outboundRaw = await fetchOutboundForAllCompanies(cookie, dateFr, dateTo, companyNamesForOutbound);
@@ -297,7 +422,10 @@ Deno.serve(async (req) => {
     result.outboundCompaniesQueried = companyNamesForOutbound.length;
 
     // ---------- 재고 (전체 스냅샷) ----------
-    const invtRaw = await fetchAction(cookie, "/greenp/invt/invtListAction.php", {
+    // v15: 재고/미수금은 날짜·거래처 필터 자체가 없는 전체 스냅샷이라 재귀분할할 축이 없음.
+    // 대신 fetchActionWithRetry로 순간 오류 재시도는 보장하고, totalRecord와 실제 수신 건수가
+    // 다르면 result.inventoryComplete=false로 표시해 잘림이 재발해도 로그에서 바로 드러나게 함.
+    const invtMeta = await fetchActionWithRetry(cookie, "/greenp/invt/invtListAction.php", {
       submitType: "select",
       sort_field: "",
       sort_asc: "",
@@ -309,6 +437,9 @@ Deno.serve(async (req) => {
       sh_value2: "",
       sh_value3: "",
     });
+    const invtRaw = invtMeta.data;
+    result.inventoryTotalRecord = invtMeta.totalRecord;
+    result.inventoryComplete = invtRaw.length >= invtMeta.totalRecord;
     const invtRows = invtRaw.map((r: any) => ({
       product_code: r.icode ?? null,
       customer_name: r.icomp ?? "",
@@ -332,20 +463,19 @@ Deno.serve(async (req) => {
     result.inventoryCount = invtRows.length;
 
     // ---------- 작업지시서(오성) ----------
-    const jobRaw = await fetchAction(cookie, "/greenp/prod/osung/osungProdJoborderListAction.php", {
+    // v15: fetchDateRangeSplit으로 totalRecord 검증 + 필요시 날짜분할 재조회 적용(예방적 조치).
+    const jobRaw = await fetchDateRangeSplit(cookie, "/greenp/prod/osung/osungProdJoborderListAction.php", {
       submitType: "select",
       sort_field: "",
       sort_asc: "",
       mid: "1001",
       uid: "5",
-      sh_date_fr: dateFr,
-      sh_date_to: dateTo,
       sh_value: "",
       sh_value2: "",
       gubunChk1: "y",
       gubunChk2: "y",
       gubunChk3: "y",
-    });
+    }, dateFr, dateTo);
     const jobRows = jobRaw.map((r: any) => ({
       joborder_no: String(r.mjunp ?? ""),
       joborder_date: toDateOrNull(r.mdate),
@@ -370,18 +500,17 @@ Deno.serve(async (req) => {
     result.joborderCount = jobRows.length;
 
     // ---------- 생산전표(오성, 가공비 포함) ----------
-    const prodRaw = await fetchAction(cookie, "/greenp/prod/prodJunpListAction.php", {
+    // v15: fetchDateRangeSplit으로 totalRecord 검증 + 필요시 날짜분할 재조회 적용(예방적 조치).
+    const prodRaw = await fetchDateRangeSplit(cookie, "/greenp/prod/prodJunpListAction.php", {
       submitType: "select",
       sort_field: "",
       sort_asc: "",
       mid: "1001",
       uid: "5",
-      sh_date_fr: dateFr,
-      sh_date_to: dateTo,
       sh_value: "",
       sh_value2: "",
       sh_sale_yn: "",
-    });
+    }, dateFr, dateTo);
     const prodRows = prodRaw.map((r: any) => ({
       slip_no: String(r.mjunp ?? ""),
       slip_date: toDateOrNull(r.mdate),
@@ -404,7 +533,8 @@ Deno.serve(async (req) => {
     result.productionCount = prodRows.length;
 
     // ---------- 미수금 현황 (전체 스냅샷) ----------
-    const recvRaw = await fetchAction(cookie, "/greenp/account/accountDepositStatListAction.php", {
+    // v15: 재고와 동일하게 재귀분할 축이 없어 재시도 + 완결성 플래그만 적용.
+    const recvMeta = await fetchActionWithRetry(cookie, "/greenp/account/accountDepositStatListAction.php", {
       submitType: "select",
       sort_field: "",
       sort_asc: "",
@@ -413,6 +543,9 @@ Deno.serve(async (req) => {
       sh_value: "",
       sh_value1: "",
     });
+    const recvRaw = recvMeta.data;
+    result.receivablesTotalRecord = recvMeta.totalRecord;
+    result.receivablesComplete = recvRaw.length >= recvMeta.totalRecord;
     const recvRows = recvRaw.map((r: any) => ({
       company_name: r.mcomp ?? "",
       company_code: r.mcomser ?? null,
