@@ -397,24 +397,25 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
 
   // ---- 1.5) 미출고 리스트 — 그린ERP의 "미출고현황 리스트(invtNoOutStatListPop)" 팝업과 동일한 개념.
   //          재고(입고 원본)가 아니라, "작업(생산)은 완료됐지만 출고 기록이 아직 없는 코일" 목록입니다.
-  //          greenp_joborder_detail(작업 완료분) 중 product_name이 greenp_outbound(출고 기록)에
-  //          없는 것만 걸러냅니다. 재고와 마찬가지로 날짜 범위와 무관하게 항상 현재 시점 기준입니다.
+  //          재고와 마찬가지로 날짜 범위와 무관하게 항상 현재 시점 기준입니다.
+  //
+  // [v3 — 원본 직결] 이전에는 greenp_joborder_detail(작업 완료분)과 greenp_outbound(출고 기록)를
+  // 우리 쪽에서 대조(product_name 또는 작업전표키 매칭)해 미출고를 "재구성"했습니다. 이 방식은
+  // 두 테이블의 동기화 완결성에 의존하는 근사치라 그린ERP 화면과 100% 일치를 보장할 수 없었고,
+  // 실제로 화면보다 훨씬 부풀려진 값(651건)이 나온 적이 있습니다.
+  // 그린ERP의 실제 화면(invtNoOutStatListPop.php)이 호출하는 원본 API(invtNoOutStatListAction.php)를
+  // 브라우저 네트워크 요청으로 직접 확인해, greenp-unshipped-sync 엣지함수가 그 API 결과를 그대로
+  // greenp_unshipped 테이블에 저장하도록 만들었습니다. 이제는 재구성이 아니라 그린ERP가 계산한
+  // 값을 그대로 읽기만 하면 되므로, 대조 로직 자체가 필요 없습니다.
   const [unshippedRows, setUnshippedRows] = useState([]);
   const [unshippedLoading, setUnshippedLoading] = useState(false);
   useEffect(() => {
     if (!companyName) return;
     let cancelled = false;
     setUnshippedLoading(true);
-    Promise.all([
-      fetchAllRows('greenp_joborder_detail', 'id,joborder_date,product_name,spec,original_weight,used_weight,process_rule', (q) => q.eq('company_name', companyName).order('joborder_date', { ascending: false })),
-      fetchAllRows('greenp_outbound', 'product_name', (q) => q.eq('company_name', companyName)),
-    ]).then(([jobRows, outRows]) => {
-      if (cancelled) return;
-      const shippedSet = new Set(outRows.map((r) => r.product_name).filter(Boolean));
-      const rows = jobRows.filter((d) => d.product_name && !shippedSet.has(d.product_name));
-      setUnshippedRows(rows);
-      setUnshippedLoading(false);
-    }).catch(() => { if (!cancelled) setUnshippedLoading(false); });
+    fetchAllRows('greenp_unshipped', 'id,production_date,job_slip_no,product_name,spec,original_weight,description,qty', (q) => q.eq('company_name', companyName).order('production_date', { ascending: false }))
+      .then((rows) => { if (!cancelled) { setUnshippedRows(rows || []); setUnshippedLoading(false); } })
+      .catch(() => { if (!cancelled) setUnshippedLoading(false); });
     return () => { cancelled = true; };
   }, [companyName]);
   const unshippedTotalWeight = unshippedRows.reduce((s, r) => s + Number(r.original_weight || 0), 0);
@@ -720,7 +721,7 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
               <tbody>
                 {unshippedRows.map((r, i) => (
                   <tr key={r.id} style={{ background: i % 2 ? C.surface1 : 'transparent' }}>
-                    <td style={td}>{r.joborder_date || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={td}>{r.process_rule || '-'}</td><td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{Number(r.used_weight || 0).toLocaleString()}kg</td>
+                    <td style={td}>{r.production_date || '-'}</td><td style={td}>{r.product_name || '-'}</td><td style={td}>{r.spec || '-'}</td><td style={td}>{Number(r.original_weight || 0).toLocaleString()}kg</td><td style={td}>{r.description || '-'}</td><td style={{ ...td, fontWeight: 700, color: C.textAccent }}>{r.qty ? Number(r.qty).toLocaleString() : '-'}</td>
                   </tr>
                 ))}
               </tbody>

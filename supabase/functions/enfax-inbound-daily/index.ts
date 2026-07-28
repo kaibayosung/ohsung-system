@@ -1,4 +1,4 @@
-// enfax-inbound-daily v15: [중대 버그 수정] 미출고 리스트가 실제보다 훨씬 많이 나오는 문제
+// enfax-inbound-daily v17: [중대 버그 수정] 미출고 리스트가 실제보다 훨씬 많이 나오는 문제
 // reportType 파라미터로 "inbound"(입고 내역, 기본값) / "work"(작업 내역) / "unshipped"(미출고 리스트)를 선택합니다.
 // 작업 내역은 greenp_joborder_detail(작업일자/품명/규격/원중량/중량/작업SIZE) 기준으로,
 // CustomerPortalPage.jsx의 "작업 내역" 탭 화면과 동일한 데이터를 사용합니다.
@@ -14,6 +14,20 @@
 // 고정되어 있어 전체 이력 백필 후 같은 문제가 재발할 수 있음. 두 조회 모두 fetchAllRows() 헬퍼로
 // .range() 기반 페이지네이션을 적용해 결과 개수와 무관하게 전체 행을 안전하게 가져오도록 수정.
 // fetchWorkRows의 .limit(500)도 같은 이유로 페이지네이션으로 교체.
+//
+// v16: [근본 원인 추가 수정] v15로 페이지네이션은 고쳤지만, 실제 운영 화면(Vercel에 배포된 프론트엔드)에는
+// 아직 이 수정이 반영되지 않은 채로 그린ERP 백필이 계속 진행되어(대한강재 출고 기록이 1,000행 캡을 훨씬
+// 넘는 1,995건까지 누적), "미출고 651건"처럼 이전보다 더 크게 부풀려진 값이 관찰됨 — 정확히 이 v15 주석에서
+// 경고했던 실패 모드가 배포 지연으로 인해 재발한 것. 이와 별개로 product_name 단일 매칭 자체의 한계도
+// 확인됨: greenp_outbound.work_slip_no/work_date(작업전표번호/작업일자)가 greenp_joborder_detail의
+// joborder_no/joborder_date와 실제 대응하는 구조적 키인데(실측 확인), product_name만 비교하면 규격코드형
+// 이름의 우연한 재사용이나 시스템 간 표기 차이로 오탐이 생길 수 있음. fetchUnshippedRows를 "품명 매칭 OR
+// 작업전표키 매칭" 하이브리드로 변경해 두 매칭 방식의 사각지대를 서로 보완하도록 수정.
+//
+// v17: [근본 해결] 하이브리드 매칭도 결국 우리 쪽 재구성(추정)이라 100% 일치를 보장 못함. 그린ERP의
+// 실제 미출고현황 화면이 호출하는 원본 API(invtNoOutStatListAction.php)를 브라우저 네트워크 요청으로
+// 직접 확인해, greenp-unshipped-sync 엣지함수가 이 API 결과를 greenp_unshipped 테이블에 그대로
+// 저장하도록 만듦. fetchUnshippedRows는 이제 그 테이블을 그대로 읽기만 함 — 대조 로직 완전 제거.
 //
 // enFax 계정의 반복 로그인으로 인해 enFax측 로그인 보안이 강화되는 문제가 있어,
 // 5분마다 서버가 자동으로 로그인 시도를 하던 예약전송(check-schedule) 기능은 완전히 제거되어 있습니다.
@@ -421,22 +435,28 @@ async function buildUnshippedPdf(supabase: any, companyName: string, dateLabel: 
   return new Uint8Array(doc.output("arraybuffer"));
 }
 
-// v15: greenp_joborder_detail(작업 완료분)과 greenp_outbound(출고 기록)를 각각 fetchAllRows로
-// 전부(페이지네이션) 가져온 뒤 product_name 기준으로 차집합을 구합니다. 이전에는 outbound 조회에
-// .limit()이 없어 Supabase 기본 1000행 캡에 걸려 있었고, joborder_detail도 .limit(1000) 고정이라
-// 전체 이력 백필 후 다시 문제가 될 수 있었습니다.
+// v17: [원본 직결] greenp-unshipped-sync 엣지함수가 그린ERP의 실제 미출고현황 화면
+// (invtNoOutStatListPop.php)이 호출하는 원본 API(invtNoOutStatListAction.php)를 직접 호출해
+// greenp_unshipped 테이블에 그대로 저장해둡니다(브라우저 네트워크 요청으로 직접 확인한 API).
+// 이전(v15/v16)에는 greenp_joborder_detail과 greenp_outbound를 대조해 미출고를 "재구성"했지만,
+// 이는 두 테이블의 동기화 완결성에 의존하는 근사치라 그린ERP 화면과 100% 일치를 보장할 수
+// 없었습니다(실측: 화면보다 훨씬 부풀려진 651건이 나온 사례). 이제는 재구성 없이 그린ERP가
+// 계산한 값을 그대로 읽기만 하면 됩니다.
 async function fetchUnshippedRows(supabase: any, companyName: string) {
-  const [jobRows, outRows] = await Promise.all([
-    fetchAllRows(
-      supabase,
-      "greenp_joborder_detail",
-      "joborder_date,product_name,spec,original_weight,used_weight,process_rule",
-      (q) => q.eq("company_name", companyName).order("joborder_date", { ascending: false }),
-    ),
-    fetchAllRows(supabase, "greenp_outbound", "product_name", (q) => q.eq("company_name", companyName)),
-  ]);
-  const shippedSet = new Set(outRows.map((r: any) => r.product_name).filter(Boolean));
-  return (jobRows as any[]).filter((d) => d.product_name && !shippedSet.has(d.product_name)) as {
+  const rows = await fetchAllRows(
+    supabase,
+    "greenp_unshipped",
+    "production_date,job_slip_no,product_name,spec,original_weight,description,qty",
+    (q) => q.eq("company_name", companyName).order("production_date", { ascending: false }),
+  );
+  return (rows as any[]).map((r) => ({
+    joborder_date: r.production_date,
+    product_name: r.product_name,
+    spec: r.spec,
+    original_weight: Number(r.original_weight) || 0,
+    used_weight: r.qty ? Number(r.qty) : 0,
+    process_rule: r.description,
+  })) as {
     joborder_date: string; product_name: string; spec: string; original_weight: number; used_weight: number; process_rule: string | null;
   }[];
 }
