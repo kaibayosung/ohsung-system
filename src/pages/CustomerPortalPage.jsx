@@ -516,8 +516,8 @@ export default function CustomerPortalPage({ lockedCompanyName, onBack, initialS
           .no-print { display: none !important; }
           .cp-print-header { display: block !important; }
           body { background: #fff !important; }
-          table { font-size: 10.5px !important; }
-          th, td { padding: 3px 5px !important; font-size: 10.5px !important; }
+          table { font-size: 12.5px !important; }
+          th, td { padding: 5px 7px !important; font-size: 12.5px !important; }
         }
       `}</style>
       <div className="no-print" style={{ display: 'flex', alignItems: 'center', gap: '12px', background: C.navyGradient, borderRadius: '14px', padding: '18px 22px', marginBottom: '16px', boxShadow: '0 2px 8px rgba(15,30,51,0.18)', flexWrap: 'wrap' }}>
