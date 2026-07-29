@@ -49,9 +49,9 @@ const INTERNAL_SYSTEMS = [
     desc: 'PLC 데이터와 코일 ID를 통합 저장',
   },
   {
-    icon: '🔍', name: '품질 측정 시스템', status: '파일럿',
+    icon: '🔍', name: '품질 측정 시스템 (SAIGE VIMS)', status: '플랫폼 통합중',
     url: 'http://osungsteel.servehttp.com:8095/admin/login',
-    desc: '슬리팅 공정의 철판 표면 불량 확인용',
+    desc: '슬리팅 공정의 철판 표면 불량 확인용 — 외부(세이지) AI 비전 플랫폼을 ERP 2.0과 통합하는 중',
     note: '기본 계정 admin / admin',
   },
 ];
