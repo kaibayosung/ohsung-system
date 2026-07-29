@@ -67,6 +67,11 @@ const EXTERNAL_SYSTEMS = [
     url: 'https://www.enfax.com',
     desc: 'FAX 발송 대행 서비스 — 고객 리포트 자동발송 연동',
   },
+  {
+    icon: '📡', name: '슬리팅2 장비 운용 상황 실시간 NMS', status: '운영중',
+    url: 'https://platform.smic.kr:30390/dashboards/all/197a94c0-d635-11f0-bb15-87027a672b53',
+    desc: '슬리팅2 라인 장비 운용 상태를 실시간으로 모니터링하는 외부 NMS 대시보드',
+  },
 ];
 
 function statusBadge(status) {
