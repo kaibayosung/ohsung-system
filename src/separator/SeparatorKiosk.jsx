@@ -32,10 +32,13 @@ function minutesAgoLabel(date) {
 // 태블릿 기기의 시스템 시간대 설정과 무관하게 항상 한국시간 기준 "오늘" 날짜를 계산합니다.
 // (그린ERP 동기화 자체가 한국 업무시간 기준으로 도는 것과 맞춰야 날짜가 어긋나지 않습니다.)
 function todayKST() {
+  // now.getTime()은 이미 타임존과 무관한 절대 시각(UTC 기준 epoch ms)이므로,
+  // 여기에 getTimezoneOffset()을 더하는 건 이중 보정이 되어 버그였습니다.
+  // (기기가 KST(UTC+9)일 때 보정이 서로 상쇄되어 결과적으로 UTC 날짜가 나왔고,
+  //  KST 00:00~08:59 사이에는 실제 날짜보다 하루 이전 날짜로 조회되는 문제가 있었습니다.)
   const now = new Date();
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
-  const kst = new Date(utcMs + 9 * 3600000);
-  return kst.toISOString().slice(0, 10);
+  const kstMs = now.getTime() + 9 * 3600000;
+  return new Date(kstMs).toISOString().slice(0, 10);
 }
 
 export default function SeparatorKiosk({ staffName, onLogout }) {
