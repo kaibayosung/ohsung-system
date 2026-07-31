@@ -39,7 +39,10 @@ const CAT_COLOR = {
 
 function guessCategory(type, desc) {
   const text = `${type || ''} ${desc || ''}`;
-  if (/대체|내부이체/.test(text)) return '내부이체(제외)';
+  // 주의: 구분="대체"는 은행 거래유형 표기일 뿐, 실제 자사 계좌간 이체(내부이체)라는 뜻이
+  // 아닙니다 (예: "대체 퇴직연금이체거래"는 실제 비용). 자사 계좌간 이체는 적요에 다른 쪽
+  // 계좌 주인/계좌번호가 명시적으로 나올 때만 사람이 판단해 표에서 직접 "내부이체(제외)"로
+  // 바꿔주세요 — 기본값은 항상 비용으로 포함합니다.
   for (const r of CATEGORY_RULES) if (r.re.test(text)) return r.cat;
   return '위탁대행/기타';
 }
@@ -121,19 +124,22 @@ export function CashFlowPnlDemo() {
   const [month, setMonth] = useState(new Date().toISOString().slice(0, 7));
   const [revenue, setRevenue] = useState(null);
   const [loadingRevenue, setLoadingRevenue] = useState(false);
+  const [expenseReqs, setExpenseReqs] = useState([]);
+  const [loadingExpenseReqs, setLoadingExpenseReqs] = useState(false);
   const [txns, setTxns] = useState([]);
   const [fileName, setFileName] = useState('');
-  const [interest, setInterest] = useState('');
+  const [interest, setInterest] = useState('6000000');
   const [parseError, setParseError] = useState('');
   const fileRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
+    const [y, mo] = month.split('-').map(Number);
+    const start = `${y}-${String(mo).padStart(2, '0')}-01`;
+    const end = new Date(y, mo, 0).toISOString().slice(0, 10);
+
     const loadRevenue = async () => {
       setLoadingRevenue(true);
-      const [y, mo] = month.split('-').map(Number);
-      const start = `${y}-${String(mo).padStart(2, '0')}-01`;
-      const end = new Date(y, mo, 0).toISOString().slice(0, 10);
       const [prodRes, scrapRes] = await Promise.all([
         supabase.from('greenp_production').select('amount').gte('slip_date', start).lte('slip_date', end),
         supabase.from('scrap_sales').select('total_amount').gte('sale_date', start).lte('sale_date', end),
@@ -144,9 +150,34 @@ export function CashFlowPnlDemo() {
       setRevenue({ processing, scrap, total: processing + scrap });
       setLoadingRevenue(false);
     };
+
+    // 정기초안(월급여 등, is_recurring=true)은 이미 별도 고정비 체계(monthly_fixed_cost_items)로
+    // 관리되고 있고 통장 출금에도 그대로 잡히므로 여기서는 제외 — "지금 결재 올린 건"에 해당하는
+    // 수시 지출결의서(is_recurring=false)만 통장 데이터와 합산할 비용으로 가져옵니다.
+    const loadExpenseReqs = async () => {
+      setLoadingExpenseReqs(true);
+      const { data } = await supabase
+        .from('expense_requests')
+        .select('id, request_date, requester, status, total_amount')
+        .eq('is_recurring', false)
+        .gte('request_date', start)
+        .lte('request_date', end)
+        .order('request_date');
+      if (cancelled) return;
+      setExpenseReqs((data || []).map((r) => ({ ...r, included: true })));
+      setLoadingExpenseReqs(false);
+    };
+
     loadRevenue();
+    loadExpenseReqs();
     return () => { cancelled = true; };
   }, [month]);
+
+  const updateExpenseReq = (id, patch) => setExpenseReqs((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  const expenseReqTotal = useMemo(
+    () => expenseReqs.filter((r) => r.included).reduce((a, c) => a + (Number(c.total_amount) || 0), 0),
+    [expenseReqs],
+  );
 
   const handleFile = (e) => {
     const file = e.target.files && e.target.files[0];
@@ -186,13 +217,13 @@ export function CashFlowPnlDemo() {
 
   const bankExpenseTotal = byCategory.reduce((a, [, v]) => a + v, 0);
   const interestAmt = toNum(interest);
-  const costTotal = bankExpenseTotal + interestAmt;
+  const costTotal = expenseReqTotal + bankExpenseTotal + interestAmt;
   const revenueTotal = revenue ? revenue.total : 0;
   const profit = revenueTotal - costTotal;
 
   return (
     <div style={box.page}>
-      <ProposalBanner text="이 화면은 통장 거래내역 업로드로 월간 비용을 자동 집계해, 그린ERP 매출(가공+고철)과 합쳐 손익을 바로 보여주는 개념 검증용 데모입니다. 업로드한 파일은 저장되지 않고 새로고침하면 초기화됩니다 — 방향이 맞으면 실제 저장 · 지출결의서 매칭 로직을 다음 단계로 개발합니다." />
+      <ProposalBanner text="이 화면은 (1) 결재 진행 중인 수시 지출결의서 + (2) 통장 거래내역 업로드 + (3) 이자 수기입력, 세 가지를 합쳐 이번 달 비용을 계산하고, 그린ERP 매출(가공+고철)과 맞춰 손익을 보여주는 개념 검증용 데모입니다. 급여 등 정기초안(is_recurring)은 통장 출금에 이미 포함되므로 제외했습니다. 업로드한 파일은 저장되지 않고 새로고침하면 초기화됩니다." />
 
       <div style={box.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
@@ -209,19 +240,77 @@ export function CashFlowPnlDemo() {
             <span style={box.statLabel}>♻️ 스크랩 매출 (scrap_sales)</span>
             <span style={{ ...box.statValue, color: COLORS.green }}>{loadingRevenue ? '…' : fmtWon(revenue?.scrap)}</span>
           </div>
+          <div style={{ ...box.statCard, borderLeftColor: COLORS.blue, backgroundColor: COLORS.blueBg }}>
+            <span style={box.statLabel}>매출 합계</span>
+            <span style={{ ...box.statValue, color: COLORS.blue }}>{loadingRevenue ? '…' : fmtWon(revenueTotal)}</span>
+          </div>
+        </div>
+
+        <div style={{ ...box.statGrid, marginTop: '14px' }}>
           <div style={{ ...box.statCard, borderLeftColor: COLORS.red }}>
-            <span style={box.statLabel}>통장 출금 + 이자 (비용)</span>
+            <span style={box.statLabel}>지출결의서 (결재 진행중 {expenseReqs.filter((r) => r.included).length}건)</span>
+            <span style={{ ...box.statValue, color: COLORS.red }}>{loadingExpenseReqs ? '…' : fmtWon(expenseReqTotal)}</span>
+          </div>
+          <div style={{ ...box.statCard, borderLeftColor: COLORS.red }}>
+            <span style={box.statLabel}>통장 출금 합계</span>
+            <span style={{ ...box.statValue, color: COLORS.red }}>{fmtWon(bankExpenseTotal)}</span>
+          </div>
+          <div style={{ ...box.statCard, borderLeftColor: COLORS.red }}>
+            <span style={box.statLabel}>이자 (수기입력)</span>
+            <span style={{ ...box.statValue, color: COLORS.red }}>{fmtWon(interestAmt)}</span>
+          </div>
+          <div style={{ ...box.statCard, borderLeftColor: COLORS.red, backgroundColor: COLORS.redBg }}>
+            <span style={box.statLabel}>비용 합계</span>
             <span style={{ ...box.statValue, color: COLORS.red }}>{fmtWon(costTotal)}</span>
           </div>
+        </div>
+
+        <div style={{ marginTop: '14px' }}>
           <div style={{ ...box.statCard, borderLeftColor: profit >= 0 ? COLORS.green : COLORS.red, backgroundColor: profit >= 0 ? COLORS.greenBg : COLORS.redBg }}>
-            <span style={box.statLabel}>월간 손익 (매출 − 비용)</span>
-            <span style={{ ...box.statValue, color: profit >= 0 ? COLORS.green : COLORS.red }}>{profit >= 0 ? '+' : ''}{fmtWon(profit)}</span>
+            <span style={box.statLabel}>월간 손익 (매출 합계 − 비용 합계)</span>
+            <span style={{ ...box.statValue, fontSize: '38px', color: profit >= 0 ? COLORS.green : COLORS.red }}>{profit >= 0 ? '+' : ''}{fmtWon(profit)}</span>
           </div>
         </div>
       </div>
 
+      {expenseReqs.length > 0 && (
+        <div style={box.card}>
+          <div style={box.subtitle}>1. {month} 지출결의서 (정기초안 제외, 결재 진행중 포함)</div>
+          <table style={box.table}>
+            <thead>
+              <tr>
+                <th style={box.th}>포함</th>
+                <th style={box.th}>번호</th>
+                <th style={box.th}>일자</th>
+                <th style={box.th}>요청자</th>
+                <th style={box.th}>상태</th>
+                <th style={{ ...box.th, textAlign: 'right' }}>금액</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenseReqs.map((r) => (
+                <tr key={r.id} style={{ opacity: r.included ? 1 : 0.45 }}>
+                  <td style={box.td}>
+                    <input type="checkbox" checked={r.included} onChange={(e) => updateExpenseReq(r.id, { included: e.target.checked })} />
+                  </td>
+                  <td style={box.td}>#{r.id}</td>
+                  <td style={box.td}>{r.request_date}</td>
+                  <td style={box.td}>{r.requester}</td>
+                  <td style={box.td}><span style={pill(r.status === '결재완료' ? COLORS.greenBg : COLORS.amberBg, r.status === '결재완료' ? COLORS.green : COLORS.amber)}>{r.status}</span></td>
+                  <td style={{ ...box.td, textAlign: 'right', fontWeight: 800 }}>{fmtWon(r.total_amount)}</td>
+                </tr>
+              ))}
+              <tr>
+                <td colSpan={5} style={{ ...box.td, fontWeight: 900, textAlign: 'right', borderTop: `2px solid ${COLORS.navy}` }}>합계</td>
+                <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(expenseReqTotal)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+
       <div style={box.card}>
-        <div style={box.subtitle}>1. 계좌 거래내역 업로드</div>
+        <div style={box.subtitle}>2. 계좌 거래내역 업로드</div>
         <div style={uploadStyles.dropzone} onClick={() => fileRef.current?.click()}>
           <div style={uploadStyles.icon}>📄</div>
           <div style={uploadStyles.text}>{fileName || '거래내역조회 엑셀(.xls/.xlsx/.csv) 클릭해서 업로드'}</div>
@@ -239,7 +328,7 @@ export function CashFlowPnlDemo() {
       {monthTxns.length > 0 && (
         <>
           <div style={box.card}>
-            <div style={box.subtitle}>2. 카테고리별 비용 집계 (자동 분류, 표에서 직접 수정 가능)</div>
+            <div style={box.subtitle}>3. 통장 카테고리별 비용 집계 (자동 분류, 표에서 직접 수정 가능)</div>
             <table style={box.table}>
               <thead>
                 <tr>
@@ -270,7 +359,15 @@ export function CashFlowPnlDemo() {
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ ...box.td, fontWeight: 900, borderTop: `2px solid ${COLORS.navy}` }}>합계</td>
+                  <td style={{ ...box.td, fontWeight: 900, borderTop: `2px solid ${COLORS.navy}` }}>통장 출금 + 이자 소계</td>
+                  <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(bankExpenseTotal + interestAmt)}</td>
+                </tr>
+                <tr>
+                  <td style={{ ...box.td, color: COLORS.steelLight, fontSize: '13px' }}>+ 지출결의서(결재 진행중)</td>
+                  <td style={{ ...box.td, textAlign: 'right', color: COLORS.steelLight, fontSize: '13px' }}>{fmtWon(expenseReqTotal)}</td>
+                </tr>
+                <tr>
+                  <td style={{ ...box.td, fontWeight: 900, borderTop: `2px solid ${COLORS.navy}` }}>비용 총합계</td>
                   <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(costTotal)}</td>
                 </tr>
               </tbody>
@@ -278,7 +375,7 @@ export function CashFlowPnlDemo() {
           </div>
 
           <div style={box.card}>
-            <div style={box.subtitle}>3. {month} 거래 내역 ({monthTxns.length}건)</div>
+            <div style={box.subtitle}>4. {month} 거래 내역 ({monthTxns.length}건)</div>
             <div style={{ overflowX: 'auto' }}>
               <table style={box.table}>
                 <thead>
