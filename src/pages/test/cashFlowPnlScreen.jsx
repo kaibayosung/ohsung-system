@@ -129,6 +129,7 @@ export function CashFlowPnlDemo() {
   const [txns, setTxns] = useState([]);
   const [fileName, setFileName] = useState('');
   const [interest, setInterest] = useState('6000000');
+  const [includeBank, setIncludeBank] = useState(true);
   const [parseError, setParseError] = useState('');
   const fileRef = useRef(null);
 
@@ -151,20 +152,19 @@ export function CashFlowPnlDemo() {
       setLoadingRevenue(false);
     };
 
-    // 정기초안(월급여 등, is_recurring=true)은 이미 별도 고정비 체계(monthly_fixed_cost_items)로
-    // 관리되고 있고 통장 출금에도 그대로 잡히므로 여기서는 제외 — "지금 결재 올린 건"에 해당하는
-    // 수시 지출결의서(is_recurring=false)만 통장 데이터와 합산할 비용으로 가져옵니다.
+    // 이번 달 지출결의서를 전부 가져오되, 정기초안(급여 등 is_recurring=true)은 통장 출금에도
+    // 이미 잡혀 있을 가능성이 높아 기본값은 "미포함"으로 둡니다. 어떤 걸 비용에 넣을지는
+    // 사용자가 표에서 건별로 체크박스로 직접 고를 수 있습니다.
     const loadExpenseReqs = async () => {
       setLoadingExpenseReqs(true);
       const { data } = await supabase
         .from('expense_requests')
-        .select('id, request_date, requester, status, total_amount')
-        .eq('is_recurring', false)
+        .select('id, request_date, requester, status, total_amount, is_recurring')
         .gte('request_date', start)
         .lte('request_date', end)
         .order('request_date');
       if (cancelled) return;
-      setExpenseReqs((data || []).map((r) => ({ ...r, included: true })));
+      setExpenseReqs((data || []).map((r) => ({ ...r, included: !r.is_recurring })));
       setLoadingExpenseReqs(false);
     };
 
@@ -216,14 +216,15 @@ export function CashFlowPnlDemo() {
   }, [monthTxns]);
 
   const bankExpenseTotal = byCategory.reduce((a, [, v]) => a + v, 0);
+  const bankCostContribution = includeBank ? bankExpenseTotal : 0;
   const interestAmt = toNum(interest);
-  const costTotal = expenseReqTotal + bankExpenseTotal + interestAmt;
+  const costTotal = expenseReqTotal + bankCostContribution + interestAmt;
   const revenueTotal = revenue ? revenue.total : 0;
   const profit = revenueTotal - costTotal;
 
   return (
     <div style={box.page}>
-      <ProposalBanner text="이 화면은 (1) 결재 진행 중인 수시 지출결의서 + (2) 통장 거래내역 업로드 + (3) 이자 수기입력, 세 가지를 합쳐 이번 달 비용을 계산하고, 그린ERP 매출(가공+고철)과 맞춰 손익을 보여주는 개념 검증용 데모입니다. 급여 등 정기초안(is_recurring)은 통장 출금에 이미 포함되므로 제외했습니다. 업로드한 파일은 저장되지 않고 새로고침하면 초기화됩니다." />
+      <ProposalBanner text="이 화면은 (1) 이번 달 지출결의서 + (2) 통장 거래내역 업로드 + (3) 이자 수기입력, 세 가지를 골라서 합친 뒤 그린ERP 매출(가공+고철)과 맞춰 손익을 보여주는 개념 검증용 데모입니다. 지출결의서와 통장 출금이 겹칠 수 있는 항목(특히 급여 등 정기초안)은 아래 표에서 체크박스로 직접 포함/제외를 골라주세요 — 기본값은 정기초안 제외, 통장 전체 포함입니다. 업로드한 파일은 저장되지 않고 새로고침하면 초기화됩니다." />
 
       <div style={box.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
@@ -248,12 +249,17 @@ export function CashFlowPnlDemo() {
 
         <div style={{ ...box.statGrid, marginTop: '14px' }}>
           <div style={{ ...box.statCard, borderLeftColor: COLORS.red }}>
-            <span style={box.statLabel}>지출결의서 (결재 진행중 {expenseReqs.filter((r) => r.included).length}건)</span>
+            <span style={box.statLabel}>지출결의서 (포함 {expenseReqs.filter((r) => r.included).length}/{expenseReqs.length}건)</span>
             <span style={{ ...box.statValue, color: COLORS.red }}>{loadingExpenseReqs ? '…' : fmtWon(expenseReqTotal)}</span>
           </div>
           <div style={{ ...box.statCard, borderLeftColor: COLORS.red }}>
-            <span style={box.statLabel}>통장 출금 합계</span>
-            <span style={{ ...box.statValue, color: COLORS.red }}>{fmtWon(bankExpenseTotal)}</span>
+            <span style={box.statLabel}>
+              <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                <input type="checkbox" checked={includeBank} onChange={(e) => setIncludeBank(e.target.checked)} />
+                통장 출금 합계 (비용에 포함)
+              </label>
+            </span>
+            <span style={{ ...box.statValue, color: includeBank ? COLORS.red : COLORS.steelLight, textDecoration: includeBank ? 'none' : 'line-through' }}>{fmtWon(bankExpenseTotal)}</span>
           </div>
           <div style={{ ...box.statCard, borderLeftColor: COLORS.red }}>
             <span style={box.statLabel}>이자 (수기입력)</span>
@@ -275,7 +281,10 @@ export function CashFlowPnlDemo() {
 
       {expenseReqs.length > 0 && (
         <div style={box.card}>
-          <div style={box.subtitle}>1. {month} 지출결의서 (정기초안 제외, 결재 진행중 포함)</div>
+          <div style={box.subtitle}>1. {month} 지출결의서 (전체 {expenseReqs.length}건 — 체크된 것만 비용에 합산)</div>
+          <div style={{ ...box.hint, marginBottom: '10px' }}>
+            정기초안(급여 등)은 통장 출금에도 같은 금액이 잡혀 있을 수 있어 기본값은 미포함입니다. 통장 거래내역에서 해당 출금을 빼고 대신 여기서 포함시켜도 결과는 같습니다.
+          </div>
           <table style={box.table}>
             <thead>
               <tr>
@@ -283,6 +292,7 @@ export function CashFlowPnlDemo() {
                 <th style={box.th}>번호</th>
                 <th style={box.th}>일자</th>
                 <th style={box.th}>요청자</th>
+                <th style={box.th}>구분</th>
                 <th style={box.th}>상태</th>
                 <th style={{ ...box.th, textAlign: 'right' }}>금액</th>
               </tr>
@@ -296,12 +306,13 @@ export function CashFlowPnlDemo() {
                   <td style={box.td}>#{r.id}</td>
                   <td style={box.td}>{r.request_date}</td>
                   <td style={box.td}>{r.requester}</td>
+                  <td style={box.td}>{r.is_recurring ? <span style={pill(COLORS.blueBg, COLORS.blue)}>정기초안</span> : <span style={pill('#e9edf3', COLORS.steel)}>수시</span>}</td>
                   <td style={box.td}><span style={pill(r.status === '결재완료' ? COLORS.greenBg : COLORS.amberBg, r.status === '결재완료' ? COLORS.green : COLORS.amber)}>{r.status}</span></td>
                   <td style={{ ...box.td, textAlign: 'right', fontWeight: 800 }}>{fmtWon(r.total_amount)}</td>
                 </tr>
               ))}
               <tr>
-                <td colSpan={5} style={{ ...box.td, fontWeight: 900, textAlign: 'right', borderTop: `2px solid ${COLORS.navy}` }}>합계</td>
+                <td colSpan={6} style={{ ...box.td, fontWeight: 900, textAlign: 'right', borderTop: `2px solid ${COLORS.navy}` }}>포함된 항목 합계</td>
                 <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(expenseReqTotal)}</td>
               </tr>
             </tbody>
@@ -359,11 +370,11 @@ export function CashFlowPnlDemo() {
                   </td>
                 </tr>
                 <tr>
-                  <td style={{ ...box.td, fontWeight: 900, borderTop: `2px solid ${COLORS.navy}` }}>통장 출금 + 이자 소계</td>
-                  <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(bankExpenseTotal + interestAmt)}</td>
+                  <td style={{ ...box.td, fontWeight: 900, borderTop: `2px solid ${COLORS.navy}` }}>통장 출금{includeBank ? '' : ' (제외됨)'} + 이자 소계</td>
+                  <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(bankCostContribution + interestAmt)}</td>
                 </tr>
                 <tr>
-                  <td style={{ ...box.td, color: COLORS.steelLight, fontSize: '13px' }}>+ 지출결의서(결재 진행중)</td>
+                  <td style={{ ...box.td, color: COLORS.steelLight, fontSize: '13px' }}>+ 지출결의서(체크된 항목)</td>
                   <td style={{ ...box.td, textAlign: 'right', color: COLORS.steelLight, fontSize: '13px' }}>{fmtWon(expenseReqTotal)}</td>
                 </tr>
                 <tr>
