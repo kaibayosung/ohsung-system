@@ -107,6 +107,14 @@ function parseBankRows(rows) {
   return out;
 }
 
+// 지출결의서 1건에 항목(거래처)이 여러 개 있을 수 있어, 목록 화면(ExpenseList.jsx)과 같은 방식으로
+// 첫 거래처명 + "외 N건"으로 요약합니다.
+function vendorSummary(items) {
+  if (!items || items.length === 0) return '-';
+  const first = items[0]?.vendor_name || '-';
+  return items.length > 1 ? `${first} 외 ${items.length - 1}건` : first;
+}
+
 function ProposalBanner({ text }) {
   return (
     <div style={{
@@ -152,14 +160,16 @@ export function CashFlowPnlDemo() {
       setLoadingRevenue(false);
     };
 
-    // 이번 달 지출결의서를 전부 가져오되, 정기초안(급여 등 is_recurring=true)은 통장 출금에도
-    // 이미 잡혀 있을 가능성이 높아 기본값은 "미포함"으로 둡니다. 어떤 걸 비용에 넣을지는
-    // 사용자가 표에서 건별로 체크박스로 직접 고를 수 있습니다.
+    // 손익 계산에는 결재완료된(= 결재 올려서 실제로 확정된) 지출결의서만 후보로 보여줍니다.
+    // 작성중·결재대기 상태는 아직 확정 전이라 제외합니다. 정기초안(급여 등 is_recurring=true)은
+    // 통장 출금에도 이미 잡혀 있을 가능성이 높아 기본값은 "미포함"으로 두고, 어떤 걸 비용에
+    // 넣을지는 사용자가 표에서 건별로 체크박스로 직접 고를 수 있습니다.
     const loadExpenseReqs = async () => {
       setLoadingExpenseReqs(true);
       const { data } = await supabase
         .from('expense_requests')
-        .select('id, request_date, requester, status, total_amount, is_recurring')
+        .select('id, request_date, total_amount, is_recurring, expense_request_items(vendor_name)')
+        .eq('status', '결재완료')
         .gte('request_date', start)
         .lte('request_date', end)
         .order('request_date');
@@ -224,7 +234,7 @@ export function CashFlowPnlDemo() {
 
   return (
     <div style={box.page}>
-      <ProposalBanner text="이 화면은 (1) 이번 달 지출결의서 + (2) 통장 거래내역 업로드 + (3) 이자 수기입력, 세 가지를 골라서 합친 뒤 그린ERP 매출(가공+고철)과 맞춰 손익을 보여주는 개념 검증용 데모입니다. 지출결의서와 통장 출금이 겹칠 수 있는 항목(특히 급여 등 정기초안)은 아래 표에서 체크박스로 직접 포함/제외를 골라주세요 — 기본값은 정기초안 제외, 통장 전체 포함입니다. 업로드한 파일은 저장되지 않고 새로고침하면 초기화됩니다." />
+      <ProposalBanner text="이 화면은 (1) 이번 달 결재완료된 지출결의서 + (2) 통장 거래내역 업로드 + (3) 이자 수기입력, 세 가지를 골라서 합친 뒤 그린ERP 매출(가공+고철)과 맞춰 손익을 보여주는 개념 검증용 데모입니다. 작성중·결재대기 건은 후보에서 제외됩니다. 지출결의서와 통장 출금이 겹칠 수 있는 항목(특히 급여 등 정기초안)은 아래 표에서 체크박스로 직접 포함/제외를 골라주세요 — 기본값은 정기초안 제외, 통장 전체 포함입니다. 업로드한 파일은 저장되지 않고 새로고침하면 초기화됩니다." />
 
       <div style={box.card}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px' }}>
@@ -281,20 +291,18 @@ export function CashFlowPnlDemo() {
 
       {expenseReqs.length > 0 && (
         <div style={box.card}>
-          <div style={box.subtitle}>1. {month} 지출결의서 (전체 {expenseReqs.length}건 — 체크된 것만 비용에 합산)</div>
+          <div style={box.subtitle}>1. {month} 지출결의서 — 결재완료 {expenseReqs.length}건 (체크된 것만 비용에 합산)</div>
           <div style={{ ...box.hint, marginBottom: '10px' }}>
-            정기초안(급여 등)은 통장 출금에도 같은 금액이 잡혀 있을 수 있어 기본값은 미포함입니다. 통장 거래내역에서 해당 출금을 빼고 대신 여기서 포함시켜도 결과는 같습니다.
+            작성중·결재대기 건은 아직 확정 전이라 후보에서 제외했습니다. 정기초안(급여 등)은 통장 출금에도 같은 금액이 잡혀 있을 수 있어 기본값은 미포함입니다 — 통장 거래내역에서 해당 출금을 빼고 대신 여기서 포함시켜도 결과는 같습니다.
           </div>
           <table style={box.table}>
             <thead>
               <tr>
                 <th style={box.th}>포함</th>
-                <th style={box.th}>번호</th>
                 <th style={box.th}>일자</th>
-                <th style={box.th}>요청자</th>
+                <th style={box.th}>거래처</th>
                 <th style={box.th}>구분</th>
-                <th style={box.th}>상태</th>
-                <th style={{ ...box.th, textAlign: 'right' }}>금액</th>
+                <th style={{ ...box.th, textAlign: 'right' }}>합계 금액</th>
               </tr>
             </thead>
             <tbody>
@@ -303,16 +311,14 @@ export function CashFlowPnlDemo() {
                   <td style={box.td}>
                     <input type="checkbox" checked={r.included} onChange={(e) => updateExpenseReq(r.id, { included: e.target.checked })} />
                   </td>
-                  <td style={box.td}>#{r.id}</td>
                   <td style={box.td}>{r.request_date}</td>
-                  <td style={box.td}>{r.requester}</td>
+                  <td style={box.td}>{vendorSummary(r.expense_request_items)}</td>
                   <td style={box.td}>{r.is_recurring ? <span style={pill(COLORS.blueBg, COLORS.blue)}>정기초안</span> : <span style={pill('#e9edf3', COLORS.steel)}>수시</span>}</td>
-                  <td style={box.td}><span style={pill(r.status === '결재완료' ? COLORS.greenBg : COLORS.amberBg, r.status === '결재완료' ? COLORS.green : COLORS.amber)}>{r.status}</span></td>
                   <td style={{ ...box.td, textAlign: 'right', fontWeight: 800 }}>{fmtWon(r.total_amount)}</td>
                 </tr>
               ))}
               <tr>
-                <td colSpan={6} style={{ ...box.td, fontWeight: 900, textAlign: 'right', borderTop: `2px solid ${COLORS.navy}` }}>포함된 항목 합계</td>
+                <td colSpan={4} style={{ ...box.td, fontWeight: 900, textAlign: 'right', borderTop: `2px solid ${COLORS.navy}` }}>포함된 항목 합계</td>
                 <td style={{ ...box.td, textAlign: 'right', fontWeight: 900, fontSize: '19px', borderTop: `2px solid ${COLORS.navy}` }}>{fmtWon(expenseReqTotal)}</td>
               </tr>
             </tbody>
