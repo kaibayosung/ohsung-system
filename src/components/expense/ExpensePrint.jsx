@@ -71,14 +71,14 @@ function ExpensePrint({ requestId, onBack }) {
         <table style={styles.itemTable} className="expense-print-table">
           <colgroup>
             <col style={{ width: '3%' }} />
-            <col style={{ width: '11%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '13%' }} />
-            <col style={{ width: '10%' }} />
+            <col style={{ width: '9%' }} />
             <col style={{ width: '7%' }} />
-            <col style={{ width: '25%' }} />
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '17%' }} />
+            <col style={{ width: '11%' }} />
+            <col style={{ width: '9%' }} />
+            <col style={{ width: '26%' }} />
           </colgroup>
           <thead>
             <tr>
@@ -86,11 +86,11 @@ function ExpensePrint({ requestId, onBack }) {
               <th style={styles.th}>거래처</th>
               <th style={styles.th}>품목</th>
               <th style={styles.thAmount}>금액</th>
-              <th style={styles.th}>입금은행</th>
-              <th style={styles.th}>계좌번호</th>
-              <th style={styles.th}>예금주</th>
-              <th style={styles.th}>통장표시</th>
-              <th style={styles.th}>비고</th>
+              <th style={styles.th} className="expense-print-tight">입금은행</th>
+              <th style={styles.th} className="expense-print-tight">계좌번호</th>
+              <th style={styles.th} className="expense-print-tight">예금주</th>
+              <th style={styles.th} className="expense-print-tight">통장표시</th>
+              <th style={styles.th} className="expense-print-note">비고</th>
             </tr>
           </thead>
           <tbody>
@@ -100,16 +100,16 @@ function ExpensePrint({ requestId, onBack }) {
                 <td style={styles.td}>{it.vendor_name}</td>
                 <td style={styles.td}>{it.item_name}</td>
                 <td style={styles.tdAmount}>{Number(it.amount).toLocaleString()}</td>
-                <td style={styles.td}>{it.bank_name || ''}</td>
-                <td style={styles.td}>{it.account_no || ''}</td>
-                <td style={styles.td}>{it.account_holder || ''}</td>
-                <td style={styles.td}>{it.passbook_memo || ''}</td>
-                <td style={{ ...styles.td, color: '#718096' }}>{it.note || ''}</td>
+                <td style={styles.td} className="expense-print-tight">{it.bank_name || ''}</td>
+                <td style={styles.td} className="expense-print-tight">{it.account_no || ''}</td>
+                <td style={styles.td} className="expense-print-tight">{it.account_holder || ''}</td>
+                <td style={styles.td} className="expense-print-tight">{it.passbook_memo || ''}</td>
+                <td style={{ ...styles.td, color: '#718096' }} className="expense-print-note">{it.note || ''}</td>
               </tr>
             ))}
             <tr>
               <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 700, backgroundColor: '#f7fafc' }}>합계</td>
-              <td style={{ ...styles.tdAmount, fontWeight: 700, fontSize: '20px' }}>{total.toLocaleString()}</td>
+              <td style={{ ...styles.tdAmount, fontWeight: 700 }}>{total.toLocaleString()}</td>
               <td colSpan={5} style={{ ...styles.td, backgroundColor: '#f7fafc' }}></td>
             </tr>
           </tbody>
@@ -137,8 +137,19 @@ function ExpensePrint({ requestId, onBack }) {
           }
           .expense-print-table th,
           .expense-print-table td {
-            font-size: 14px !important;
-            padding: 6px 6px !important;
+            font-size: 13px !important;
+            padding: 6px 5px !important;
+          }
+          .expense-print-table .expense-print-tight {
+            font-size: 11px !important;
+            padding: 6px 3px !important;
+            white-space: nowrap !important;
+            letter-spacing: -0.2px !important;
+          }
+          .expense-print-table .expense-print-note {
+            font-size: 12px !important;
+            padding: 6px 4px !important;
+            white-space: nowrap !important;
           }
           .expense-print-table tr {
             page-break-inside: avoid !important;
@@ -181,9 +192,9 @@ const styles = {
   metaItem: { whiteSpace: 'nowrap' },
   itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '18px', tableLayout: 'fixed', wordBreak: 'keep-all' },
   th: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#f7fafc', fontWeight: 700, wordBreak: 'keep-all' },
-  thAmount: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#ebf4ff', fontWeight: 700, textAlign: 'left', color: '#1a4e8a' },
+  thAmount: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#ebf4ff', fontWeight: 700, textAlign: 'right', color: '#1a4e8a' },
   td: { border: '1px solid #cbd5e0', padding: '12px 8px', wordBreak: 'keep-all', overflowWrap: 'break-word' },
-  tdAmount: { border: '1px solid #cbd5e0', padding: '12px 10px', textAlign: 'left', whiteSpace: 'nowrap', backgroundColor: '#ebf4ff', color: '#1a4e8a', fontWeight: 700 },
+  tdAmount: { border: '1px solid #cbd5e0', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap', backgroundColor: '#ebf4ff', color: '#1a4e8a', fontWeight: 700 },
   trEven: { backgroundColor: '#fafbfc' },
   footNote: { marginTop: '24px', fontSize: '19px' },
 };
