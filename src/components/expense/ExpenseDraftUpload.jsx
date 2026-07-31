@@ -47,11 +47,17 @@ function rowsToItems(rows) {
     return { items: [], warning: '표 헤더(지급/예금주/은행/계좌/금액)를 찾지 못했습니다. 직접 입력해주세요.' };
   }
 
+  // "합   계", "총 합계" 처럼 셀 안에 공백이 섞여 들어오는 합계 행을 안정적으로 걸러내기 위해
+  // 공백을 모두 제거한 값을 기준으로 판정합니다 (엑셀에서 병합 셀을 복사하면 흔히 발생).
+  const isTotalLabel = (s) => /^(합계|소계|누계|총계|total|sum)$/i.test(String(s || '').replace(/\s/g, ''));
+
   const items = [];
   for (let r = headerRowIdx + 1; r < rows.length; r++) {
     const row = rows[r];
     const isEmpty = row.every((c) => String(c || '').trim() === '');
     if (isEmpty) continue;
+    if (row.some((c) => isTotalLabel(c))) continue; // 합계/총계 행 전체를 건너뜀
+
     const item = emptyItem();
     let hasData = false;
     Object.entries(colMap).forEach(([ci, field]) => {
@@ -62,10 +68,10 @@ function rowsToItems(rows) {
         if (!isNaN(num) && num !== 0) { item.amount = num; hasData = true; }
       } else {
         const s = String(val).trim();
-        if (s && !/^(합계|소계|계|total)$/i.test(s)) { item[field] = s; hasData = true; }
+        if (s) { item[field] = s; hasData = true; }
       }
     });
-    if (hasData && item.vendor_name && !/^(합계|소계|계)$/.test(item.vendor_name)) {
+    if (hasData && item.vendor_name) {
       items.push(item);
     }
   }
