@@ -7,10 +7,6 @@ function ExpensePrint({ requestId, onBack }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (requestId) load(requestId);
-  }, [requestId]);
-
   const load = async (id) => {
     setLoading(true);
     const { data: req } = await supabase
@@ -23,6 +19,10 @@ function ExpensePrint({ requestId, onBack }) {
     setItems(its || []);
     setLoading(false);
   };
+
+  useEffect(() => {
+    if (requestId) load(requestId);
+  }, [requestId]);
 
   if (!requestId) {
     return <p style={styles.emptyText}>목록에서 출력할 지출결의서를 선택해주세요.</p>;
@@ -40,7 +40,7 @@ function ExpensePrint({ requestId, onBack }) {
       </div>
 
       <div className="printable-area expense-print-sheet" style={styles.sheet}>
-        <div style={styles.approvalBox}>
+        <div style={styles.approvalBox} className="expense-print-approval">
           <table style={styles.approvalTable}>
             <thead>
               <tr>
@@ -62,7 +62,7 @@ function ExpensePrint({ requestId, onBack }) {
 
         <h1 style={styles.formTitle}>지출결의서</h1>
 
-        <div style={styles.metaRow}>
+        <div style={styles.metaRow} className="expense-print-meta">
           <span style={styles.metaItem}>일자: {request.request_date}</span>
           <span style={styles.metaItem}>출금계좌: {request.company_bank_accounts ? `${request.company_bank_accounts.bank_name} ${request.company_bank_accounts.account_no}` : '-'}</span>
           <span style={styles.metaItem}>지급방법: 계좌이체</span>
@@ -115,11 +115,15 @@ function ExpensePrint({ requestId, onBack }) {
           </tbody>
         </table>
 
-        <p style={styles.footNote}>※ 결재 바랍니다</p>
+        <p style={styles.footNote} className="expense-print-foot">※ 결재 바랍니다</p>
       </div>
 
       <style>{`
         @media print {
+          @page {
+            size: A4;
+            margin: 12mm;
+          }
           .no-print { display: none !important; }
           body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
           .expense-print-sheet {
@@ -127,12 +131,33 @@ function ExpensePrint({ requestId, onBack }) {
             box-shadow: none !important;
             max-width: 100% !important;
             margin: 0 !important;
-            padding: 16px !important;
+            padding: 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           .expense-print-table th,
           .expense-print-table td {
-            font-size: 15px !important;
-            padding: 7px 6px !important;
+            font-size: 14px !important;
+            padding: 6px 6px !important;
+          }
+          .expense-print-table tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .expense-print-sheet h1 {
+            font-size: 26px !important;
+            margin: 8px 0 16px 0 !important;
+          }
+          .expense-print-sheet .expense-print-meta {
+            font-size: 16px !important;
+            margin-bottom: 10px !important;
+          }
+          .expense-print-sheet .expense-print-approval td {
+            padding: 5px 10px !important;
+          }
+          .expense-print-sheet .expense-print-foot {
+            margin-top: 12px !important;
+            font-size: 14px !important;
           }
         }
       `}</style>

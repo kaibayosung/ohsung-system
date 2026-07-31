@@ -1,8 +1,9 @@
 // src/components/expense/ExpenseDraftUpload.jsx
 // 미지급금(결제건) 표 이미지나 엑셀을 업로드하면 지출결의서 초안을 자동 생성합니다.
 // 이미지는 expense-doc-ocr Edge Function(Claude Vision)으로, 엑셀은 브라우저에서 xlsx로 직접 파싱합니다.
-// 추출 결과는 편집 가능한 표로 보여준 뒤 "초안으로 저장"하면 작성중 상태로 저장되고,
-// 계정과목 등 나머지를 채우도록 지출결의서 작성(ExpenseForm) 화면으로 넘어갑니다.
+// 추출 결과는 편집 가능한 표로 보여준 뒤 저장하면, 표의 각 행(지급 건)이 각각
+// 별도의 지출결의서(결재건, expense_requests 한 행 + 항목 1개)로 작성중 상태로 저장됩니다.
+// 저장 후에는 목록(내역) 화면으로 이동해 건별로 확인·수정·삭제·출력할 수 있습니다.
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../supabaseClient';
@@ -177,42 +178,52 @@ function ExpenseDraftUpload({ onDraftSaved }) {
   const total = items.reduce((sum, it) => sum + (Number(it.amount) || 0), 0);
   const filledItems = () => items.filter((it) => it.vendor_name || it.item_name || it.amount);
 
+  // 표의 각 행(지급 건)은 서로 다른 거래처/계좌인 별개의 지급 건이므로,
+  // 하나의 지출결의서에 묶지 않고 결재건(=expense_requests 한 행)별로 각각 저장합니다.
+  // 이렇게 저장하면 목록(내역) 화면에서 건별로 개별 수정·삭제·출력이 가능합니다.
   const saveDraft = async () => {
     if (!header.bank_account_id) { alert('출금계좌를 선택해주세요.'); return; }
     const valid = filledItems();
     if (valid.length === 0) { alert('최소 1개 항목이 필요합니다.'); return; }
     setSaving(true);
     try {
-      const payload = {
-        request_date: header.request_date,
-        requester: header.requester,
-        bank_account_id: header.bank_account_id,
-        total_amount: total,
-        status: '작성중',
-      };
-      const { data, error } = await supabase.from('expense_requests').insert(payload).select('id').single();
-      if (error) throw error;
-      const id = data.id;
+      let savedCount = 0;
+      for (const it of valid) {
+        const amount = Number(it.amount) || 0;
+        const payload = {
+          request_date: header.request_date,
+          requester: header.requester,
+          bank_account_id: header.bank_account_id,
+          total_amount: amount,
+          status: '작성중',
+        };
+        const { data, error } = await supabase.from('expense_requests').insert(payload).select('id').single();
+        if (error) throw error;
+        const id = data.id;
 
-      const itemRows = valid.map((it, idx) => ({
-        request_id: id,
-        line_no: idx + 1,
-        account_category: it.account_category || null,
-        vendor_name: it.vendor_name || null,
-        item_name: it.item_name || null,
-        amount: Number(it.amount) || 0,
-        payment_method: '계좌이체',
-        bank_name: it.bank_name || null,
-        account_no: it.account_no || null,
-        account_holder: it.account_holder || null,
-        passbook_memo: it.passbook_memo || null,
-        note: it.note || null,
-      }));
-      const { error: itemError } = await supabase.from('expense_request_items').insert(itemRows);
-      if (itemError) throw itemError;
+        const itemRow = {
+          request_id: id,
+          line_no: 1,
+          account_category: it.account_category || null,
+          vendor_name: it.vendor_name || null,
+          item_name: it.item_name || null,
+          amount,
+          payment_method: '계좌이체',
+          bank_name: it.bank_name || null,
+          account_no: it.account_no || null,
+          account_holder: it.account_holder || null,
+          passbook_memo: it.passbook_memo || null,
+          note: it.note || null,
+        };
+        const { error: itemError } = await supabase.from('expense_request_items').insert(itemRow);
+        if (itemError) throw itemError;
+        savedCount++;
+      }
 
-      alert('초안이 저장되었습니다. 작성 화면에서 내용을 확인하고 계정과목을 채워주세요.');
-      onDraftSaved(id);
+      alert(`${savedCount}건이 결재건별로 각각 저장되었습니다. 목록(내역)에서 건별로 확인·수정·삭제할 수 있습니다.`);
+      setItems([]);
+      setFileName('');
+      onDraftSaved();
     } catch (err) {
       alert('저장 실패: ' + err.message);
     } finally {
@@ -264,7 +275,7 @@ function ExpenseDraftUpload({ onDraftSaved }) {
           </div>
 
           <div style={styles.itemsHeader}>
-            <h3 style={styles.subtitle}>추출된 항목 — 내용을 확인하고 필요하면 수정하세요</h3>
+            <h3 style={styles.subtitle}>추출된 항목 — 각 행은 별도의 결재건으로 저장됩니다</h3>
             <button onClick={addItem} style={styles.addBtn}>+ 항목 추가</button>
           </div>
 
@@ -312,9 +323,9 @@ function ExpenseDraftUpload({ onDraftSaved }) {
           </div>
 
           <div style={styles.actions}>
-            <button onClick={saveDraft} style={styles.saveBtn} disabled={saving}>{saving ? '저장 중...' : '초안으로 저장하고 작성 화면으로 이동'}</button>
+            <button onClick={saveDraft} style={styles.saveBtn} disabled={saving}>{saving ? '저장 중...' : `${items.length}건 결재건별로 저장하기`}</button>
           </div>
-          <p style={styles.footNote}>저장 후 지출결의서 작성 화면에서 계정과목 등을 마저 확인·완료할 수 있습니다.</p>
+          <p style={styles.footNote}>저장 후 목록(내역) 화면에서 건별로 수정·삭제·출력할 수 있습니다.</p>
         </>
       )}
     </div>
