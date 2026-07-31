@@ -70,22 +70,22 @@ function ExpensePrint({ requestId, onBack }) {
 
         <table style={styles.itemTable} className="expense-print-table">
           <colgroup>
-            <col style={{ width: '4%' }} />
+            <col style={{ width: '3%' }} />
             <col style={{ width: '11%' }} />
-            <col style={{ width: '11%' }} />
             <col style={{ width: '10%' }} />
+            <col style={{ width: '13%' }} />
+            <col style={{ width: '8%' }} />
+            <col style={{ width: '13%' }} />
             <col style={{ width: '10%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '21%' }} />
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '25%' }} />
           </colgroup>
           <thead>
             <tr>
               <th style={styles.th}>NO</th>
               <th style={styles.th}>거래처</th>
               <th style={styles.th}>품목</th>
-              <th style={styles.th}>금액</th>
+              <th style={styles.thAmount}>금액</th>
               <th style={styles.th}>입금은행</th>
               <th style={styles.th}>계좌번호</th>
               <th style={styles.th}>예금주</th>
@@ -94,23 +94,23 @@ function ExpensePrint({ requestId, onBack }) {
             </tr>
           </thead>
           <tbody>
-            {items.map((it) => (
-              <tr key={it.id}>
-                <td style={{ ...styles.td, textAlign: 'center' }}>{it.line_no}</td>
+            {items.map((it, idx) => (
+              <tr key={it.id} style={idx % 2 === 1 ? styles.trEven : undefined}>
+                <td style={{ ...styles.td, textAlign: 'center', color: '#718096' }}>{it.line_no}</td>
                 <td style={styles.td}>{it.vendor_name}</td>
                 <td style={styles.td}>{it.item_name}</td>
-                <td style={{ ...styles.td, textAlign: 'right' }}>{Number(it.amount).toLocaleString()}</td>
+                <td style={styles.tdAmount}>{Number(it.amount).toLocaleString()}</td>
                 <td style={styles.td}>{it.bank_name || ''}</td>
-                <td style={styles.td}>{it.account_no || ''}</td>
+                <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>{it.account_no || ''}</td>
                 <td style={styles.td}>{it.account_holder || ''}</td>
                 <td style={styles.td}>{it.passbook_memo || ''}</td>
-                <td style={styles.td}>{it.note || ''}</td>
+                <td style={{ ...styles.td, color: '#718096' }}>{it.note || ''}</td>
               </tr>
             ))}
             <tr>
-              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>합계</td>
-              <td style={{ ...styles.td, textAlign: 'right', fontWeight: 700 }}>{total.toLocaleString()}</td>
-              <td colSpan={5} style={styles.td}></td>
+              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 700, backgroundColor: '#f7fafc' }}>합계</td>
+              <td style={{ ...styles.tdAmount, fontWeight: 700, fontSize: '20px' }}>{total.toLocaleString()}</td>
+              <td colSpan={5} style={{ ...styles.td, backgroundColor: '#f7fafc' }}></td>
             </tr>
           </tbody>
         </table>
@@ -181,7 +181,10 @@ const styles = {
   metaItem: { whiteSpace: 'nowrap' },
   itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '18px', tableLayout: 'fixed', wordBreak: 'keep-all' },
   th: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#f7fafc', fontWeight: 700, wordBreak: 'keep-all' },
+  thAmount: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#ebf4ff', fontWeight: 700, textAlign: 'left', color: '#1a4e8a' },
   td: { border: '1px solid #cbd5e0', padding: '12px 8px', wordBreak: 'keep-all', overflowWrap: 'break-word' },
+  tdAmount: { border: '1px solid #cbd5e0', padding: '12px 10px', textAlign: 'left', whiteSpace: 'nowrap', backgroundColor: '#ebf4ff', color: '#1a4e8a', fontWeight: 700 },
+  trEven: { backgroundColor: '#fafbfc' },
   footNote: { marginTop: '24px', fontSize: '19px' },
 };
 
