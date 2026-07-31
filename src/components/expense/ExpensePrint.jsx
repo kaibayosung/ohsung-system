@@ -41,78 +41,92 @@ function ExpensePrint({ requestId, onBack }) {
 
       <div className="printable-area expense-print-sheet" style={styles.sheet}>
         <div style={styles.approvalBox} className="expense-print-approval">
-          <table style={styles.approvalTable}>
+          <div style={styles.approvalWrap}>
+            <table style={styles.approvalTable}>
+              <thead>
+                <tr>
+                  <td rowSpan={2} style={styles.approvalLabel}>결재</td>
+                  <td style={styles.approvalHeadCell}>과장</td>
+                  <td style={styles.approvalHeadCell}>이사</td>
+                  <td style={styles.approvalHeadCell}>실장</td>
+                  <td style={styles.approvalHeadCell}>사장</td>
+                </tr>
+                <tr>
+                  <td style={styles.approvalStampCell}></td>
+                  <td style={styles.approvalStampCell}></td>
+                  <td style={styles.approvalStampCell}></td>
+                  <td style={styles.approvalStampCell}></td>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+
+        <h1 style={styles.formTitle}>지 출 결 의 서</h1>
+        <div style={styles.titleAccent} />
+
+        <div style={styles.metaRow} className="expense-print-meta">
+          <span style={styles.metaGroup}>
+            <span style={styles.metaLabel} className="expense-print-meta-label">일자</span>
+            <span style={styles.metaValue} className="expense-print-meta-value">{request.request_date}</span>
+          </span>
+          <span style={styles.metaGroup}>
+            <span style={styles.metaLabel} className="expense-print-meta-label">출금계좌</span>
+            <span style={styles.metaValue} className="expense-print-meta-value">{request.company_bank_accounts ? `${request.company_bank_accounts.bank_name} ${request.company_bank_accounts.account_no}` : '-'}</span>
+          </span>
+          <span style={styles.metaGroup}>
+            <span style={styles.metaLabel} className="expense-print-meta-label">지급방법</span>
+            <span style={styles.metaValue} className="expense-print-meta-value">계좌이체</span>
+          </span>
+        </div>
+
+        <div style={styles.itemTableWrap}>
+          <table style={styles.itemTable} className="expense-print-table">
+            <colgroup>
+              <col style={{ width: '3%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '10%' }} />
+              <col style={{ width: '8%' }} />
+              <col style={{ width: '17%' }} />
+              <col style={{ width: '11%' }} />
+              <col style={{ width: '9%' }} />
+              <col style={{ width: '31%' }} />
+            </colgroup>
             <thead>
               <tr>
-                <td rowSpan={2} style={styles.approvalLabel}>결재</td>
-                <td style={styles.approvalHeadCell}>과장</td>
-                <td style={styles.approvalHeadCell}>이사</td>
-                <td style={styles.approvalHeadCell}>실장</td>
-                <td style={styles.approvalHeadCell}>사장</td>
-              </tr>
-              <tr>
-                <td style={styles.approvalStampCell}></td>
-                <td style={styles.approvalStampCell}></td>
-                <td style={styles.approvalStampCell}></td>
-                <td style={styles.approvalStampCell}></td>
+                <th style={styles.th}>NO</th>
+                <th style={styles.th}>거래처</th>
+                <th style={styles.thAmount}>금액</th>
+                <th style={styles.th} className="expense-print-tight">입금은행</th>
+                <th style={styles.th} className="expense-print-tight">계좌번호</th>
+                <th style={styles.th} className="expense-print-tight">예금주</th>
+                <th style={styles.th} className="expense-print-tight">통장표시</th>
+                <th style={styles.th} className="expense-print-note">비고</th>
               </tr>
             </thead>
+            <tbody>
+              {items.map((it) => (
+                <tr key={it.id}>
+                  <td style={{ ...styles.td, textAlign: 'center', color: '#a0a4b8' }}>{it.line_no}</td>
+                  <td style={{ ...styles.td, fontWeight: 700, color: '#1a1a2e' }}>{it.vendor_name}</td>
+                  <td style={styles.tdAmount}>{Number(it.amount).toLocaleString()}</td>
+                  <td style={styles.td} className="expense-print-tight">{it.bank_name || ''}</td>
+                  <td style={styles.td} className="expense-print-tight">{it.account_no || ''}</td>
+                  <td style={styles.td} className="expense-print-tight">{it.account_holder || ''}</td>
+                  <td style={styles.td} className="expense-print-tight">{it.passbook_memo || ''}</td>
+                  <td style={{ ...styles.td, color: '#9ca3af' }} className="expense-print-note">{it.note || ''}</td>
+                </tr>
+              ))}
+              <tr>
+                <td colSpan={2} style={styles.totalLabelCell}>합계</td>
+                <td style={styles.totalValueCell}>{total.toLocaleString()}</td>
+                <td colSpan={5} style={styles.totalFillerCell}></td>
+              </tr>
+            </tbody>
           </table>
         </div>
 
-        <h1 style={styles.formTitle}>지출결의서</h1>
-
-        <div style={styles.metaRow} className="expense-print-meta">
-          <span style={styles.metaItem}>일자: {request.request_date}</span>
-          <span style={styles.metaItem}>출금계좌: {request.company_bank_accounts ? `${request.company_bank_accounts.bank_name} ${request.company_bank_accounts.account_no}` : '-'}</span>
-          <span style={styles.metaItem}>지급방법: 계좌이체</span>
-        </div>
-
-        <table style={styles.itemTable} className="expense-print-table">
-          <colgroup>
-            <col style={{ width: '3%' }} />
-            <col style={{ width: '11%' }} />
-            <col style={{ width: '10%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '17%' }} />
-            <col style={{ width: '11%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '31%' }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <th style={styles.th}>NO</th>
-              <th style={styles.th}>거래처</th>
-              <th style={styles.thAmount}>금액</th>
-              <th style={styles.th} className="expense-print-tight">입금은행</th>
-              <th style={styles.th} className="expense-print-tight">계좌번호</th>
-              <th style={styles.th} className="expense-print-tight">예금주</th>
-              <th style={styles.th} className="expense-print-tight">통장표시</th>
-              <th style={styles.th} className="expense-print-note">비고</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((it, idx) => (
-              <tr key={it.id} style={idx % 2 === 1 ? styles.trEven : undefined}>
-                <td style={{ ...styles.td, textAlign: 'center', color: '#718096' }}>{it.line_no}</td>
-                <td style={styles.td}>{it.vendor_name}</td>
-                <td style={styles.tdAmount}>{Number(it.amount).toLocaleString()}</td>
-                <td style={styles.td} className="expense-print-tight">{it.bank_name || ''}</td>
-                <td style={styles.td} className="expense-print-tight">{it.account_no || ''}</td>
-                <td style={styles.td} className="expense-print-tight">{it.account_holder || ''}</td>
-                <td style={styles.td} className="expense-print-tight">{it.passbook_memo || ''}</td>
-                <td style={{ ...styles.td, color: '#718096' }} className="expense-print-note">{it.note || ''}</td>
-              </tr>
-            ))}
-            <tr>
-              <td colSpan={2} style={{ ...styles.td, textAlign: 'right', fontWeight: 700, backgroundColor: '#f7fafc' }}>합계</td>
-              <td style={{ ...styles.tdAmount, fontWeight: 700 }}>{total.toLocaleString()}</td>
-              <td colSpan={5} style={{ ...styles.td, backgroundColor: '#f7fafc' }}></td>
-            </tr>
-          </tbody>
-        </table>
-
-        <p style={styles.footNote} className="expense-print-foot">※ 결재 바랍니다</p>
+        <p style={styles.footNote} className="expense-print-foot">※ 결재 바랍니다.</p>
       </div>
 
       <style>{`
@@ -155,19 +169,25 @@ function ExpensePrint({ requestId, onBack }) {
             break-inside: avoid !important;
           }
           .expense-print-sheet h1 {
-            font-size: 26px !important;
-            margin: 8px 0 16px 0 !important;
+            font-size: 24px !important;
+            margin: 6px 0 8px 0 !important;
           }
           .expense-print-sheet .expense-print-meta {
-            font-size: 16px !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 14px !important;
+          }
+          .expense-print-sheet .expense-print-meta-label {
+            font-size: 12px !important;
+          }
+          .expense-print-sheet .expense-print-meta-value {
+            font-size: 15px !important;
           }
           .expense-print-sheet .expense-print-approval td {
-            padding: 5px 10px !important;
+            padding: 6px 10px !important;
+            font-size: 13px !important;
           }
           .expense-print-sheet .expense-print-foot {
-            margin-top: 12px !important;
-            font-size: 14px !important;
+            margin-top: 14px !important;
+            font-size: 13px !important;
           }
         }
       `}</style>
@@ -175,27 +195,47 @@ function ExpensePrint({ requestId, onBack }) {
   );
 }
 
+// 인디고/바이올렛 계열 강조색 — 사장님이 전달한 레이아웃 시안 기준
+const ACCENT = '#5b52d6';
+const HEADER_BG = '#2e2b45';
+const APPROVAL_BG = '#eeecfb';
+const BORDER = '#e5e7eb';
+const TEXT_PRIMARY = '#1a1a2e';
+const MUTED = '#9ca3af';
+
 const styles = {
   emptyText: { color: '#718096', fontSize: '18px' },
   controlBar: { display: 'flex', justifyContent: 'space-between', marginBottom: '20px' },
   backBtn: { padding: '12px 20px', backgroundColor: '#edf2f7', color: '#2d3748', border: 'none', borderRadius: '9px', cursor: 'pointer', fontSize: '17px', fontWeight: 700 },
-  printBtn: { padding: '12px 20px', backgroundColor: '#3182ce', color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '17px' },
-  sheet: { border: '1px solid #e2e8f0', borderRadius: '10px', padding: '40px', maxWidth: '900px', margin: '0 auto', fontSize: '19px', wordBreak: 'keep-all' },
-  approvalBox: { display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' },
+  printBtn: { padding: '12px 20px', backgroundColor: ACCENT, color: 'white', border: 'none', borderRadius: '9px', cursor: 'pointer', fontWeight: 700, fontSize: '17px' },
+  sheet: { border: `1px solid ${BORDER}`, borderRadius: '14px', padding: '40px', maxWidth: '900px', margin: '0 auto', fontSize: '19px', wordBreak: 'keep-all', color: TEXT_PRIMARY },
+
+  approvalBox: { display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' },
+  approvalWrap: { border: `1px solid ${BORDER}`, borderRadius: '10px', overflow: 'hidden' },
   approvalTable: { borderCollapse: 'collapse' },
-  approvalLabel: { border: '1px solid #2d3748', padding: '8px 12px', textAlign: 'center', fontSize: '17px', backgroundColor: '#f7fafc' },
-  approvalHeadCell: { border: '1px solid #2d3748', padding: '8px 16px', textAlign: 'center', fontSize: '17px', backgroundColor: '#f7fafc' },
-  approvalStampCell: { border: '1px solid #2d3748', width: '68px', height: '62px' },
-  formTitle: { textAlign: 'center', fontSize: '32px', fontWeight: 800, letterSpacing: '10px', margin: '14px 0 28px 0' },
-  metaRow: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '8px 20px', marginBottom: '14px', fontSize: '20px' },
-  metaItem: { whiteSpace: 'nowrap' },
-  itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '18px', tableLayout: 'fixed', wordBreak: 'keep-all' },
-  th: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#f7fafc', fontWeight: 700, wordBreak: 'keep-all' },
-  thAmount: { border: '1px solid #2d3748', padding: '12px 8px', backgroundColor: '#ebf4ff', fontWeight: 700, textAlign: 'right', color: '#1a4e8a' },
-  td: { border: '1px solid #cbd5e0', padding: '12px 8px', wordBreak: 'keep-all', overflowWrap: 'break-word' },
-  tdAmount: { border: '1px solid #cbd5e0', padding: '12px 10px', textAlign: 'right', whiteSpace: 'nowrap', backgroundColor: '#ebf4ff', color: '#1a4e8a', fontWeight: 700 },
-  trEven: { backgroundColor: '#fafbfc' },
-  footNote: { marginTop: '24px', fontSize: '19px' },
+  approvalLabel: { padding: '10px 14px', textAlign: 'center', fontSize: '15px', fontWeight: 700, backgroundColor: APPROVAL_BG, color: TEXT_PRIMARY, borderRight: `1px solid ${BORDER}` },
+  approvalHeadCell: { padding: '10px 18px', textAlign: 'center', fontSize: '15px', fontWeight: 700, color: TEXT_PRIMARY, borderBottom: `1px solid ${BORDER}`, borderLeft: `1px solid ${BORDER}` },
+  approvalStampCell: { width: '64px', height: '54px', borderLeft: `1px solid ${BORDER}` },
+
+  formTitle: { textAlign: 'center', fontSize: '30px', fontWeight: 800, letterSpacing: '6px', margin: '8px 0 10px 0', color: TEXT_PRIMARY },
+  titleAccent: { width: '64px', height: '4px', backgroundColor: ACCENT, borderRadius: '2px', margin: '0 auto 22px auto' },
+
+  metaRow: { display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '8px 24px', marginBottom: '18px' },
+  metaGroup: { display: 'inline-flex', alignItems: 'baseline', gap: '8px', whiteSpace: 'nowrap' },
+  metaLabel: { fontSize: '15px', color: MUTED, fontWeight: 700 },
+  metaValue: { fontSize: '19px', color: TEXT_PRIMARY, fontWeight: 700 },
+
+  itemTableWrap: { border: `1px solid ${BORDER}`, borderRadius: '10px', overflow: 'hidden' },
+  itemTable: { width: '100%', borderCollapse: 'collapse', fontSize: '17px', tableLayout: 'fixed', wordBreak: 'keep-all' },
+  th: { padding: '12px 8px', backgroundColor: HEADER_BG, color: '#ffffff', fontWeight: 700, textAlign: 'left', wordBreak: 'keep-all' },
+  thAmount: { padding: '12px 8px', backgroundColor: HEADER_BG, color: '#ffffff', fontWeight: 700, textAlign: 'right' },
+  td: { padding: '12px 8px', borderTop: `1px solid ${BORDER}`, wordBreak: 'keep-all', overflowWrap: 'break-word', color: TEXT_PRIMARY },
+  tdAmount: { padding: '12px 10px', borderTop: `1px solid ${BORDER}`, textAlign: 'right', whiteSpace: 'nowrap', color: ACCENT, fontWeight: 700 },
+  totalLabelCell: { padding: '14px 8px', textAlign: 'right', fontWeight: 800, color: TEXT_PRIMARY, borderTop: `2px solid ${TEXT_PRIMARY}` },
+  totalValueCell: { padding: '14px 10px', textAlign: 'right', fontWeight: 800, color: ACCENT, fontSize: '19px', whiteSpace: 'nowrap', borderTop: `2px solid ${TEXT_PRIMARY}` },
+  totalFillerCell: { borderTop: `2px solid ${TEXT_PRIMARY}` },
+
+  footNote: { marginTop: '20px', fontSize: '17px', fontWeight: 700, color: TEXT_PRIMARY },
 };
 
 export default ExpensePrint;
