@@ -83,14 +83,14 @@ function ExpensePrint({ requestId, onBack }) {
         <div style={styles.itemTableWrap}>
           <table style={styles.itemTable} className="expense-print-table">
             <colgroup>
-              <col style={{ width: '3%' }} />
-              <col style={{ width: '11%' }} />
+              <col style={{ width: '4%' }} />
+              <col style={{ width: '14%' }} />
+              <col style={{ width: '13%' }} />
               <col style={{ width: '10%' }} />
-              <col style={{ width: '8%' }} />
-              <col style={{ width: '17%' }} />
+              <col style={{ width: '22%' }} />
+              <col style={{ width: '14%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '9%' }} />
-              <col style={{ width: '31%' }} />
+              <col style={{ width: '12%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -148,18 +148,18 @@ function ExpensePrint({ requestId, onBack }) {
           }
           .expense-print-table th,
           .expense-print-table td {
-            font-size: 13px !important;
-            padding: 6px 5px !important;
+            font-size: 16px !important;
+            padding: 8px 6px !important;
           }
           .expense-print-table .expense-print-tight {
-            font-size: 11px !important;
-            padding: 6px 3px !important;
+            font-size: 14px !important;
+            padding: 8px 4px !important;
             white-space: nowrap !important;
             letter-spacing: -0.2px !important;
           }
           .expense-print-table .expense-print-note {
-            font-size: 12px !important;
-            padding: 6px 4px !important;
+            font-size: 14px !important;
+            padding: 8px 5px !important;
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
@@ -169,25 +169,25 @@ function ExpensePrint({ requestId, onBack }) {
             break-inside: avoid !important;
           }
           .expense-print-sheet h1 {
-            font-size: 24px !important;
+            font-size: 27px !important;
             margin: 6px 0 8px 0 !important;
           }
           .expense-print-sheet .expense-print-meta {
             margin-bottom: 14px !important;
           }
           .expense-print-sheet .expense-print-meta-label {
-            font-size: 12px !important;
+            font-size: 14px !important;
           }
           .expense-print-sheet .expense-print-meta-value {
-            font-size: 15px !important;
+            font-size: 17px !important;
           }
           .expense-print-sheet .expense-print-approval td {
-            padding: 6px 10px !important;
-            font-size: 13px !important;
+            padding: 7px 12px !important;
+            font-size: 15px !important;
           }
           .expense-print-sheet .expense-print-foot {
             margin-top: 14px !important;
-            font-size: 13px !important;
+            font-size: 15px !important;
           }
         }
       `}</style>
