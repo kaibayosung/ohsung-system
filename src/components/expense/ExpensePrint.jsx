@@ -87,10 +87,10 @@ function ExpensePrint({ requestId, onBack }) {
               <col style={{ width: '14%' }} />
               <col style={{ width: '13%' }} />
               <col style={{ width: '10%' }} />
-              <col style={{ width: '22%' }} />
+              <col style={{ width: '25%' }} />
               <col style={{ width: '14%' }} />
               <col style={{ width: '11%' }} />
-              <col style={{ width: '12%' }} />
+              <col style={{ width: '9%' }} />
             </colgroup>
             <thead>
               <tr>
@@ -158,9 +158,14 @@ function ExpensePrint({ requestId, onBack }) {
             letter-spacing: -0.2px !important;
           }
           .expense-print-table .expense-print-note {
-            font-size: 14px !important;
-            padding: 8px 5px !important;
-            white-space: nowrap !important;
+            font-size: 12px !important;
+            padding: 8px 4px !important;
+            white-space: normal !important;
+            word-break: break-all !important;
+            line-height: 1.3 !important;
+            display: -webkit-box !important;
+            -webkit-line-clamp: 2 !important;
+            -webkit-box-orient: vertical !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
           }
