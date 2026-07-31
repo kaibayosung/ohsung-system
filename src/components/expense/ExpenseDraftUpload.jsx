@@ -1,6 +1,7 @@
 // src/components/expense/ExpenseDraftUpload.jsx
-// 미지급금(결제건) 표 이미지나 엑셀을 업로드하면 지출결의서 초안을 자동 생성합니다.
-// 이미지는 expense-doc-ocr Edge Function(Claude Vision)으로, 엑셀은 브라우저에서 xlsx로 직접 파싱합니다.
+// 미지급금(결제건) 표 이미지, 엑셀 또는 텍스트를 업로드하면 지출결의서 초안을 자동 생성합니다.
+// 이미지는 expense-doc-ocr Edge Function(Claude Vision)으로, 엑셀/텍스트는 브라우저에서
+// 직접 파싱합니다(엑셀은 xlsx 라이브러리, txt는 탭/콤마/공백 구분자를 자동 인식).
 // 추출 결과는 편집 가능한 표로 보여준 뒤 저장하면, 표의 각 행(지급 건)이 각각
 // 별도의 지출결의서(결재건, expense_requests 한 행 + 항목 1개)로 작성중 상태로 저장됩니다.
 // 저장 후에는 목록(내역) 화면으로 이동해 건별로 확인·수정·삭제·출력할 수 있습니다.
@@ -24,6 +25,53 @@ const HEADER_MAP = [
   { keys: ['금액', '지급액', '결제액'], field: 'amount' },
 ];
 
+// 표 형태로 파싱된 행(배열의 배열)에서 헤더 행을 찾아 지출 항목 배열로 변환합니다.
+// 엑셀(xlsx/xls/csv)과 txt 파일 파싱이 이 로직을 공유합니다.
+function rowsToItems(rows) {
+  // 헤더 행 찾기 (지급/예금주/은행/계좌/금액 관련 키워드가 2개 이상 매칭되는 첫 행)
+  let headerRowIdx = -1;
+  let colMap = {};
+  for (let r = 0; r < Math.min(rows.length, 10); r++) {
+    const row = rows[r].map((c) => String(c || '').replace(/\s/g, ''));
+    const map = {};
+    let hits = 0;
+    row.forEach((cell, ci) => {
+      for (const h of HEADER_MAP) {
+        if (h.keys.some((k) => cell.includes(k))) { map[ci] = h.field; hits++; break; }
+      }
+    });
+    if (hits >= 2) { headerRowIdx = r; colMap = map; break; }
+  }
+
+  if (headerRowIdx === -1) {
+    return { items: [], warning: '표 헤더(지급/예금주/은행/계좌/금액)를 찾지 못했습니다. 직접 입력해주세요.' };
+  }
+
+  const items = [];
+  for (let r = headerRowIdx + 1; r < rows.length; r++) {
+    const row = rows[r];
+    const isEmpty = row.every((c) => String(c || '').trim() === '');
+    if (isEmpty) continue;
+    const item = emptyItem();
+    let hasData = false;
+    Object.entries(colMap).forEach(([ci, field]) => {
+      let val = row[Number(ci)];
+      if (val === undefined || val === null) return;
+      if (field === 'amount') {
+        const num = Number(String(val).replace(/[^0-9.-]/g, ''));
+        if (!isNaN(num) && num !== 0) { item.amount = num; hasData = true; }
+      } else {
+        const s = String(val).trim();
+        if (s && !/^(합계|소계|계|total)$/i.test(s)) { item[field] = s; hasData = true; }
+      }
+    });
+    if (hasData && item.vendor_name && !/^(합계|소계|계)$/.test(item.vendor_name)) {
+      items.push(item);
+    }
+  }
+  return { items, warning: items.length === 0 ? '추출된 항목이 없습니다. 파일 형식을 확인해주세요.' : null };
+}
+
 function parseExcelFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -32,53 +80,37 @@ function parseExcelFile(file) {
         const wb = XLSX.read(e.target.result, { type: 'array' });
         const sheet = wb.Sheets[wb.SheetNames[0]];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-
-        // 헤더 행 찾기 (지급/예금주/은행/계좌/금액 관련 키워드가 2개 이상 매칭되는 첫 행)
-        let headerRowIdx = -1;
-        let colMap = {};
-        for (let r = 0; r < Math.min(rows.length, 10); r++) {
-          const row = rows[r].map((c) => String(c || '').replace(/\s/g, ''));
-          const map = {};
-          let hits = 0;
-          row.forEach((cell, ci) => {
-            for (const h of HEADER_MAP) {
-              if (h.keys.some((k) => cell.includes(k))) { map[ci] = h.field; hits++; break; }
-            }
-          });
-          if (hits >= 2) { headerRowIdx = r; colMap = map; break; }
-        }
-
-        if (headerRowIdx === -1) { resolve({ items: [], warning: '표 헤더(지급/예금주/은행/계좌/금액)를 찾지 못했습니다. 직접 입력해주세요.' }); return; }
-
-        const items = [];
-        for (let r = headerRowIdx + 1; r < rows.length; r++) {
-          const row = rows[r];
-          const isEmpty = row.every((c) => String(c || '').trim() === '');
-          if (isEmpty) continue;
-          const item = emptyItem();
-          let hasData = false;
-          Object.entries(colMap).forEach(([ci, field]) => {
-            let val = row[Number(ci)];
-            if (val === undefined || val === null) return;
-            if (field === 'amount') {
-              const num = Number(String(val).replace(/[^0-9.-]/g, ''));
-              if (!isNaN(num) && num !== 0) { item.amount = num; hasData = true; }
-            } else {
-              const s = String(val).trim();
-              if (s && !/^(합계|소계|계|total)$/i.test(s)) { item[field] = s; hasData = true; }
-            }
-          });
-          if (hasData && item.vendor_name && !/^(합계|소계|계)$/.test(item.vendor_name)) {
-            items.push(item);
-          }
-        }
-        resolve({ items, warning: items.length === 0 ? '추출된 항목이 없습니다. 파일 형식을 확인해주세요.' : null });
+        resolve(rowsToItems(rows));
       } catch (err) {
         reject(err);
       }
     };
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
+  });
+}
+
+// 외부에서 복사해 붙여넣은 표(엑셀/구글시트에서 복사하면 탭으로 구분됨) 또는
+// 콤마/여러 칸 공백으로 구분된 표 형식 텍스트(.txt)를 파싱합니다.
+function parseTextFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = String(e.target.result || '');
+        const lines = text.split(/\r\n|\r|\n/).filter((line) => line.trim() !== '');
+        const rows = lines.map((line) => {
+          if (line.includes('\t')) return line.split('\t');
+          if (line.includes(',')) return line.split(',');
+          return line.split(/\s{2,}/);
+        });
+        resolve(rowsToItems(rows));
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsText(file, 'utf-8');
   });
 }
 
@@ -126,10 +158,15 @@ function ExpenseDraftUpload({ onDraftSaved }) {
     setLoading(true);
     try {
       const isExcel = /\.(xlsx|xls|csv)$/i.test(file.name);
+      const isText = /\.txt$/i.test(file.name);
       const isImage = file.type.startsWith('image/');
 
       if (isExcel) {
         const { items: parsed, warning: w } = await parseExcelFile(file);
+        setItems(parsed.length > 0 ? parsed : [emptyItem()]);
+        if (w) setWarning(w);
+      } else if (isText) {
+        const { items: parsed, warning: w } = await parseTextFile(file);
         setItems(parsed.length > 0 ? parsed : [emptyItem()]);
         if (w) setWarning(w);
       } else if (isImage) {
@@ -158,7 +195,7 @@ function ExpenseDraftUpload({ onDraftSaved }) {
         setItems(parsedItems.length > 0 ? parsedItems : [emptyItem()]);
         if (parsedItems.length === 0) setWarning('이미지에서 항목을 추출하지 못했습니다. 표가 잘 보이는 이미지인지 확인해주세요.');
       } else {
-        setWarning('이미지(PNG/JPG) 또는 엑셀(XLSX/XLS/CSV) 파일만 지원합니다.');
+        setWarning('이미지(PNG/JPG), 엑셀(XLSX/XLS/CSV) 또는 텍스트(TXT) 파일만 지원합니다.');
         setItems([emptyItem()]);
       }
     } catch (err) {
@@ -234,19 +271,19 @@ function ExpenseDraftUpload({ onDraftSaved }) {
   return (
     <div>
       <h2 style={styles.title}>이미지 · 엑셀로 초안 만들기</h2>
-      <p style={styles.desc}>미지급금(결제건) 표가 담긴 이미지(사진/스캔) 또는 엑셀 파일을 올리면 AI가 항목을 읽어 지출결의서 초안을 만들어드립니다.</p>
+      <p style={styles.desc}>미지급금(결제건) 표가 담긴 이미지(사진/스캔), 엑셀 또는 텍스트 파일을 올리면 AI가(또는 표 형식을 자동 인식해) 항목을 읽어 지출결의서 초안을 만들어드립니다.</p>
 
       <div style={styles.uploadBox} onClick={() => fileInputRef.current?.click()}>
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*,.xlsx,.xls,.csv"
+          accept="image/*,.xlsx,.xls,.csv,.txt"
           onChange={handleFile}
           style={{ display: 'none' }}
         />
         <div style={styles.uploadIcon}>📄</div>
-        <div style={styles.uploadText}>{fileName || '클릭하여 이미지 또는 엑셀 파일 선택'}</div>
-        <div style={styles.uploadHint}>PNG / JPG / XLSX / XLS / CSV</div>
+        <div style={styles.uploadText}>{fileName || '클릭하여 이미지, 엑셀 또는 텍스트 파일 선택'}</div>
+        <div style={styles.uploadHint}>PNG / JPG / XLSX / XLS / CSV / TXT</div>
       </div>
 
       {loading && <p style={styles.loadingText}>AI가 표를 읽는 중입니다...</p>}
