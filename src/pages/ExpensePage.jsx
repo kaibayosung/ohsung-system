@@ -72,7 +72,7 @@ function ExpensePage() {
           />
         )}
         {tab === 'upload' && (
-          <ExpenseDraftUpload onDraftSaved={(id) => (id ? goToForm(id) : goToListWithStatus('작성중'))} />
+          <ExpenseDraftUpload onDraftSaved={(id) => goToForm(id)} />
         )}
         {tab === 'recurring' && (
           <RecurringDraft onOpenForm={goToForm} />

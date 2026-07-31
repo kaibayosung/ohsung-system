@@ -2,11 +2,9 @@
 // 미지급금(결제건) 표 이미지, 엑셀 또는 텍스트를 업로드하면 지출결의서 초안을 자동 생성합니다.
 // 이미지는 expense-doc-ocr Edge Function(Claude Vision)으로, 엑셀/텍스트는 브라우저에서
 // 직접 파싱합니다(엑셀은 xlsx 라이브러리, txt는 탭/콤마/공백 구분자를 자동 인식).
-// 추출 결과는 편집 가능한 표로 보여준 뒤, 사용자가 고른 저장 방식에 따라 작성중 상태로 저장됩니다:
-//  - 하나의 지출결의서로 저장(combined): 표 전체를 결재건 1개(expense_requests 1행 + 항목 N개)로 —
-//    저장 후 작성 화면으로 이동해 계정과목 등을 마저 확인합니다.
-//  - 항목별로 각각 저장(separate): 행마다 결재건 N개(각 1행 + 항목 1개)로 —
-//    저장 후 목록(내역) 화면에서 건별로 확인·수정·삭제·출력합니다.
+// 추출 결과는 편집 가능한 표로 보여준 뒤, 한 번에 등록한 표는 항상 지출결의서 1건
+// (expense_requests 1행 + 항목 N개)으로 작성중 상태로 저장됩니다. 저장 후에는 작성
+// 화면으로 이동해 계정과목 등을 마저 확인·완료합니다.
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../../supabaseClient';
@@ -152,7 +150,6 @@ function ExpenseDraftUpload({ onDraftSaved }) {
   const [fileName, setFileName] = useState('');
   const [saving, setSaving] = useState(false);
   const [pasteText, setPasteText] = useState('');
-  const [saveMode, setSaveMode] = useState('combined'); // 'combined' | 'separate'
   const fileInputRef = useRef(null);
 
   React.useEffect(() => {
@@ -255,62 +252,35 @@ function ExpenseDraftUpload({ onDraftSaved }) {
     note: it.note || null,
   });
 
-  // saveMode === 'combined': 표 전체를 하나의 지출결의서(결재건 1개, 항목 N개)로 저장 —
-  //   미지급금 표를 그대로 한 번에 결재 올릴 때 사용.
-  // saveMode === 'separate': 행마다 별도의 지출결의서(결재건 N개, 항목 각 1개)로 저장 —
-  //   서로 다른 성격의 지급 건을 건별로 따로 관리·결재하고 싶을 때 사용.
+  // 한 번에 등록(업로드/붙여넣기)한 표는 항상 지출결의서 1건으로 정리해서 저장합니다
+  // (결재건 1개 = expense_requests 1행 + 항목 N개). 여러 건으로 쪼개 올린 게 아니라
+  // 한 번에 등록한 결제 목록이므로, 결재도 한 건으로 올라가는 게 맞습니다.
   const saveDraft = async () => {
     if (!header.bank_account_id) { alert('출금계좌를 선택해주세요.'); return; }
     const valid = filledItems();
     if (valid.length === 0) { alert('최소 1개 항목이 필요합니다.'); return; }
     setSaving(true);
     try {
-      if (saveMode === 'combined') {
-        const payload = {
-          request_date: header.request_date,
-          requester: header.requester,
-          bank_account_id: header.bank_account_id,
-          total_amount: total,
-          status: '작성중',
-        };
-        const { data, error } = await supabase.from('expense_requests').insert(payload).select('id').single();
-        if (error) throw error;
-        const id = data.id;
+      const payload = {
+        request_date: header.request_date,
+        requester: header.requester,
+        bank_account_id: header.bank_account_id,
+        total_amount: total,
+        status: '작성중',
+      };
+      const { data, error } = await supabase.from('expense_requests').insert(payload).select('id').single();
+      if (error) throw error;
+      const id = data.id;
 
-        const itemRows = valid.map((it, idx) => buildItemRow(it, idx, id));
-        const { error: itemError } = await supabase.from('expense_request_items').insert(itemRows);
-        if (itemError) throw itemError;
+      const itemRows = valid.map((it, idx) => buildItemRow(it, idx, id));
+      const { error: itemError } = await supabase.from('expense_request_items').insert(itemRows);
+      if (itemError) throw itemError;
 
-        alert(`${valid.length}개 항목이 하나의 지출결의서로 저장되었습니다.`);
-        setItems([]);
-        setFileName('');
-        setPasteText('');
-        onDraftSaved(id);
-      } else {
-        let savedCount = 0;
-        for (const it of valid) {
-          const payload = {
-            request_date: header.request_date,
-            requester: header.requester,
-            bank_account_id: header.bank_account_id,
-            total_amount: Number(it.amount) || 0,
-            status: '작성중',
-          };
-          const { data, error } = await supabase.from('expense_requests').insert(payload).select('id').single();
-          if (error) throw error;
-          const id = data.id;
-
-          const { error: itemError } = await supabase.from('expense_request_items').insert(buildItemRow(it, 0, id));
-          if (itemError) throw itemError;
-          savedCount++;
-        }
-
-        alert(`${savedCount}건이 결재건별로 각각 저장되었습니다. 목록(내역)에서 건별로 확인·수정·삭제할 수 있습니다.`);
-        setItems([]);
-        setFileName('');
-        setPasteText('');
-        onDraftSaved();
-      }
+      alert(`${valid.length}개 항목이 지출결의서 1건으로 저장되었습니다.`);
+      setItems([]);
+      setFileName('');
+      setPasteText('');
+      onDraftSaved(id);
     } catch (err) {
       alert('저장 실패: ' + err.message);
     } finally {
@@ -381,15 +351,8 @@ function ExpenseDraftUpload({ onDraftSaved }) {
           </div>
 
           <div style={styles.saveModeBox}>
-            <div style={styles.saveModeLabel}>저장 방식</div>
-            <label style={styles.saveModeOption}>
-              <input type="radio" name="saveMode" checked={saveMode === 'combined'} onChange={() => setSaveMode('combined')} />
-              <span>하나의 지출결의서로 저장 <span style={styles.saveModeHint}>— 표 전체를 항목 {items.length}개짜리 결재 1건으로</span></span>
-            </label>
-            <label style={styles.saveModeOption}>
-              <input type="radio" name="saveMode" checked={saveMode === 'separate'} onChange={() => setSaveMode('separate')} />
-              <span>항목별로 각각 저장 <span style={styles.saveModeHint}>— 행마다 별도의 결재건 {items.length}개로</span></span>
-            </label>
+            <span style={styles.saveModeLabel}>이 표는 지출결의서 1건으로 저장됩니다</span>
+            <span style={styles.saveModeHint}>— 항목 {items.length}개 · 결재 1건</span>
           </div>
 
           <div style={styles.itemsHeader}>
@@ -441,15 +404,9 @@ function ExpenseDraftUpload({ onDraftSaved }) {
           </div>
 
           <div style={styles.actions}>
-            <button onClick={saveDraft} style={styles.saveBtn} disabled={saving}>
-              {saving ? '저장 중...' : saveMode === 'combined' ? '하나의 지출결의서로 저장하기' : `${items.length}건 결재건별로 저장하기`}
-            </button>
+            <button onClick={saveDraft} style={styles.saveBtn} disabled={saving}>{saving ? '저장 중...' : '지출결의서 1건으로 저장하기'}</button>
           </div>
-          <p style={styles.footNote}>
-            {saveMode === 'combined'
-              ? '저장 후 작성 화면으로 이동해 계정과목 등을 확인·완료할 수 있습니다.'
-              : '저장 후 목록(내역) 화면에서 건별로 수정·삭제·출력할 수 있습니다.'}
-          </p>
+          <p style={styles.footNote}>저장 후 작성 화면으로 이동해 계정과목 등을 확인·완료할 수 있습니다.</p>
         </>
       )}
     </div>
@@ -478,8 +435,7 @@ const styles = {
   label: { fontSize: '18px', fontWeight: 700, color: '#4a5568' },
   input: { padding: '14px 16px', borderRadius: '10px', border: '1px solid #dfe4ea', fontSize: '19px', backgroundColor: '#fbfcfe' },
   saveModeBox: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px 22px', padding: '16px 20px', backgroundColor: '#f7fafc', borderRadius: '12px', marginBottom: '20px' },
-  saveModeLabel: { fontSize: '16px', fontWeight: 700, color: '#4a5568', marginRight: '4px' },
-  saveModeOption: { display: 'flex', alignItems: 'center', gap: '8px', fontSize: '17px', fontWeight: 700, color: '#2d3748', cursor: 'pointer' },
+  saveModeLabel: { fontSize: '17px', fontWeight: 700, color: '#2d3748' },
   saveModeHint: { fontWeight: 400, color: '#a0aec0', fontSize: '14px' },
   itemsHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px', marginBottom: '18px' },
   subtitle: { margin: 0, fontSize: '22px', fontWeight: 700, color: '#2d3748' },
