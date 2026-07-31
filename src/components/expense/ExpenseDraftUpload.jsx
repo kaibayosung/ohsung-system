@@ -97,20 +97,24 @@ function parseExcelFile(file) {
 }
 
 // 외부에서 복사해 붙여넣은 표(엑셀/구글시트에서 복사하면 탭으로 구분됨) 또는
-// 콤마/여러 칸 공백으로 구분된 표 형식 텍스트(.txt)를 파싱합니다.
+// 콤마/여러 칸 공백으로 구분된 표 형식 텍스트를 파싱합니다. .txt 파일 업로드와
+// 텍스트 붙여넣기(Ctrl+V) 두 경로 모두 이 함수를 공유합니다.
+function parseTableText(text) {
+  const lines = String(text || '').split(/\r\n|\r|\n/).filter((line) => line.trim() !== '');
+  const rows = lines.map((line) => {
+    if (line.includes('\t')) return line.split('\t');
+    if (line.includes(',')) return line.split(',');
+    return line.split(/\s{2,}/);
+  });
+  return rowsToItems(rows);
+}
+
 function parseTextFile(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const text = String(e.target.result || '');
-        const lines = text.split(/\r\n|\r|\n/).filter((line) => line.trim() !== '');
-        const rows = lines.map((line) => {
-          if (line.includes('\t')) return line.split('\t');
-          if (line.includes(',')) return line.split(',');
-          return line.split(/\s{2,}/);
-        });
-        resolve(rowsToItems(rows));
+        resolve(parseTableText(String(e.target.result || '')));
       } catch (err) {
         reject(err);
       }
@@ -145,6 +149,7 @@ function ExpenseDraftUpload({ onDraftSaved }) {
   const [warning, setWarning] = useState('');
   const [fileName, setFileName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [pasteText, setPasteText] = useState('');
   const fileInputRef = useRef(null);
 
   React.useEffect(() => {
@@ -212,6 +217,17 @@ function ExpenseDraftUpload({ onDraftSaved }) {
     }
   };
 
+  // 엑셀/구글시트에서 표를 복사(Ctrl+C)해서 아래 붙여넣기 칸에 그대로 붙여넣으면(Ctrl+V),
+  // 파일 저장 없이 바로 같은 파서로 인식합니다.
+  const handleAnalyzePaste = () => {
+    if (!pasteText.trim()) { alert('먼저 엑셀에서 표를 복사해 붙여넣어주세요.'); return; }
+    setWarning('');
+    setFileName('');
+    const { items: parsed, warning: w } = parseTableText(pasteText);
+    setItems(parsed.length > 0 ? parsed : [emptyItem()]);
+    if (w) setWarning(w);
+  };
+
   const updateItem = (idx, field, value) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, [field]: value } : it)));
   };
@@ -277,7 +293,7 @@ function ExpenseDraftUpload({ onDraftSaved }) {
   return (
     <div>
       <h2 style={styles.title}>이미지 · 엑셀로 초안 만들기</h2>
-      <p style={styles.desc}>미지급금(결제건) 표가 담긴 이미지(사진/스캔), 엑셀 또는 텍스트 파일을 올리면 AI가(또는 표 형식을 자동 인식해) 항목을 읽어 지출결의서 초안을 만들어드립니다.</p>
+      <p style={styles.desc}>미지급금(결제건) 표가 담긴 이미지(사진/스캔), 엑셀·텍스트 파일을 올리거나, 엑셀에서 표를 복사해 바로 붙여넣으면 항목을 읽어 지출결의서 초안을 만들어드립니다.</p>
 
       <div style={styles.uploadBox} onClick={() => fileInputRef.current?.click()}>
         <input
@@ -290,6 +306,25 @@ function ExpenseDraftUpload({ onDraftSaved }) {
         <div style={styles.uploadIcon}>📄</div>
         <div style={styles.uploadText}>{fileName || '클릭하여 이미지, 엑셀 또는 텍스트 파일 선택'}</div>
         <div style={styles.uploadHint}>PNG / JPG / XLSX / XLS / CSV / TXT</div>
+      </div>
+
+      <div style={styles.dividerRow}>
+        <span style={styles.dividerLine} />
+        <span style={styles.dividerText}>또는</span>
+        <span style={styles.dividerLine} />
+      </div>
+
+      <div style={styles.pasteBox}>
+        <div style={styles.pasteLabel}>엑셀에서 표를 복사(Ctrl+C)해서 아래에 붙여넣기(Ctrl+V)</div>
+        <textarea
+          value={pasteText}
+          onChange={(e) => setPasteText(e.target.value)}
+          placeholder={'NO\t지급\t예금주\t은행\t계좌번호\t금액\n1\t원푸드식당\t최윤애\t신한은행\t110-312-4321-06\t1,501,500 ...'}
+          style={styles.pasteArea}
+        />
+        <div style={styles.pasteActions}>
+          <button onClick={handleAnalyzePaste} style={styles.pasteBtn}>붙여넣은 표 분석하기</button>
+        </div>
       </div>
 
       {loading && <p style={styles.loadingText}>AI가 표를 읽는 중입니다...</p>}
@@ -382,6 +417,14 @@ const styles = {
   uploadIcon: { fontSize: '40px', marginBottom: '10px' },
   uploadText: { fontSize: '19px', fontWeight: 700, color: '#2d3748', marginBottom: '6px' },
   uploadHint: { fontSize: '15px', color: '#a0aec0' },
+  dividerRow: { display: 'flex', alignItems: 'center', gap: '14px', margin: '18px 0' },
+  dividerLine: { flex: 1, height: '1px', backgroundColor: '#e2e8f0' },
+  dividerText: { color: '#a0aec0', fontSize: '15px', fontWeight: 700 },
+  pasteBox: { border: '1px solid #dfe4ea', borderRadius: '16px', padding: '20px 22px', backgroundColor: '#fbfcfe', marginBottom: '20px' },
+  pasteLabel: { fontSize: '16px', fontWeight: 700, color: '#4a5568', marginBottom: '10px' },
+  pasteArea: { width: '100%', minHeight: '120px', padding: '12px 14px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '14px', fontFamily: 'monospace', boxSizing: 'border-box', resize: 'vertical' },
+  pasteActions: { display: 'flex', justifyContent: 'flex-end', marginTop: '10px' },
+  pasteBtn: { padding: '11px 20px', backgroundColor: '#ebf4ff', color: '#2b6cb0', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '16px', fontWeight: 700 },
   loadingText: { color: '#3182ce', fontSize: '18px', fontWeight: 700 },
   warnBanner: { color: '#9b2c2c', backgroundColor: '#fde2e2', padding: '14px 18px', borderRadius: '10px', fontSize: '16px' },
   headerGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '22px', marginTop: '10px', marginBottom: '32px' },
