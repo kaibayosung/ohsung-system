@@ -101,7 +101,7 @@ function ExpensePrint({ requestId, onBack }) {
                 <td style={styles.td}>{it.item_name}</td>
                 <td style={styles.tdAmount}>{Number(it.amount).toLocaleString()}</td>
                 <td style={styles.td}>{it.bank_name || ''}</td>
-                <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>{it.account_no || ''}</td>
+                <td style={styles.td}>{it.account_no || ''}</td>
                 <td style={styles.td}>{it.account_holder || ''}</td>
                 <td style={styles.td}>{it.passbook_memo || ''}</td>
                 <td style={{ ...styles.td, color: '#718096' }}>{it.note || ''}</td>
