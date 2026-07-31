@@ -122,7 +122,7 @@ function ExpenseList({ onOpenPrint, onOpenApproval, onOpenForm, onNew, initialSt
                       <span style={{ ...styles.badge, backgroundColor: badge.bg, color: badge.tx }}>{r.status}</span>
                     </td>
                     <td style={{ ...styles.td, whiteSpace: 'nowrap' }}>
-                      {r.status === '작성중' && (
+                      {r.status !== '결재완료' && (
                         <button onClick={() => onOpenForm(r.id)} style={styles.actionBtn}>수정</button>
                       )}
                       {(r.status === '결재대기' || r.status === '결재완료') && (
