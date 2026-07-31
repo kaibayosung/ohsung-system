@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>오성철강 신규서비스 와이어프레임</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic","Segoe UI",sans-serif; background:#eef0f3; margin:0; padding:32px; color:#222; }
+  .page-title { font-size:22px; font-weight:800; color:#16283F; margin-bottom:4px; }
+  .page-sub { font-size:13px; color:#667; margin-bottom:28px; }
+  .screen-block { margin-bottom:56px; }
+  .screen-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .screen-no { width:26px;height:26px;border-radius:50%;background:#16283F;color:#fff;font-size:13px;font-weight:800;display:flex;align-items:center;justify-content:center; flex-shrink:0; }
+  .screen-name { font-size:17px; font-weight:800; color:#16283F; }
+  .screen-tag { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
+  .tag-pc { background:#E5EEF9; color:#1F5FA8; }
+  .tag-tablet { background:#FDECD6; color:#C46B06; }
+  .decisions { font-size:12px; color:#1C7A4D; margin-bottom:14px; }
+  .decisions b { background:#E2F5EA; padding:2px 6px; border-radius:4px; margin-right:4px; }
+
+  /* ---- PC frame ---- */
+  .pc-frame { width:960px; max-width:100%; background:#fff; border:1px solid #c7cdd6; border-radius:10px; box-shadow:0 2px 10px rgba(0,0,0,.06); overflow:hidden; }
+  .pc-chrome { background:#e2e6ec; padding:8px 12px; display:flex; align-items:center; gap:6px; border-bottom:1px solid #c7cdd6; }
+  .dot { width:9px;height:9px;border-radius:50%; }
+  .pc-url { margin-left:10px; background:#fff; border-radius:5px; padding:3px 10px; font-size:11px; color:#889; flex:1; }
+  .pc-body { padding:18px; }
+
+  /* ---- Tablet frame ---- */
+  .tablet-outer { display:flex; justify-content:center; }
+  .tablet-frame { width:900px; max-width:100%; background:#1b1d22; border-radius:26px; padding:16px 16px 26px; box-shadow:0 4px 18px rgba(0,0,0,.18); }
+  .tablet-screen { background:#fff; border-radius:10px; padding:20px; min-height:480px; }
+  .tablet-home { width:44px;height:5px;background:#3a3d44;border-radius:4px;margin:10px auto 0; }
+
+  /* ---- wireframe primitives ---- */
+  .wf-dash { border:1.5px dashed #a9b1bd; border-radius:8px; }
+  .wf-box  { background:#f4f6f8; border:1px solid #d5dbe3; border-radius:8px; }
+  .wf-label { font-size:11px; color:#8a93a1; font-weight:700; text-transform:uppercase; letter-spacing:.03em; margin-bottom:4px; }
+  .wf-input { border:1px solid #c7cdd6; border-radius:6px; background:#fff; padding:9px 10px; font-size:13px; color:#556; }
+  .wf-btn { border-radius:8px; padding:9px 18px; font-size:13px; font-weight:700; text-align:center; cursor:default; }
+  .btn-primary { background:#C46B06; color:#fff; }
+  .btn-ghost { background:#fff; border:1px solid #c7cdd6; color:#556; }
+  .badge { font-size:10px; font-weight:800; padding:3px 8px; border-radius:20px; display:inline-block; }
+  .badge-ai { background:#FDECD6; color:#C46B06; }
+  .badge-draft { background:#E5EEF9; color:#1F5FA8; }
+  .badge-wait { background:#FDECD6; color:#C46B06; }
+  .badge-done { background:#E2F5EA; color:#1C7A4D; }
+  .badge-taken { background:#eee; color:#999; }
+  .row { display:flex; }
+  .col { display:flex; flex-direction:column; }
+  .gap8{gap:8px} .gap10{gap:10px} .gap12{gap:12px} .gap16{gap:16px} .gap20{gap:20px}
+
+  table.wf-table { width:100%; border-collapse:collapse; font-size:12px; }
+  table.wf-table th { text-align:left; font-size:10px; color:#8a93a1; text-transform:uppercase; padding:7px 8px; border-bottom:2px solid #d5dbe3; }
+  table.wf-table td { padding:9px 8px; border-bottom:1px solid #eceff3; color:#33404f; }
+
+  .callout { position:relative; }
+  .pin { position:absolute; width:20px;height:20px;border-radius:50%; background:#1C7A4D; color:#fff; font-size:10px; font-weight:800; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 3px #fff; }
+</style>
+</head>
+<body>
+
+<div class="page-title">오성철강 신규서비스 — 와이어프레임 (v1)</div>
+<div class="page-sub">「이해관계자 검토회의(1~5차) 및 최적 프로세스 확정」에서 합의된 12개 결정사항을 반영한 저해상도 화면 설계입니다. 사무실 화면은 PC, 현장 화면은 태블릿(지게차 거치용) 기준으로 그렸습니다.</div>
+
+<!-- ================= SCREEN 1 ================= -->
+<div class="screen-block">
+  <div class="screen-head">
+    <div class="screen-no">1</div>
+    <div class="screen-name">주문접수 · 작업지시서 초안 등록</div>
+    <div class="screen-tag tag-pc">PC · 이원춘 이사</div>
+  </div>
+  <div class="decisions"><b>결정3</b>원본 팩스 이미지 대조 <b>결정5</b>거래처 직접 확인·선택</div>
+
+  <div class="pc-frame">
+    <div class="pc-chrome">
+      <div class="dot" style="background:#e0645a"></div><div class="dot" style="background:#e8b84b"></div><div class="dot" style="background:#63c368"></div>
+      <div class="pc-url">erp2.ohsung-steel.local / 작업지시서 초안 등록</div>
+    </div>
+    <div class="pc-body">
+      <div class="row gap16">
+        <!-- left: fax preview -->
+        <div class="col gap8" style="width:36%;">
+          <div class="wf-label">원본 FAX 이미지</div>
+          <div class="wf-dash callout" style="height:300px; display:flex; align-items:center; justify-content:center; color:#a9b1bd; font-size:13px;">
+            작업요청서_대한강재_0725.jpg
+            <div class="pin" style="top:-8px; left:-8px;">3</div>
+          </div>
+          <div class="row gap8">
+            <div class="wf-btn btn-ghost" style="flex:1;">🔍 확대</div>
+            <div class="wf-btn btn-ghost" style="flex:1;">↻ 회전</div>
+          </div>
+        </div>
+        <!-- right: form -->
+        <div class="col gap12" style="width:64%;">
+          <div>
+            <div class="wf-label">거래처 <span class="badge badge-ai" style="margin-left:4px;">AI 추정 · 직접 확인 필요</span></div>
+            <div class="wf-dash callout wf-input" style="display:flex; justify-content:space-between; align-items:center;">
+              거래처 검색 / 선택 (자동확정 안 됨)  <span style="color:#a9b1bd;">🔽</span>
+              <div class="pin" style="top:-8px; right:-8px;">5</div>
+            </div>
+          </div>
+          <div class="row gap12">
+            <div class="col gap8" style="flex:1;">
+              <div class="wf-label">자재 <span class="badge badge-ai" style="margin-left:4px;">OCR</span></div>
+              <div class="wf-input">SGCC 0.75T</div>
+            </div>
+            <div class="col gap8" style="flex:1;">
+              <div class="wf-label">규격</div>
+              <div class="wf-input">0.75 × 4 × C</div>
+            </div>
+          </div>
+          <div class="row gap12">
+            <div class="col gap8" style="flex:1;">
+              <div class="wf-label">중량(kg)</div>
+              <div class="wf-input">9,800</div>
+            </div>
+            <div class="col gap8" style="flex:1;">
+              <div class="wf-label">작업유형</div>
+              <div class="wf-input">슬리팅 🔽</div>
+            </div>
+            <div class="col gap8" style="flex:1;">
+              <div class="wf-label">납기일</div>
+              <div class="wf-input">2026-07-27 📅</div>
+            </div>
+          </div>
+          <div>
+            <div class="wf-label">비고</div>
+            <div class="wf-dash" style="height:52px;"></div>
+          </div>
+          <div class="row gap10" style="justify-content:flex-end; margin-top:6px;">
+            <div class="wf-btn btn-ghost">임시저장</div>
+            <div class="wf-btn btn-primary">초안 등록 →</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 2 ================= -->
+<div class="screen-block">
+  <div class="screen-head">
+    <div class="screen-no">2</div>
+    <div class="screen-name">작업지시서 초안 리스트</div>
+    <div class="screen-tag tag-pc">PC · ERP2.0 내부 (그린ERP 미반영)</div>
+  </div>
+  <div class="decisions">초안은 ERP2.0에만 존재 · 배차승인 시 지게차 기사 화면으로 전달</div>
+
+  <div class="pc-frame">
+    <div class="pc-chrome">
+      <div class="dot" style="background:#e0645a"></div><div class="dot" style="background:#e8b84b"></div><div class="dot" style="background:#63c368"></div>
+      <div class="pc-url">erp2.ohsung-steel.local / 작업지시서 초안 목록</div>
+    </div>
+    <div class="pc-body">
+      <table class="wf-table">
+        <tr><th>상태</th><th>거래처</th><th>자재</th><th>중량</th><th>납기일</th><th>접수경로</th><th></th></tr>
+        <tr><td><span class="badge badge-draft">초안</span></td><td>(주)대한강재</td><td>SGCC 0.75T</td><td>9,800kg</td><td>07-27</td><td>📠 FAX</td><td class="wf-btn btn-ghost" style="display:inline-block;">검토</td></tr>
+        <tr><td><span class="badge badge-wait">배차대기</span></td><td>청운철강</td><td>PO 1.2T</td><td>12,300kg</td><td>07-28</td><td>📠 FAX</td><td class="wf-btn btn-primary" style="display:inline-block;">배차승인</td></tr>
+        <tr><td><span class="badge badge-done">배정완료</span></td><td>원스틸</td><td>GI 0.6T</td><td>7,400kg</td><td>07-26</td><td>📠 FAX</td><td class="wf-btn btn-ghost" style="display:inline-block;">상세</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 3 (TABLET) ================= -->
+<div class="screen-block">
+  <div class="screen-head">
+    <div class="screen-no">3</div>
+    <div class="screen-name">현장 코일확정</div>
+    <div class="screen-tag tag-tablet">태블릿 · 지게차 거치 · 지게차 기사</div>
+  </div>
+  <div class="decisions"><b>결정1</b>QR없이 코일ID 선택 <b>결정6</b>요청규격 큰글씨 참고표시 <b>결정9</b>기사 이름선택으로 확정</div>
+
+  <div class="tablet-outer">
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <!-- current job card -->
+        <div class="col gap8" style="margin-bottom:16px;">
+          <div class="row" style="justify-content:space-between; align-items:center;">
+            <div style="font-size:15px; font-weight:800; color:#16283F;">청운철강 · 배차대기</div>
+            <div class="badge badge-wait">대기 2건</div>
+          </div>
+          <div class="wf-box callout" style="padding:16px; text-align:center;">
+            <div class="pin" style="top:-8px; left:-8px;">6</div>
+            <div style="font-size:11px; color:#8a93a1; font-weight:700;">요청 규격 (참고용 · 필터 아님)</div>
+            <div style="font-size:30px; font-weight:900; color:#C46B06; margin-top:4px;">PO 1.2T / 1.2 × 5 × C</div>
+          </div>
+        </div>
+
+        <!-- mode toggle, big touch buttons -->
+        <div class="row gap12" style="margin-bottom:16px;">
+          <div class="wf-btn btn-ghost callout" style="flex:1; padding:22px; font-size:16px;">📷 QR 스캔<div class="pin" style="top:-8px; right:-8px;">1</div></div>
+          <div class="wf-btn btn-primary" style="flex:1; padding:22px; font-size:16px;">🔎 코일ID 검색</div>
+        </div>
+
+        <!-- search + results, big rows -->
+        <div class="wf-input" style="margin-bottom:10px; font-size:15px; padding:14px;">코일ID 입력 / 검색 …</div>
+        <table class="wf-table" style="font-size:14px;">
+          <tr><th>코일ID</th><th>잔량</th><th>위치</th><th></th></tr>
+          <tr><td>PO-25071142</td><td>3,200kg</td><td>야드 A-3</td><td class="wf-btn btn-primary" style="display:inline-block; padding:10px 16px;">선택</td></tr>
+          <tr><td>PO-25071138</td><td>1,850kg</td><td>야드 A-1</td><td><span class="badge badge-taken">배정됨</span></td></tr>
+          <tr><td>PO-25071151</td><td>4,600kg</td><td>야드 B-2</td><td class="wf-btn btn-primary" style="display:inline-block; padding:10px 16px;">선택</td></tr>
+        </table>
+
+        <!-- driver name + confirm -->
+        <div class="row gap12" style="margin-top:16px; align-items:center;">
+          <div class="col gap8 callout" style="width:220px;">
+            <div class="wf-label">기사 이름</div>
+            <div class="wf-input" style="font-size:15px; padding:12px;">김철수 🔽
+              <div class="pin" style="top:-8px; right:-8px;">9</div>
+            </div>
+          </div>
+          <div class="wf-btn btn-primary" style="flex:1; padding:20px; font-size:17px; text-align:center;">✓ 코일 확정</div>
+        </div>
+      </div>
+      <div class="tablet-home"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SCREEN 4 ================= -->
+<div class="screen-block">
+  <div class="screen-head">
+    <div class="screen-no">4</div>
+    <div class="screen-name">라인 대시보드 — 확정코일 연동 영역 (신규)</div>
+    <div class="screen-tag tag-pc">PC/모니터 · 멜벤 (장비운용)</div>
+  </div>
+  <div class="decisions"><b>결정7</b>확정 코일정보를 슬리팅2 PLC 대시보드에 함께 표시</div>
+
+  <div class="pc-frame">
+    <div class="pc-chrome">
+      <div class="dot" style="background:#e0645a"></div><div class="dot" style="background:#e8b84b"></div><div class="dot" style="background:#63c368"></div>
+      <div class="pc-url">erp2.ohsung-steel.local / 슬리팅2 라인 대시보드</div>
+    </div>
+    <div class="pc-body">
+      <div class="row gap16">
+        <div class="col gap8" style="width:55%;">
+          <div class="wf-label">기존 설비 상태 (변경 없음)</div>
+          <div class="wf-dash" style="height:220px; display:flex; align-items:center; justify-content:center; color:#a9b1bd; font-size:13px;">
+            슬리팅2 라인 · 설비 운전현황 (기존 화면)
+          </div>
+        </div>
+        <div class="col gap8 callout" style="width:45%;">
+          <div class="wf-label">신규 — 현재 투입 예정 코일</div>
+          <div class="wf-box" style="padding:16px;">
+            <div class="pin" style="top:-8px; right:-8px;">7</div>
+            <div class="badge badge-done" style="margin-bottom:8px;">배정완료 · 지게차 확정</div>
+            <div style="font-size:16px; font-weight:800; color:#16283F;">PO-25071142</div>
+            <div style="font-size:12px; color:#556; margin-top:4px;">PO 1.2T · 3,200kg · 청운철강</div>
+            <div style="font-size:11px; color:#8a93a1; margin-top:8px;">확정: 김철수 · 14:22</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

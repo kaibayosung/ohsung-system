@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>세퍼레이터 셋팅 - 태블릿 UI 디자인</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic","Segoe UI",sans-serif; background:#eef0f3; margin:0; padding:32px; color:#222; }
+  .page-title { font-size:22px; font-weight:800; color:#16283F; margin-bottom:4px; }
+  .page-sub { font-size:13px; color:#667; margin-bottom:26px; max-width:900px; line-height:1.6; }
+  .tablet-outer { display:flex; justify-content:center; }
+  .tablet-frame { width:1040px; max-width:100%; background:#14161a; border-radius:30px; padding:20px 20px 30px; box-shadow:0 10px 30px rgba(0,0,0,.25); }
+  .tablet-screen { background:#0f1520; border-radius:14px; padding:26px; min-height:640px; }
+  .tablet-home { width:50px;height:6px;background:#3a3d44;border-radius:4px;margin:12px auto 0; }
+
+  .top-row { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:22px; flex-wrap:wrap; }
+  .coil-badge { display:flex; align-items:center; gap:14px; }
+  .coil-icon { width:56px;height:56px;border-radius:50%; background:#e8830f; display:flex; align-items:center; justify-content:center; font-size:28px; flex-shrink:0; }
+  .coil-id { font-size:26px; font-weight:900; color:#fff; }
+  .coil-sub { font-size:14px; color:#8b98ac; margin-top:2px; }
+
+  .station-tabs { display:flex; gap:12px; }
+  .station-tab { width:78px; height:78px; border-radius:50%; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:26px; font-weight:900; border:4px solid #2a3040; background:#1a2030; color:#8b98ac; cursor:pointer; }
+  .station-tab .off { font-size:12px; font-weight:800; margin-top:2px; }
+  .station-tab.active { border-color:#e8830f; background:#e8830f; color:#fff; }
+
+  .strip-card { background:#1a2030; border-radius:22px; padding:24px 26px; margin-bottom:20px; border:2px solid #262d40; }
+  .strip-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px; }
+  .qty-badge { display:flex; align-items:center; gap:12px; background:#0f1520; border-radius:16px; padding:12px 20px; }
+  .qty-icon { font-size:30px; }
+  .qty-num { font-size:34px; font-weight:900; color:#ffd166; }
+  .qty-label { font-size:13px; color:#8b98ac; }
+  .target-flag { display:flex; align-items:center; gap:8px; background:#0f1520; border-radius:16px; padding:12px 20px; }
+  .target-num { font-size:30px; font-weight:900; color:#5dd6a8; }
+
+  .stack-row { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .piece { height:64px; border-radius:10px; display:flex; align-items:center; justify-content:center;
+    font-weight:900; color:#0f1520; flex-shrink:0; position:relative; }
+  .piece.metal { background:linear-gradient(180deg,#d7dde6,#a9b3c2); border:2px solid #7c8698; }
+  .piece.plastic { background:linear-gradient(180deg,#8fc7ff,#3f8fe0); border:2px solid #2a6bb5; color:#fff; }
+  .piece .val { font-size:22px; }
+  .plus { color:#4a5468; font-size:26px; font-weight:900; }
+  .eq { color:#4a5468; font-size:26px; font-weight:900; margin:0 6px; }
+  .result-chip { display:flex; align-items:center; gap:10px; background:#0f1520; border:2px solid #5dd6a8; border-radius:14px; padding:10px 20px; }
+  .result-chip .n { font-size:28px; font-weight:900; color:#5dd6a8; }
+
+  .legend { display:flex; gap:26px; justify-content:center; margin-top:22px; padding-top:18px; border-top:1px solid #262d40; }
+  .legend-item { display:flex; align-items:center; gap:10px; }
+  .legend-swatch { width:40px; height:40px; border-radius:8px; }
+  .legend-swatch.metal { background:linear-gradient(180deg,#d7dde6,#a9b3c2); border:2px solid #7c8698; }
+  .legend-swatch.plastic { background:linear-gradient(180deg,#8fc7ff,#3f8fe0); border:2px solid #2a6bb5; }
+  .legend-text { font-size:15px; color:#c3cad8; font-weight:700; }
+
+  .warn-strip { display:flex; align-items:center; gap:10px; background:#3a1e1e; border:2px solid #a34; border-radius:14px; padding:12px 18px; margin-top:14px; }
+  .warn-icon { font-size:24px; }
+  .warn-text { color:#ff9e9e; font-size:15px; font-weight:700; }
+
+  .note-panel { max-width:1040px; margin:26px auto 0; background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:20px 24px; }
+  .note-panel h3 { font-size:16px; color:#16283F; margin:0 0 10px; }
+  .note-panel li { font-size:14px; color:#4d5c72; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<div class="page-title">세퍼레이터 셋팅 — 태블릿 UI 디자인 (외국인 근로자용)</div>
+<div class="page-sub">글자를 읽지 않아도 색과 크기, 숫자만 보고 바로 조합할 수 있게 설계했습니다. 스페이서 하나하나를 실제 두께 비율대로 막대 크기를 다르게 그려서, 눈으로 보이는 블록 크기 = 실물 스페이서 두께가 되도록 맞췄습니다. 금속(10mm 이상)은 은색, 플라스틱(10mm 미만)은 파란색으로 사진 속 실물과 동일하게 구분했습니다.</div>
+
+<div class="tablet-outer">
+  <div class="tablet-frame">
+    <div class="tablet-screen">
+
+      <div class="top-row">
+        <div class="coil-badge">
+          <div class="coil-icon">⬤</div>
+          <div>
+            <div class="coil-id">H3D262059672</div>
+            <div class="coil-sub">(주)유창 · 0.75X4XC</div>
+          </div>
+        </div>
+        <div class="station-tabs">
+          <div class="station-tab active">① <span class="off">+1</span></div>
+          <div class="station-tab">② <span class="off">-25</span></div>
+          <div class="station-tab">③ <span class="off">-25</span></div>
+        </div>
+      </div>
+
+      <!-- strip 1: 138mm x 6 -->
+      <div class="strip-card">
+        <div class="strip-head">
+          <div class="qty-badge">
+            <span class="qty-icon">⬭</span>
+            <div>
+              <div class="qty-num">×6</div>
+              <div class="qty-label">138mm 가닥</div>
+            </div>
+          </div>
+          <div class="target-flag">
+            <span class="qty-icon">🏁</span>
+            <div>
+              <div class="target-num">139</div>
+              <div class="qty-label">목표(mm)</div>
+            </div>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="piece metal" style="width:150px;"><span class="val">100</span></div>
+          <span class="plus">+</span>
+          <div class="piece metal" style="width:70px;"><span class="val">30</span></div>
+          <span class="plus">+</span>
+          <div class="piece plastic" style="width:38px;"><span class="val">9</span></div>
+          <span class="eq">=</span>
+          <div class="result-chip"><span class="n">139</span></div>
+        </div>
+      </div>
+
+      <!-- strip 2: 132mm x 2 -->
+      <div class="strip-card">
+        <div class="strip-head">
+          <div class="qty-badge">
+            <span class="qty-icon">⬭</span>
+            <div>
+              <div class="qty-num">×2</div>
+              <div class="qty-label">132mm 가닥</div>
+            </div>
+          </div>
+          <div class="target-flag">
+            <span class="qty-icon">🏁</span>
+            <div>
+              <div class="target-num">133</div>
+              <div class="qty-label">목표(mm)</div>
+            </div>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="piece metal" style="width:150px;"><span class="val">100</span></div>
+          <span class="plus">+</span>
+          <div class="piece metal" style="width:70px;"><span class="val">30</span></div>
+          <span class="plus">+</span>
+          <div class="piece plastic" style="width:22px;"><span class="val">3</span></div>
+          <span class="eq">=</span>
+          <div class="result-chip"><span class="n">133</span></div>
+        </div>
+      </div>
+
+      <!-- strip 3: 122mm x 1, with shortage warning example -->
+      <div class="strip-card">
+        <div class="strip-head">
+          <div class="qty-badge">
+            <span class="qty-icon">⬭</span>
+            <div>
+              <div class="qty-num">×1</div>
+              <div class="qty-label">122mm 가닥</div>
+            </div>
+          </div>
+          <div class="target-flag">
+            <span class="qty-icon">🏁</span>
+            <div>
+              <div class="target-num">123</div>
+              <div class="qty-label">목표(mm)</div>
+            </div>
+          </div>
+        </div>
+        <div class="stack-row">
+          <div class="piece metal" style="width:150px;"><span class="val">100</span></div>
+          <span class="plus">+</span>
+          <div class="piece metal" style="width:50px;"><span class="val">20</span></div>
+          <span class="plus">+</span>
+          <div class="piece plastic" style="width:22px;"><span class="val">3</span></div>
+          <span class="eq">=</span>
+          <div class="result-chip"><span class="n">123</span></div>
+        </div>
+        <div class="warn-strip">
+          <span class="warn-icon">⚠</span>
+          <span class="warn-text">재고부족 시 여기에 빨간 테두리로 표시 (예시)</span>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-swatch metal"></div><span class="legend-text">10mm 이상 · 금속</span></div>
+        <div class="legend-item"><div class="legend-swatch plastic"></div><span class="legend-text">10mm 미만 · 플라스틱</span></div>
+      </div>
+
+    </div>
+    <div class="tablet-home"></div>
+  </div>
+</div>
+
+<div class="note-panel">
+  <h3>디자인 포인트</h3>
+  <ul>
+    <li>블록 가로폭이 실제 mm 두께에 비례합니다 — 100mm 블록이 9mm 블록보다 훨씬 넓게, 실물 스페이서를 보는 것과 같은 느낌으로 맞췄습니다.</li>
+    <li>색상 2가지(은색=금속 / 파랑=플라스틱)만 사용해 국적과 관계없이 바로 구분되도록 했습니다.</li>
+    <li>숫자(mm, 개수)만으로 읽을 수 있게 하고, 꼭 필요한 한글 라벨은 보조 설명으로만 작게 넣었습니다.</li>
+    <li>세퍼레이터 ①·②·③은 숫자 원형 탭으로, 지금 보고 있는 스테이션이 주황색으로 크게 강조됩니다.</li>
+    <li>재고 부족 등 주의가 필요한 상황은 빨간 경고 박스 + ⚠ 아이콘으로 텍스트 없이도 인지되게 했습니다.</li>
+  </ul>
+</div>
+
+</body>
+</html>

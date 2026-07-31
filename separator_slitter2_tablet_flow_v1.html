@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>세퍼레이터 셋팅 - 슬리터2 태블릿 키오스크 흐름</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic","Segoe UI",sans-serif; background:#eef0f3; margin:0; padding:32px; color:#222; }
+  .page-title { font-size:22px; font-weight:800; color:#16283F; margin-bottom:4px; }
+  .page-sub { font-size:13px; color:#667; margin-bottom:26px; max-width:1000px; line-height:1.6; }
+  .flow-row { display:flex; gap:28px; align-items:flex-start; overflow-x:auto; padding-bottom:20px; }
+  .flow-step { flex-shrink:0; }
+  .step-label { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .step-no { width:30px;height:30px;border-radius:50%; background:#16283F; color:#fff; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .step-title { font-size:15px; font-weight:800; color:#16283F; }
+  .step-desc { font-size:12px; color:#8b98ac; margin-left:40px; margin-top:-6px; margin-bottom:10px; max-width:420px; }
+  .arrow-between { display:flex; align-items:center; justify-content:center; font-size:30px; color:#c9cfda; flex-shrink:0; align-self:center; margin-top:60px; }
+
+  .tablet-frame { width:460px; background:#14161a; border-radius:26px; padding:16px 16px 24px; box-shadow:0 10px 26px rgba(0,0,0,.22); }
+  .tablet-screen { background:#0f1520; border-radius:12px; padding:20px; min-height:680px; display:flex; flex-direction:column; }
+  .tablet-home { width:40px;height:5px;background:#3a3d44;border-radius:4px;margin:10px auto 0; }
+
+  /* Screen 1: job select */
+  .kiosk-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .kiosk-line { font-size:18px; font-weight:900; color:#fff; }
+  .sync-pill { display:flex; align-items:center; gap:6px; background:#12351f; color:#5dd6a8; border-radius:20px; padding:6px 12px; font-size:11px; font-weight:800; }
+  .job-card { background:#1a2030; border:2px solid #262d40; border-radius:16px; padding:16px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .job-card.active { border-color:#e8830f; background:#241a10; }
+  .job-coil { font-size:19px; font-weight:900; color:#fff; }
+  .job-sub { font-size:12px; color:#8b98ac; margin-top:2px; }
+  .job-chips { display:flex; gap:5px; flex-wrap:wrap; margin-top:8px; }
+  .mini-chip { background:#0f1520; color:#c3cad8; font-size:11px; font-weight:700; padding:4px 8px; border-radius:6px; }
+  .go-arrow { width:40px;height:40px;border-radius:50%; background:#e8830f; color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .status-badge { font-size:10px; font-weight:800; padding:3px 8px; border-radius:10px; display:inline-block; margin-bottom:6px; }
+  .status-new { background:#2a3040; color:#8b98ac; }
+  .status-progress { background:#123a24; color:#5dd6a8; }
+
+  /* Screen 2: setup */
+  .kiosk-top2 { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; gap:8px; }
+  .back-btn { width:40px;height:40px;border-radius:12px; background:#1a2030; color:#c3cad8; display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .coil-title { font-size:17px; font-weight:900; color:#fff; }
+  .coil-title-sub { font-size:11px; color:#8b98ac; }
+  .end-btn { background:#a34; color:#fff; font-weight:900; font-size:13px; padding:10px 16px; border-radius:12px; display:flex; align-items:center; gap:6px; flex-shrink:0; }
+
+  .spec-strip { display:flex; gap:6px; flex-wrap:wrap; background:#1a2030; border-radius:14px; padding:12px 14px; margin-bottom:14px; }
+  .spec-chip { background:#0f1520; color:#ffd166; font-weight:800; font-size:12px; padding:6px 10px; border-radius:8px; }
+
+  .station-block { background:#1a2030; border-radius:16px; padding:14px 16px; margin-bottom:10px; border:2px solid #262d40; }
+  .station-head { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .station-num { width:26px;height:26px;border-radius:50%; background:#e8830f; color:#fff; font-size:13px; font-weight:900; display:flex; align-items:center; justify-content:center; }
+  .station-name { font-size:13px; font-weight:800; color:#fff; }
+  .station-off { font-size:10px; color:#8b98ac; margin-left:auto; }
+  .mini-row { display:flex; align-items:center; gap:4px; margin-bottom:6px; flex-wrap:wrap; }
+  .mini-piece { height:28px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:11px; color:#0f1520; flex-shrink:0; }
+  .mini-piece.metal { background:#c3cad8; }
+  .mini-piece.plastic { background:#3f8fe0; color:#fff; }
+  .mini-plus { color:#4a5468; font-size:12px; font-weight:900; }
+  .mini-qty { font-size:11px; color:#8b98ac; margin-left:6px; }
+
+  /* Screen 3: end confirm */
+  .confirm-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:16px; }
+  .confirm-check { width:110px;height:110px; border-radius:50%; background:#123a24; color:#5dd6a8; font-size:60px; display:flex; align-items:center; justify-content:center; }
+  .confirm-title { font-size:22px; font-weight:900; color:#fff; }
+  .confirm-sub { font-size:13px; color:#8b98ac; }
+  .confirm-timer { font-size:12px; color:#5dd6a8; font-weight:800; margin-top:8px; }
+
+  .note-panel { max-width:1400px; margin:26px auto 0; background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:20px 24px; }
+  .note-panel h3 { font-size:16px; color:#16283F; margin:0 0 10px; }
+  .note-panel li { font-size:14px; color:#4d5c72; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<div class="page-title">세퍼레이터 셋팅 · 슬리터2 태블릿 키오스크 — 화면 흐름 디자인</div>
+<div class="page-sub">슬리터2 라인 전용 태블릿에 그대로 배포할 3단계 화면입니다. 작업지시서는 5분마다 자동으로 동기화되고, 코일(작업) 선택 → 셋팅 확인 → 작업 종료 후 다시 목록으로 돌아오는 흐름입니다. 아직 코드는 만들지 않았습니다 — 이 디자인 확인 후 개발 들어갑니다.</div>
+
+<div class="flow-row">
+
+  <div class="flow-step">
+    <div class="step-label"><div class="step-no">1</div><div class="step-title">작업(코일) 선택</div></div>
+    <div class="step-desc">슬리터2 작업지시서만 목록으로 표시. 5분마다 자동 갱신되며, 이미 진행중인 작업은 색으로 구분됩니다.</div>
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <div class="kiosk-top">
+          <div class="kiosk-line">🔧 슬리터2 · 작업 선택</div>
+          <div class="sync-pill">🔄 3분 전 동기화</div>
+        </div>
+
+        <div class="job-card active">
+          <div>
+            <span class="status-badge status-progress">진행중</span>
+            <div class="job-coil">H3D262059672</div>
+            <div class="job-sub">(주)유창 · 0.75X4XC</div>
+            <div class="job-chips">
+              <span class="mini-chip">138×6</span><span class="mini-chip">132×2</span><span class="mini-chip">122×1</span>
+            </div>
+          </div>
+          <div class="go-arrow">▶</div>
+        </div>
+
+        <div class="job-card">
+          <div>
+            <span class="status-badge status-new">대기</span>
+            <div class="job-coil">2641300211</div>
+            <div class="job-sub">(주)대한강재 · 0.40X4XC</div>
+            <div class="job-chips"><span class="mini-chip">75×16</span></div>
+          </div>
+          <div class="go-arrow">▶</div>
+        </div>
+
+        <div class="job-card">
+          <div>
+            <span class="status-badge status-new">대기</span>
+            <div class="job-coil">T162206024802</div>
+            <div class="job-sub">(주)대한강재 · 0.77X4XC</div>
+            <div class="job-chips"><span class="mini-chip">183×4</span><span class="mini-chip">200×1</span><span class="mini-chip">280×1</span></div>
+          </div>
+          <div class="go-arrow">▶</div>
+        </div>
+      </div>
+      <div class="tablet-home"></div>
+    </div>
+  </div>
+
+  <div class="arrow-between">→</div>
+
+  <div class="flow-step">
+    <div class="step-label"><div class="step-no">2</div><div class="step-title">셋팅 화면</div></div>
+    <div class="step-desc">가공지시 규격을 맨 위에, 그 아래 세퍼레이터①②③을 탭 없이 한 화면에 모두 표시합니다.</div>
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <div class="kiosk-top2">
+          <div class="back-btn">←</div>
+          <div>
+            <div class="coil-title">H3D262059672</div>
+            <div class="coil-title-sub">(주)유창 · 0.75X4XC</div>
+          </div>
+          <div class="end-btn">✓ 작업 종료</div>
+        </div>
+
+        <div class="spec-strip">
+          <span class="spec-chip">138mm×6</span><span class="spec-chip">132mm×2</span><span class="spec-chip">122mm×1</span>
+        </div>
+
+        <div class="station-block">
+          <div class="station-head"><div class="station-num">①</div><div class="station-name">세퍼레이터①</div><div class="station-off">+1</div></div>
+          <div class="mini-row"><div class="mini-piece metal" style="width:64px;">100</div><span class="mini-plus">+</span><div class="mini-piece metal" style="width:34px;">30</div><span class="mini-plus">+</span><div class="mini-piece plastic" style="width:20px;">9</div><span class="mini-qty">×6 (138mm)</span></div>
+          <div class="mini-row"><div class="mini-piece metal" style="width:64px;">100</div><span class="mini-plus">+</span><div class="mini-piece metal" style="width:34px;">30</div><span class="mini-plus">+</span><div class="mini-piece plastic" style="width:16px;">3</div><span class="mini-qty">×2 (132mm)</span></div>
+          <div class="mini-row"><div class="mini-piece metal" style="width:64px;">100</div><span class="mini-plus">+</span><div class="mini-piece metal" style="width:26px;">20</div><span class="mini-plus">+</span><div class="mini-piece plastic" style="width:16px;">3</div><span class="mini-qty">×1 (122mm)</span></div>
+        </div>
+
+        <div class="station-block">
+          <div class="station-head"><div class="station-num">②</div><div class="station-name">세퍼레이터②</div><div class="station-off">-25</div></div>
+          <div class="mini-row"><div class="mini-piece metal" style="width:64px;">100</div><span class="mini-plus">+</span><div class="mini-piece plastic" style="width:20px;">7</div><span class="mini-qty">×6 (138mm)</span></div>
+          <div class="mini-row"><div class="mini-piece metal" style="width:64px;">100</div><span class="mini-plus">+</span><div class="mini-piece plastic" style="width:20px;">7</div><span class="mini-qty">×2 (132mm)</span></div>
+          <div class="mini-row"><div class="mini-piece metal" style="width:58px;">90</div><span class="mini-plus">+</span><div class="mini-piece plastic" style="width:20px;">7</div><span class="mini-qty">×1 (122mm)</span></div>
+        </div>
+
+        <div class="station-block">
+          <div class="station-head"><div class="station-num">③</div><div class="station-name">세퍼레이터③</div><div class="station-off">-25</div></div>
+          <div class="mini-row" style="opacity:.65;"><span class="mini-qty" style="margin-left:0;">②와 동일 규격 — 같은 조합 그대로 사용</span></div>
+        </div>
+      </div>
+      <div class="tablet-home"></div>
+    </div>
+  </div>
+
+  <div class="arrow-between">→</div>
+
+  <div class="flow-step">
+    <div class="step-label"><div class="step-no">3</div><div class="step-title">작업 종료</div></div>
+    <div class="step-desc">"작업 종료" 탭 시 확인 화면이 잠깐 뜨고, 자동으로 1번 목록 화면으로 돌아갑니다.</div>
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <div class="confirm-wrap">
+          <div class="confirm-check">✓</div>
+          <div class="confirm-title">작업 종료</div>
+          <div class="confirm-sub">H3D262059672 셋팅을 마쳤습니다</div>
+          <div class="confirm-timer">2초 후 작업 목록으로 이동합니다</div>
+        </div>
+      </div>
+      <div class="tablet-home"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note-panel">
+  <h3>이 디자인의 전제 (확인해주세요)</h3>
+  <ul>
+    <li>대상 라인: 슬리터2 한정 (work_type = SLITING2 작업지시서만 목록에 표시)</li>
+    <li>목록은 5분마다 자동으로 새로 불러옵니다 — 화면 상단 "🔄 N분 전 동기화" 표시로 상태를 알 수 있습니다.</li>
+    <li>3화면 흐름: ① 작업 선택 → ② 규격+세퍼레이터①②③ 셋팅 한 화면에 표시 → ③ 작업 종료 시 확인 후 자동으로 ①로 복귀</li>
+    <li>세퍼레이터②·③은 보정값이 같아 조합도 항상 같습니다 — ③ 화면은 "②와 동일" 안내만 보여주고 반복 표시하지 않습니다.</li>
+    <li>태블릿에 로그인 없이 바로 뜨는 화면으로 만들지, 최초 1회만 로그인하고 계속 유지되게 할지는 개발 시작 전에 한 가지 정해주셔야 합니다.</li>
+  </ul>
+</div>
+
+</body>
+</html>

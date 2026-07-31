@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import ExpenseDashboard from '../components/expense/ExpenseDashboard';
 import ExpenseList from '../components/expense/ExpenseList';
 import ExpenseForm from '../components/expense/ExpenseForm';
+import ExpenseDraftUpload from '../components/expense/ExpenseDraftUpload';
 import RecurringDraft from '../components/expense/RecurringDraft';
 import ExpensePrint from '../components/expense/ExpensePrint';
 import ExpenseApproval from '../components/expense/ExpenseApproval';
@@ -13,6 +14,7 @@ const TABS = [
   { key: 'dashboard', label: '대시보드' },
   { key: 'list', label: '목록' },
   { key: 'form', label: '작성' },
+  { key: 'upload', label: 'AI 초안 업로드' },
   { key: 'recurring', label: '정기초안' },
   { key: 'print', label: '출력 · 결재함' },
   { key: 'approval', label: '결재완료 처리' },
@@ -68,6 +70,9 @@ function ExpensePage() {
             onSaved={(id) => goToPrint(id)}
             onCancel={() => setTab('list')}
           />
+        )}
+        {tab === 'upload' && (
+          <ExpenseDraftUpload onDraftSaved={goToForm} />
         )}
         {tab === 'recurring' && (
           <RecurringDraft onOpenForm={goToForm} />

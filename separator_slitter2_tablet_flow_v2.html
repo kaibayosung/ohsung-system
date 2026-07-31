@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>세퍼레이터 셋팅 - 슬리터2 태블릿 (가로형 · 큰글씨)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: "Malgun Gothic","Segoe UI",sans-serif; background:#eef0f3; margin:0; padding:32px; color:#222; }
+  .page-title { font-size:22px; font-weight:800; color:#16283F; margin-bottom:4px; }
+  .page-sub { font-size:13px; color:#667; margin-bottom:26px; max-width:1100px; line-height:1.6; }
+  .flow-row { display:flex; gap:32px; align-items:flex-start; flex-wrap:wrap; }
+  .flow-step { flex-shrink:0; }
+  .step-label { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .step-no { width:30px;height:30px;border-radius:50%; background:#16283F; color:#fff; font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .step-title { font-size:15px; font-weight:800; color:#16283F; }
+  .step-desc { font-size:12px; color:#8b98ac; margin-left:40px; margin-top:-6px; margin-bottom:10px; max-width:640px; }
+
+  /* 가로형 태블릿 프레임 */
+  .tablet-frame { width:1180px; max-width:100%; background:#111; border-radius:24px; padding:14px; box-shadow:0 10px 30px rgba(0,0,0,.22); }
+  .tablet-screen { background:#eef0f3; border-radius:12px; padding:26px 30px; min-height:660px; }
+
+  .info-row { background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(20,30,50,.06); margin-bottom:14px; }
+  .info-row.split3 { display:flex; }
+  .info-col { flex:1; padding:20px 26px; text-align:center; }
+  .info-col + .info-col { border-left:2px solid #eef0f3; }
+  .info-label { font-size:16px; color:#98a2b3; font-weight:700; margin-bottom:8px; }
+  .info-value { font-size:38px; font-weight:900; color:#1c2b3f; }
+  .info-value.mono { letter-spacing:0.5px; }
+
+  .info-row.single { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; }
+  .single .info-label { margin-bottom:0; font-size:18px; }
+  .single .info-value { font-size:34px; }
+
+  .btn-footer { display:flex; gap:16px; margin-top:18px; }
+  .btn-big { flex:1; text-align:center; padding:26px; border-radius:16px; font-size:30px; font-weight:900; }
+  .btn-outline { background:#fff; border:3px solid #d7dce4; color:#4d5c72; }
+  .btn-solid { background:#1b2f52; color:#fff; }
+
+  /* job select screen */
+  .job-list { display:flex; flex-direction:column; gap:14px; }
+  .job-row { background:#fff; border-radius:18px; box-shadow:0 2px 8px rgba(20,30,50,.06); padding:20px 28px; display:flex; align-items:center; gap:26px; border:3px solid transparent; }
+  .job-row.progress { border-color:#5dd6a8; background:#f2fbf6; }
+  .job-col { }
+  .job-col.coil { flex:1.3; }
+  .job-col.company { flex:1.2; }
+  .job-col.weight { flex:0.8; text-align:right; }
+  .job-col.spec { flex:1.6; }
+  .job-label { font-size:14px; color:#98a2b3; font-weight:700; margin-bottom:4px; }
+  .job-value { font-size:30px; font-weight:900; color:#1c2b3f; }
+  .job-value.small { font-size:22px; }
+  .status-tag { font-size:14px; font-weight:800; padding:4px 12px; border-radius:10px; display:inline-block; margin-bottom:4px; }
+  .status-tag.progress { background:#dff7ea; color:#1c7a4d; }
+  .status-tag.wait { background:#eef0f3; color:#8b98ac; }
+  .go-arrow-big { width:56px; height:56px; border-radius:50%; background:#e8830f; color:#fff; font-size:26px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .top-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
+  .top-bar-title { font-size:26px; font-weight:900; color:#16283F; }
+  .sync-pill-big { background:#dff7ea; color:#1c7a4d; font-weight:800; font-size:16px; padding:8px 16px; border-radius:20px; }
+
+  /* setup screen: 3-column stations */
+  .station-grid { display:flex; gap:14px; margin-top:4px; }
+  .station-col { flex:1; background:#fff; border-radius:16px; box-shadow:0 2px 8px rgba(20,30,50,.06); padding:18px 18px 20px; }
+  .station-col-head { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:12px; border-bottom:2px solid #eef0f3; }
+  .station-badge { width:42px;height:42px;border-radius:50%; background:#e8830f; color:#fff; font-size:20px; font-weight:900; display:flex; align-items:center; justify-content:center; }
+  .station-name-big { font-size:20px; font-weight:900; color:#1c2b3f; }
+  .station-off-big { font-size:14px; color:#98a2b3; font-weight:800; margin-left:auto; }
+  .combo-block { background:#f6f7f9; border-radius:12px; padding:12px 14px; margin-bottom:10px; }
+  .combo-qty { font-size:16px; font-weight:900; color:#e8830f; margin-bottom:6px; }
+  .combo-pieces { display:flex; align-items:center; gap:4px; flex-wrap:wrap; }
+  .piece-big { height:38px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:16px; color:#1c2b3f; flex-shrink:0; }
+  .piece-big.metal { background:#d7dce4; }
+  .piece-big.plastic { background:#3f8fe0; color:#fff; }
+  .plus-sm { color:#98a2b3; font-weight:900; font-size:16px; }
+  .same-note { font-size:16px; color:#98a2b3; font-weight:700; text-align:center; padding:30px 10px; }
+
+  .note-panel { max-width:1400px; margin:26px auto 0; background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:20px 24px; }
+  .note-panel h3 { font-size:16px; color:#16283F; margin:0 0 10px; }
+  .note-panel li { font-size:14px; color:#4d5c72; line-height:1.8; }
+</style>
+</head>
+<body>
+
+<div class="page-title">세퍼레이터 셋팅 · 슬리터2 태블릿 — 가로형 · 큰글씨 (v2)</div>
+<div class="page-sub">보내주신 PAD 모니터 화면(코일번호·회사명·중량 카드 스타일)에 맞춰 다시 그렸습니다. 가로 방향, 훨씬 큰 글씨, 하단 버튼은 "작업 선택으로 돌아가기" / "작업완료" 2개로 구성했습니다. "작업 선택으로 돌아가기"를 누르면 바로 ①번 목록 화면으로 이동합니다 (중간 확인화면 없이 즉시 전환).</div>
+
+<div class="flow-row">
+
+  <div class="flow-step">
+    <div class="step-label"><div class="step-no">1</div><div class="step-title">작업(코일) 선택 — 가로형</div></div>
+    <div class="step-desc">슬리터2 작업지시서 목록. 진행중인 작업은 초록 테두리로 표시됩니다.</div>
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <div class="top-bar">
+          <div class="top-bar-title">🔧 슬리터2 · 작업 선택</div>
+          <div class="sync-pill-big">🔄 3분 전 동기화</div>
+        </div>
+        <div class="job-list">
+          <div class="job-row progress">
+            <div class="job-col coil">
+              <div class="status-tag progress">진행중</div>
+              <div class="job-label">코일번호</div>
+              <div class="job-value">H3D262059672</div>
+            </div>
+            <div class="job-col company">
+              <div class="job-label">회사명</div>
+              <div class="job-value">(주)유창</div>
+            </div>
+            <div class="job-col spec">
+              <div class="job-label">가공규격</div>
+              <div class="job-value small">138=6, 132=2, 122=1</div>
+            </div>
+            <div class="job-col weight">
+              <div class="job-label">중량</div>
+              <div class="job-value">9,925</div>
+            </div>
+            <div class="go-arrow-big">▶</div>
+          </div>
+          <div class="job-row">
+            <div class="job-col coil">
+              <div class="status-tag wait">대기</div>
+              <div class="job-label">코일번호</div>
+              <div class="job-value">2641101011</div>
+            </div>
+            <div class="job-col company">
+              <div class="job-label">회사명</div>
+              <div class="job-value">(주)대한강재</div>
+            </div>
+            <div class="job-col spec">
+              <div class="job-label">가공규격</div>
+              <div class="job-value small">91=12, 119=1</div>
+            </div>
+            <div class="job-col weight">
+              <div class="job-label">중량</div>
+              <div class="job-value">10,930</div>
+            </div>
+            <div class="go-arrow-big">▶</div>
+          </div>
+          <div class="job-row">
+            <div class="job-col coil">
+              <div class="status-tag wait">대기</div>
+              <div class="job-label">코일번호</div>
+              <div class="job-value">T162206024802</div>
+            </div>
+            <div class="job-col company">
+              <div class="job-label">회사명</div>
+              <div class="job-value">(주)대한강재</div>
+            </div>
+            <div class="job-col spec">
+              <div class="job-label">가공규격</div>
+              <div class="job-value small">183=4, 200=1, 280=1</div>
+            </div>
+            <div class="job-col weight">
+              <div class="job-label">중량</div>
+              <div class="job-value">10,120</div>
+            </div>
+            <div class="go-arrow-big">▶</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="flow-row" style="margin-top:36px;">
+
+  <div class="flow-step">
+    <div class="step-label"><div class="step-no">2</div><div class="step-title">셋팅 화면 — 가로형 (세퍼레이터①②③ 나란히)</div></div>
+    <div class="step-desc">위쪽 카드는 보내주신 PAD 모니터와 동일한 스타일입니다. 세퍼레이터 3개를 세로로 쌓지 않고 가로 3칸으로 나란히 배치해 글씨를 더 크게 키울 수 있었습니다. ②·③은 조합이 항상 같아 ③칸에는 "②와 동일"만 크게 표시합니다.</div>
+    <div class="tablet-frame">
+      <div class="tablet-screen">
+        <div class="info-row split3">
+          <div class="info-col">
+            <div class="info-label">코일번호</div>
+            <div class="info-value mono">H3D262059672</div>
+          </div>
+          <div class="info-col">
+            <div class="info-label">회사명</div>
+            <div class="info-value">(주)유창</div>
+          </div>
+          <div class="info-col">
+            <div class="info-label">중량</div>
+            <div class="info-value">9,925</div>
+          </div>
+        </div>
+        <div class="info-row single">
+          <div class="info-label">가공규격</div>
+          <div class="info-value">138=6, 132=2, 122=1</div>
+        </div>
+
+        <div class="station-grid">
+          <div class="station-col">
+            <div class="station-col-head">
+              <div class="station-badge">①</div>
+              <div class="station-name-big">세퍼레이터①</div>
+              <div class="station-off-big">+1</div>
+            </div>
+            <div class="combo-block">
+              <div class="combo-qty">138mm × 6</div>
+              <div class="combo-pieces">
+                <div class="piece-big metal" style="width:74px;">100</div><span class="plus-sm">+</span>
+                <div class="piece-big metal" style="width:40px;">30</div><span class="plus-sm">+</span>
+                <div class="piece-big plastic" style="width:24px;">9</div>
+              </div>
+            </div>
+            <div class="combo-block">
+              <div class="combo-qty">132mm × 2</div>
+              <div class="combo-pieces">
+                <div class="piece-big metal" style="width:74px;">100</div><span class="plus-sm">+</span>
+                <div class="piece-big metal" style="width:40px;">30</div><span class="plus-sm">+</span>
+                <div class="piece-big plastic" style="width:20px;">3</div>
+              </div>
+            </div>
+            <div class="combo-block">
+              <div class="combo-qty">122mm × 1</div>
+              <div class="combo-pieces">
+                <div class="piece-big metal" style="width:74px;">100</div><span class="plus-sm">+</span>
+                <div class="piece-big metal" style="width:30px;">20</div><span class="plus-sm">+</span>
+                <div class="piece-big plastic" style="width:20px;">3</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="station-col">
+            <div class="station-col-head">
+              <div class="station-badge">②</div>
+              <div class="station-name-big">세퍼레이터②</div>
+              <div class="station-off-big">-25</div>
+            </div>
+            <div class="combo-block">
+              <div class="combo-qty">138mm × 6</div>
+              <div class="combo-pieces">
+                <div class="piece-big metal" style="width:74px;">100</div><span class="plus-sm">+</span>
+                <div class="piece-big plastic" style="width:20px;">7</div>
+              </div>
+            </div>
+            <div class="combo-block">
+              <div class="combo-qty">132mm × 2</div>
+              <div class="combo-pieces">
+                <div class="piece-big metal" style="width:74px;">100</div><span class="plus-sm">+</span>
+                <div class="piece-big plastic" style="width:20px;">7</div>
+              </div>
+            </div>
+            <div class="combo-block">
+              <div class="combo-qty">122mm × 1</div>
+              <div class="combo-pieces">
+                <div class="piece-big metal" style="width:66px;">90</div><span class="plus-sm">+</span>
+                <div class="piece-big plastic" style="width:20px;">7</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="station-col">
+            <div class="station-col-head">
+              <div class="station-badge">③</div>
+              <div class="station-name-big">세퍼레이터③</div>
+              <div class="station-off-big">-25</div>
+            </div>
+            <div class="same-note">②와<br>동일 규격</div>
+          </div>
+        </div>
+
+        <div class="btn-footer">
+          <div class="btn-big btn-outline">작업 선택으로 돌아가기</div>
+          <div class="btn-big btn-solid">작업완료</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note-panel">
+  <h3>바뀐 점</h3>
+  <ul>
+    <li>가로형 태블릿 프레임으로 변경, 값 글씨를 30~38px 수준으로 크게 키웠습니다.</li>
+    <li>PAD 모니터와 같은 흰색 카드 + 큰 숫자 스타일을 그대로 적용했습니다.</li>
+    <li>세퍼레이터①②③을 세로로 쌓지 않고 가로 3칸으로 배치 — 화면 스크롤 없이 한눈에 들어오고 글씨도 더 크게 쓸 수 있습니다.</li>
+    <li>하단 버튼을 "작업 선택으로 돌아가기"(테두리) / "작업완료"(남색) 2개로 구성 — 왼쪽은 언제든 목록으로 즉시 이동, 오른쪽은 작업 완료 처리용입니다. 중간 확인화면은 없앴습니다.</li>
+  </ul>
+</div>
+
+</body>
+</html>
