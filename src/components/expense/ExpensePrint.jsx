@@ -71,20 +71,18 @@ function ExpensePrint({ requestId, onBack }) {
         <table style={styles.itemTable} className="expense-print-table">
           <colgroup>
             <col style={{ width: '3%' }} />
-            <col style={{ width: '9%' }} />
-            <col style={{ width: '7%' }} />
+            <col style={{ width: '11%' }} />
             <col style={{ width: '10%' }} />
             <col style={{ width: '8%' }} />
             <col style={{ width: '17%' }} />
             <col style={{ width: '11%' }} />
             <col style={{ width: '9%' }} />
-            <col style={{ width: '26%' }} />
+            <col style={{ width: '31%' }} />
           </colgroup>
           <thead>
             <tr>
               <th style={styles.th}>NO</th>
               <th style={styles.th}>거래처</th>
-              <th style={styles.th}>품목</th>
               <th style={styles.thAmount}>금액</th>
               <th style={styles.th} className="expense-print-tight">입금은행</th>
               <th style={styles.th} className="expense-print-tight">계좌번호</th>
@@ -98,7 +96,6 @@ function ExpensePrint({ requestId, onBack }) {
               <tr key={it.id} style={idx % 2 === 1 ? styles.trEven : undefined}>
                 <td style={{ ...styles.td, textAlign: 'center', color: '#718096' }}>{it.line_no}</td>
                 <td style={styles.td}>{it.vendor_name}</td>
-                <td style={styles.td}>{it.item_name}</td>
                 <td style={styles.tdAmount}>{Number(it.amount).toLocaleString()}</td>
                 <td style={styles.td} className="expense-print-tight">{it.bank_name || ''}</td>
                 <td style={styles.td} className="expense-print-tight">{it.account_no || ''}</td>
@@ -108,7 +105,7 @@ function ExpensePrint({ requestId, onBack }) {
               </tr>
             ))}
             <tr>
-              <td colSpan={3} style={{ ...styles.td, textAlign: 'right', fontWeight: 700, backgroundColor: '#f7fafc' }}>합계</td>
+              <td colSpan={2} style={{ ...styles.td, textAlign: 'right', fontWeight: 700, backgroundColor: '#f7fafc' }}>합계</td>
               <td style={{ ...styles.tdAmount, fontWeight: 700 }}>{total.toLocaleString()}</td>
               <td colSpan={5} style={{ ...styles.td, backgroundColor: '#f7fafc' }}></td>
             </tr>
@@ -150,6 +147,8 @@ function ExpensePrint({ requestId, onBack }) {
             font-size: 12px !important;
             padding: 6px 4px !important;
             white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
           }
           .expense-print-table tr {
             page-break-inside: avoid !important;
