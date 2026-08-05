@@ -29,7 +29,7 @@ Vercel이 지금 자동으로 해주는 4가지를 각각 무엇으로 대체하
 
 ## 3. Cloudflare Tunnel (외부 접속 + 자동 HTTPS)
 
-사용 도메인: **osungsteel.co.kr** (닷네임코리아 등록, 만료 2028-09-03) — 서브도메인 **erp.osungsteel.co.kr**로 서비스를 노출하는 걸 추천드립니다(루트 도메인은 나중에 회사 홈페이지 등 다른 용도로 남겨둘 수 있게).
+사용 도메인: **osungsteel.co.kr** (닷네임코리아 등록, 만료 2028-09-03) — 서브도메인 **smart.osungsteel.co.kr**로 서비스를 노출하는 걸 추천드립니다(루트 도메인은 나중에 회사 홈페이지 등 다른 용도로 남겨둘 수 있게).
 
 ### 3-1. 도메인을 Cloudflare로 연결 (최초 1회, 닷네임코리아 쪽 작업)
 
@@ -46,11 +46,11 @@ Vercel이 지금 자동으로 해주는 4가지를 각각 무엇으로 대체하
 1. `winget install --id Cloudflare.cloudflared`
 2. `cloudflared tunnel login` (브라우저 열려서 Cloudflare 계정으로 로그인 + osungsteel.co.kr 권한 부여)
 3. `cloudflared tunnel create ohsung-system`
-4. `cloudflared tunnel route dns ohsung-system erp.osungsteel.co.kr`
+4. `cloudflared tunnel route dns ohsung-system smart.osungsteel.co.kr`
 5. 설정파일(`config.yml`)에 `service: http://localhost:8080` 지정 (아래 예시 참고)
 6. `cloudflared service install` 로 Windows 서비스 등록 → 상시 가동
 
-이 단계까지 마치면 `erp.osungsteel.co.kr` 접속 시 자동으로 Cloudflare가 발급한 인증서로 HTTPS 처리되고, 실제 트래픽은 터널을 통해 192.168.0.9로만 전달됩니다 — 공유기에서 포트를 열 필요가 없습니다.
+이 단계까지 마치면 `smart.osungsteel.co.kr` 접속 시 자동으로 Cloudflare가 발급한 인증서로 HTTPS 처리되고, 실제 트래픽은 터널을 통해 192.168.0.9로만 전달됩니다 — 공유기에서 포트를 열 필요가 없습니다.
 
 `config.yml` 예시 (보통 `C:\Users\<사용자>\.cloudflared\config.yml`):
 
@@ -59,12 +59,12 @@ tunnel: ohsung-system
 credentials-file: C:\Users\<사용자>\.cloudflared\<tunnel-id>.json
 
 ingress:
-  - hostname: erp.osungsteel.co.kr
+  - hostname: smart.osungsteel.co.kr
     service: http://localhost:8080
   - service: http_status:404
 ```
 
-메인 앱(`/`), 고객사 포탈(`/portal`), 세퍼레이터(`/separator`)가 전부 nginx 하나(8080 포트) 뒤에 있으므로, 이 설정 하나로 세 화면 다 `erp.osungsteel.co.kr` 아래에서 외부 접속이 됩니다. 지금 Vercel에서 쓰시던 `ohsung-system.vercel.app` 대신 새 도메인으로 바뀌는 셈이라, 거래처에 전달한 포탈 링크가 있다면 갱신이 필요합니다.
+메인 앱(`/`), 고객사 포탈(`/portal`), 세퍼레이터(`/separator`)가 전부 nginx 하나(8080 포트) 뒤에 있으므로, 이 설정 하나로 세 화면 다 `smart.osungsteel.co.kr` 아래에서 외부 접속이 됩니다. 지금 Vercel에서 쓰시던 `ohsung-system.vercel.app` 대신 새 도메인으로 바뀌는 셈이라, 거래처에 전달한 포탈 링크가 있다면 갱신이 필요합니다.
 
 ## 고객사 포탈처럼 외부 사용자가 접속할 경우 추가로 고려할 점
 
