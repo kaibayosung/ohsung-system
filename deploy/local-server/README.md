@@ -41,6 +41,29 @@ Vercel이 지금 자동으로 해주는 4가지를 각각 무엇으로 대체하
 
 이 단계까지 마치면 `erp.오성철강도메인.com` 접속 시 자동으로 Cloudflare가 발급한 인증서로 HTTPS 처리되고, 실제 트래픽은 터널을 통해 192.168.0.9로만 전달됩니다 — 공유기에서 포트를 열 필요가 없습니다.
 
+`config.yml` 예시 (보통 `C:\Users\<사용자>\.cloudflared\config.yml`):
+
+```yaml
+tunnel: ohsung-system
+credentials-file: C:\Users\<사용자>\.cloudflared\<tunnel-id>.json
+
+ingress:
+  - hostname: erp.오성철강도메인.com
+    service: http://localhost:8080
+  - service: http_status:404
+```
+
+메인 앱(`/`), 고객사 포탈(`/portal`), 세퍼레이터(`/separator`)가 전부 nginx 하나(8080 포트) 뒤에 있으므로, 이 설정 하나로 세 화면 다 같은 도메인 아래에서 외부 접속이 됩니다. 지금 Vercel에서 쓰시던 `ohsung-system.vercel.app` 대신 새 도메인으로 바뀌는 셈이라, 거래처에 전달한 포탈 링크가 있다면 갱신이 필요합니다.
+
+## 고객사 포탈처럼 외부 사용자가 접속할 경우 추가로 고려할 점
+
+내부 직원만 쓰는 화면과 달리 거래처가 접속하는 서비스라서 신뢰성·보안 기준이 한 단계 올라갑니다.
+
+- **가동 안정성**: PC 재부팅, 정전, 공유기 재시작, 인터넷 회선 장애 중 하나만 발생해도 거래처가 포탈에 못 들어갑니다. UPS는 필수에 가깝고, PC 자동 재부팅 시 nginx·cloudflared가 자동으로 다시 뜨도록 반드시 Windows 서비스로 등록해두어야 합니다(수동 실행 금지).
+- **Cloudflare가 앞단 방어막 역할**: 터널을 쓰면 Cloudflare의 기본 DDoS 방어가 자동 적용되고, 필요시 무료 WAF 규칙도 추가할 수 있습니다 — 포트를 직접 여는 것보다 안전합니다.
+- **RLS는 이미 되어 있음**: `customer_users`/`is_my_company()` 기반 행 단위 접근 제어는 Supabase 쪽에 이미 구현되어 있어서, 호스팅 위치가 바뀌어도(Vercel→로컬) 데이터 접근 권한 자체는 그대로 안전합니다.
+- **도메인**: 거래처에 신뢰감을 주려면 `*.trycloudflare.com` 같은 임시 주소보다는 정식 도메인(회사 도메인의 서브도메인)을 쓰는 걸 권해드립니다.
+
 ## 참고 — Vercel과 완전히 같지는 않은 부분
 
 - **글로벌 CDN**: Vercel은 전 세계 엣지에서 서빙하지만, 여기는 물리적으로 한 대의 PC입니다. 사내/국내 사용자 위주라면 체감 차이는 거의 없습니다.
