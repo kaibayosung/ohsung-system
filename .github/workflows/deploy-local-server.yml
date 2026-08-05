@@ -1,0 +1,35 @@
+name: Deploy to local server (192.168.0.9)
+
+# Vercel과 동일하게 "main에 push되면 자동 배포"를 재현합니다.
+# 단, 이 워크플로우는 GitHub이 아니라 192.168.0.9 PC 자체에서 실행됩니다
+# (self-hosted runner). 즉 192.168.0.9가 인터넷에 열려 있을 필요가 없고,
+# 그 PC가 GitHub에 "새 커밋 있는지" 폴링하는 방식입니다.
+#
+# 사전 준비 (192.168.0.9에서 1회):
+#   GitHub 저장소 > Settings > Actions > Runners > New self-hosted runner
+#   안내대로 config.cmd 실행 후 run.cmd (또는 서비스로 등록: ./svc.sh install)
+#   러너 이름/라벨을 ohsung-local 로 지정
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, ohsung-local]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      # dist 폴더가 그대로 nginx root이므로, 빌드 완료 = 배포 완료.
+      # 빌드 도중 절반만 반영된 파일이 서빙되는 걸 막고 싶으면
+      # dist_new 로 빌드 후 폴더를 원자적으로 교체하는 방식으로 바꿀 수 있습니다.
+      - name: Done
+        run: echo "빌드 완료 - nginx가 dist/ 를 그대로 서빙하므로 별도 재시작 불필요"
