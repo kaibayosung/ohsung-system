@@ -29,17 +29,28 @@ Vercel이 지금 자동으로 해주는 4가지를 각각 무엇으로 대체하
 
 ## 3. Cloudflare Tunnel (외부 접속 + 자동 HTTPS)
 
-포트포워딩 없이, 공유기 설정을 건드리지 않고 외부에서 접속 가능한 HTTPS 주소를 만드는 가장 안전한 방법입니다. 도메인이 있으면 그 도메인을, 없으면 무료 `*.trycloudflare.com` 주소를 임시로 쓸 수 있습니다.
+사용 도메인: **osungsteel.co.kr** (닷네임코리아 등록, 만료 2028-09-03) — 서브도메인 **erp.osungsteel.co.kr**로 서비스를 노출하는 걸 추천드립니다(루트 도메인은 나중에 회사 홈페이지 등 다른 용도로 남겨둘 수 있게).
 
-1. Cloudflare 계정 필요 (도메인을 Cloudflare로 옮겨두는 게 정식 경로입니다. 도메인이 없다면 이 단계는 나중에 진행하고 사내망 안에서만(`192.168.0.9:8080`) 우선 써보셔도 됩니다.)
-2. `winget install --id Cloudflare.cloudflared` (또는 공식 사이트에서 exe 다운로드)
-3. `cloudflared tunnel login`
-4. `cloudflared tunnel create ohsung-system`
-5. `cloudflared tunnel route dns ohsung-system erp.오성철강도메인.com` (원하는 서브도메인)
-6. 설정파일(`config.yml`)에 `service: http://localhost:8080` 지정
-7. `cloudflared service install` 로 Windows 서비스 등록 → 상시 가동
+### 3-1. 도메인을 Cloudflare로 연결 (최초 1회, 닷네임코리아 쪽 작업)
 
-이 단계까지 마치면 `erp.오성철강도메인.com` 접속 시 자동으로 Cloudflare가 발급한 인증서로 HTTPS 처리되고, 실제 트래픽은 터널을 통해 192.168.0.9로만 전달됩니다 — 공유기에서 포트를 열 필요가 없습니다.
+⚠️ 먼저 닷네임코리아 관리자 페이지의 **DNS 레코드 설정** 메뉴에 들어가서 지금 등록된 레코드(특히 회사 이메일을 쓰고 계시면 MX 레코드)를 캡처해두세요. Cloudflare가 대부분 자동으로 스캔해서 가져오지만, 스캔 후에도 꼭 대조 확인이 필요합니다 — 여기서 놓치면 이메일이 갑자기 안 들어올 수 있습니다.
+
+1. https://dash.cloudflare.com 가입(무료) → "Add a site" → `osungsteel.co.kr` 입력
+2. Cloudflare가 기존 DNS 레코드를 자동 스캔 → 위에서 캡처해둔 레코드와 대조해서 빠진 게 없는지 확인
+3. Cloudflare가 네임서버 2개를 알려줍니다 (예: `xxx.ns.cloudflare.com`, `yyy.ns.cloudflare.com`)
+4. 닷네임코리아 관리자 페이지 왼쪽 메뉴의 **"네임서버 변경"**(스크린샷에 보이는 그 메뉴)에 들어가서 기존 네임서버를 Cloudflare가 알려준 2개로 교체
+5. 보통 몇 시간~1일 내 전파되고, Cloudflare가 활성화되면 이메일로 알려줍니다
+
+### 3-2. Tunnel 생성 (192.168.0.9에서, Claude Code로 진행 가능)
+
+1. `winget install --id Cloudflare.cloudflared`
+2. `cloudflared tunnel login` (브라우저 열려서 Cloudflare 계정으로 로그인 + osungsteel.co.kr 권한 부여)
+3. `cloudflared tunnel create ohsung-system`
+4. `cloudflared tunnel route dns ohsung-system erp.osungsteel.co.kr`
+5. 설정파일(`config.yml`)에 `service: http://localhost:8080` 지정 (아래 예시 참고)
+6. `cloudflared service install` 로 Windows 서비스 등록 → 상시 가동
+
+이 단계까지 마치면 `erp.osungsteel.co.kr` 접속 시 자동으로 Cloudflare가 발급한 인증서로 HTTPS 처리되고, 실제 트래픽은 터널을 통해 192.168.0.9로만 전달됩니다 — 공유기에서 포트를 열 필요가 없습니다.
 
 `config.yml` 예시 (보통 `C:\Users\<사용자>\.cloudflared\config.yml`):
 
@@ -48,12 +59,12 @@ tunnel: ohsung-system
 credentials-file: C:\Users\<사용자>\.cloudflared\<tunnel-id>.json
 
 ingress:
-  - hostname: erp.오성철강도메인.com
+  - hostname: erp.osungsteel.co.kr
     service: http://localhost:8080
   - service: http_status:404
 ```
 
-메인 앱(`/`), 고객사 포탈(`/portal`), 세퍼레이터(`/separator`)가 전부 nginx 하나(8080 포트) 뒤에 있으므로, 이 설정 하나로 세 화면 다 같은 도메인 아래에서 외부 접속이 됩니다. 지금 Vercel에서 쓰시던 `ohsung-system.vercel.app` 대신 새 도메인으로 바뀌는 셈이라, 거래처에 전달한 포탈 링크가 있다면 갱신이 필요합니다.
+메인 앱(`/`), 고객사 포탈(`/portal`), 세퍼레이터(`/separator`)가 전부 nginx 하나(8080 포트) 뒤에 있으므로, 이 설정 하나로 세 화면 다 `erp.osungsteel.co.kr` 아래에서 외부 접속이 됩니다. 지금 Vercel에서 쓰시던 `ohsung-system.vercel.app` 대신 새 도메인으로 바뀌는 셈이라, 거래처에 전달한 포탈 링크가 있다면 갱신이 필요합니다.
 
 ## 고객사 포탈처럼 외부 사용자가 접속할 경우 추가로 고려할 점
 
