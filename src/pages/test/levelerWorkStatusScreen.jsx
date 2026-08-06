@@ -11,8 +11,9 @@
 // upsert+정리하고 그 밖은 건드리지 않음), 동기화가 시작된 이후 날짜는 전부 조회할 수 있습니다.
 // 다만 배포 시점(2026-08-06) 이전 날짜는 원본에도 남아있지 않아 데이터가 없을 수 있습니다.
 //
-// 비주얼: 사용자가 claude.ai/design으로 만든 목업(Nocturne 디자인 시스템, Inter 폰트 +
-// 라벤더-화이트 배경 + 블러플 퍼플/그린/앰버 3색 라인 팔레트)을 그대로 이식했습니다.
+// 비주얼: claude.ai/design 목업(Nocturne, 라벤더-화이트 배경 + 퍼플/그린/앰버 3색 라인 팔레트)의
+// 레이아웃/색상은 유지하되, 폰트는 세퍼레이터 키오스크와 통일해 Pretendard + 라벨·제목·값 전부
+// 굵게(900 위주)로 맞췄습니다 (사용자 피드백: "코일번호처럼 두꺼운 폰트를 라벨/제목 등 전체에도").
 // 공용 theme.js(COLORS/box)는 ~30개 화면이 이름을 공유하므로 건드리지 않고, 이 화면 전용
 // 토큰(N)을 로컬로 새로 정의합니다.
 import React, { useState, useEffect, useMemo } from 'react';
@@ -42,7 +43,7 @@ const N = {
   radiusLg: '14px',
   shadowSm: '0 1px 2px rgba(41,43,49,0.06)',
   shadowMd: '0 1px 2px rgba(41,43,49,0.04), 0 8px 24px rgba(41,43,49,0.07)',
-  font: "'Inter', system-ui, -apple-system, sans-serif",
+  font: "'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 };
 
 function tint(color, amt = 14) {
@@ -88,7 +89,7 @@ function InfoBanner({ text }) {
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: '12px',
       background: N.surface, border: `1px solid ${N.border}`, borderRadius: N.radiusMd,
-      padding: '16px 20px', fontSize: '15px', lineHeight: 1.6, color: N.text700,
+      padding: '16px 20px', fontSize: '15.5px', fontWeight: 700, lineHeight: 1.6, color: N.text700,
     }}>
       <span style={{ fontSize: '18px' }}>💡</span>
       <span>{text}</span>
@@ -177,14 +178,14 @@ export function LevelerWorkStatus() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontFamily: N.font, fontWeight: 500, fontSize: '34px', margin: '0 0 8px 0', letterSpacing: '-0.01em', color: N.text900 }}>📊 작업현황 대시보드</h1>
-          <p style={{ fontSize: '15.5px', lineHeight: 1.6, color: N.text700, maxWidth: '720px', margin: 0 }}>
+          <h1 style={{ fontFamily: N.font, fontWeight: 900, fontSize: '38px', margin: '0 0 8px 0', letterSpacing: '-0.01em', color: N.text900 }}>📊 작업현황 대시보드</h1>
+          <p style={{ fontSize: '16.5px', fontWeight: 700, lineHeight: 1.6, color: N.text700, maxWidth: '740px', margin: 0 }}>
             레벨러 시스템(레벨링·슬리팅1·슬리팅2) 작업목록을 날짜별로 봅니다. 날짜 변경(재작업)이 반영된 실제 현재 상태를 그대로 보여줍니다.
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: N.surface, border: `1px solid ${N.border}`, borderRadius: N.radiusMd, padding: '11px 16px', boxShadow: N.shadowSm }}>
           <span className="leveler-live-dot" style={{ width: '9px', height: '9px', borderRadius: '50%', background: N.accent500, flexShrink: 0 }} />
-          <span style={{ fontSize: '14px', color: N.text700 }}>
+          <span style={{ fontSize: '15px', fontWeight: 800, color: N.text700 }}>
             {lastSyncAt ? lastSyncAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '--:--'} 기준 · 10분마다 자동 새로고침
           </span>
         </div>
@@ -193,7 +194,7 @@ export function LevelerWorkStatus() {
       <InfoBanner text="leveler_jobs 실데이터를 그대로 조회하는 프로토타입입니다. leveler-sync Edge Function이 10분 간격으로 레벨러 시스템 DB와 동기화하며, 이 화면도 10분마다 자동 새로고침됩니다. 배포일(2026-08-06) 이전 날짜는 원본에 데이터가 없어 조회되지 않을 수 있습니다." />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '15px', color: N.text600, fontWeight: 500 }}>날짜</span>
+        <span style={{ fontSize: '16px', color: N.text700, fontWeight: 900 }}>날짜</span>
         <input
           className="leveler-date-input"
           type="date"
@@ -201,7 +202,7 @@ export function LevelerWorkStatus() {
           max={todayKST()}
           onChange={(e) => setDate(e.target.value)}
           style={{
-            fontSize: '18px', fontWeight: 500, background: N.surface, border: `1px solid ${N.border}`,
+            fontSize: '20px', fontWeight: 900, background: N.surface, border: `1px solid ${N.border}`,
             borderRadius: N.radiusMd, padding: '9px 18px', color: N.text900, colorScheme: 'light',
           }}
         />
@@ -209,7 +210,7 @@ export function LevelerWorkStatus() {
           <button
             onClick={() => setDate(todayKST())}
             style={{
-              fontFamily: N.font, fontSize: '14px', fontWeight: 500, color: N.accent600,
+              fontFamily: N.font, fontSize: '15px', fontWeight: 900, color: N.accent600,
               background: N.accent100, border: `1px solid ${N.accent200}`, borderRadius: N.radiusMd,
               padding: '9px 16px', cursor: 'pointer',
             }}
@@ -217,26 +218,26 @@ export function LevelerWorkStatus() {
             오늘로
           </button>
         )}
-        <span style={{ fontSize: '14px', color: N.text500 }}>
+        <span style={{ fontSize: '14px', fontWeight: 700, color: N.text500 }}>
           {lastSyncAt ? `${lastSyncAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준` : ''}
         </span>
       </div>
 
       {error && (
-        <div style={{ ...card, padding: '20px 24px', color: shade(N.amber, 40), fontSize: '15px' }}>
+        <div style={{ ...card, padding: '20px 24px', color: shade(N.amber, 40), fontSize: '15px', fontWeight: 700 }}>
           데이터를 불러오지 못했습니다: {error}
         </div>
       )}
 
       {loading ? (
-        <div style={{ color: N.text500, fontSize: '17px', padding: '20px 0' }}>불러오는 중...</div>
+        <div style={{ color: N.text500, fontSize: '17px', fontWeight: 800, padding: '20px 0' }}>불러오는 중...</div>
       ) : (
         <>
           {/* 총 생산금액 히어로 카드 */}
           <div style={{ ...card, boxShadow: N.shadowMd, padding: '36px 40px' }}>
-            <div style={{ fontSize: '16px', color: N.text600, marginBottom: '4px' }}>총 생산금액</div>
-            <div style={{ fontFamily: N.font, fontSize: '64px', fontWeight: 500, color: N.accent600, lineHeight: 1 }}>
-              {fmtNum(summary.amount)}<span style={{ fontSize: '26px', color: N.text500 }}>원</span>
+            <div style={{ fontSize: '17px', fontWeight: 800, color: N.text600, marginBottom: '4px' }}>총 생산금액</div>
+            <div style={{ fontFamily: N.font, fontSize: '72px', fontWeight: 900, color: N.accent600, lineHeight: 1 }}>
+              {fmtNum(summary.amount)}<span style={{ fontSize: '28px', fontWeight: 800, color: N.text500 }}>원</span>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginTop: '28px', paddingTop: '24px', borderTop: `1px solid ${N.borderLight}` }}>
@@ -244,8 +245,8 @@ export function LevelerWorkStatus() {
                 <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span style={{ width: '11px', height: '11px', borderRadius: '50%', background: t.color, flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontSize: '13px', color: N.text600 }}>{t.label} 금액</div>
-                    <div style={{ fontFamily: N.font, fontSize: '24px', fontWeight: 500, color: N.text900 }}>{fmtWon(byType[t.key].amount)}</div>
+                    <div style={{ fontSize: '14px', fontWeight: 800, color: N.text600 }}>{t.label} 금액</div>
+                    <div style={{ fontFamily: N.font, fontSize: '26px', fontWeight: 900, color: N.text900 }}>{fmtWon(byType[t.key].amount)}</div>
                   </div>
                 </div>
               ))}
@@ -255,28 +256,28 @@ export function LevelerWorkStatus() {
           {/* 요약 3카드 */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '18px' }}>
             <div style={{ ...card, padding: '20px 24px' }}>
-              <div style={{ fontSize: '14px', color: N.text600 }}>전체 작업</div>
-              <div style={{ fontFamily: N.font, fontSize: '38px', fontWeight: 500, marginTop: '6px', color: N.text900 }}>
-                {fmtNum(summary.total)}<span style={{ fontSize: '17px', color: N.text500 }}>건</span>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: N.text600 }}>전체 작업</div>
+              <div style={{ fontFamily: N.font, fontSize: '42px', fontWeight: 900, marginTop: '6px', color: N.text900 }}>
+                {fmtNum(summary.total)}<span style={{ fontSize: '18px', fontWeight: 800, color: N.text500 }}>건</span>
               </div>
             </div>
             <div style={{ ...card, padding: '20px 24px' }}>
-              <div style={{ fontSize: '14px', color: N.text600 }}>완료</div>
-              <div style={{ fontFamily: N.font, fontSize: '38px', fontWeight: 500, marginTop: '6px', color: shade(N.green, 30) }}>
-                {fmtNum(summary.done)}<span style={{ fontSize: '17px', color: N.text500 }}>건</span>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: N.text600 }}>완료</div>
+              <div style={{ fontFamily: N.font, fontSize: '42px', fontWeight: 900, marginTop: '6px', color: shade(N.green, 30) }}>
+                {fmtNum(summary.done)}<span style={{ fontSize: '18px', fontWeight: 800, color: N.text500 }}>건</span>
               </div>
             </div>
             <div style={{ ...card, padding: '20px 24px' }}>
-              <div style={{ fontSize: '14px', color: N.text600 }}>진행중 · 대기</div>
-              <div style={{ fontFamily: N.font, fontSize: '38px', fontWeight: 500, marginTop: '6px', color: N.text900 }}>
-                {fmtNum(summary.remaining)}<span style={{ fontSize: '17px', color: N.text500 }}>건</span>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: N.text600 }}>진행중 · 대기</div>
+              <div style={{ fontFamily: N.font, fontSize: '42px', fontWeight: 900, marginTop: '6px', color: N.text900 }}>
+                {fmtNum(summary.remaining)}<span style={{ fontSize: '18px', fontWeight: 800, color: N.text500 }}>건</span>
               </div>
             </div>
           </div>
 
           {/* 라인별 현황 */}
           <div>
-            <h2 style={{ fontFamily: N.font, fontWeight: 500, fontSize: '20px', margin: '0 0 14px 0', color: N.text900 }}>라인별 현황</h2>
+            <h2 style={{ fontFamily: N.font, fontWeight: 900, fontSize: '22px', margin: '0 0 14px 0', color: N.text900 }}>라인별 현황</h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
               {WORK_TYPES.map((t) => {
                 const s = byType[t.key];
@@ -284,13 +285,13 @@ export function LevelerWorkStatus() {
                 return (
                   <div key={t.key} style={{ ...card, borderTop: `4px solid ${t.color}`, padding: '22px 24px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '14px' }}>
-                      <div style={{ fontFamily: N.font, fontSize: '18px', fontWeight: 500, color: N.text900 }}>{t.label}</div>
-                      <div style={{ fontSize: '14px', color: t.color }}>{pct}% 완료</div>
+                      <div style={{ fontFamily: N.font, fontSize: '20px', fontWeight: 900, color: N.text900 }}>{t.label}</div>
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: t.color }}>{pct}% 완료</div>
                     </div>
 
                     <div style={{ marginBottom: '16px' }}>
-                      <div style={{ fontSize: '12.5px', color: N.text600 }}>금액</div>
-                      <div style={{ fontFamily: N.font, fontSize: '30px', fontWeight: 500, color: t.color }}>{fmtWon(s.amount)}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 800, color: N.text600 }}>금액</div>
+                      <div style={{ fontFamily: N.font, fontSize: '32px', fontWeight: 900, color: t.color }}>{fmtWon(s.amount)}</div>
                     </div>
 
                     <div style={{ height: '8px', background: N.borderLight, borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
@@ -299,20 +300,20 @@ export function LevelerWorkStatus() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 18px' }}>
                       <div>
-                        <div style={{ fontSize: '12.5px', color: N.text600 }}>전체</div>
-                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{s.total}</div>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: N.text600 }}>전체</div>
+                        <div style={{ fontSize: '19px', fontWeight: 900, fontFamily: N.font, color: N.text900 }}>{s.total}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12.5px', color: N.text600 }}>완료</div>
-                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{s.done}</div>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: N.text600 }}>완료</div>
+                        <div style={{ fontSize: '19px', fontWeight: 900, fontFamily: N.font, color: N.text900 }}>{s.done}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12.5px', color: N.text600 }}>잔여</div>
-                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{s.remaining}</div>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: N.text600 }}>잔여</div>
+                        <div style={{ fontSize: '19px', fontWeight: 900, fontFamily: N.font, color: N.text900 }}>{s.remaining}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12.5px', color: N.text600 }}>중량</div>
-                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{fmtNum(s.weight)}kg</div>
+                        <div style={{ fontSize: '13px', fontWeight: 800, color: N.text600 }}>중량</div>
+                        <div style={{ fontSize: '19px', fontWeight: 900, fontFamily: N.font, color: N.text900 }}>{fmtNum(s.weight)}kg</div>
                       </div>
                     </div>
                   </div>
@@ -324,7 +325,7 @@ export function LevelerWorkStatus() {
           {/* 작업 목록 */}
           <div style={{ ...card, padding: '26px 28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '18px' }}>
-              <div style={{ fontFamily: N.font, fontSize: '18px', fontWeight: 500, color: N.text900 }}>작업 목록</div>
+              <div style={{ fontFamily: N.font, fontSize: '20px', fontWeight: 900, color: N.text900 }}>작업 목록</div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
                 {['전체', ...WORK_TYPES.map((t) => t.key)].map((k) => {
                   const active = typeFilter === k;
@@ -334,7 +335,7 @@ export function LevelerWorkStatus() {
                       className="leveler-seg-btn"
                       onClick={() => setTypeFilter(k)}
                       style={{
-                        fontFamily: N.font, fontSize: '13.5px', fontWeight: 500, cursor: 'pointer',
+                        fontFamily: N.font, fontSize: '14px', fontWeight: 900, cursor: 'pointer',
                         padding: '8px 15px', borderRadius: N.radiusMd,
                         background: active ? N.accent600 : N.bg,
                         color: active ? '#fff' : N.text700,
@@ -349,17 +350,17 @@ export function LevelerWorkStatus() {
             </div>
 
             {visibleRows.length === 0 ? (
-              <div style={{ color: N.text500, fontSize: '15px', padding: '16px 0' }}>해당 날짜에 작업 데이터가 없습니다.</div>
+              <div style={{ color: N.text500, fontSize: '15px', fontWeight: 700, padding: '16px 0' }}>해당 날짜에 작업 데이터가 없습니다.</div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14.5px' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                   <thead>
                     <tr>
                       {['업체명', '품명', '규격', '중량', '가공규격', '구분', '상태', 'UPDATE'].map((h) => (
                         <th key={h} style={{
-                          textAlign: 'left', padding: '10px 14px', fontSize: '11.5px', letterSpacing: '0.06em',
-                          textTransform: 'uppercase', color: N.text500, borderBottom: `1px solid ${N.borderLight}`,
-                          fontWeight: 500,
+                          textAlign: 'left', padding: '10px 14px', fontSize: '12.5px', letterSpacing: '0.04em',
+                          textTransform: 'uppercase', color: N.text600, borderBottom: `1px solid ${N.borderLight}`,
+                          fontWeight: 900,
                         }}>{h}</th>
                       ))}
                     </tr>
@@ -369,7 +370,7 @@ export function LevelerWorkStatus() {
                       const typeKey = r.work_type === 'LEVELING' ? 'LEVELLING' : r.work_type;
                       const label = WORK_TYPES.find((t) => t.key === typeKey)?.label || r.work_type;
                       const [color, bg] = STATUS_STYLE[r.status] || [N.text700, N.borderLight];
-                      const td = { padding: '13px 14px', borderBottom: `1px solid ${N.borderLight}`, color: N.text700 };
+                      const td = { padding: '13px 14px', borderBottom: `1px solid ${N.borderLight}`, color: N.text900, fontWeight: 800 };
                       return (
                         <tr key={r.source_id}>
                           <td style={td}>{r.company_name}</td>
@@ -381,7 +382,7 @@ export function LevelerWorkStatus() {
                           <td style={td}>
                             <span style={{
                               display: 'inline-flex', alignItems: 'center', padding: '5px 13px', borderRadius: '999px',
-                              fontSize: '12.5px', fontWeight: 500, background: bg, color,
+                              fontSize: '13px', fontWeight: 900, background: bg, color,
                             }}>{r.status}</span>
                           </td>
                           <td style={td}>{fmtTime(r.update_time)}</td>
