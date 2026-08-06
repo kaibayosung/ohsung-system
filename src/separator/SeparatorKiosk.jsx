@@ -48,6 +48,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   const [nowTick, setNowTick] = useState(Date.now());
   const [screen, setScreen] = useState('select'); // 'select' | 'setup'
   const [selectedId, setSelectedId] = useState(null);
+  const [amountStats, setAmountStats] = useState({ current: 0, total: 0 });
 
   const loadJobs = useCallback(async () => {
     const today = todayKST();
@@ -58,18 +59,32 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
     // "오늘 작업 없음"으로 잘못 표시되는 문제가 있었습니다.
     // 이제는 그 날짜 변경까지 반영된 leveler_jobs(레벨러 대시보드 미러, leveler-sync Edge
     // Function이 주기적으로 동기화)를 조회해 실제 현재 상태를 그대로 보여줍니다.
-    const { data, error } = await supabase
-      .from('leveler_jobs')
-      .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date')
-      .eq('work_type', 'SLITING2')
-      .eq('work_date', today)
-      .neq('status', '완료')
-      .not('process_rule', 'is', null)
-      .order('source_id', { ascending: false })
-      .limit(40);
-    if (!error) {
-      setJobs(data || []);
+    const [jobsRes, amountRes] = await Promise.all([
+      supabase
+        .from('leveler_jobs')
+        .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date')
+        .eq('work_type', 'SLITING2')
+        .eq('work_date', today)
+        .neq('status', '완료')
+        .not('process_rule', 'is', null)
+        .order('source_id', { ascending: false })
+        .limit(40),
+      // 상단 진행 금액 표시용 — 완료 여부와 무관하게 오늘 슬리팅2 전체 작업의 금액 합계.
+      supabase
+        .from('leveler_jobs')
+        .select('amount, status')
+        .eq('work_type', 'SLITING2')
+        .eq('work_date', today),
+    ]);
+    if (!jobsRes.error) {
+      setJobs(jobsRes.data || []);
       setLastSyncAt(new Date());
+    }
+    if (!amountRes.error) {
+      const rows = amountRes.data || [];
+      const total = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
+      const current = rows.filter((r) => r.status === '완료').reduce((s, r) => s + Number(r.amount || 0), 0);
+      setAmountStats({ current, total });
     }
     setLoading(false);
   }, []);
@@ -91,7 +106,14 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   return (
     <div style={styles.page}>
       <div style={styles.topStrip}>
-        <span style={styles.topStripText}>슬리터2 세퍼레이터 셋팅 · {staffName || '작업자'}님</span>
+        <div style={styles.topStripLeftGroup}>
+          <span style={styles.topStripText}>슬리터2 세퍼레이터 셋팅 · {staffName || '작업자'}님</span>
+          <span style={styles.amountStat}>
+            오늘 생산금액 <b style={styles.amountStatCurrent}>{amountStats.current.toLocaleString()}</b>
+            <span style={styles.amountStatSlash}> / </span>
+            {amountStats.total.toLocaleString()}원
+          </span>
+        </div>
         <button style={styles.logoutBtn} onClick={onLogout}>로그아웃</button>
       </div>
 
@@ -130,7 +152,7 @@ function SelectScreen({ jobs, loading, syncLabel, onOpen }) {
               </div>
               <div style={{ ...styles.jobCol, flex: 1.8 }}>
                 <div style={styles.jobLabel}>가공규격</div>
-                <div style={{ ...styles.jobValue, fontSize: '24px' }}>{j.process_rule}</div>
+                <div style={{ ...styles.jobValue, fontSize: '28px' }}>{j.process_rule}</div>
               </div>
               <div style={{ ...styles.jobCol, flex: 0.8, textAlign: 'right' }}>
                 <div style={styles.jobLabel}>중량</div>
@@ -229,53 +251,57 @@ function PieceBig({ size }) {
 }
 
 const styles = {
-  page: { minHeight: '100vh', background: '#FAFAFE', display: 'flex', flexDirection: 'column' },
-  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 28px', fontSize: '16px', fontWeight: 700, borderBottom: `1px solid ${PURPLE.border}` },
+  page: { minHeight: '100vh', background: '#FAFAFE', display: 'flex', flexDirection: 'column', fontFamily: "'Pretendard', -apple-system, sans-serif" },
+  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 28px', fontSize: '19px', fontWeight: 800, borderBottom: `1px solid ${PURPLE.border}` },
+  topStripLeftGroup: { display: 'flex', alignItems: 'center', gap: '26px', flexWrap: 'wrap' },
   topStripText: {},
-  logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '8px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' },
+  amountStat: { fontSize: '18px', fontWeight: 700, color: PURPLE.textMuted },
+  amountStatCurrent: { fontSize: '20px', fontWeight: 900, color: PURPLE.accentDark },
+  amountStatSlash: { color: PURPLE.textMuted, fontWeight: 700 },
+  logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '10px 20px', borderRadius: '8px', fontSize: '16px', fontWeight: 800, cursor: 'pointer' },
   screenPad: { padding: '22px 30px 28px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
 
   topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  topBarTitle: { fontSize: '30px', fontWeight: 900, color: PURPLE.text },
-  syncPill: { background: '#dff7ea', color: '#1c7a4d', fontWeight: 800, fontSize: '18px', padding: '10px 18px', borderRadius: '22px' },
-  loadingText: { fontSize: '20px', color: PURPLE.textMuted, padding: '30px 0' },
+  topBarTitle: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
+  syncPill: { background: '#dff7ea', color: '#1c7a4d', fontWeight: 900, fontSize: '20px', padding: '10px 18px', borderRadius: '22px' },
+  loadingText: { fontSize: '24px', fontWeight: 700, color: PURPLE.textMuted, padding: '30px 0' },
 
   jobList: { display: 'flex', flexDirection: 'column', gap: '16px' },
   jobRow: { background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '18px', padding: '22px 30px', display: 'flex', alignItems: 'center', gap: '26px', cursor: 'pointer' },
   jobCol: {},
-  jobLabel: { fontSize: '15px', color: PURPLE.textMuted, fontWeight: 700, marginBottom: '4px' },
-  jobValue: { fontSize: '30px', fontWeight: 900, color: PURPLE.text },
-  goArrow: { width: '58px', height: '58px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  jobLabel: { fontSize: '18px', color: PURPLE.textMuted, fontWeight: 800, marginBottom: '4px' },
+  jobValue: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
+  goArrow: { width: '64px', height: '64px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
   infoRowSplit3: { display: 'flex', background: PURPLE.panelBg, borderRadius: '16px', marginBottom: '14px' },
   infoCol: { flex: 1, padding: '14px 24px', textAlign: 'center' },
   infoColBorder: {},
-  infoLabel: { fontSize: '19px', color: PURPLE.textMuted, fontWeight: 800, marginBottom: '4px' },
-  infoValue: { fontSize: '58px', fontWeight: 900, color: PURPLE.text, lineHeight: 1.05 },
+  infoLabel: { fontSize: '22px', color: PURPLE.textMuted, fontWeight: 900, marginBottom: '4px' },
+  infoValue: { fontSize: '68px', fontWeight: 900, color: PURPLE.text, lineHeight: 1.05 },
   infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '16px', padding: '12px 28px', marginBottom: '14px', flex: '0 0 auto' },
-  infoLabelInline: { fontSize: '20px', color: PURPLE.textMuted, fontWeight: 800 },
-  infoValueInline: { fontSize: '38px', fontWeight: 900, color: PURPLE.text },
+  infoLabelInline: { fontSize: '24px', color: PURPLE.textMuted, fontWeight: 900 },
+  infoValueInline: { fontSize: '46px', fontWeight: 900, color: PURPLE.text },
 
   stationGrid: { display: 'flex', gap: '16px', flex: 1, minHeight: 0 },
   stationCard: { flex: 1, minHeight: 0, display: 'flex', background: '#fff', border: `2px solid ${PURPLE.border}`, borderRadius: '20px' },
   stationCol: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '18px 26px 20px' },
   stationColDivider: { borderLeft: `2px solid ${PURPLE.border}` },
   stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px', paddingBottom: '10px', borderBottom: `2px solid ${PURPLE.border}`, flex: '0 0 auto' },
-  stationBadge: { width: '52px', height: '52px', borderRadius: '50%', background: PURPLE.panelBg, color: PURPLE.accentDark, fontSize: '26px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stationNameBig: { fontSize: '34px', fontWeight: 900, color: PURPLE.text },
-  stationOffBig: { fontSize: '26px', color: PURPLE.accent, fontWeight: 900, marginLeft: 'auto' },
+  stationBadge: { width: '58px', height: '58px', borderRadius: '50%', background: PURPLE.panelBg, color: PURPLE.accentDark, fontSize: '30px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  stationNameBig: { fontSize: '40px', fontWeight: 900, color: PURPLE.text },
+  stationOffBig: { fontSize: '30px', color: PURPLE.accent, fontWeight: 900, marginLeft: 'auto' },
   comboBlock: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' },
-  comboMeta: { fontSize: '32px', fontWeight: 900, color: PURPLE.textMuted, marginBottom: '6px' },
-  comboEquation: { fontSize: '38px', fontWeight: 900, color: PURPLE.text, marginBottom: '12px', display: 'flex', alignItems: 'baseline', gap: '10px' },
+  comboMeta: { fontSize: '36px', fontWeight: 900, color: PURPLE.textMuted, marginBottom: '6px' },
+  comboEquation: { fontSize: '44px', fontWeight: 900, color: PURPLE.text, marginBottom: '12px', display: 'flex', alignItems: 'baseline', gap: '10px' },
   eqSign: { color: PURPLE.text },
   eqOp: { color: PURPLE.textMuted },
-  comboTarget: { fontSize: '48px', color: PURPLE.accent },
+  comboTarget: { fontSize: '56px', color: PURPLE.accent },
   comboPieces: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-  plusSm: { color: PURPLE.textMuted, fontWeight: 900, fontSize: '36px' },
-  remainderWarn: { marginTop: '10px', fontSize: '19px', color: '#c8372c', fontWeight: 900 },
+  plusSm: { color: PURPLE.textMuted, fontWeight: 900, fontSize: '40px' },
+  remainderWarn: { marginTop: '10px', fontSize: '22px', color: '#c8372c', fontWeight: 900 },
 
   btnFooter: { display: 'flex', gap: '18px', marginTop: '14px', flex: '0 0 auto' },
-  btnBig: { flex: 1, textAlign: 'center', padding: '26px', borderRadius: '18px', fontSize: '40px', fontWeight: 900, cursor: 'pointer' },
+  btnBig: { flex: 1, textAlign: 'center', padding: '28px', borderRadius: '18px', fontSize: '46px', fontWeight: 900, cursor: 'pointer' },
   btnOutline: { background: '#fff', border: `4px solid ${PURPLE.border}`, color: PURPLE.accentDark },
   btnSolid: { background: PURPLE.accent, color: '#fff' },
 };
