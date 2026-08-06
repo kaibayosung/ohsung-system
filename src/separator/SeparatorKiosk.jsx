@@ -65,7 +65,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
       .eq('work_date', today)
       .neq('status', '완료')
       .not('process_rule', 'is', null)
-      .order('id', { ascending: false })
+      .order('source_id', { ascending: false })
       .limit(40);
     if (!error) {
       setJobs(data || []);
