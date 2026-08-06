@@ -71,7 +71,7 @@ export function LevelerWorkStatus() {
       setError(null);
       const { data, error: err } = await supabase
         .from('leveler_jobs')
-        .select('source_id, company_name, product_name, specification, original_weight, process_rule, work_type, status, update_time')
+        .select('source_id, company_name, product_name, specification, original_weight, amount, process_rule, work_type, status, update_time')
         .eq('work_date', date)
         .order('source_id', { ascending: false });
       if (cancelled) return;
