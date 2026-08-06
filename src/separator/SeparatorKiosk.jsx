@@ -51,31 +51,19 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
 
   const loadJobs = useCallback(async () => {
     const today = todayKST();
-    // 그린ERP 작업목록(list) 기준으로 오늘 슬리터2 중 "작업완료"가 아닌 건만 추려냅니다.
-    // (상세 테이블에는 진행상태가 없어서, 이미 끝난 작업이 계속 목록에 남는 문제가 있었습니다.)
-    const { data: orders, error: ordersError } = await supabase
-      .from('greenp_joborders')
-      .select('joborder_no, status')
-      .eq('work_type', 'SLITING2')
-      .eq('joborder_date', today)
-      .neq('status', '작업완료');
-    if (ordersError) {
-      setLoading(false);
-      return;
-    }
-    const activeNos = (orders || []).map((o) => o.joborder_no);
-    if (activeNos.length === 0) {
-      setJobs([]);
-      setLastSyncAt(new Date());
-      setLoading(false);
-      return;
-    }
+    // 그린ERP의 joborder_date는 최초 지시일자로 고정되지만, 현장에서는 "어제 못한 작업을
+    // 오늘 날짜로 바꿔서" 레벨러 대시보드(osungsteel.servehttp.com:38080)에서 재작업하는
+    // 경우가 있고, 이 날짜 변경은 레벨러 시스템(erp_data.work_date)에만 반영되고 그린ERP에는
+    // 반영되지 않습니다. 그래서 그린ERP 기준으로 조회하면 실제로는 작업해야 할 건이 있는데도
+    // "오늘 작업 없음"으로 잘못 표시되는 문제가 있었습니다.
+    // 이제는 그 날짜 변경까지 반영된 leveler_jobs(레벨러 대시보드 미러, leveler-sync Edge
+    // Function이 주기적으로 동기화)를 조회해 실제 현재 상태를 그대로 보여줍니다.
     const { data, error } = await supabase
-      .from('greenp_joborder_detail')
-      .select('*')
+      .from('leveler_jobs')
+      .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date')
       .eq('work_type', 'SLITING2')
-      .eq('joborder_date', today)
-      .in('joborder_no', activeNos)
+      .eq('work_date', today)
+      .neq('status', '완료')
       .not('process_rule', 'is', null)
       .order('id', { ascending: false })
       .limit(40);
