@@ -252,24 +252,24 @@ function PieceBig({ size }) {
 
 const styles = {
   page: { minHeight: '100vh', background: '#FAFAFE', display: 'flex', flexDirection: 'column', fontFamily: "'Pretendard', -apple-system, sans-serif" },
-  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 28px', fontSize: '19px', fontWeight: 800, borderBottom: `1px solid ${PURPLE.border}` },
+  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 28px', fontSize: '19px', fontWeight: 900, borderBottom: `1px solid ${PURPLE.border}` },
   topStripLeftGroup: { display: 'flex', alignItems: 'center', gap: '26px', flexWrap: 'wrap' },
   topStripText: {},
-  amountStat: { fontSize: '18px', fontWeight: 700, color: PURPLE.textMuted },
+  amountStat: { fontSize: '18px', fontWeight: 900, color: PURPLE.textMuted },
   amountStatCurrent: { fontSize: '20px', fontWeight: 900, color: PURPLE.accentDark },
-  amountStatSlash: { color: PURPLE.textMuted, fontWeight: 700 },
-  logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '10px 20px', borderRadius: '8px', fontSize: '16px', fontWeight: 800, cursor: 'pointer' },
+  amountStatSlash: { color: PURPLE.textMuted, fontWeight: 900 },
+  logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '10px 20px', borderRadius: '8px', fontSize: '16px', fontWeight: 900, cursor: 'pointer' },
   screenPad: { padding: '22px 30px 28px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
 
   topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
   topBarTitle: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
   syncPill: { background: '#dff7ea', color: '#1c7a4d', fontWeight: 900, fontSize: '20px', padding: '10px 18px', borderRadius: '22px' },
-  loadingText: { fontSize: '24px', fontWeight: 700, color: PURPLE.textMuted, padding: '30px 0' },
+  loadingText: { fontSize: '24px', fontWeight: 900, color: PURPLE.textMuted, padding: '30px 0' },
 
   jobList: { display: 'flex', flexDirection: 'column', gap: '16px' },
   jobRow: { background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '18px', padding: '22px 30px', display: 'flex', alignItems: 'center', gap: '26px', cursor: 'pointer' },
   jobCol: {},
-  jobLabel: { fontSize: '18px', color: PURPLE.textMuted, fontWeight: 800, marginBottom: '4px' },
+  jobLabel: { fontSize: '18px', color: PURPLE.textMuted, fontWeight: 900, marginBottom: '4px' },
   jobValue: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
   goArrow: { width: '64px', height: '64px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
