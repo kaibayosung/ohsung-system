@@ -10,23 +10,63 @@
 // 과거 조회: leveler_jobs는 삭제되지 않고 계속 누적되므로(leveler-sync가 최근 3일 창 안에서만
 // upsert+정리하고 그 밖은 건드리지 않음), 동기화가 시작된 이후 날짜는 전부 조회할 수 있습니다.
 // 다만 배포 시점(2026-08-06) 이전 날짜는 원본에도 남아있지 않아 데이터가 없을 수 있습니다.
+//
+// 비주얼: 사용자가 claude.ai/design으로 만든 목업(Nocturne 디자인 시스템, Inter 폰트 +
+// 라벤더-화이트 배경 + 블러플 퍼플/그린/앰버 3색 라인 팔레트)을 그대로 이식했습니다.
+// 공용 theme.js(COLORS/box)는 ~30개 화면이 이름을 공유하므로 건드리지 않고, 이 화면 전용
+// 토큰(N)을 로컬로 새로 정의합니다.
 import React, { useState, useEffect, useMemo } from 'react';
-import { COLORS, box, pill, fmtWon, fmtNum } from './theme';
+import { fmtNum } from './theme';
 import { supabase } from '../../supabaseClient';
 
 const REFRESH_MS = 10 * 60 * 1000; // 10분
 
+// --- Nocturne 디자인 토큰 (이 화면 전용) ---
+const N = {
+  bg: '#f3f5fe',
+  surface: '#ffffff',
+  border: '#cfd3e5',
+  borderLight: '#e4e7f5',
+  text900: '#292b31',
+  text700: '#595d6c',
+  text600: '#75798c',
+  text500: '#9397ab',
+  accent500: '#968ae0',
+  accent600: '#796cbf',
+  accent100: '#f5f4ff',
+  accent200: '#e7e5fe',
+  green: 'oklch(66% 0.13 150)',
+  amber: 'oklch(70% 0.15 65)',
+  radiusSm: '4px',
+  radiusMd: '8px',
+  radiusLg: '14px',
+  shadowSm: '0 1px 2px rgba(41,43,49,0.06)',
+  shadowMd: '0 1px 2px rgba(41,43,49,0.04), 0 8px 24px rgba(41,43,49,0.07)',
+  font: "'Inter', system-ui, -apple-system, sans-serif",
+};
+
+function tint(color, amt = 14) {
+  return `color-mix(in srgb, ${color} ${amt}%, white)`;
+}
+function shade(color, amt = 30) {
+  return `color-mix(in srgb, ${color} ${100 - amt}%, black)`;
+}
+
 const WORK_TYPES = [
-  { key: 'LEVELLING', label: '레벨링' },
-  { key: 'SLITING', label: '슬리팅1' },
-  { key: 'SLITING2', label: '슬리팅2' },
+  { key: 'LEVELLING', label: '레벨링', color: N.accent500 },
+  { key: 'SLITING', label: '슬리팅1', color: N.green },
+  { key: 'SLITING2', label: '슬리팅2', color: N.amber },
 ];
 
 const STATUS_STYLE = {
-  완료: [COLORS.green, COLORS.greenBg],
-  진행중: [COLORS.blue, COLORS.blueBg],
-  준비: [COLORS.amber, COLORS.amberBg],
+  완료: [shade(N.green, 30), tint(N.green, 14)],
+  진행중: [N.accent600, N.accent100],
+  준비: [shade(N.amber, 30), tint(N.amber, 14)],
 };
+
+function fmtWon(n) {
+  return `${Number(n || 0).toLocaleString()}원`;
+}
 
 function todayKST() {
   const now = new Date();
@@ -43,18 +83,25 @@ function fmtTime(ts) {
   return `${hh}:${mm}`;
 }
 
-function ProposalBanner({ text }) {
+function InfoBanner({ text }) {
   return (
     <div style={{
-      background: COLORS.accentSoft, border: `1px solid ${COLORS.accentBg}`, borderRadius: '14px',
-      padding: '14px 20px', fontSize: '14px', color: COLORS.accentDark, lineHeight: 1.6,
-      display: 'flex', gap: '10px', alignItems: 'flex-start',
+      display: 'flex', alignItems: 'flex-start', gap: '12px',
+      background: N.surface, border: `1px solid ${N.border}`, borderRadius: N.radiusMd,
+      padding: '16px 20px', fontSize: '15px', lineHeight: 1.6, color: N.text700,
     }}>
-      <span style={{ fontSize: '16px' }}>💡</span>
+      <span style={{ fontSize: '18px' }}>💡</span>
       <span>{text}</span>
     </div>
   );
 }
+
+const card = {
+  background: N.surface,
+  border: `1px solid ${N.border}`,
+  borderRadius: N.radiusMd,
+  boxShadow: N.shadowSm,
+};
 
 export function LevelerWorkStatus() {
   const [date, setDate] = useState(todayKST());
@@ -120,145 +167,224 @@ export function LevelerWorkStatus() {
   const isToday = date === todayKST();
 
   return (
-    <div style={box.page}>
-      <div>
-        <h2 style={box.title}>작업현황 대시보드 <span style={{ marginLeft: '10px', verticalAlign: 'middle' }}><span style={pill(COLORS.accentBg, COLORS.accentDark)}>실데이터 연동</span></span></h2>
-        <p style={box.hint}>레벨러 시스템(레벨링·슬리팅1·슬리팅2) 작업목록을 날짜별로 봅니다. 날짜 변경(재작업)이 반영된 실제 현재 상태를 그대로 보여줍니다.</p>
-      </div>
-      <ProposalBanner text="leveler_jobs 실데이터를 그대로 조회하는 프로토타입입니다. leveler-sync Edge Function이 10분 간격으로 레벨러 시스템 DB와 동기화하며, 이 화면도 10분마다 자동 새로고침됩니다. 배포일(2026-08-06) 이전 날짜는 원본에 데이터가 없어 조회되지 않을 수 있습니다." />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: N.font, background: N.bg, margin: '-24px', padding: '32px 36px 56px', borderRadius: '18px' }}>
+      <style>{`
+        @keyframes levelerLivePulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
+        .leveler-live-dot { animation: levelerLivePulse 1.6s ease-in-out infinite; }
+        .leveler-date-input { font-family: ${N.font}; }
+        .leveler-seg-btn:hover { background: ${N.accent100} !important; }
+      `}</style>
 
-      <div style={{ ...box.card, display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-        <label style={{ ...box.label, marginBottom: 0 }}>날짜</label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' }}>
+        <div>
+          <h1 style={{ fontFamily: N.font, fontWeight: 500, fontSize: '34px', margin: '0 0 8px 0', letterSpacing: '-0.01em', color: N.text900 }}>📊 작업현황 대시보드</h1>
+          <p style={{ fontSize: '15.5px', lineHeight: 1.6, color: N.text700, maxWidth: '720px', margin: 0 }}>
+            레벨러 시스템(레벨링·슬리팅1·슬리팅2) 작업목록을 날짜별로 봅니다. 날짜 변경(재작업)이 반영된 실제 현재 상태를 그대로 보여줍니다.
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: N.surface, border: `1px solid ${N.border}`, borderRadius: N.radiusMd, padding: '11px 16px', boxShadow: N.shadowSm }}>
+          <span className="leveler-live-dot" style={{ width: '9px', height: '9px', borderRadius: '50%', background: N.accent500, flexShrink: 0 }} />
+          <span style={{ fontSize: '14px', color: N.text700 }}>
+            {lastSyncAt ? lastSyncAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '--:--'} 기준 · 10분마다 자동 새로고침
+          </span>
+        </div>
+      </div>
+
+      <InfoBanner text="leveler_jobs 실데이터를 그대로 조회하는 프로토타입입니다. leveler-sync Edge Function이 10분 간격으로 레벨러 시스템 DB와 동기화하며, 이 화면도 10분마다 자동 새로고침됩니다. 배포일(2026-08-06) 이전 날짜는 원본에 데이터가 없어 조회되지 않을 수 있습니다." />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '15px', color: N.text600, fontWeight: 500 }}>날짜</span>
         <input
+          className="leveler-date-input"
           type="date"
           value={date}
           max={todayKST()}
           onChange={(e) => setDate(e.target.value)}
-          style={{ ...box.input, width: 'auto', padding: '10px 14px' }}
+          style={{
+            fontSize: '18px', fontWeight: 500, background: N.surface, border: `1px solid ${N.border}`,
+            borderRadius: N.radiusMd, padding: '9px 18px', color: N.text900, colorScheme: 'light',
+          }}
         />
         {!isToday && (
-          <button style={{ ...box.ghostBtn, padding: '9px 16px', fontSize: '14px' }} onClick={() => setDate(todayKST())}>오늘로</button>
+          <button
+            onClick={() => setDate(todayKST())}
+            style={{
+              fontFamily: N.font, fontSize: '14px', fontWeight: 500, color: N.accent600,
+              background: N.accent100, border: `1px solid ${N.accent200}`, borderRadius: N.radiusMd,
+              padding: '9px 16px', cursor: 'pointer',
+            }}
+          >
+            오늘로
+          </button>
         )}
-        <span style={{ marginLeft: 'auto', fontSize: '13px', color: COLORS.steelLight }}>
+        <span style={{ fontSize: '14px', color: N.text500 }}>
           {lastSyncAt ? `${lastSyncAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} 기준` : ''}
         </span>
       </div>
 
       {error && (
-        <div style={{ ...box.card, color: COLORS.red, fontSize: '15px' }}>데이터를 불러오지 못했습니다: {error}</div>
+        <div style={{ ...card, padding: '20px 24px', color: shade(N.amber, 40), fontSize: '15px' }}>
+          데이터를 불러오지 못했습니다: {error}
+        </div>
       )}
 
       {loading ? (
-        <div style={box.loadingText}>불러오는 중...</div>
+        <div style={{ color: N.text500, fontSize: '17px', padding: '20px 0' }}>불러오는 중...</div>
       ) : (
         <>
-          <div style={box.statGrid}>
-            <div style={box.statCard}>
-              <div style={box.statLabel}>전체 작업</div>
-              <div style={box.statValue}>{fmtNum(summary.total)}건</div>
+          {/* 총 생산금액 히어로 카드 */}
+          <div style={{ ...card, boxShadow: N.shadowMd, padding: '36px 40px' }}>
+            <div style={{ fontSize: '16px', color: N.text600, marginBottom: '4px' }}>총 생산금액</div>
+            <div style={{ fontFamily: N.font, fontSize: '64px', fontWeight: 500, color: N.accent600, lineHeight: 1 }}>
+              {fmtNum(summary.amount)}<span style={{ fontSize: '26px', color: N.text500 }}>원</span>
             </div>
-            <div style={{ ...box.statCard, borderLeft: `4px solid ${COLORS.green}` }}>
-              <div style={box.statLabel}>완료</div>
-              <div style={{ ...box.statValue, color: COLORS.green }}>{fmtNum(summary.done)}건</div>
-            </div>
-            <div style={{ ...box.statCard, borderLeft: `4px solid ${COLORS.amber}` }}>
-              <div style={box.statLabel}>진행중 · 대기</div>
-              <div style={{ ...box.statValue, color: COLORS.amber }}>{fmtNum(summary.remaining)}건</div>
-            </div>
-            <div style={box.statCard}>
-              <div style={box.statLabel}>총 생산금액</div>
-              <div style={box.statValue}>{fmtWon(summary.amount)}</div>
-            </div>
-          </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px' }}>
-            {WORK_TYPES.map((t) => {
-              const s = byType[t.key];
-              return (
-                <div key={t.key} style={box.card}>
-                  <div style={{ fontSize: '17px', fontWeight: 800, color: COLORS.navy, marginBottom: '14px' }}>{t.label}</div>
-                  <div style={{ display: 'flex', gap: '18px', marginBottom: '14px' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', color: COLORS.steelLight, fontWeight: 700 }}>전체</div>
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: COLORS.navy }}>{s.total}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '13px', color: COLORS.steelLight, fontWeight: 700 }}>완료</div>
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: COLORS.green }}>{s.done}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: '13px', color: COLORS.steelLight, fontWeight: 700 }}>잔여</div>
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: COLORS.amber }}>{s.remaining}</div>
-                    </div>
-                  </div>
-                  <div style={{ borderTop: `1px solid ${COLORS.border}`, paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                      <span style={{ color: COLORS.steelLight }}>금액</span>
-                      <span style={{ fontWeight: 700, color: COLORS.navy }}>{fmtWon(s.amount)}</span>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px' }}>
-                      <span style={{ color: COLORS.steelLight }}>중량</span>
-                      <span style={{ fontWeight: 700, color: COLORS.navy }}>{fmtNum(s.weight)}kg</span>
-                    </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '20px', marginTop: '28px', paddingTop: '24px', borderTop: `1px solid ${N.borderLight}` }}>
+              {WORK_TYPES.map((t) => (
+                <div key={t.key} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ width: '11px', height: '11px', borderRadius: '50%', background: t.color, flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: '13px', color: N.text600 }}>{t.label} 금액</div>
+                    <div style={{ fontFamily: N.font, fontSize: '24px', fontWeight: 500, color: N.text900 }}>{fmtWon(byType[t.key].amount)}</div>
                   </div>
                 </div>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
-          <div style={box.card}>
+          {/* 요약 3카드 */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '18px' }}>
+            <div style={{ ...card, padding: '20px 24px' }}>
+              <div style={{ fontSize: '14px', color: N.text600 }}>전체 작업</div>
+              <div style={{ fontFamily: N.font, fontSize: '38px', fontWeight: 500, marginTop: '6px', color: N.text900 }}>
+                {fmtNum(summary.total)}<span style={{ fontSize: '17px', color: N.text500 }}>건</span>
+              </div>
+            </div>
+            <div style={{ ...card, padding: '20px 24px' }}>
+              <div style={{ fontSize: '14px', color: N.text600 }}>완료</div>
+              <div style={{ fontFamily: N.font, fontSize: '38px', fontWeight: 500, marginTop: '6px', color: shade(N.green, 30) }}>
+                {fmtNum(summary.done)}<span style={{ fontSize: '17px', color: N.text500 }}>건</span>
+              </div>
+            </div>
+            <div style={{ ...card, padding: '20px 24px' }}>
+              <div style={{ fontSize: '14px', color: N.text600 }}>진행중 · 대기</div>
+              <div style={{ fontFamily: N.font, fontSize: '38px', fontWeight: 500, marginTop: '6px', color: N.text900 }}>
+                {fmtNum(summary.remaining)}<span style={{ fontSize: '17px', color: N.text500 }}>건</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 라인별 현황 */}
+          <div>
+            <h2 style={{ fontFamily: N.font, fontWeight: 500, fontSize: '20px', margin: '0 0 14px 0', color: N.text900 }}>라인별 현황</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '18px' }}>
+              {WORK_TYPES.map((t) => {
+                const s = byType[t.key];
+                const pct = s.total ? Math.round((s.done / s.total) * 100) : 0;
+                return (
+                  <div key={t.key} style={{ ...card, borderTop: `4px solid ${t.color}`, padding: '22px 24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '14px' }}>
+                      <div style={{ fontFamily: N.font, fontSize: '18px', fontWeight: 500, color: N.text900 }}>{t.label}</div>
+                      <div style={{ fontSize: '14px', color: t.color }}>{pct}% 완료</div>
+                    </div>
+
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ fontSize: '12.5px', color: N.text600 }}>금액</div>
+                      <div style={{ fontFamily: N.font, fontSize: '30px', fontWeight: 500, color: t.color }}>{fmtWon(s.amount)}</div>
+                    </div>
+
+                    <div style={{ height: '8px', background: N.borderLight, borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
+                      <div style={{ height: '100%', background: t.color, borderRadius: '4px', width: `${pct}%` }} />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 18px' }}>
+                      <div>
+                        <div style={{ fontSize: '12.5px', color: N.text600 }}>전체</div>
+                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{s.total}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12.5px', color: N.text600 }}>완료</div>
+                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{s.done}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12.5px', color: N.text600 }}>잔여</div>
+                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{s.remaining}</div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '12.5px', color: N.text600 }}>중량</div>
+                        <div style={{ fontSize: '18px', fontWeight: 500, fontFamily: N.font, color: N.text900 }}>{fmtNum(s.weight)}kg</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 작업 목록 */}
+          <div style={{ ...card, padding: '26px 28px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', marginBottom: '18px' }}>
-              <div style={{ fontSize: '17px', fontWeight: 800, color: COLORS.navy }}>작업 목록</div>
+              <div style={{ fontFamily: N.font, fontSize: '18px', fontWeight: 500, color: N.text900 }}>작업 목록</div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px' }}>
-                {['전체', ...WORK_TYPES.map((t) => t.key)].map((k) => (
-                  <button
-                    key={k}
-                    onClick={() => setTypeFilter(k)}
-                    style={{
-                      ...box.ghostBtn, padding: '9px 16px', fontSize: '14px',
-                      backgroundColor: typeFilter === k ? COLORS.navy : '#eef2f7',
-                      color: typeFilter === k ? '#fff' : COLORS.steel,
-                      border: `1px solid ${typeFilter === k ? COLORS.navy : COLORS.border}`,
-                    }}
-                  >
-                    {k === '전체' ? `전체 ${rows.length}` : WORK_TYPES.find((t) => t.key === k)?.label}
-                  </button>
-                ))}
+                {['전체', ...WORK_TYPES.map((t) => t.key)].map((k) => {
+                  const active = typeFilter === k;
+                  return (
+                    <button
+                      key={k}
+                      className="leveler-seg-btn"
+                      onClick={() => setTypeFilter(k)}
+                      style={{
+                        fontFamily: N.font, fontSize: '13.5px', fontWeight: 500, cursor: 'pointer',
+                        padding: '8px 15px', borderRadius: N.radiusMd,
+                        background: active ? N.accent600 : N.bg,
+                        color: active ? '#fff' : N.text700,
+                        border: `1px solid ${active ? N.accent600 : N.border}`,
+                      }}
+                    >
+                      {k === '전체' ? `전체 ${rows.length}` : WORK_TYPES.find((t) => t.key === k)?.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             {visibleRows.length === 0 ? (
-              <div style={box.emptyText}>해당 날짜에 작업 데이터가 없습니다.</div>
+              <div style={{ color: N.text500, fontSize: '15px', padding: '16px 0' }}>해당 날짜에 작업 데이터가 없습니다.</div>
             ) : (
               <div style={{ overflowX: 'auto' }}>
-                <table style={box.table}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '14.5px' }}>
                   <thead>
                     <tr>
-                      <th style={box.th}>업체명</th>
-                      <th style={box.th}>품명</th>
-                      <th style={box.th}>규격</th>
-                      <th style={box.th}>중량</th>
-                      <th style={box.th}>가공규격</th>
-                      <th style={box.th}>구분</th>
-                      <th style={box.th}>상태</th>
-                      <th style={box.th}>UPDATE</th>
+                      {['업체명', '품명', '규격', '중량', '가공규격', '구분', '상태', 'UPDATE'].map((h) => (
+                        <th key={h} style={{
+                          textAlign: 'left', padding: '10px 14px', fontSize: '11.5px', letterSpacing: '0.06em',
+                          textTransform: 'uppercase', color: N.text500, borderBottom: `1px solid ${N.borderLight}`,
+                          fontWeight: 500,
+                        }}>{h}</th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
                     {visibleRows.map((r) => {
                       const typeKey = r.work_type === 'LEVELING' ? 'LEVELLING' : r.work_type;
                       const label = WORK_TYPES.find((t) => t.key === typeKey)?.label || r.work_type;
-                      const [color, bg] = STATUS_STYLE[r.status] || [COLORS.steel, '#eef2f7'];
+                      const [color, bg] = STATUS_STYLE[r.status] || [N.text700, N.borderLight];
+                      const td = { padding: '13px 14px', borderBottom: `1px solid ${N.borderLight}`, color: N.text700 };
                       return (
                         <tr key={r.source_id}>
-                          <td style={box.td}>{r.company_name}</td>
-                          <td style={box.td}>{r.product_name}</td>
-                          <td style={box.td}>{r.specification}</td>
-                          <td style={box.td}>{fmtNum(r.original_weight)}</td>
-                          <td style={box.td}>{r.process_rule}</td>
-                          <td style={box.td}>{label}</td>
-                          <td style={box.td}><span style={pill(bg, color)}>{r.status}</span></td>
-                          <td style={box.td}>{fmtTime(r.update_time)}</td>
+                          <td style={td}>{r.company_name}</td>
+                          <td style={td}>{r.product_name}</td>
+                          <td style={td}>{r.specification}</td>
+                          <td style={td}>{fmtNum(r.original_weight)}</td>
+                          <td style={td}>{r.process_rule}</td>
+                          <td style={td}>{label}</td>
+                          <td style={td}>
+                            <span style={{
+                              display: 'inline-flex', alignItems: 'center', padding: '5px 13px', borderRadius: '999px',
+                              fontSize: '12.5px', fontWeight: 500, background: bg, color,
+                            }}>{r.status}</span>
+                          </td>
+                          <td style={td}>{fmtTime(r.update_time)}</td>
                         </tr>
                       );
                     })}
