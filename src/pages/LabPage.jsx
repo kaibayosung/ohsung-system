@@ -15,6 +15,7 @@ import { CashFlowPnlDemo } from './test/cashFlowPnlScreen';
 import { DepositReconcileDemo } from './test/depositReconcileScreen';
 import { LevelerWorkStatus } from './test/levelerWorkStatusScreen';
 import { CoilAnalysisScreen } from './test/coilAnalysisScreen';
+import { CoilAiHelperScreen } from './test/coilAiHelperScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // external을 채우면(별도 배포 URL이 있는 경우) 카드 클릭 시 새 탭으로 열리고, 없으면 이 페이지 안에서 바로 열립니다.
@@ -28,6 +29,7 @@ const PROJECTS = [
   { key: 'separator-kiosk', label: '세퍼레이터 태블릿 키오스크', icon: '🖥️', category: '생산현장 도구', desc: '슬리터2 현장에 배포된 실제 서비스로 이동합니다.', external: '/separator', badge: '현장 배포중' },
   { key: 'leveler-work-status', label: '작업현황 대시보드', icon: '📊', category: '생산현장 도구', desc: '레벨러 시스템(레벨링·슬리팅1·슬리팅2) 작업현황을 날짜별로 봅니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'coil-analysis', label: '코일 작업 상세 분석', icon: '🧭', category: '생산현장 도구', desc: '날짜·코일을 선택하면 길이 구간별 속도·텐션 변화와 동일 사양 대비 편차를 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'coil-ai-helper', label: '슬리팅2 AI 헬퍼', icon: '🤖', category: '생산현장 도구', desc: '가동 전 작업지시서를 선택하면 동일 사양 완료 코일들의 실측 데이터로 권장 속도·텐션·예상 가동시간을 추천합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'sales-target', label: '영업대상 고객사 리스트', icon: '📋', category: '영업 지원', desc: '재고를 맡겨둔 거래처 중 최근 작업이 뜸한 곳을 자동으로 찾아줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'warehouse-3d', label: '코일창고 3D 뷰어 · 출고관리', icon: '📦', category: '창고 관리', desc: '거래처별 보관 코일을 3D/평면도로 보고, 출고 처리까지 할 수 있는 실제 배포 서비스입니다.', external: '/warehouse-3d.html', badge: '현장 배포중' },
   { key: 'incident-analysis', label: '장애 원인 분석 (AI)', icon: '🧯', category: '설비 진단', desc: 'PLC 이력·CCTV 데이터를 AI가 분석해 사고 원인을 30분 내로 규명합니다. 실제 슬리터 사고 사례로 만든 샘플입니다.', badge: '샘플' },
@@ -153,6 +155,7 @@ function LabPage() {
           {view === 'deposit-reconcile' && <DepositReconcileDemo />}
           {view === 'leveler-work-status' && <LevelerWorkStatus />}
           {view === 'coil-analysis' && <CoilAnalysisScreen />}
+          {view === 'coil-ai-helper' && <CoilAiHelperScreen />}
         </div>
       )}
     </div>
