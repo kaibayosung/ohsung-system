@@ -201,7 +201,7 @@ export function CustomerChatbotScreen() {
   return (
     <div style={box.page}>
       <div>
-        <h1 style={box.title}>💬 고객사 챗봇 데모 — {COMPANY}</h1>
+        <h1 style={box.title}>💬 챗봇서비스 (대한강재/작업내용)</h1>
         <p style={box.hint}>실제 고객사 포털(/portal)과는 별개의 연구실 프로토타입입니다. 지금은 {COMPANY} 한 곳으로 범위를 고정해 시연용으로 만들었습니다.</p>
       </div>
 

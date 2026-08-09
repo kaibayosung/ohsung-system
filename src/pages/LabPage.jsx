@@ -36,7 +36,7 @@ const PROJECTS = [
   { key: 'coil-ai-helper-work', label: 'AI 헬퍼 (슬리팅 2/작업용)', icon: '🎯', category: '생산현장 도구', desc: '코일을 선택하면 현재 진행 길이의 실측 속도·텐션1~4를 동일 사양 완료 코일 권장치와 비교해 적정/느림/빠름을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'sales-target', label: '영업대상 고객사 리스트', icon: '📋', category: '영업 지원', desc: '재고를 맡겨둔 거래처 중 최근 작업이 뜸한 곳을 자동으로 찾아줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'customer-order-tracker', label: '고객 주문 현황 트래커', icon: '📦', category: '고객사 시연', desc: '거래처를 선택하면 접수·작업지시·작업진행·작업완료·출고완료 5단계 진행상황을 한눈에 보여줍니다. 실제 /portal과 별개의 외부 시연용 프로토타입, 실데이터로 동작합니다.', badge: '실데이터 연동' },
-  { key: 'customer-chatbot', label: '고객사 챗봇 데모 (대한강재)', icon: '💬', category: '고객사 시연', desc: '진행중/완료 건수, 미출고, 미수금, 코일별 상태 등을 자유롭게 물어보면 Claude가 실데이터를 근거로 자연어로 답합니다. 실제 /portal과 별개, 대한강재로 범위 고정.', badge: '실데이터 연동' },
+  { key: 'customer-chatbot', label: '챗봇서비스 (대한강재/작업내용)', icon: '💬', category: '고객사 시연', desc: '진행중/완료 건수, 미출고, 미수금, 코일별 상태 등을 자유롭게 물어보면 Claude가 실데이터를 근거로 자연어로 답합니다. 실제 /portal과 별개, 대한강재로 범위 고정.', badge: '실데이터 연동' },
   { key: 'warehouse-3d', label: '코일창고 3D 뷰어 · 출고관리', icon: '📦', category: '창고 관리', desc: '거래처별 보관 코일을 3D/평면도로 보고, 출고 처리까지 할 수 있는 실제 배포 서비스입니다.', external: '/warehouse-3d.html', badge: '현장 배포중' },
   { key: 'incident-analysis', label: '장애 원인 분석 (AI)', icon: '🧯', category: '설비 진단', desc: 'PLC 이력·CCTV 데이터를 AI가 분석해 사고 원인을 30분 내로 규명합니다. 실제 슬리터 사고 사례로 만든 샘플입니다.', badge: '샘플' },
   { key: 'cashflow-pnl', label: '계좌 손익 통합 대시보드', icon: '💰', category: '경영 · 재무', desc: '통장 거래내역을 업로드하면 그린ERP 매출(가공+고철)과 합쳐 월간 손익을 자동 계산합니다. 매출은 실데이터, 통장 내역은 화면에서만 계산(미저장)됩니다.', badge: '실데이터 연동' },
