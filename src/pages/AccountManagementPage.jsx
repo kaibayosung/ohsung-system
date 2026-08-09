@@ -64,6 +64,21 @@ export default function AccountManagementPage() {
     loadAll();
   };
 
+  const deleteAccount = async (row) => {
+    const label = row.name || row.company_name || row.login_id || row.email;
+    if (!window.confirm(`${label} 계정을 완전히 삭제하시겠습니까?\n로그인 정보와 프로필이 모두 삭제되며 되돌릴 수 없습니다.`)) return;
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-account', {
+        body: { target_user_id: row.id },
+      });
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || '계정 삭제에 실패했습니다.');
+      loadAll();
+    } catch (e) {
+      alert('계정 삭제 실패: ' + (e.message || e));
+    }
+  };
+
   const resetPassword = async (row) => {
     const label = row.name || row.company_name || row.login_id || row.email;
     const newPw = window.prompt(`${label} 계정의 새 비밀번호를 입력하세요 (4자 이상):`);
@@ -155,6 +170,7 @@ export default function AccountManagementPage() {
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button style={btn()} onClick={() => toggleStaffActive(r)}>{r.is_active ? '비활성화' : '활성화'}</button>
                     <button style={btn()} onClick={() => resetPassword(r)}>비번 재설정</button>
+                    <button style={{ ...btn(), borderColor: C.textDanger, color: C.textDanger }} onClick={() => deleteAccount(r)}>삭제</button>
                   </div>
                 </td>
               </tr>
@@ -180,6 +196,7 @@ export default function AccountManagementPage() {
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button style={btn()} onClick={() => toggleCustomerActive(r)}>{r.is_active ? '비활성화' : '활성화'}</button>
                     <button style={btn()} onClick={() => resetPassword(r)}>비번 재설정</button>
+                    <button style={{ ...btn(), borderColor: C.textDanger, color: C.textDanger }} onClick={() => deleteAccount(r)}>삭제</button>
                   </div>
                 </td>
               </tr>
