@@ -212,7 +212,7 @@ export function CoilAiHelperScreen() {
 
       <div>
         <h1 style={{ fontFamily: N.font, fontWeight: 900, fontSize: '34px', margin: '0 0 8px 0', letterSpacing: '-0.01em', color: N.text900 }}>
-          🤖 슬리팅2 AI 헬퍼
+          🤖 AI 헬퍼 (슬리팅 2/지난작업보기)
         </h1>
         <p style={{ fontSize: '16px', fontWeight: 700, lineHeight: 1.6, color: N.text700, maxWidth: '760px', margin: 0 }}>
           아직 가동 전인 작업지시서를 선택하면, 동일 사양의 최근 완료 코일 실측 데이터로부터 권장 속도·텐션과 예상 가동시간을 미리 보여줍니다.
