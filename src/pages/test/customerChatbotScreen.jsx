@@ -1,5 +1,5 @@
 // src/pages/test/customerChatbotScreen.jsx
-// 고객사 챗봇 데모 — (주)대한강재로 스코프를 고정한 외부 고객사 시연용 프로토타입.
+// (주)대한강재 챗봇 — 대한강재로 스코프를 고정한 고객사 챗봇(작업 현황·미수금·출고 여부).
 // 연구실 전용이며 실제 /portal은 건드리지 않습니다.
 //
 // 방식: 프론트엔드가 실데이터(greenp_joborder_detail/greenp_joborders/greenp_unshipped/
@@ -103,7 +103,7 @@ export function CustomerChatbotScreen() {
   const [error, setError] = useState(null);
   const [ctx, setCtx] = useState(null);
   const [messages, setMessages] = useState([
-    { role: 'bot', text: `안녕하세요! ${COMPANY} 담당자님을 위한 챗봇 데모입니다. 최근 ${WINDOW_DAYS}일 작업 현황, 미수금, 출고 여부 등을 자유롭게 물어보세요.` },
+    { role: 'bot', text: `안녕하세요! ${COMPANY} 담당자님을 위한 챗봇입니다. 최근 ${WINDOW_DAYS}일 작업 현황, 미수금, 출고 여부 등을 자유롭게 물어보세요.` },
   ]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
@@ -201,11 +201,11 @@ export function CustomerChatbotScreen() {
   return (
     <div style={box.page}>
       <div>
-        <h1 style={box.title}>💬 챗봇서비스 (대한강재/작업내용)</h1>
-        <p style={box.hint}>실제 고객사 포털(/portal)과는 별개의 연구실 프로토타입입니다. 지금은 {COMPANY} 한 곳으로 범위를 고정해 시연용으로 만들었습니다.</p>
+        <h1 style={box.title}>💬 (주)대한강재 챗봇 (작업 현황·미수금·출고 여부)</h1>
+        <p style={box.hint}>실제 고객사 포털(/portal)과는 별개의 연구실 화면입니다. 지금은 {COMPANY} 한 곳으로 범위를 고정했습니다.</p>
       </div>
 
-      <ProposalBanner text={`Claude가 실데이터(최근 ${WINDOW_DAYS}일 작업현황·미출고현황·미수금)를 근거로 자연어로 답하는 데모입니다. 정해진 문구가 아니라 자유롭게 물어보셔도 되고, 챗봇은 이 JSON 범위(=${COMPANY} 작업현황) 밖의 내용은 답변하지 않도록 지시돼 있습니다. 실제 서비스로 만들 때는 로그인한 거래처 계정의 회사명을 자동으로 씁니다.`} />
+      <ProposalBanner text={`Claude가 실데이터(최근 ${WINDOW_DAYS}일 작업현황·미출고현황·미수금)를 근거로 자연어로 답하는 챗봇입니다. 정해진 문구가 아니라 자유롭게 물어보셔도 되고, 챗봇은 이 JSON 범위(=${COMPANY} 작업현황) 밖의 내용은 답변하지 않도록 지시돼 있습니다. 실제 서비스로 만들 때는 로그인한 거래처 계정의 회사명을 자동으로 씁니다.`} />
       {error && <ProposalBanner tone="amber" text={`데이터 로딩 오류: ${error}`} />}
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
