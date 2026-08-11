@@ -273,16 +273,16 @@ export function WorkStatusBoardV2() {
 
   const totals = useMemo(() => {
     const all = { amount: 0, tons: 0 };
-    const inProgress = { amount: 0, tons: 0 };
-    const remaining = { amount: 0, tons: 0 };
+    const done = { amount: 0, tons: 0 };
     rows.forEach((r) => {
       const amt = Number(r.amount || 0);
       const w = Number(r.original_weight || 0);
       all.amount += amt; all.tons += w;
-      if (r.status === '진행중') { inProgress.amount += amt; inProgress.tons += w; }
-      if (r.status !== '완료') { remaining.amount += amt; remaining.tons += w; }
+      if (r.status === '완료') { done.amount += amt; done.tons += w; }
     });
-    return { all, inProgress, remaining };
+    // 잔여 = 전체 - 완료 (완료 + 잔여 = 전체가 정확히 맞도록)
+    const remaining = { amount: all.amount - done.amount, tons: all.tons - done.tons };
+    return { all, done, remaining };
   }, [rows]);
 
   const grandTotal = useMemo(() => {
@@ -363,8 +363,8 @@ export function WorkStatusBoardV2() {
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '20px' }}>
             <SummaryCard label="총발주" amount={totals.all.amount} tons={totals.all.tons} accent={N.accent500} />
-            <SummaryCard label="진행중" amount={totals.inProgress.amount} tons={totals.inProgress.tons} accent={N.blue} />
-            <SummaryCard label="잔여 (진행중+예정)" amount={totals.remaining.amount} tons={totals.remaining.tons} accent={N.text600} />
+            <SummaryCard label="완료 (현재까지)" amount={totals.done.amount} tons={totals.done.tons} accent={shade(N.green, 30)} />
+            <SummaryCard label="잔여" amount={totals.remaining.amount} tons={totals.remaining.tons} accent={N.gray} />
           </div>
 
           {/* 전체 총계표: 전체 / 완료 / 잔여 (완료+잔여=전체가 정확히 맞도록 계산) */}
