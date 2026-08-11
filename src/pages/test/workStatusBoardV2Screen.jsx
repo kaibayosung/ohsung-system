@@ -7,10 +7,14 @@
 //
 // "오늘 완료 가능?" 예측 로직: leveler_jobs에는 완료·진행중 건에 started_at(착수시각)이 남아있어,
 // 최근 7일간 완료된 건들의 (update_time - started_at) 평균 소요시간을 라인별로 구할 수 있습니다.
-// 이 평균 소요시간 × 남은(진행중+준비) 건수로 예상 소요시간을 추정하고, 남은 근무시간
+// 이 평균 소요시간 × 남은(진행중+예정) 건수로 예상 소요시간을 추정하고, 남은 근무시간
 // (오늘 17:40 KST 기준 — greenp-sync 크론 업무시간 종료값과 동일하게 맞춤)과 비교해 배지로 보여줍니다.
-// 표본이 2건 미만이면 "예측 불가"로 표시합니다. 대기 중인 작업은 실제 착수 전이라
+// 표본이 2건 미만이면 "예측 불가"로 표시합니다. 예정 상태 작업은 실제 착수 전이라
 // 이 예측은 근사치이며 확정값이 아님을 화면에 명시합니다.
+//
+// 상태 3단계(작업중/예정/완료)를 뱃지 라벨·색상·카드 왼쪽 스트라이프로 동시에 표시해
+// 한눈에 구분되게 하고, 라인별 전체/완료/진행중 총계표를 요약카드 아래에 추가했습니다.
+// 사용자 피드백("폰트가 컸으면 좋겠다")에 따라 전체적으로 폰트 크기를 크게 키웠습니다.
 import React, { useState, useEffect, useMemo } from 'react';
 import { fmtNum } from './theme';
 import { supabase } from '../../supabaseClient';
@@ -34,9 +38,13 @@ const N = {
   accent200: '#e7e5fe',
   green: 'oklch(66% 0.13 150)',
   amber: 'oklch(70% 0.15 65)',
+  blue: '#1D4ED8',
+  blueBg: '#DBEAFE',
+  gray: '#6B7280',
+  grayBg: '#EEF0F4',
   red: 'oklch(62% 0.19 25)',
-  radiusSm: '4px',
-  radiusMd: '8px',
+  radiusSm: '6px',
+  radiusMd: '10px',
   radiusLg: '14px',
   shadowSm: '0 1px 2px rgba(41,43,49,0.06)',
   shadowMd: '0 1px 2px rgba(41,43,49,0.04), 0 8px 24px rgba(41,43,49,0.07)',
@@ -53,10 +61,11 @@ const LINES = [
   { key: 'SLITING', label: '슬리팅1', color: N.green },
 ];
 
-const STATUS_STYLE = {
-  완료: [shade(N.green, 30), tint(N.green, 14)],
-  진행중: [N.accent600, N.accent100],
-  준비: [shade(N.amber, 30), tint(N.amber, 14)],
+// 상태 3단계 표시 통일: DB값(완료/진행중/준비) → 화면 라벨(완료/작업중/예정)
+const STATUS_META = {
+  완료: { label: '완료', color: shade(N.green, 30), bg: tint(N.green, 14) },
+  진행중: { label: '작업중', color: N.blue, bg: N.blueBg },
+  준비: { label: '예정', color: N.gray, bg: N.grayBg },
 };
 
 function normType(t) { return t === 'LEVELING' ? 'LEVELLING' : t; }
@@ -95,10 +104,10 @@ function InfoBanner({ text, tone }) {
       display: 'flex', alignItems: 'flex-start', gap: '12px',
       background: isAmber ? '#FFF7E8' : N.surface,
       border: `1px solid ${isAmber ? '#F3DCA0' : N.border}`, borderRadius: N.radiusMd,
-      padding: '16px 20px', fontSize: '15.5px', fontWeight: 700, lineHeight: 1.6,
+      padding: '18px 22px', fontSize: '17px', fontWeight: 700, lineHeight: 1.6,
       color: isAmber ? shade(N.amber, 40) : N.text700,
     }}>
-      <span style={{ fontSize: '18px' }}>{isAmber ? '⚠️' : '💡'}</span>
+      <span style={{ fontSize: '20px' }}>{isAmber ? '⚠️' : '💡'}</span>
       <span>{text}</span>
     </div>
   );
@@ -108,19 +117,34 @@ const card = { background: N.surface, border: `1px solid ${N.border}`, borderRad
 
 function SummaryCard({ label, amount, tons, accent }) {
   return (
-    <div style={{ ...card, padding: '20px 24px', borderTop: `4px solid ${accent}` }}>
-      <div style={{ fontSize: '15px', fontWeight: 800, color: N.text600, marginBottom: '10px' }}>{label}</div>
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+    <div style={{ ...card, padding: '22px 26px', borderTop: `5px solid ${accent}` }}>
+      <div style={{ fontSize: '17px', fontWeight: 800, color: N.text600, marginBottom: '12px' }}>{label}</div>
+      <div style={{ display: 'flex', gap: '26px', flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: '12.5px', fontWeight: 800, color: N.text500 }}>금액</div>
-          <div style={{ fontFamily: N.font, fontSize: '24px', fontWeight: 900, color: N.text900 }}>{fmtWon(amount)}</div>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: N.text500 }}>금액</div>
+          <div style={{ fontFamily: N.font, fontSize: '29px', fontWeight: 900, color: N.text900 }}>{fmtWon(amount)}</div>
         </div>
         <div>
-          <div style={{ fontSize: '12.5px', fontWeight: 800, color: N.text500 }}>톤수</div>
-          <div style={{ fontFamily: N.font, fontSize: '24px', fontWeight: 900, color: N.text900 }}>{fmtNum(Math.round(tons / 1000))}톤</div>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: N.text500 }}>톤수</div>
+          <div style={{ fontFamily: N.font, fontSize: '29px', fontWeight: 900, color: N.text900 }}>{fmtNum(Math.round(tons / 1000))}톤</div>
         </div>
       </div>
     </div>
+  );
+}
+
+function StatusBadge({ status, size }) {
+  const meta = STATUS_META[status] || { label: status, color: N.text700, bg: N.borderLight };
+  const big = size === 'lg';
+  return (
+    <span style={{
+      display: 'inline-flex', alignItems: 'center', gap: '6px',
+      fontSize: big ? '15px' : '14px', fontWeight: 900, padding: big ? '6px 14px' : '5px 12px', borderRadius: '999px',
+      background: meta.bg, color: meta.color, flexShrink: 0,
+    }}>
+      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: meta.color }} />
+      {meta.label}
+    </span>
   );
 }
 
@@ -129,7 +153,7 @@ function FeasibilityBadge({ feas }) {
   if (!feas.enough) {
     return (
       <span style={{
-        fontSize: '12.5px', fontWeight: 900, padding: '5px 12px', borderRadius: '999px',
+        fontSize: '14px', fontWeight: 900, padding: '6px 14px', borderRadius: '999px',
         background: N.borderLight, color: N.text600,
       }}>예측불가 (표본부족)</span>
     );
@@ -141,10 +165,7 @@ function FeasibilityBadge({ feas }) {
   };
   const [color, bg] = map[feas.level];
   return (
-    <span style={{
-      fontSize: '12.5px', fontWeight: 900, padding: '5px 12px', borderRadius: '999px',
-      background: bg, color,
-    }}>
+    <span style={{ fontSize: '14px', fontWeight: 900, padding: '6px 14px', borderRadius: '999px', background: bg, color }}>
       오늘 완료 {feas.level} · 예상 {fmtHM(feas.etaKST)}
     </span>
   );
@@ -215,15 +236,17 @@ export function WorkStatusBoardV2() {
 
   const byLine = useMemo(() => {
     const map = {};
-    LINES.forEach((l) => { map[l.key] = { rows: [], amount: 0, tons: 0, doneAmount: 0, remaining: 0, inProgress: 0, done: 0 }; });
+    LINES.forEach((l) => { map[l.key] = { rows: [], amount: 0, tons: 0, doneAmount: 0, doneCount: 0, inProgressAmount: 0, inProgressCount: 0, scheduledCount: 0, remaining: 0 }; });
     rows.forEach((r) => {
       const key = normType(r.work_type);
       if (!map[key]) return;
+      const amt = Number(r.amount || 0);
       map[key].rows.push(r);
-      map[key].amount += Number(r.amount || 0);
+      map[key].amount += amt;
       map[key].tons += Number(r.original_weight || 0);
-      if (r.status === '완료') { map[key].done += 1; map[key].doneAmount += Number(r.amount || 0); }
-      else if (r.status === '진행중') map[key].inProgress += 1;
+      if (r.status === '완료') { map[key].doneCount += 1; map[key].doneAmount += amt; }
+      else if (r.status === '진행중') { map[key].inProgressCount += 1; map[key].inProgressAmount += amt; }
+      else { map[key].scheduledCount += 1; }
       if (r.status !== '완료') map[key].remaining += 1;
     });
     return map;
@@ -262,8 +285,28 @@ export function WorkStatusBoardV2() {
     return { all, inProgress, remaining };
   }, [rows]);
 
+  const grandTotal = useMemo(() => {
+    return LINES.reduce((acc, l) => {
+      const s = byLine[l.key];
+      return {
+        count: acc.count + s.rows.length,
+        amount: acc.amount + s.amount,
+        tons: acc.tons + s.tons,
+        doneCount: acc.doneCount + s.doneCount,
+        doneAmount: acc.doneAmount + s.doneAmount,
+        inProgressCount: acc.inProgressCount + s.inProgressCount,
+        inProgressAmount: acc.inProgressAmount + s.inProgressAmount,
+      };
+    }, { count: 0, amount: 0, tons: 0, doneCount: 0, doneAmount: 0, inProgressCount: 0, inProgressAmount: 0 });
+  }, [byLine]);
+
+  const th = { textAlign: 'right', padding: '14px 16px', fontSize: '15px', fontWeight: 900, color: N.text600, borderBottom: `2px solid ${N.border}`, whiteSpace: 'nowrap' };
+  const thLeft = { ...th, textAlign: 'left' };
+  const td = { textAlign: 'right', padding: '14px 16px', fontSize: '18px', fontWeight: 800, color: N.text900, borderBottom: `1px solid ${N.borderLight}`, whiteSpace: 'nowrap' };
+  const tdLeft = { ...td, textAlign: 'left', fontWeight: 900, fontSize: '19px' };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: N.font, background: N.bg, margin: '-24px', padding: '32px 36px 56px', borderRadius: '18px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '30px', fontFamily: N.font, background: N.bg, margin: '-24px', padding: '32px 36px 56px', borderRadius: '18px' }}>
       <style>{`
         @keyframes wsb2Pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.35 } }
         .wsb2-live-dot { animation: wsb2Pulse 1.6s ease-in-out infinite; }
@@ -271,15 +314,15 @@ export function WorkStatusBoardV2() {
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px', flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontFamily: N.font, fontWeight: 900, fontSize: '38px', margin: '0 0 8px 0', letterSpacing: '-0.01em', color: N.text900 }}>📊 작업현황 대시보드 2</h1>
-          <p style={{ fontSize: '16.5px', fontWeight: 700, lineHeight: 1.6, color: N.text700, maxWidth: '760px', margin: 0 }}>
+          <h1 style={{ fontFamily: N.font, fontWeight: 900, fontSize: '42px', margin: '0 0 10px 0', letterSpacing: '-0.01em', color: N.text900 }}>📊 작업현황 대시보드 2</h1>
+          <p style={{ fontSize: '18px', fontWeight: 700, lineHeight: 1.6, color: N.text700, maxWidth: '780px', margin: 0 }}>
             라인(레벨링·슬리팅2·슬리팅1)별로 지금 뭘 하고 있는지, 얼마짜리인지, 오늘 얼마를 벌었는지, 남은 작업을 오늘 안에 끝낼 수 있는지를 봅니다.
           </p>
         </div>
         {isToday && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: N.surface, border: `1px solid ${N.border}`, borderRadius: N.radiusMd, padding: '11px 16px', boxShadow: N.shadowSm }}>
-            <span className="wsb2-live-dot" style={{ width: '9px', height: '9px', borderRadius: '50%', background: N.accent500, flexShrink: 0 }} />
-            <span style={{ fontSize: '15px', fontWeight: 800, color: N.text700 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: N.surface, border: `1px solid ${N.border}`, borderRadius: N.radiusMd, padding: '12px 18px', boxShadow: N.shadowSm }}>
+            <span className="wsb2-live-dot" style={{ width: '10px', height: '10px', borderRadius: '50%', background: N.accent500, flexShrink: 0 }} />
+            <span style={{ fontSize: '16px', fontWeight: 800, color: N.text700 }}>
               {lastSyncAt ? lastSyncAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '--:--'} 기준 · 10분마다 자동 새로고침
             </span>
           </div>
@@ -289,96 +332,140 @@ export function WorkStatusBoardV2() {
       <InfoBanner text="leveler_jobs 실데이터를 그대로 조회하는 프로토타입입니다. '오늘 완료 가능?' 예측은 최근 7일 완료건의 평균 소요시간 × 남은 건수로 계산한 근사치이며, 실제 작업 순서·인력 배치 등은 반영하지 않습니다." />
       {error && <InfoBanner tone="amber" text={`데이터를 불러오지 못했습니다: ${error}`} />}
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
-        <span style={{ fontSize: '16px', color: N.text700, fontWeight: 900 }}>날짜</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '18px', color: N.text700, fontWeight: 900 }}>날짜</span>
         <input
           type="date"
           value={date}
           max={todayKST()}
           onChange={(e) => setDate(e.target.value)}
           style={{
-            fontSize: '20px', fontWeight: 900, background: N.surface, border: `1px solid ${N.border}`,
-            borderRadius: N.radiusMd, padding: '9px 18px', color: N.text900, colorScheme: 'light',
+            fontSize: '22px', fontWeight: 900, background: N.surface, border: `1px solid ${N.border}`,
+            borderRadius: N.radiusMd, padding: '10px 20px', color: N.text900, colorScheme: 'light',
           }}
         />
         {!isToday && (
           <button
             onClick={() => setDate(todayKST())}
             style={{
-              fontFamily: N.font, fontSize: '15px', fontWeight: 900, color: N.accent600,
+              fontFamily: N.font, fontSize: '16px', fontWeight: 900, color: N.accent600,
               background: N.accent100, border: `1px solid ${N.accent200}`, borderRadius: N.radiusMd,
-              padding: '9px 16px', cursor: 'pointer',
+              padding: '10px 18px', cursor: 'pointer',
             }}
           >오늘로</button>
         )}
         {!isToday && (
-          <span style={{ fontSize: '14px', fontWeight: 700, color: N.text500 }}>과거 날짜 조회 중 — '오늘 완료 가능?' 예측은 오늘 날짜에서만 표시됩니다.</span>
+          <span style={{ fontSize: '15px', fontWeight: 700, color: N.text500 }}>과거 날짜 조회 중 — '오늘 완료 가능?' 예측은 오늘 날짜에서만 표시됩니다.</span>
         )}
       </div>
 
       {loading ? (
-        <div style={{ color: N.text500, fontSize: '17px', fontWeight: 800, padding: '20px 0' }}>불러오는 중...</div>
+        <div style={{ color: N.text500, fontSize: '19px', fontWeight: 800, padding: '20px 0' }}>불러오는 중...</div>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '18px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '20px' }}>
             <SummaryCard label="총발주" amount={totals.all.amount} tons={totals.all.tons} accent={N.accent500} />
-            <SummaryCard label="진행중" amount={totals.inProgress.amount} tons={totals.inProgress.tons} accent={N.amber} />
-            <SummaryCard label="잔여 (진행중+대기)" amount={totals.remaining.amount} tons={totals.remaining.tons} accent={N.text600} />
+            <SummaryCard label="진행중" amount={totals.inProgress.amount} tons={totals.inProgress.tons} accent={N.blue} />
+            <SummaryCard label="잔여 (진행중+예정)" amount={totals.remaining.amount} tons={totals.remaining.tons} accent={N.text600} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
+          {/* 전체 총계표: 전체 / 완료 / 진행중 */}
+          <div style={{ ...card, padding: '26px 28px', overflowX: 'auto' }}>
+            <div style={{ fontFamily: N.font, fontSize: '23px', fontWeight: 900, color: N.text900, marginBottom: '18px' }}>전체 총계표</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+              <thead>
+                <tr>
+                  <th style={thLeft}>라인</th>
+                  <th style={th}>전체 건수</th>
+                  <th style={th}>전체 금액</th>
+                  <th style={th}>전체 톤수</th>
+                  <th style={th}>완료 건수</th>
+                  <th style={th}>완료 금액</th>
+                  <th style={th}>진행중 건수</th>
+                  <th style={th}>진행중 금액</th>
+                </tr>
+              </thead>
+              <tbody>
+                {LINES.map((l) => {
+                  const s = byLine[l.key];
+                  return (
+                    <tr key={l.key}>
+                      <td style={{ ...tdLeft, borderLeft: `5px solid ${l.color}`, paddingLeft: '13px' }}>{l.label}</td>
+                      <td style={td}>{fmtNum(s.rows.length)}건</td>
+                      <td style={td}>{fmtWon(s.amount)}</td>
+                      <td style={td}>{fmtNum(Math.round(s.tons / 1000))}톤</td>
+                      <td style={{ ...td, color: shade(N.green, 30) }}>{fmtNum(s.doneCount)}건</td>
+                      <td style={{ ...td, color: shade(N.green, 30) }}>{fmtWon(s.doneAmount)}</td>
+                      <td style={{ ...td, color: N.blue }}>{fmtNum(s.inProgressCount)}건</td>
+                      <td style={{ ...td, color: N.blue }}>{fmtWon(s.inProgressAmount)}</td>
+                    </tr>
+                  );
+                })}
+                <tr>
+                  <td style={{ ...tdLeft, borderTop: `2px solid ${N.border}`, paddingLeft: '13px' }}>합계</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}` }}>{fmtNum(grandTotal.count)}건</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}` }}>{fmtWon(grandTotal.amount)}</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}` }}>{fmtNum(Math.round(grandTotal.tons / 1000))}톤</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: shade(N.green, 30) }}>{fmtNum(grandTotal.doneCount)}건</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: shade(N.green, 30) }}>{fmtWon(grandTotal.doneAmount)}</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: N.blue }}>{fmtNum(grandTotal.inProgressCount)}건</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: N.blue }}>{fmtWon(grandTotal.inProgressAmount)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
             {LINES.map((line) => {
               const l = byLine[line.key];
               const feas = feasibilityByLine[line.key];
               const avgMin = avgDurationMinByLine[line.key];
               return (
-                <div key={line.key} style={{ ...card, borderTop: `4px solid ${line.color}`, display: 'flex', flexDirection: 'column' }}>
-                  <div style={{ padding: '20px 22px 16px', borderBottom: `1px solid ${N.borderLight}` }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ fontFamily: N.font, fontSize: '21px', fontWeight: 900, color: N.text900 }}>{line.label}</div>
+                <div key={line.key} style={{ ...card, borderTop: `5px solid ${line.color}`, display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ padding: '22px 24px 18px', borderBottom: `1px solid ${N.borderLight}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ fontFamily: N.font, fontSize: '25px', fontWeight: 900, color: N.text900 }}>{line.label}</div>
                       {isToday && <FeasibilityBadge feas={feas} />}
                     </div>
-                    <div style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', gap: '22px', flexWrap: 'wrap', marginBottom: '8px' }}>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 800, color: N.text500 }}>오늘 번 금액 (완료 {l.done}건)</div>
-                        <div style={{ fontFamily: N.font, fontSize: '22px', fontWeight: 900, color: shade(N.green, 30) }}>{fmtWon(l.doneAmount)}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: N.text500 }}>오늘 번 금액 (완료 {l.doneCount}건)</div>
+                        <div style={{ fontFamily: N.font, fontSize: '26px', fontWeight: 900, color: shade(N.green, 30) }}>{fmtWon(l.doneAmount)}</div>
                       </div>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 800, color: N.text500 }}>전체 금액</div>
-                        <div style={{ fontFamily: N.font, fontSize: '22px', fontWeight: 900, color: N.text900 }}>{fmtWon(l.amount)}</div>
+                        <div style={{ fontSize: '14px', fontWeight: 800, color: N.text500 }}>전체 금액</div>
+                        <div style={{ fontFamily: N.font, fontSize: '26px', fontWeight: 900, color: N.text900 }}>{fmtWon(l.amount)}</div>
                       </div>
                     </div>
-                    <div style={{ fontSize: '12.5px', fontWeight: 700, color: N.text500 }}>
+                    <div style={{ fontSize: '14.5px', fontWeight: 700, color: N.text500 }}>
                       잔여 {l.remaining}건{avgMin != null ? ` · 건당 평균 ${fmtDuration(avgMin)}` : ' · 평균 소요시간 데이터 부족'}
                     </div>
                   </div>
 
-                  <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                     {l.rows.length === 0 ? (
-                      <div style={{ color: N.text500, fontSize: '14px', fontWeight: 700, padding: '10px 6px' }}>해당 날짜에 작업이 없습니다.</div>
+                      <div style={{ color: N.text500, fontSize: '16px', fontWeight: 700, padding: '10px 6px' }}>해당 날짜에 작업이 없습니다.</div>
                     ) : l.rows.map((r, i) => {
-                      const [color, bg] = STATUS_STYLE[r.status] || [N.text700, N.borderLight];
+                      const meta = STATUS_META[r.status] || { color: N.text700 };
                       return (
                         <div key={r.source_id} style={{
-                          display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px',
+                          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
                           background: N.bg, borderRadius: N.radiusSm, border: `1px solid ${N.borderLight}`,
+                          borderLeft: `5px solid ${meta.color}`,
                         }}>
                           <span style={{
-                            width: '24px', height: '24px', borderRadius: '50%', background: line.color, color: '#fff',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 900, flexShrink: 0,
+                            width: '28px', height: '28px', borderRadius: '50%', background: line.color, color: '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 900, flexShrink: 0,
                           }}>{i + 1}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '14px', fontWeight: 800, color: N.text900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <div style={{ fontSize: '16.5px', fontWeight: 800, color: N.text900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {r.company_name} · {r.specification || '-'}
                             </div>
-                            <div style={{ fontSize: '12.5px', fontWeight: 700, color: N.text600 }}>
+                            <div style={{ fontSize: '14.5px', fontWeight: 700, color: N.text600 }}>
                               {fmtNum(r.original_weight)}kg · {fmtWon(r.amount)}
                             </div>
                           </div>
-                          <span style={{
-                            fontSize: '12px', fontWeight: 900, padding: '4px 10px', borderRadius: '999px',
-                            background: bg, color, flexShrink: 0,
-                          }}>{r.status}</span>
+                          <StatusBadge status={r.status} size="lg" />
                         </div>
                       );
                     })}
