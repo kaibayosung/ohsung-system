@@ -294,10 +294,8 @@ export function WorkStatusBoardV2() {
         tons: acc.tons + s.tons,
         doneCount: acc.doneCount + s.doneCount,
         doneAmount: acc.doneAmount + s.doneAmount,
-        inProgressCount: acc.inProgressCount + s.inProgressCount,
-        inProgressAmount: acc.inProgressAmount + s.inProgressAmount,
       };
-    }, { count: 0, amount: 0, tons: 0, doneCount: 0, doneAmount: 0, inProgressCount: 0, inProgressAmount: 0 });
+    }, { count: 0, amount: 0, tons: 0, doneCount: 0, doneAmount: 0 });
   }, [byLine]);
 
   const th = { textAlign: 'right', padding: '14px 16px', fontSize: '15px', fontWeight: 900, color: N.text600, borderBottom: `2px solid ${N.border}`, whiteSpace: 'nowrap' };
@@ -369,35 +367,36 @@ export function WorkStatusBoardV2() {
             <SummaryCard label="잔여 (진행중+예정)" amount={totals.remaining.amount} tons={totals.remaining.tons} accent={N.text600} />
           </div>
 
-          {/* 전체 총계표: 전체 / 완료 / 진행중 */}
+          {/* 전체 총계표: 전체 / 완료 / 잔여 (완료+잔여=전체가 정확히 맞도록 계산) */}
           <div style={{ ...card, padding: '26px 28px', overflowX: 'auto' }}>
-            <div style={{ fontFamily: N.font, fontSize: '23px', fontWeight: 900, color: N.text900, marginBottom: '18px' }}>전체 총계표</div>
-            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '760px' }}>
+            <div style={{ fontFamily: N.font, fontSize: '23px', fontWeight: 900, color: N.text900, marginBottom: '4px' }}>전체 총계표</div>
+            <div style={{ fontSize: '14.5px', fontWeight: 700, color: N.text500, marginBottom: '18px' }}>완료 금액 + 잔여 금액 = 전체 금액이 되도록 계산했습니다 (잔여 = 작업중+예정 합).</div>
+            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
               <thead>
                 <tr>
                   <th style={thLeft}>라인</th>
                   <th style={th}>전체 건수</th>
                   <th style={th}>전체 금액</th>
-                  <th style={th}>전체 톤수</th>
-                  <th style={th}>완료 건수</th>
-                  <th style={th}>완료 금액</th>
-                  <th style={th}>진행중 건수</th>
-                  <th style={th}>진행중 금액</th>
+                  <th style={{ ...th, color: shade(N.green, 30) }}>완료 건수</th>
+                  <th style={{ ...th, color: shade(N.green, 30) }}>완료 금액</th>
+                  <th style={{ ...th, color: N.gray }}>잔여 건수</th>
+                  <th style={{ ...th, color: N.gray }}>잔여 금액</th>
                 </tr>
               </thead>
               <tbody>
                 {LINES.map((l) => {
                   const s = byLine[l.key];
+                  const remainCount = s.rows.length - s.doneCount;
+                  const remainAmount = s.amount - s.doneAmount;
                   return (
                     <tr key={l.key}>
                       <td style={{ ...tdLeft, borderLeft: `5px solid ${l.color}`, paddingLeft: '13px' }}>{l.label}</td>
                       <td style={td}>{fmtNum(s.rows.length)}건</td>
                       <td style={td}>{fmtWon(s.amount)}</td>
-                      <td style={td}>{fmtNum(Math.round(s.tons / 1000))}톤</td>
                       <td style={{ ...td, color: shade(N.green, 30) }}>{fmtNum(s.doneCount)}건</td>
                       <td style={{ ...td, color: shade(N.green, 30) }}>{fmtWon(s.doneAmount)}</td>
-                      <td style={{ ...td, color: N.blue }}>{fmtNum(s.inProgressCount)}건</td>
-                      <td style={{ ...td, color: N.blue }}>{fmtWon(s.inProgressAmount)}</td>
+                      <td style={{ ...td, color: N.gray }}>{fmtNum(remainCount)}건</td>
+                      <td style={{ ...td, color: N.gray }}>{fmtWon(remainAmount)}</td>
                     </tr>
                   );
                 })}
@@ -405,11 +404,10 @@ export function WorkStatusBoardV2() {
                   <td style={{ ...tdLeft, borderTop: `2px solid ${N.border}`, paddingLeft: '13px' }}>합계</td>
                   <td style={{ ...td, borderTop: `2px solid ${N.border}` }}>{fmtNum(grandTotal.count)}건</td>
                   <td style={{ ...td, borderTop: `2px solid ${N.border}` }}>{fmtWon(grandTotal.amount)}</td>
-                  <td style={{ ...td, borderTop: `2px solid ${N.border}` }}>{fmtNum(Math.round(grandTotal.tons / 1000))}톤</td>
                   <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: shade(N.green, 30) }}>{fmtNum(grandTotal.doneCount)}건</td>
                   <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: shade(N.green, 30) }}>{fmtWon(grandTotal.doneAmount)}</td>
-                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: N.blue }}>{fmtNum(grandTotal.inProgressCount)}건</td>
-                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: N.blue }}>{fmtWon(grandTotal.inProgressAmount)}</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: N.gray }}>{fmtNum(grandTotal.count - grandTotal.doneCount)}건</td>
+                  <td style={{ ...td, borderTop: `2px solid ${N.border}`, color: N.gray }}>{fmtWon(grandTotal.amount - grandTotal.doneAmount)}</td>
                 </tr>
               </tbody>
             </table>
