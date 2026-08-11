@@ -61,13 +61,6 @@ const LINES = [
   { key: 'SLITING', label: '슬리팅1', color: N.green },
 ];
 
-// 상태 3단계 표시 통일: DB값(완료/진행중/준비) → 화면 라벨(완료/작업중/예정)
-const STATUS_META = {
-  완료: { label: '완료', color: shade(N.green, 30), bg: tint(N.green, 14) },
-  진행중: { label: '작업중', color: N.blue, bg: N.blueBg },
-  준비: { label: '예정', color: N.gray, bg: N.grayBg },
-};
-
 function normType(t) { return t === 'LEVELING' ? 'LEVELLING' : t; }
 function fmtWon(n) { return `${Number(n || 0).toLocaleString()}원`; }
 
@@ -83,11 +76,6 @@ function addDaysISO(iso, days) {
   const d = new Date(`${iso}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
-}
-function fmtHM(d) {
-  const hh = String(d.getUTCHours()).padStart(2, '0');
-  const mm = String(d.getUTCMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
 }
 function fmtDuration(mins) {
   if (mins == null) return '-';
@@ -133,21 +121,6 @@ function SummaryCard({ label, amount, tons, accent }) {
   );
 }
 
-function StatusBadge({ status, size }) {
-  const meta = STATUS_META[status] || { label: status, color: N.text700, bg: N.borderLight };
-  const big = size === 'lg';
-  return (
-    <span style={{
-      display: 'inline-flex', alignItems: 'center', gap: '6px',
-      fontSize: big ? '15px' : '14px', fontWeight: 900, padding: big ? '6px 14px' : '5px 12px', borderRadius: '999px',
-      background: meta.bg, color: meta.color, flexShrink: 0,
-    }}>
-      <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: meta.color }} />
-      {meta.label}
-    </span>
-  );
-}
-
 function FeasibilityBadge({ feas }) {
   if (!feas) return null;
   if (!feas.enough) {
@@ -166,10 +139,17 @@ function FeasibilityBadge({ feas }) {
   const [color, bg] = map[feas.level];
   return (
     <span style={{ fontSize: '14px', fontWeight: 900, padding: '6px 14px', borderRadius: '999px', background: bg, color }}>
-      오늘 완료 {feas.level} · 예상 {fmtHM(feas.etaKST)}
+      오늘 완료 {feas.level}
     </span>
   );
 }
+
+// 완료 → 작업중 → 예정 순서로 섹션을 나눠 렌더링하기 위한 구성
+const STATUS_SECTIONS = [
+  { status: '완료', label: '완료', headerBg: tint(N.green, 14), headerColor: shade(N.green, 30) },
+  { status: '진행중', label: '작업중', headerBg: N.blueBg, headerColor: N.blue },
+  { status: '준비', label: '예정', headerBg: N.grayBg, headerColor: N.gray },
+];
 
 export function WorkStatusBoardV2() {
   const [date, setDate] = useState(todayKST());
@@ -440,30 +420,29 @@ export function WorkStatusBoardV2() {
                     </div>
                   </div>
 
-                  <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
                     {l.rows.length === 0 ? (
-                      <div style={{ color: N.text500, fontSize: '16px', fontWeight: 700, padding: '10px 6px' }}>해당 날짜에 작업이 없습니다.</div>
-                    ) : l.rows.map((r, i) => {
-                      const meta = STATUS_META[r.status] || { color: N.text700 };
+                      <div style={{ color: N.text500, fontSize: '16px', fontWeight: 700, padding: '20px 22px' }}>해당 날짜에 작업이 없습니다.</div>
+                    ) : STATUS_SECTIONS.map((sec) => {
+                      const secRows = l.rows.filter((r) => r.status === sec.status);
+                      if (secRows.length === 0) return null;
                       return (
-                        <div key={r.source_id} style={{
-                          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px',
-                          background: N.bg, borderRadius: N.radiusSm, border: `1px solid ${N.borderLight}`,
-                          borderLeft: `5px solid ${meta.color}`,
-                        }}>
-                          <span style={{
-                            width: '28px', height: '28px', borderRadius: '50%', background: line.color, color: '#fff',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: 900, flexShrink: 0,
-                          }}>{i + 1}</span>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '16.5px', fontWeight: 800, color: N.text900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {r.company_name} · {r.specification || '-'}
-                            </div>
-                            <div style={{ fontSize: '14.5px', fontWeight: 700, color: N.text600 }}>
-                              {fmtNum(r.original_weight)}kg · {fmtWon(r.amount)}
-                            </div>
+                        <div key={sec.status}>
+                          <div style={{ background: sec.headerBg, color: sec.headerColor, padding: '10px 22px', fontSize: '16px', fontWeight: 900 }}>
+                            {sec.label} {secRows.length}건
                           </div>
-                          <StatusBadge status={r.status} size="lg" />
+                          {secRows.map((r) => (
+                            <div key={r.source_id} style={{
+                              display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 22px',
+                              borderBottom: `1px solid ${N.borderLight}`,
+                            }}>
+                              <span style={{ flex: 1, minWidth: 0, fontSize: '19px', fontWeight: 800, color: N.text900, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {r.company_name} · {r.specification || '-'}
+                              </span>
+                              <span style={{ fontSize: '17px', fontWeight: 700, color: N.text600, flexShrink: 0 }}>{fmtNum(r.original_weight)}kg</span>
+                              <span style={{ fontSize: '19px', fontWeight: 800, color: N.text900, minWidth: '108px', textAlign: 'right', flexShrink: 0 }}>{fmtWon(r.amount)}</span>
+                            </div>
+                          ))}
                         </div>
                       );
                     })}
