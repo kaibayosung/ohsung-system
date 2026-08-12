@@ -20,6 +20,7 @@ import { CoilAnalysisScreen } from './test/coilAnalysisScreen';
 import { CoilAiHelperScreen } from './test/coilAiHelperScreen';
 import { CoilAiHelperWorkScreen } from './test/coilAiHelperWorkScreen';
 import { WorkStatusBoardV2 } from './test/workStatusBoardV2Screen';
+import { LevelingCoilDetailScreen } from './test/levelingCoilDetailScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // external을 채우면(별도 배포 URL이 있는 경우) 카드 클릭 시 새 탭으로 열리고, 없으면 이 페이지 안에서 바로 열립니다.
@@ -34,6 +35,7 @@ const PROJECTS = [
   { key: 'leveler-work-status', label: '작업현황 대시보드', icon: '📊', category: '생산현장 도구', desc: '레벨러 시스템(레벨링·슬리팅1·슬리팅2) 작업현황을 날짜별로 봅니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'work-status-board-2', label: '작업현황 대시보드 2', icon: '🗂️', category: '생산현장 도구', desc: '레벨링·슬리팅2·슬리팅1을 라인별 보드로 보고, 라인마다 오늘 번 금액과 남은 작업을 오늘 안에 끝낼 수 있는지(평균 소요시간 기반 예측)까지 확인합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'coil-analysis', label: '코일 작업 상세 분석', icon: '🧭', category: '생산현장 도구', desc: '날짜·코일을 선택하면 길이 구간별 속도·텐션 변화와 동일 사양 대비 편차를 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'leveling-coil-detail', label: '레벨링 코일 상세분석', icon: '🧭', category: '생산현장 도구', desc: '레벨링 라인에 코일ID가 태깅된 작업을 날짜·코일로 선택하면 시트 수 추정, 길이 정확도, 설비 부하, 박스별 현황을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'coil-ai-helper', label: 'AI 헬퍼 (슬리팅 2/지난작업보기)', icon: '🤖', category: '생산현장 도구', desc: '가동 전 작업지시서를 선택하면 동일 사양 완료 코일들의 실측 데이터로 권장 속도·텐션·예상 가동시간을 추천합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'coil-ai-helper-work', label: 'AI 헬퍼 (슬리팅 2/작업용)', icon: '🎯', category: '생산현장 도구', desc: '코일을 선택하면 현재 진행 길이의 실측 속도·텐션1~4를 동일 사양 완료 코일 권장치와 비교해 적정/느림/빠름을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'sales-target', label: '영업대상 고객사 리스트', icon: '📋', category: '영업 지원', desc: '재고를 맡겨둔 거래처 중 최근 작업이 뜸한 곳을 자동으로 찾아줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
@@ -165,6 +167,7 @@ function LabPage() {
           {view === 'deposit-reconcile' && <DepositReconcileDemo />}
           {view === 'leveler-work-status' && <LevelerWorkStatus />}
           {view === 'work-status-board-2' && <WorkStatusBoardV2 />}
+          {view === 'leveling-coil-detail' && <LevelingCoilDetailScreen />}
           {view === 'coil-analysis' && <CoilAnalysisScreen />}
           {view === 'coil-ai-helper' && <CoilAiHelperScreen />}
           {view === 'coil-ai-helper-work' && <CoilAiHelperWorkScreen />}
