@@ -116,6 +116,16 @@ function ChartTooltip({ active, payload, label, suffix }) {
   );
 }
 
+// 초 단위 소요시간을 "약 84분" / "약 1시간 20분" 형태로 짧게 표기 (좌측 목록용).
+function fmtDurationShort(sec) {
+  if (sec == null) return null;
+  const totalMin = Math.round(sec / 60);
+  if (totalMin < 60) return `약 ${totalMin}분`;
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return m === 0 ? `약 ${h}시간` : `약 ${h}시간 ${m}분`;
+}
+
 export function CoilAiHelperScreen() {
   const [date, setDate] = useState(todayKST());
   const [orders, setOrders] = useState([]);
@@ -123,6 +133,7 @@ export function CoilAiHelperScreen() {
   const [listError, setListError] = useState(null);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState(null);
+  const [durations, setDurations] = useState({});
 
   const [rec, setRec] = useState(null);
   const [loadingRec, setLoadingRec] = useState(false);
@@ -135,21 +146,36 @@ export function CoilAiHelperScreen() {
       setListError(null);
       setSelectedId(null);
       setRec(null);
+      setDurations({});
       const { data, error } = await supabase
         .from('leveler_jobs')
         .select('source_id, company_name, product_name, specification, original_weight, work_type, status, update_time')
         .eq('work_date', date)
         .eq('status', '준비')
-        .in('work_type', ['SLITING', 'SLITING2'])
+        .eq('work_type', 'SLITING2')
         .order('update_time', { ascending: false });
       if (cancelled) return;
       if (error) {
         setListError(error.message);
-      } else {
-        setOrders(data || []);
-        if (data && data.length > 0) setSelectedId(data[0].product_name);
+        setLoadingList(false);
+        return;
       }
+      const list = data || [];
+      setOrders(list);
+      if (list.length > 0) setSelectedId(list[0].product_name);
       setLoadingList(false);
+
+      // 목록 항목별 예상 작업시간을 한 번에 조회 (건별 재호출 대신 duration_for 배치 모드 사용)
+      if (list.length > 0) {
+        const ids = list.map((c) => c.product_name).join(',');
+        try {
+          const res = await fetch(`${supabaseUrl}/functions/v1/leveler-explore?duration_for=${encodeURIComponent(ids)}`);
+          const json = await res.json();
+          if (!cancelled && json.ok) setDurations(json.durations || {});
+        } catch {
+          // 작업시간 표기는 참고용이라 실패해도 목록 자체는 정상 표시
+        }
+      }
     }
     run();
     return () => { cancelled = true; };
@@ -280,7 +306,14 @@ export function CoilAiHelperScreen() {
                     background: active ? N.accent100 : N.bg,
                   }}
                 >
-                  <div style={{ fontSize: '13.5px', fontWeight: 900, color: N.text900 }}>{c.product_name}</div>
+                  <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '8px' }}>
+                    <div style={{ fontSize: '13.5px', fontWeight: 900, color: N.text900 }}>{c.product_name}</div>
+                    {durations[c.product_name]?.avgDurationSec != null && (
+                      <div style={{ fontSize: '11.5px', fontWeight: 800, color: N.accent600, whiteSpace: 'nowrap' }}>
+                        {fmtDurationShort(durations[c.product_name].avgDurationSec)}
+                      </div>
+                    )}
+                  </div>
                   <div style={{ fontSize: '12px', fontWeight: 700, color: N.text600, marginTop: '2px' }}>
                     {c.company_name} · {c.specification}
                   </div>
@@ -289,7 +322,7 @@ export function CoilAiHelperScreen() {
             })}
             {!loadingList && filteredOrders.length === 0 && (
               <div style={{ fontSize: '13.5px', fontWeight: 700, color: N.text500, padding: '10px 0' }}>
-                해당 날짜에 준비중인 슬리팅 작업지시서가 없습니다.
+                해당 날짜에 준비중인 슬리팅2 작업지시서가 없습니다.
               </div>
             )}
           </div>
