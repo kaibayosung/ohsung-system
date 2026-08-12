@@ -204,9 +204,11 @@ function ringSvg(pct, size){
   </svg>`;
 }
 
+function parseWon(str){ return Number(String(str||"0").replace(/[^0-9-]/g, "")) || 0; }
+
 function renderDesktop(data){
   const s = data.summary;
-  const maxTotal = Math.max(...data.lines.map(l => rawTotal(l)), 1);
+  const maxTotal = Math.max(...data.lines.map(l => parseWon(l.totalAmount)), 1);
 
   const board = document.getElementById("board");
   board.innerHTML = `
@@ -217,6 +219,7 @@ function renderDesktop(data){
       </div>
       <div class="updated">${updatedText()}</div>
     </div>
+    ${data.is_holiday ? `<div style="background:#fff6e9;border:1.5px solid #f5c98a;border-radius:10px;padding:10px 16px;font-size:16px;font-weight:700;color:#8f4d00">🏖️ ${data.holiday_name} — 휴무일입니다.</div>` : ""}
 
     <div class="summary">
       <div class="sum-card">
@@ -254,7 +257,7 @@ function renderDesktop(data){
       <div class="lines-bars">
         ${data.lines.map(l => {
           const meta = LINE_META[l.meta];
-          const barWidth = (rawTotal(l)/maxTotal*100).toFixed(1)+"%";
+          const barWidth = (parseWon(l.totalAmount)/maxTotal*100).toFixed(1)+"%";
           return `
           <div class="line-bar-row">
             <div class="line-bar-name" style="color:${meta.color}">${meta.name}</div>
@@ -271,48 +274,48 @@ function renderDesktop(data){
     </div>
 
     <div class="lines-grid">
-      ${data.lines.map(l => desktopLineCardHtml(l, data.is_closed)).join("")}
+      ${data.lines.map(l => desktopLineCardHtml(l, data.is_closed, data.is_holiday)).join("")}
     </div>
   `;
   document.getElementById("datePick-desktop").addEventListener("change", onDateChange);
 }
 
-function rawTotal(l){ return l.done.reduce((a,b)=>a+b.amt,0) + l.run.reduce((a,b)=>a+b.amt,0) + l.plan.reduce((a,b)=>a+b.amt,0); }
-
+// closed(마감 후/과거)일 때는 건수·금액을 그린ERP 확정치(l.doneCount/doneAmount, l.remainCount/remainAmountStr)로
+// 표시하고, 레벨러 시스템 품목 리스트(l.done/run/plan)는 참고용으로만 붙입니다 — 둘이 정확히 일치하지 않을 수 있습니다.
 function desktopGroupsHtml(l, closed){
   const groups = (closed
     ? [
-        { label:"완료", arr:l.done, tone:"done" },
-        { label:"미완료", arr:[...l.run, ...l.plan], tone:"incomplete" }
+        { label:"완료", arr:l.done, tone:"done", count:l.doneCount, amountStr:l.doneAmount },
+        { label:"미완료", arr:[...l.run, ...l.plan], tone:"incomplete", count:l.remainCount, amountStr:l.remainAmountStr }
       ]
     : [
-        { label:"완료", arr:l.done, tone:"done" },
-        { label:"작업중", arr:l.run, tone:"run" },
-        { label:"예정", arr:l.plan, tone:"plan" }
+        { label:"완료", arr:l.done, tone:"done", count:l.done.length, amountStr:itemsSum(l.done) },
+        { label:"작업중", arr:l.run, tone:"run", count:l.run.length, amountStr:itemsSum(l.run) },
+        { label:"예정", arr:l.plan, tone:"plan", count:l.plan.length, amountStr:itemsSum(l.plan) }
       ]
-  ).filter(g => g.arr.length);
+  ).filter(g => g.count > 0);
   const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9", incomplete:"#fff6e9" };
   const toneColor = { done:"#146b39", run:"#1857b8", plan:"#5a5f6e", incomplete:"#8f4d00" };
   return groups.map(g => `
     <div>
       <div class="group-head" style="background:${toneBg[g.tone]};color:${toneColor[g.tone]}">
-        <span>${g.label} ${g.arr.length}건</span><span>${itemsSum(g.arr)}</span>
+        <span>${g.label} ${g.count}건</span><span>${g.amountStr}</span>
       </div>
-      ${g.arr.map(i => `
+      ${g.arr.length ? g.arr.map(i => `
         <div class="group-item">
           <div class="group-item-who">${i.c} · ${i.s}</div>
           <div class="group-item-right">
             <span class="group-item-kg">${i.kg.toLocaleString("ko-KR")}kg</span>
             <span class="group-item-amt">${i.amt.toLocaleString("ko-KR")}원</span>
           </div>
-        </div>`).join("")}
+        </div>`).join("") : `<div class="empty-msg" style="font-size:15px;padding:10px 14px">품목별 상세 데이터 없음 (그린ERP 확정 금액 기준)</div>`}
     </div>`).join("");
 }
 
-function desktopLineCardHtml(l, closed){
+function desktopLineCardHtml(l, closed, isHoliday){
   const meta = LINE_META[l.meta];
   const body = l.empty
-    ? `<div class="empty-msg">해당 날짜에 작업이 없습니다.</div>`
+    ? `<div class="empty-msg">${isHoliday ? "휴무일입니다." : "해당 날짜에 작업이 없습니다."}</div>`
     : desktopGroupsHtml(l, closed);
   return `
     <div class="line-card" style="border-color:${meta.color}">
@@ -327,7 +330,7 @@ function desktopLineCardHtml(l, closed){
         </div>
         <div class="line-card-progress">
           <div class="line-card-track"><div class="line-card-fill" style="width:${l.pct}"></div></div>
-          <div class="line-card-remain">잔여 ${l.remainCount}건 · ${l.avgLabel}</div>
+          <div class="line-card-remain">잔여 ${l.remainCount}건${l.avgLabel ? " · " + l.avgLabel : ""}</div>
         </div>
       </div>
       <div class="line-card-body">${body}</div>
@@ -344,45 +347,45 @@ function updatedText(){
 function mobileGroupsHtml(l, lineIdx, closed){
   const groups = (closed
     ? [
-        { kind:"incomplete", label:"미완료", arr:[...l.run, ...l.plan], tone:"incomplete" },
-        { kind:"done", label:"완료", arr:l.done, tone:"done" }
+        { kind:"incomplete", label:"미완료", arr:[...l.run, ...l.plan], tone:"incomplete", count:l.remainCount, amountStr:l.remainAmountStr },
+        { kind:"done", label:"완료", arr:l.done, tone:"done", count:l.doneCount, amountStr:l.doneAmount }
       ]
     : [
-        { kind:"run", label:"작업중", arr:l.run, tone:"run" },
-        { kind:"plan", label:"예정", arr:l.plan, tone:"plan" },
-        { kind:"done", label:"완료", arr:l.done, tone:"done" }
+        { kind:"run", label:"작업중", arr:l.run, tone:"run", count:l.run.length, amountStr:itemsSum(l.run) },
+        { kind:"plan", label:"예정", arr:l.plan, tone:"plan", count:l.plan.length, amountStr:itemsSum(l.plan) },
+        { kind:"done", label:"완료", arr:l.done, tone:"done", count:l.done.length, amountStr:itemsSum(l.done) }
       ]
-  ).filter(g => g.arr.length);
+  ).filter(g => g.count > 0);
   const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9", incomplete:"#fff6e9" };
   const toneColor = { done:"#146b39", run:"#1857b8", plan:"#3a3f4b", incomplete:"#8f4d00" };
   return groups.map(g => {
     const key = lineIdx + "|" + g.kind;
     if (!(key in mobileClosed)) mobileClosed[key] = (g.kind === "done"); // 완료는 기본 접힘
-    const closed = mobileClosed[key];
+    const isSectionClosed = mobileClosed[key];
     return `
     <div>
       <button type="button" class="m-group-btn" data-key="${key}" style="background:${toneBg[g.tone]};color:${toneColor[g.tone]}">
-        <span>${g.label} ${g.arr.length}건</span>
-        <span class="m-group-sum"><span>${itemsSum(g.arr)}</span><span class="m-group-caret">${closed ? "▼" : "▲"}</span></span>
+        <span>${g.label} ${g.count}건</span>
+        <span class="m-group-sum"><span>${g.amountStr}</span><span class="m-group-caret">${isSectionClosed ? "▼" : "▲"}</span></span>
       </button>
-      <div class="m-group-items ${closed ? "closed" : ""}" data-items="${key}">
-        ${g.arr.map(i => `
+      <div class="m-group-items ${isSectionClosed ? "closed" : ""}" data-items="${key}">
+        ${g.arr.length ? g.arr.map(i => `
           <div class="m-item-row">
             <div style="min-width:0">
               <div class="m-item-who">${i.c}</div>
               <div class="m-item-sub">${i.s} · ${i.kg.toLocaleString("ko-KR")}kg</div>
             </div>
             <div class="m-item-amt">${i.amt.toLocaleString("ko-KR")}원</div>
-          </div>`).join("")}
+          </div>`).join("") : `<div class="m-empty-msg" style="font-size:14px;padding:10px 14px">품목별 상세 데이터 없음 (그린ERP 확정 금액 기준)</div>`}
       </div>
     </div>`;
   }).join("");
 }
 
-function mobileLineCardHtml(l, lineIdx, closed){
+function mobileLineCardHtml(l, lineIdx, closed, isHoliday){
   const meta = LINE_META[l.meta];
   const body = l.empty
-    ? `<div class="m-empty-msg">해당 날짜에 작업이 없습니다.</div>`
+    ? `<div class="m-empty-msg">${isHoliday ? "휴무일입니다." : "해당 날짜에 작업이 없습니다."}</div>`
     : mobileGroupsHtml(l, lineIdx, closed);
   return `
     <div class="m-line-card" style="border-color:${meta.color}">
@@ -397,7 +400,7 @@ function mobileLineCardHtml(l, lineIdx, closed){
         </div>
         <div class="m-line-progress">
           <div class="m-line-track"><div class="m-line-fill" style="width:${l.pct}"></div></div>
-          <div class="m-line-remain">잔여 ${l.remainCount}건 · ${l.avgLabel}</div>
+          <div class="m-line-remain">잔여 ${l.remainCount}건${l.avgLabel ? " · " + l.avgLabel : ""}</div>
         </div>
       </div>
       ${body}
@@ -416,6 +419,7 @@ function renderMobile(data){
       <div class="m-updated">${updatedText()}</div>
     </div>
     <div class="m-body">
+      ${data.is_holiday ? `<div style="background:#fff6e9;border:1.5px solid #f5c98a;border-radius:10px;padding:10px 14px;font-size:14.5px;font-weight:700;color:#8f4d00">🏖️ ${data.holiday_name} — 휴무일입니다.</div>` : ""}
       <div class="m-summary-card">
         <div class="m-sum-label">총발주 · ${s.totalCount}건</div>
         <div class="m-sum-values">
@@ -437,9 +441,9 @@ function renderMobile(data){
         </div>
       </div>
 
-      ${data.lines.map((l,i) => mobileLineCardHtml(l,i,data.is_closed)).join("")}
+      ${data.lines.map((l,i) => mobileLineCardHtml(l,i,data.is_closed,data.is_holiday)).join("")}
 
-      <div class="m-note">'오늘 완료 가능'은 최근 7일 완료건의 평균 소요시간 × 남은 건수로 계산한 근사치입니다. leveler_jobs 실데이터를 그대로 조회합니다.</div>
+      <div class="m-note">17:40 이전(오늘)은 레벨러 작업지시 실데이터를, 17:40 이후·과거 날짜는 그린ERP 확정 데이터(완료)와 지시 대비 미완료를 기준으로 보여줍니다. '오늘 완료 가능'은 최근 7일 완료건의 평균 소요시간 × 남은 건수로 계산한 근사치입니다.</div>
     </div>
   `;
   document.getElementById("datePick-mobile").addEventListener("change", onDateChange);
