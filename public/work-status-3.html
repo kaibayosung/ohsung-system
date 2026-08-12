@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>작업현황 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; background:#eef0f4; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+
+  /* ---------- 날짜 선택 공통 스타일 ---------- */
+  .date-input {
+    font-family:"Pretendard",system-ui,sans-serif; font-weight:700; color:#4b3fbd;
+    background:#f3f1fd; border:1.5px solid #d6d0f7; border-radius:8px; padding:4px 10px;
+    cursor:pointer;
+  }
+  .date-input:focus { outline:2px solid #6b5bd6; outline-offset:1px; }
+
+  /* ================= 데스크톱 뷰 ================= */
+  #desktop-view { display:block; }
+  #stage { height:100vh; width:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+  #board { width:1600px; height:1000px; flex:0 0 auto; transform-origin:center center;
+    box-sizing:border-box; display:flex; flex-direction:column; gap:12px; padding:20px 24px;
+    background:#ffffff; color:#16181f; box-shadow:0 8px 32px rgba(20,24,40,0.08); border-radius:14px; }
+
+  .row-head { display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex:0 0 auto; }
+  .title-wrap { display:flex; align-items:baseline; gap:16px; }
+  .title { font-size:34px; font-weight:700; letter-spacing:-1px; }
+  .date-input.d-desktop { font-size:26px; }
+  .updated { font-size:17px; font-weight:600; color:#5a5f6e; white-space:nowrap; }
+
+  .summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; flex:0 0 auto; }
+  .sum-card { border:2px solid #cfd3de; border-radius:10px; padding:12px 18px; background:#f6f7fb; }
+  .sum-card.done { border-color:#1f8b4c; background:#edf9f1; }
+  .sum-card.remain { border-color:#e07b00; background:#fff6e9; }
+  .sum-label { font-size:19px; font-weight:700; color:#5a5f6e; }
+  .sum-card.done .sum-label { color:#1f8b4c; }
+  .sum-card.remain .sum-label { color:#b05f00; }
+  .sum-values { display:flex; align-items:baseline; gap:14px; margin-top:4px; }
+  .sum-money { font-size:40px; font-weight:700; letter-spacing:-1.2px; line-height:1.05; }
+  .sum-card.done .sum-money { color:#146b39; }
+  .sum-card.remain .sum-money { color:#8f4d00; }
+  .sum-money .unit { font-size:22px; font-weight:600; color:#5a5f6e; }
+  .sum-ton { font-size:24px; font-weight:600; color:#5a5f6e; }
+  .sum-card.done .sum-ton { color:#1f8b4c; }
+  .sum-card.remain .sum-ton { color:#b05f00; }
+
+  .progress-panel { flex:0 0 auto; display:flex; align-items:center; gap:18px; border:2px solid #cfd3de;
+    border-radius:10px; padding:10px 18px; background:#fbfbfd; }
+  .ring-wrap { flex:0 0 auto; display:flex; align-items:center; gap:12px; }
+  .legend { display:flex; flex-direction:column; gap:4px; }
+  .legend-title { font-size:18px; font-weight:700; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:16px; font-weight:600; }
+  .legend-dot { width:13px; height:13px; border-radius:3px; display:inline-block; }
+  .lines-bars { flex:1 1 0; min-width:0; display:flex; flex-direction:column; justify-content:center; gap:8px; }
+  .line-bar-row { display:flex; align-items:center; gap:12px; }
+  .line-bar-name { flex:0 0 88px; font-size:18px; font-weight:700; }
+  .line-bar-track { flex:1 1 0; min-width:0; height:22px; background:#f0f2f7; border-radius:5px; overflow:hidden; }
+  .line-bar-fill { height:100%; display:flex; }
+  .line-bar-total { flex:0 0 145px; text-align:right; font-size:18px; font-weight:700; }
+
+  .lines-grid { flex:1 1 0; min-height:0; display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .line-card { min-height:0; display:flex; flex-direction:column; border:2px solid; border-radius:10px; overflow:hidden; background:#fff; }
+  .line-card-head { flex:0 0 auto; padding:9px 14px; display:flex; flex-direction:column; gap:6px; }
+  .line-card-top { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .line-card-name { font-size:25px; font-weight:700; letter-spacing:-0.6px; }
+  .line-card-chip { font-size:15px; font-weight:700; padding:5px 11px; border-radius:999px; white-space:nowrap; }
+  .line-card-mid { display:flex; align-items:baseline; gap:16px; flex-wrap:wrap; }
+  .line-card-done-amt { font-size:28px; font-weight:700; color:#146b39; letter-spacing:-0.6px; }
+  .line-card-sub { font-size:15px; font-weight:600; color:#5a5f6e; }
+  .line-card-progress { display:flex; align-items:center; gap:10px; }
+  .line-card-track { flex:1; height:10px; border-radius:999px; background:#e3e6ee; overflow:hidden; }
+  .line-card-fill { height:100%; background:#1f8b4c; }
+  .line-card-remain { font-size:15px; font-weight:700; color:#3a3f4b; white-space:nowrap; }
+
+  .line-card-body { flex:1 1 0; min-height:0; overflow-y:auto; display:flex; flex-direction:column; }
+  .empty-msg { padding:18px 14px; font-size:19px; font-weight:600; color:#8a8f9c; }
+  .group-head { display:flex; align-items:center; justify-content:space-between; padding:4px 14px; font-size:16px; font-weight:700; }
+  .group-item { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:5px 14px; border-bottom:1px solid #eceef4; }
+  .group-item-who { font-size:18px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .group-item-right { display:flex; align-items:baseline; gap:12px; white-space:nowrap; }
+  .group-item-kg { font-size:16px; color:#5a5f6e; }
+  .group-item-amt { font-size:19px; font-weight:700; width:104px; text-align:right; display:inline-block; }
+  .line-card-body::-webkit-scrollbar { width:8px; }
+  .line-card-body::-webkit-scrollbar-thumb { background:#dfe2ea; border-radius:8px; }
+
+  /* ================= 모바일 뷰 ================= */
+  #mobile-view { display:none; min-height:100vh; background:#f4f5f9; color:#16181f; padding-bottom:28px; }
+  .m-header { position:sticky; top:0; z-index:5; background:#ffffff; border-bottom:2px solid #e3e6ee; padding:14px 16px 12px; }
+  .m-header-row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; }
+  .m-title { font-size:24px; font-weight:700; letter-spacing:-0.6px; }
+  .m-updated { margin-top:4px; font-size:14px; font-weight:600; color:#6b7080; }
+  .m-body { padding:14px 16px; display:flex; flex-direction:column; gap:12px; }
+  .m-summary-card { border:2px solid #cfd3de; border-radius:12px; background:#fff; padding:14px 16px; }
+  .m-sum-label { font-size:16px; font-weight:700; color:#5a5f6e; }
+  .m-sum-values { display:flex; align-items:baseline; gap:12px; margin-top:2px; }
+  .m-sum-money { font-size:34px; font-weight:700; letter-spacing:-1px; }
+  .m-sum-money .unit { font-size:19px; font-weight:600; color:#5a5f6e; }
+  .m-sum-ton { font-size:20px; font-weight:600; color:#5a5f6e; }
+  .m-ring-row { display:flex; align-items:center; gap:12px; margin-top:12px; }
+  .m-breakdown { flex:1 1 0; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  .m-bd-item { padding-left:10px; }
+  .m-bd-label { font-size:14px; font-weight:700; }
+  .m-bd-money { font-size:22px; font-weight:700; letter-spacing:-0.5px; }
+
+  .m-line-card { border:2px solid; border-radius:12px; background:#fff; overflow:hidden; }
+  .m-line-head { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+  .m-line-top { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .m-line-name { font-size:23px; font-weight:700; letter-spacing:-0.5px; }
+  .m-line-chip { font-size:14px; font-weight:700; padding:5px 10px; border-radius:999px; white-space:nowrap; }
+  .m-line-mid { display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .m-line-done-amt { font-size:27px; font-weight:700; color:#146b39; letter-spacing:-0.6px; }
+  .m-line-sub { font-size:14px; font-weight:600; color:#5a5f6e; }
+  .m-line-progress { display:flex; align-items:center; gap:10px; }
+  .m-line-track { flex:1; height:12px; border-radius:999px; background:#e3e6ee; overflow:hidden; }
+  .m-line-fill { height:100%; background:#1f8b4c; }
+  .m-line-remain { font-size:14px; font-weight:700; color:#3a3f4b; white-space:nowrap; }
+  .m-empty-msg { padding:18px 14px; font-size:17px; font-weight:600; color:#8a8f9c; }
+
+  .m-group-btn { appearance:none; border:0; border-top:1px solid #e3e6ee; width:100%; display:flex;
+    align-items:center; justify-content:space-between; gap:10px; padding:10px 14px; font-size:16px;
+    font-weight:700; text-align:left; cursor:pointer; min-height:44px; }
+  .m-group-btn:active { opacity:0.75; }
+  .m-group-sum { display:flex; align-items:center; gap:8px; }
+  .m-group-caret { font-size:13px; font-weight:600; }
+  .m-group-items { display:flex; flex-direction:column; }
+  .m-group-items.closed { display:none; }
+  .m-item-row { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:9px 14px; border-top:1px solid #f0f2f7; }
+  .m-item-who { font-size:17px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .m-item-sub { font-size:14px; color:#6b7080; }
+  .m-item-amt { font-size:19px; font-weight:700; white-space:nowrap; }
+  .m-note { font-size:13px; color:#8a8f9c; line-height:1.5; padding:0 2px; }
+
+  @media (max-width: 760px) {
+    #desktop-view { display:none; }
+    #mobile-view { display:block; }
+  }
+</style>
+</head>
+<body>
+<div id="desktop-view"><div id="stage"><div id="board"></div></div></div>
+<div id="mobile-view"></div>
+
+<script>
+/* ===================== 실데이터 연동 =====================
+   work-status-public Edge Function(verify_jwt:false, 공개 링크)이 leveler_jobs 테이블을
+   서비스 롤로 조회해 요약/라인별 집계를 계산해 반환합니다. 로그인 없이도(대표님 포함)
+   이 링크만 열면 실데이터가 보입니다. */
+const FN_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/work-status-public";
+
+const LINE_META = [
+  { name:"레벨링", color:"#6b5bd6", tint:"#f3f1fd", chipBg:"#e6e2fb", chipColor:"#4b3fbd" },
+  { name:"슬리팅2", color:"#e07b00", tint:"#fff6e9", chipBg:"#ffe3bd", chipColor:"#8f4d00" },
+  { name:"슬리팅1", color:"#1f8b4c", tint:"#edf9f1", chipBg:"#cdeedb", chipColor:"#146b39" }
+];
+
+function emptyDataForDate(){
+  return {
+    summary: { totalCount:0, totalAmount:"0원", totalTon:"0톤",
+      doneCount:0, donePct:"0.0%", doneAmount:"0원", doneTon:"0톤",
+      remainCount:0, remainAmount:"0원", remainTon:"0톤", ringPct:0 },
+    lines: LINE_META.map((_, i) => ({ meta:i, status:"데이터를 불러오지 못했습니다", avgLabel:"", doneCount:0, doneAmount:"0원",
+      totalAmount:"0원", pct:"0%", remainCount:0, empty:true, done:[], run:[], plan:[] }))
+  };
+}
+
+async function getData(dateStr){
+  try {
+    const res = await fetch(`${FN_URL}?date=${encodeURIComponent(dateStr)}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || "unknown error");
+    return json;
+  } catch (err) {
+    console.error("작업현황 실데이터 조회 실패:", err);
+    return emptyDataForDate();
+  }
+}
+
+/* ===================== 공통 유틸 ===================== */
+function todayStr(){
+  const n = new Date();
+  return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
+}
+function nowTimeStr(){
+  const n = new Date();
+  return n.toLocaleTimeString("ko-KR", { hour:"2-digit", minute:"2-digit", hour12:true });
+}
+function itemsSum(arr){ return arr.reduce((a,b)=>a+b.amt,0).toLocaleString("ko-KR")+"원"; }
+
+let selectedDate = todayStr();
+const mobileClosed = {}; // key: line index + "|" + groupKind -> bool(닫힘)
+
+/* ===================== 데스크톱 렌더 ===================== */
+function ringSvg(pct, size){
+  const r = 52, c = 2*Math.PI*r;
+  const dash = (pct/100*c).toFixed(1);
+  return `
+  <svg viewBox="0 0 130 130" style="width:${size}px;height:${size}px;flex:0 0 auto">
+    <circle cx="65" cy="65" r="${r}" fill="none" stroke="#e3e6ee" stroke-width="20"></circle>
+    <circle cx="65" cy="65" r="${r}" fill="none" stroke="#1f8b4c" stroke-width="20" stroke-dasharray="${dash} ${c.toFixed(1)}" transform="rotate(-90 65 65)"></circle>
+    <text x="65" y="61" text-anchor="middle" font-size="30" font-weight="700" fill="#146b39" font-family="Pretendard, system-ui">${pct.toFixed(0)}%</text>
+    <text x="65" y="82" text-anchor="middle" font-size="14" font-weight="600" fill="#5a5f6e" font-family="Pretendard, system-ui">완료</text>
+  </svg>`;
+}
+
+function renderDesktop(data){
+  const s = data.summary;
+  const maxTotal = Math.max(...data.lines.map(l => rawTotal(l)), 1);
+
+  const board = document.getElementById("board");
+  board.innerHTML = `
+    <div class="row-head">
+      <div class="title-wrap">
+        <div class="title">작업현황 대시보드</div>
+        <input type="date" class="date-input d-desktop" id="datePick-desktop" value="${selectedDate}">
+      </div>
+      <div class="updated">${updatedText()}</div>
+    </div>
+
+    <div class="summary">
+      <div class="sum-card">
+        <div class="sum-label">총발주 · ${s.totalCount}건</div>
+        <div class="sum-values">
+          <div class="sum-money">${s.totalAmount.replace("원","")}<span class="unit">원</span></div>
+          <div class="sum-ton">${s.totalTon}</div>
+        </div>
+      </div>
+      <div class="sum-card done">
+        <div class="sum-label">완료 · ${s.doneCount}건 (${s.donePct})</div>
+        <div class="sum-values">
+          <div class="sum-money">${s.doneAmount.replace("원","")}<span class="unit">원</span></div>
+          <div class="sum-ton">${s.doneTon}</div>
+        </div>
+      </div>
+      <div class="sum-card remain">
+        <div class="sum-label">잔여 · ${s.remainCount}건</div>
+        <div class="sum-values">
+          <div class="sum-money">${s.remainAmount.replace("원","")}<span class="unit">원</span></div>
+          <div class="sum-ton">${s.remainTon}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-panel">
+      <div class="ring-wrap">
+        ${ringSvg(s.ringPct, 96)}
+        <div class="legend">
+          <div class="legend-title">금액 진행률</div>
+          <div class="legend-item" style="color:#146b39"><span class="legend-dot" style="background:#1f8b4c"></span>완료 ${s.doneAmount}</div>
+          <div class="legend-item" style="color:#8f4d00"><span class="legend-dot" style="background:#f5b45a"></span>잔여 ${s.remainAmount}</div>
+        </div>
+      </div>
+      <div class="lines-bars">
+        ${data.lines.map(l => {
+          const meta = LINE_META[l.meta];
+          const barWidth = (rawTotal(l)/maxTotal*100).toFixed(1)+"%";
+          return `
+          <div class="line-bar-row">
+            <div class="line-bar-name" style="color:${meta.color}">${meta.name}</div>
+            <div class="line-bar-track">
+              <div class="line-bar-fill" style="width:${barWidth}">
+                <div style="width:${l.pct};background:#1f8b4c"></div>
+                <div style="flex:1;background:#f5b45a"></div>
+              </div>
+            </div>
+            <div class="line-bar-total">${l.totalAmount}</div>
+          </div>`;
+        }).join("")}
+      </div>
+    </div>
+
+    <div class="lines-grid">
+      ${data.lines.map(desktopLineCardHtml).join("")}
+    </div>
+  `;
+  document.getElementById("datePick-desktop").addEventListener("change", onDateChange);
+}
+
+function rawTotal(l){ return l.done.reduce((a,b)=>a+b.amt,0) + l.run.reduce((a,b)=>a+b.amt,0) + l.plan.reduce((a,b)=>a+b.amt,0); }
+
+function desktopGroupsHtml(l){
+  const groups = [
+    { label:"완료", arr:l.done, tone:"done" },
+    { label:"작업중", arr:l.run, tone:"run" },
+    { label:"예정", arr:l.plan, tone:"plan" }
+  ].filter(g => g.arr.length);
+  const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9" };
+  const toneColor = { done:"#146b39", run:"#1857b8", plan:"#5a5f6e" };
+  return groups.map(g => `
+    <div>
+      <div class="group-head" style="background:${toneBg[g.tone]};color:${toneColor[g.tone]}">
+        <span>${g.label} ${g.arr.length}건</span><span>${itemsSum(g.arr)}</span>
+      </div>
+      ${g.arr.map(i => `
+        <div class="group-item">
+          <div class="group-item-who">${i.c} · ${i.s}</div>
+          <div class="group-item-right">
+            <span class="group-item-kg">${i.kg.toLocaleString("ko-KR")}kg</span>
+            <span class="group-item-amt">${i.amt.toLocaleString("ko-KR")}원</span>
+          </div>
+        </div>`).join("")}
+    </div>`).join("");
+}
+
+function desktopLineCardHtml(l){
+  const meta = LINE_META[l.meta];
+  const body = l.empty
+    ? `<div class="empty-msg">해당 날짜에 작업이 없습니다.</div>`
+    : desktopGroupsHtml(l);
+  return `
+    <div class="line-card" style="border-color:${meta.color}">
+      <div class="line-card-head" style="background:${meta.tint}">
+        <div class="line-card-top">
+          <div class="line-card-name" style="color:${meta.color}">${meta.name}</div>
+          <div class="line-card-chip" style="background:${meta.chipBg};color:${meta.chipColor}">${l.status}</div>
+        </div>
+        <div class="line-card-mid">
+          <div class="line-card-done-amt">${l.doneAmount}</div>
+          <div class="line-card-sub">완료 ${l.doneCount}건 / 전체 ${l.totalAmount}</div>
+        </div>
+        <div class="line-card-progress">
+          <div class="line-card-track"><div class="line-card-fill" style="width:${l.pct}"></div></div>
+          <div class="line-card-remain">잔여 ${l.remainCount}건 · ${l.avgLabel}</div>
+        </div>
+      </div>
+      <div class="line-card-body">${body}</div>
+    </div>`;
+}
+
+/* ===================== 모바일 렌더 ===================== */
+function updatedText(){
+  return selectedDate === todayStr()
+    ? `${nowTimeStr()} 기준 · 1분마다 자동 새로고침`
+    : `선택한 날짜의 기록 보기`;
+}
+
+function mobileGroupsHtml(l, lineIdx){
+  const groups = [
+    { kind:"run", label:"작업중", arr:l.run, tone:"run" },
+    { kind:"plan", label:"예정", arr:l.plan, tone:"plan" },
+    { kind:"done", label:"완료", arr:l.done, tone:"done" }
+  ].filter(g => g.arr.length);
+  const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9" };
+  const toneColor = { done:"#146b39", run:"#1857b8", plan:"#3a3f4b" };
+  return groups.map(g => {
+    const key = lineIdx + "|" + g.kind;
+    if (!(key in mobileClosed)) mobileClosed[key] = (g.kind === "done"); // 완료는 기본 접힘
+    const closed = mobileClosed[key];
+    return `
+    <div>
+      <button type="button" class="m-group-btn" data-key="${key}" style="background:${toneBg[g.tone]};color:${toneColor[g.tone]}">
+        <span>${g.label} ${g.arr.length}건</span>
+        <span class="m-group-sum"><span>${itemsSum(g.arr)}</span><span class="m-group-caret">${closed ? "▼" : "▲"}</span></span>
+      </button>
+      <div class="m-group-items ${closed ? "closed" : ""}" data-items="${key}">
+        ${g.arr.map(i => `
+          <div class="m-item-row">
+            <div style="min-width:0">
+              <div class="m-item-who">${i.c}</div>
+              <div class="m-item-sub">${i.s} · ${i.kg.toLocaleString("ko-KR")}kg</div>
+            </div>
+            <div class="m-item-amt">${i.amt.toLocaleString("ko-KR")}원</div>
+          </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function mobileLineCardHtml(l, lineIdx){
+  const meta = LINE_META[l.meta];
+  const body = l.empty
+    ? `<div class="m-empty-msg">해당 날짜에 작업이 없습니다.</div>`
+    : mobileGroupsHtml(l, lineIdx);
+  return `
+    <div class="m-line-card" style="border-color:${meta.color}">
+      <div class="m-line-head" style="background:${meta.tint}">
+        <div class="m-line-top">
+          <div class="m-line-name" style="color:${meta.color}">${meta.name}</div>
+          <div class="m-line-chip" style="background:${meta.chipBg};color:${meta.chipColor}">${l.status}</div>
+        </div>
+        <div class="m-line-mid">
+          <div class="m-line-done-amt">${l.doneAmount}</div>
+          <div class="m-line-sub">완료 ${l.doneCount}건 / 전체 ${l.totalAmount}</div>
+        </div>
+        <div class="m-line-progress">
+          <div class="m-line-track"><div class="m-line-fill" style="width:${l.pct}"></div></div>
+          <div class="m-line-remain">잔여 ${l.remainCount}건 · ${l.avgLabel}</div>
+        </div>
+      </div>
+      ${body}
+    </div>`;
+}
+
+function renderMobile(data){
+  const s = data.summary;
+  const view = document.getElementById("mobile-view");
+  view.innerHTML = `
+    <div class="m-header">
+      <div class="m-header-row">
+        <div class="m-title">작업현황</div>
+        <input type="date" class="date-input" id="datePick-mobile" value="${selectedDate}">
+      </div>
+      <div class="m-updated">${updatedText()}</div>
+    </div>
+    <div class="m-body">
+      <div class="m-summary-card">
+        <div class="m-sum-label">총발주 · ${s.totalCount}건</div>
+        <div class="m-sum-values">
+          <div class="m-sum-money">${s.totalAmount.replace("원","")}<span class="unit">원</span></div>
+          <div class="m-sum-ton">${s.totalTon}</div>
+        </div>
+        <div class="m-ring-row">
+          ${ringSvg(s.ringPct, 86)}
+          <div class="m-breakdown">
+            <div class="m-bd-item" style="border-left:5px solid #1f8b4c;padding-left:10px">
+              <div class="m-bd-label" style="color:#146b39">완료 ${s.doneCount}건 · ${s.doneTon}</div>
+              <div class="m-bd-money" style="color:#146b39">${s.doneAmount}</div>
+            </div>
+            <div class="m-bd-item" style="border-left:5px solid #f5b45a;padding-left:10px">
+              <div class="m-bd-label" style="color:#8f4d00">잔여 ${s.remainCount}건 · ${s.remainTon}</div>
+              <div class="m-bd-money" style="color:#8f4d00">${s.remainAmount}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      ${data.lines.map((l,i) => mobileLineCardHtml(l,i)).join("")}
+
+      <div class="m-note">'오늘 완료 가능'은 최근 7일 완료건의 평균 소요시간 × 남은 건수로 계산한 근사치입니다. leveler_jobs 실데이터를 그대로 조회합니다.</div>
+    </div>
+  `;
+  document.getElementById("datePick-mobile").addEventListener("change", onDateChange);
+  view.querySelectorAll(".m-group-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.key;
+      mobileClosed[key] = !mobileClosed[key];
+      const itemsEl = view.querySelector(`[data-items="${key}"]`);
+      itemsEl.classList.toggle("closed", mobileClosed[key]);
+      btn.querySelector(".m-group-caret").textContent = mobileClosed[key] ? "▼" : "▲";
+    });
+  });
+}
+
+/* ===================== 컨트롤러 ===================== */
+function onDateChange(e){
+  selectedDate = e.target.value || todayStr();
+  Object.keys(mobileClosed).forEach(k => delete mobileClosed[k]); // 날짜 바뀌면 아코디언 상태 초기화
+  renderAll();
+}
+
+async function renderAll(){
+  const data = await getData(selectedDate);
+  renderDesktop(data);
+  renderMobile(data);
+}
+
+function fit(){
+  const s = Math.min(window.innerWidth/1600, window.innerHeight/1000);
+  document.getElementById("board").style.transform = "scale(" + (Math.round(s*1000)/1000) + ")";
+}
+window.addEventListener("resize", fit);
+
+renderAll();
+fit();
+setInterval(() => { if (selectedDate === todayStr()) renderAll(); }, 60*1000); // 실데이터 재조회(오늘 날짜일 때만, 1분마다)
+setInterval(() => location.reload(), 10*60*1000); // 10분마다 자동 새로고침
+</script>
+</body>
+</html>
