@@ -271,7 +271,7 @@ function renderDesktop(data){
     </div>
 
     <div class="lines-grid">
-      ${data.lines.map(desktopLineCardHtml).join("")}
+      ${data.lines.map(l => desktopLineCardHtml(l, data.is_closed)).join("")}
     </div>
   `;
   document.getElementById("datePick-desktop").addEventListener("change", onDateChange);
@@ -279,14 +279,20 @@ function renderDesktop(data){
 
 function rawTotal(l){ return l.done.reduce((a,b)=>a+b.amt,0) + l.run.reduce((a,b)=>a+b.amt,0) + l.plan.reduce((a,b)=>a+b.amt,0); }
 
-function desktopGroupsHtml(l){
-  const groups = [
-    { label:"완료", arr:l.done, tone:"done" },
-    { label:"작업중", arr:l.run, tone:"run" },
-    { label:"예정", arr:l.plan, tone:"plan" }
-  ].filter(g => g.arr.length);
-  const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9" };
-  const toneColor = { done:"#146b39", run:"#1857b8", plan:"#5a5f6e" };
+function desktopGroupsHtml(l, closed){
+  const groups = (closed
+    ? [
+        { label:"완료", arr:l.done, tone:"done" },
+        { label:"미완료", arr:[...l.run, ...l.plan], tone:"incomplete" }
+      ]
+    : [
+        { label:"완료", arr:l.done, tone:"done" },
+        { label:"작업중", arr:l.run, tone:"run" },
+        { label:"예정", arr:l.plan, tone:"plan" }
+      ]
+  ).filter(g => g.arr.length);
+  const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9", incomplete:"#fff6e9" };
+  const toneColor = { done:"#146b39", run:"#1857b8", plan:"#5a5f6e", incomplete:"#8f4d00" };
   return groups.map(g => `
     <div>
       <div class="group-head" style="background:${toneBg[g.tone]};color:${toneColor[g.tone]}">
@@ -303,11 +309,11 @@ function desktopGroupsHtml(l){
     </div>`).join("");
 }
 
-function desktopLineCardHtml(l){
+function desktopLineCardHtml(l, closed){
   const meta = LINE_META[l.meta];
   const body = l.empty
     ? `<div class="empty-msg">해당 날짜에 작업이 없습니다.</div>`
-    : desktopGroupsHtml(l);
+    : desktopGroupsHtml(l, closed);
   return `
     <div class="line-card" style="border-color:${meta.color}">
       <div class="line-card-head" style="background:${meta.tint}">
@@ -335,14 +341,20 @@ function updatedText(){
     : `선택한 날짜의 기록 보기`;
 }
 
-function mobileGroupsHtml(l, lineIdx){
-  const groups = [
-    { kind:"run", label:"작업중", arr:l.run, tone:"run" },
-    { kind:"plan", label:"예정", arr:l.plan, tone:"plan" },
-    { kind:"done", label:"완료", arr:l.done, tone:"done" }
-  ].filter(g => g.arr.length);
-  const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9" };
-  const toneColor = { done:"#146b39", run:"#1857b8", plan:"#3a3f4b" };
+function mobileGroupsHtml(l, lineIdx, closed){
+  const groups = (closed
+    ? [
+        { kind:"incomplete", label:"미완료", arr:[...l.run, ...l.plan], tone:"incomplete" },
+        { kind:"done", label:"완료", arr:l.done, tone:"done" }
+      ]
+    : [
+        { kind:"run", label:"작업중", arr:l.run, tone:"run" },
+        { kind:"plan", label:"예정", arr:l.plan, tone:"plan" },
+        { kind:"done", label:"완료", arr:l.done, tone:"done" }
+      ]
+  ).filter(g => g.arr.length);
+  const toneBg = { done:"#edf9f1", run:"#e8f1ff", plan:"#f4f5f9", incomplete:"#fff6e9" };
+  const toneColor = { done:"#146b39", run:"#1857b8", plan:"#3a3f4b", incomplete:"#8f4d00" };
   return groups.map(g => {
     const key = lineIdx + "|" + g.kind;
     if (!(key in mobileClosed)) mobileClosed[key] = (g.kind === "done"); // 완료는 기본 접힘
@@ -367,11 +379,11 @@ function mobileGroupsHtml(l, lineIdx){
   }).join("");
 }
 
-function mobileLineCardHtml(l, lineIdx){
+function mobileLineCardHtml(l, lineIdx, closed){
   const meta = LINE_META[l.meta];
   const body = l.empty
     ? `<div class="m-empty-msg">해당 날짜에 작업이 없습니다.</div>`
-    : mobileGroupsHtml(l, lineIdx);
+    : mobileGroupsHtml(l, lineIdx, closed);
   return `
     <div class="m-line-card" style="border-color:${meta.color}">
       <div class="m-line-head" style="background:${meta.tint}">
@@ -425,7 +437,7 @@ function renderMobile(data){
         </div>
       </div>
 
-      ${data.lines.map((l,i) => mobileLineCardHtml(l,i)).join("")}
+      ${data.lines.map((l,i) => mobileLineCardHtml(l,i,data.is_closed)).join("")}
 
       <div class="m-note">'오늘 완료 가능'은 최근 7일 완료건의 평균 소요시간 × 남은 건수로 계산한 근사치입니다. leveler_jobs 실데이터를 그대로 조회합니다.</div>
     </div>
