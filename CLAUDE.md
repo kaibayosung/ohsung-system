@@ -13,9 +13,11 @@ npm run preview   # preview the production build
 
 There is no test suite configured in this project.
 
-## Workflow preference: UI before backend
+## Workflow preference: plan first, get a go/no-go, then build
 
-For new features (not small fixes/edits to existing screens), build and show a UI first — using the 연구실(LabPage) prototype pattern described below, or a lightweight mock/demo screen with sample or read-only real data — and get explicit user confirmation on the design/flow *before* wiring up real persistence (new tables, writes, edge functions, reconciliation logic, etc.). Don't jump straight to full DB-backed implementation on the first pass unless the user explicitly says to build the real thing directly.
+For any new feature or screen (not small fixes/edits to existing screens), don't start writing code on the first pass. First write out a short plan — what the screen/feature will show, which data sources it pulls from (existing endpoints vs. new ones needed), and roughly how it'll look/be laid out — and explicitly ask the user whether to proceed with development. Only start building after the user confirms. This applies even when the request sounds like "build me X" — restate it as a quick plan and confirm before writing files.
+
+For new features (not small fixes/edits to existing screens), once development is confirmed, build and show a UI first — using the 연구실(LabPage) prototype pattern described below, or a lightweight mock/demo screen with sample or read-only real data — and get explicit user confirmation on the design/flow *before* wiring up real persistence (new tables, writes, edge functions, reconciliation logic, etc.). Don't jump straight to full DB-backed implementation on the first pass unless the user explicitly says to build the real thing directly.
 
 Deploys are handled by Vercel on push to `main` — this sandbox has no GitHub credentials, so `git push origin main` must be run by the user after any commit made here.
 
