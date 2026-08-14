@@ -23,6 +23,7 @@ import { WorkStatusBoardV2 } from './test/workStatusBoardV2Screen';
 import { LevelingCoilDetailScreen } from './test/levelingCoilDetailScreen';
 import { LevelingProcessDashboardScreen } from './test/levelingProcessDashboardScreen';
 import { LevelingStrokeMonitorScreen } from './test/levelingStrokeMonitorScreen';
+import { LevelingLineNmsScreen } from './test/levelingLineNmsScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // external을 채우면(별도 배포 URL이 있는 경우) 카드 클릭 시 새 탭으로 열리고, 없으면 이 페이지 안에서 바로 열립니다.
@@ -40,6 +41,7 @@ const PROJECTS = [
   { key: 'leveling-coil-detail', label: '레벨링 코일 상세분석', icon: '🧭', category: '생산현장 도구', desc: '레벨링 라인에 코일ID가 태깅된 작업을 날짜·코일로 선택하면 시트 수 추정, 길이 정확도, 설비 부하, 박스별 현황을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-process-dashboard', label: '레벨링 공정×ERP 통합 대시보드', icon: '🏭', category: '생산현장 도구', desc: '하루치 레벨링 작업의 ERP 사양·가동 타임라인·부하율 비교·공정 리듬(이상 구간 탐지)·그린ERP 매출 동기화 여부를 한 화면에 모읍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-stroke-monitor', label: '레벨링 공정 현황 모니터링', icon: '🧭', category: '생산현장 도구', desc: '레벨링 PLC 행정(stroke) 로그를 코일·박스별 실시간 현황 → 절단 사양·이상행정 상세 → 변동계수·저속비율 등 통계 인사이트까지 3단계로 드릴다운합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'leveling-line-nms', label: '레벨링 라인 통합 관제 (NMS)', icon: '🛰️', category: '생산현장 도구', desc: 'ERP 작업지시서와 PLC 실측 텔레메트리를 관제센터 스타일 한 화면에 실시간으로 엮습니다. 라인 상태·진행률·라이브 파형·이상 알림·금일 타임라인을 20초 자동 갱신으로 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'work-status-board-3', label: '작업현황 대시보드 3', icon: '🗓️', category: '생산현장 도구', desc: '레벨링·슬리팅2·슬리팅1을 라인별 카드로 보여주는 반응형(PC/모바일) 대시보드입니다. 날짜 선택, 완료/작업중/예정 구분, 진행률 링, 오늘 완료 가능 예측을 실데이터로 보여줍니다. 로그인 없이 링크로 바로 열 수 있어 대표님도 접속해 볼 수 있습니다.', external: '/work-status-3.html', badge: '실데이터 연동' },
   { key: 'coil-ai-helper', label: 'AI 헬퍼 (슬리팅 2/지난작업보기)', icon: '🤖', category: '생산현장 도구', desc: '가동 전 작업지시서를 선택하면 동일 사양 완료 코일들의 실측 데이터로 권장 속도·텐션·예상 가동시간을 추천합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'coil-ai-helper-work', label: 'AI 헬퍼 (슬리팅 2/작업용)', icon: '🎯', category: '생산현장 도구', desc: '코일을 선택하면 현재 진행 길이의 실측 속도·텐션1~4를 동일 사양 완료 코일 권장치와 비교해 적정/느림/빠름을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
@@ -175,6 +177,7 @@ function LabPage() {
           {view === 'leveling-coil-detail' && <LevelingCoilDetailScreen />}
           {view === 'leveling-process-dashboard' && <LevelingProcessDashboardScreen />}
           {view === 'leveling-stroke-monitor' && <LevelingStrokeMonitorScreen />}
+          {view === 'leveling-line-nms' && <LevelingLineNmsScreen />}
           {view === 'coil-analysis' && <CoilAnalysisScreen />}
           {view === 'coil-ai-helper' && <CoilAiHelperScreen />}
           {view === 'coil-ai-helper-work' && <CoilAiHelperWorkScreen />}
