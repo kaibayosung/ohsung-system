@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레벨링 작업 가이드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:#eef1f6; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+  body { display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:440px; }
+
+  .sample-note {
+    display:flex; gap:8px; align-items:flex-start; background:#fff6ea; border:1px solid #fdecd6;
+    border-radius:12px; padding:10px 14px; font-size:12.5px; color:#c46b06; line-height:1.5; margin-bottom:12px;
+  }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:18px; font-weight:800; color:#0f1e33; margin:0 0 2px; }
+  .header-sub { font-size:12px; color:#7d8ba1; margin:0 0 14px; }
+
+  .date-row { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .date-input {
+    font-family:"Pretendard",system-ui,sans-serif; font-weight:700; font-size:16px; color:#0f1e33;
+    background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:8px 12px; flex:1;
+  }
+
+  .job-list { display:flex; flex-direction:column; gap:8px; }
+  .job-item {
+    display:flex; align-items:center; gap:12px; background:#eef1f6; border:1px solid #e3e8f0;
+    border-radius:14px; padding:14px 16px; cursor:pointer;
+  }
+  .job-item.active { background:#fff6ea; border-color:#fdecd6; }
+  .job-icon { font-size:22px; flex-shrink:0; }
+  .job-body { flex:1; min-width:0; }
+  .job-company { font-size:15px; font-weight:800; color:#0f1e33; }
+  .job-spec { font-size:13px; color:#7d8ba1; margin-top:2px; }
+  .job-arrow { font-size:16px; color:#7d8ba1; }
+
+  .back-btn {
+    display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #e3e8f0;
+    border-radius:10px; padding:9px 16px; font-size:13px; font-weight:700; color:#4d5c72; margin-bottom:12px; font-family:inherit;
+  }
+
+  .spec-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin-bottom:4px; }
+  .spec-cell { background:#eef1f6; border-radius:12px; padding:12px 8px; text-align:center; }
+  .spec-label { font-size:11px; color:#7d8ba1; margin:0 0 4px; }
+  .spec-value { font-size:20px; font-weight:900; color:#0f1e33; margin:0; }
+  .spec-unit { font-size:11px; color:#7d8ba1; }
+
+  .section-title { font-size:13px; font-weight:800; color:#4d5c72; margin:18px 0 10px; display:flex; align-items:center; gap:6px; }
+
+  .checkpoints { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin-bottom:14px; }
+  .cp { border-radius:14px; padding:14px 8px; text-align:center; border:2px solid; }
+  .cp-label { font-size:11px; font-weight:700; margin:0 0 6px; }
+  .cp-value { font-size:26px; font-weight:900; margin:0; line-height:1; }
+  .cp-unit { font-size:11px; margin-top:4px; }
+  .cp.start { background:#e2f5ea; border-color:#bfe6cf; }
+  .cp.start .cp-label, .cp.start .cp-value { color:#1c7a4d; }
+  .cp.mid { background:#fbedd2; border-color:#f5d9a3; }
+  .cp.mid .cp-label, .cp.mid .cp-value { color:#a3610a; }
+  .cp.end { background:#fbe6e4; border-color:#f3c5c1; }
+  .cp.end .cp-label, .cp.end .cp-value { color:#c8372c; }
+
+  .chart-wrap { background:#eef1f6; border-radius:14px; padding:12px 12px 6px; margin-bottom:6px; }
+  .chart-caption { font-size:11px; color:#7d8ba1; text-align:center; margin:6px 0 2px; }
+
+  .legend { display:flex; gap:14px; align-items:center; justify-content:center; font-size:11.5px; color:#4d5c72; margin:6px 0 14px; }
+  .legend-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:5px; }
+
+  .plc-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .plc-cell { background:#eef1f6; border-radius:12px; padding:12px; }
+  .plc-label { font-size:11px; color:#7d8ba1; margin:0 0 4px; }
+  .plc-value { font-size:19px; font-weight:800; color:#0f1e33; margin:0; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ============ 임의(샘플) 데이터 ============
+   실제 작업지시서/PLC 연동 전 단계 — 화면 흐름과 레이아웃 확인용 가짜 데이터입니다.
+   두께·길이·중량이 바뀌면 목표 텐션(장력설정) 곡선도 같이 바뀌도록 간단한 공식으로
+   생성했습니다(실제 권장치 산출 로직 아님). */
+const JOBS = [
+  { id: 'j1', company: '(주)대한강재', icon: '🏭', thickness: 0.77, length: 3000, weight: 10.674 },
+  { id: 'j2', company: '삼성철강', icon: '🏗️', thickness: 1.20, length: 4500, weight: 14.2 },
+  { id: 'j3', company: '한일스틸', icon: '⚙️', thickness: 0.55, length: 2200, weight: 7.85 },
+];
+
+function round1(n){ return Math.round(n*10)/10; }
+
+function buildProfile(job){
+  const n = 24;
+  const points = [];
+  for (let i = 0; i <= n; i++){
+    const frac = i / n;
+    const lenAt = Math.round(job.length * frac);
+    // 목표 장력설정(%): 코일이 진행될수록(권취경 변화) 점점 낮아지는 테이퍼 형태 (예시 공식)
+    const tension = round1(48 - job.thickness * 6 - frac * (14 + job.thickness * 4));
+    // PLC 속도(예시): 초반 가속 -> 순항 -> 종반 감속
+    const speedShape = frac < 0.15 ? frac/0.15 : (frac > 0.85 ? (1-frac)/0.15 : 1);
+    const speed = Math.round(40 + speedShape * (140 - job.thickness*20));
+    // 사이클타임(예시): 속도와 반비례 경향
+    const cycle = round1(2.2 - speedShape*1.1 + job.thickness*0.3);
+    points.push({ lenAt, tension, speed, cycle });
+  }
+  return points;
+}
+
+let selectedJobId = null;
+
+function renderList(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="sample-note">💡 아직 카메라·PLC 실연동 전 단계라 아래 작업지시서·수치는 예시(샘플) 데이터입니다. 화면 흐름 확인용입니다.</div>
+    <div class="card">
+      <p class="header-title">레벨링 작업 가이드</p>
+      <p class="header-sub">작업지시서를 선택하면 길이에 따라 설정값이 어떻게 바뀌어야 하는지 보여드립니다.</p>
+      <div class="date-row"><input type="date" class="date-input" id="datePick"></div>
+    </div>
+    <div class="card">
+      <div class="job-list" id="jobList"></div>
+    </div>
+  `;
+  const d = document.getElementById('datePick');
+  const today = new Date();
+  d.value = today.toISOString().slice(0,10);
+
+  const listEl = document.getElementById('jobList');
+  listEl.innerHTML = JOBS.map(j => `
+    <div class="job-item" data-id="${j.id}">
+      <span class="job-icon">${j.icon}</span>
+      <div class="job-body">
+        <div class="job-company">${j.company}</div>
+        <div class="job-spec">두께 ${j.thickness}T · 길이 ${j.length.toLocaleString()}mm · ${j.weight}톤</div>
+      </div>
+      <span class="job-arrow">→</span>
+    </div>
+  `).join('');
+  listEl.querySelectorAll('.job-item').forEach(el => {
+    el.addEventListener('click', () => { selectedJobId = el.dataset.id; renderDetail(); });
+  });
+}
+
+function lineChartSvg(points, key, color, min, max){
+  const w = 380, h = 140, pad = 8;
+  const xs = points.map((p,i) => pad + (i/(points.length-1))*(w-pad*2));
+  const ys = points.map(p => h - pad - ((p[key]-min)/(max-min))*(h-pad*2));
+  const d = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const areaD = d + ` L${xs[xs.length-1].toFixed(1)},${h-pad} L${xs[0].toFixed(1)},${h-pad} Z`;
+  return `
+  <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
+    <path d="${areaD}" fill="${color}" opacity="0.12"></path>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></path>
+  </svg>`;
+}
+
+function renderDetail(){
+  const job = JOBS.find(j => j.id === selectedJobId);
+  const profile = buildProfile(job);
+  const start = profile[0], mid = profile[Math.floor(profile.length/2)], end = profile[profile.length-1];
+  const tVals = profile.map(p=>p.tension), sVals = profile.map(p=>p.speed);
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="sample-note">💡 아직 카메라·PLC 실연동 전 단계라 아래 수치는 예시(샘플) 데이터입니다.</div>
+    <button type="button" class="back-btn" id="backBtn">← 목록으로</button>
+    <div class="card">
+      <p class="header-title">${job.company}</p>
+      <p class="header-sub">가공 길이 ${job.length.toLocaleString()}mm 기준 권장 설정값</p>
+      <div class="spec-grid">
+        <div class="spec-cell"><p class="spec-label">두께</p><p class="spec-value">${job.thickness}</p><span class="spec-unit">T</span></div>
+        <div class="spec-cell"><p class="spec-label">길이</p><p class="spec-value">${job.length.toLocaleString()}</p><span class="spec-unit">mm</span></div>
+        <div class="spec-cell"><p class="spec-label">중량</p><p class="spec-value">${job.weight}</p><span class="spec-unit">톤</span></div>
+      </div>
+
+      <div class="section-title">📟 권장 장력설정 (DTC-3100)</div>
+      <div class="checkpoints">
+        <div class="cp start"><p class="cp-label">시작</p><p class="cp-value">${start.tension}</p><p class="cp-unit">장력설정</p></div>
+        <div class="cp mid"><p class="cp-label">중간</p><p class="cp-value">${mid.tension}</p><p class="cp-unit">장력설정</p></div>
+        <div class="cp end"><p class="cp-label">종료</p><p class="cp-value">${end.tension}</p><p class="cp-unit">장력설정</p></div>
+      </div>
+      <div class="chart-wrap">${lineChartSvg(profile, 'tension', '#e8830f', Math.min(...tVals)-2, Math.max(...tVals)+2)}</div>
+      <div class="chart-caption">길이가 진행될수록(왼쪽→오른쪽) 장력설정을 서서히 낮춰주세요.</div>
+
+      <div class="section-title">⚙️ PLC 실측 정보 (설비)</div>
+      <div class="plc-grid">
+        <div class="plc-cell"><p class="plc-label">시작 속도</p><p class="plc-value">${start.speed} pps</p></div>
+        <div class="plc-cell"><p class="plc-label">순항 속도</p><p class="plc-value">${Math.max(...sVals)} pps</p></div>
+        <div class="plc-cell"><p class="plc-label">평균 사이클타임</p><p class="plc-value">${round1(profile.reduce((a,p)=>a+p.cycle,0)/profile.length)} s</p></div>
+        <div class="plc-cell"><p class="plc-label">종료 속도</p><p class="plc-value">${end.speed} pps</p></div>
+      </div>
+      <div class="chart-wrap" style="margin-top:8px">${lineChartSvg(profile, 'speed', '#3672b0', Math.min(...sVals)-5, Math.max(...sVals)+5)}</div>
+      <div class="chart-caption">설비 속도(SPEEDPPS) 변화 — 시작·종료 구간은 가감속으로 낮게 나옵니다.</div>
+    </div>
+  `;
+  document.getElementById('backBtn').addEventListener('click', renderList);
+}
+
+renderList();
+</script>
+</body>
+</html>
