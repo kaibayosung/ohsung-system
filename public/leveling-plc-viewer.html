@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레벨링 PLC 상세 조회</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:#eef1f6; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+  body { display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:460px; }
+
+  .real-note {
+    display:flex; gap:8px; align-items:flex-start; background:#e6f1fb; border:1px solid #b5d4f4;
+    border-radius:12px; padding:10px 14px; font-size:12.5px; color:#185fa5; line-height:1.5; margin-bottom:12px;
+  }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:18px; font-weight:800; color:#0f1e33; margin:0 0 2px; }
+  .header-sub { font-size:12px; color:#7d8ba1; margin:0 0 14px; }
+
+  .date-row { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+  .date-input {
+    font-family:"Pretendard",system-ui,sans-serif; font-weight:700; font-size:16px; color:#0f1e33;
+    background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:8px 12px; flex:1;
+  }
+
+  .status-msg { font-size:14px; color:#7d8ba1; padding:14px 2px; }
+
+  .box-list { display:flex; flex-direction:column; gap:8px; }
+  .box-item {
+    display:flex; align-items:center; gap:12px; background:#eef1f6; border:1px solid #e3e8f0;
+    border-radius:14px; padding:14px 16px; cursor:pointer;
+  }
+  .box-icon { font-size:20px; flex-shrink:0; }
+  .box-body { flex:1; min-width:0; }
+  .box-coil { font-size:15px; font-weight:800; color:#0f1e33; }
+  .box-sub { font-size:12.5px; color:#7d8ba1; margin-top:2px; }
+  .box-chip { font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px; flex-shrink:0; }
+  .box-chip.run { background:#e6eef8; color:#185fa5; }
+  .box-chip.done { background:#e2f5ea; color:#1c7a4d; }
+  .box-arrow { font-size:16px; color:#7d8ba1; }
+
+  .back-btn {
+    display:inline-flex; align-items:center; gap:6px; background:#fff; border:1px solid #e3e8f0;
+    border-radius:10px; padding:9px 16px; font-size:13px; font-weight:700; color:#4d5c72; margin-bottom:12px; font-family:inherit;
+  }
+
+  .spec-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  .spec-cell { background:#eef1f6; border-radius:12px; padding:11px 6px; text-align:center; }
+  .spec-label { font-size:10.5px; color:#7d8ba1; margin:0 0 4px; }
+  .spec-value { font-size:17px; font-weight:900; color:#0f1e33; margin:0; }
+  .spec-unit { font-size:10.5px; color:#7d8ba1; }
+
+  .section-title { font-size:13px; font-weight:800; color:#4d5c72; margin:18px 0 10px; display:flex; align-items:center; gap:6px; }
+
+  .stat-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-bottom:4px; }
+  .stat-cell { background:#eef1f6; border-radius:12px; padding:12px; }
+  .stat-label { font-size:11px; color:#7d8ba1; margin:0 0 4px; }
+  .stat-value { font-size:19px; font-weight:800; color:#0f1e33; margin:0; }
+  .stat-value.warn { color:#a3610a; }
+
+  .chart-wrap { background:#eef1f6; border-radius:14px; padding:12px 12px 6px; margin-bottom:6px; }
+  .chart-caption { font-size:11px; color:#7d8ba1; text-align:center; margin:6px 0 2px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* leveler-explore Edge Function 실데이터 사용. 인증 헤더 불필요(공개 함수). */
+const FN_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+
+function todayKST(){
+  const now = new Date();
+  return new Date(now.getTime() + 9*3600000).toISOString().slice(0, 10);
+}
+function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : 0; }
+function fmtHM(ts){
+  if (!ts) return '-';
+  const d = new Date(new Date(ts).getTime() + 9*3600000);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+
+async function getJson(params){
+  try {
+    const res = await fetch(`${FN_URL}?${params}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'unknown error');
+    return json;
+  } catch (err) {
+    console.error('leveler-explore 조회 실패:', err);
+    return null;
+  }
+}
+
+let selectedDate = todayKST();
+
+async function renderList(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="real-note">📡 leveler-explore 실측 데이터를 그대로 보여줍니다 (샘플 아님). 아직 값이 없으면 그 날짜에 레벨링 작업이 없었던 것입니다.</div>
+    <div class="card">
+      <p class="header-title">레벨링 PLC 상세 조회</p>
+      <p class="header-sub">코일(박스)을 선택하면 절단·속도 PLC 실측 기록을 보여줍니다.</p>
+      <div class="date-row"><input type="date" class="date-input" id="datePick" value="${selectedDate}"></div>
+    </div>
+    <div class="card"><div id="boxListWrap"><div class="status-msg">불러오는 중…</div></div></div>
+  `;
+  document.getElementById('datePick').addEventListener('change', (e) => {
+    selectedDate = e.target.value || todayKST();
+    renderList();
+  });
+
+  const data = await getJson(`leveling_stroke_overview=${selectedDate}`);
+  const wrap = document.getElementById('boxListWrap');
+  if (!data){
+    wrap.innerHTML = `<div class="status-msg">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>`;
+    return;
+  }
+  const boxes = data.boxes || [];
+  if (!boxes.length){
+    wrap.innerHTML = `<div class="status-msg">이 날짜에는 레벨링 작업 기록이 없습니다.</div>`;
+    return;
+  }
+  wrap.innerHTML = `<div class="box-list">${boxes.map(b => `
+    <div class="box-item" data-coil="${b.coil_id}" data-box="${b.box_idx}">
+      <span class="box-icon">${b.status === '완료' ? '✅' : '⚙️'}</span>
+      <div class="box-body">
+        <div class="box-coil">${b.coil_id} · ${b.box_idx}번 박스</div>
+        <div class="box-sub">${b.company_name || '-'} · ${b.specification || '-'}</div>
+      </div>
+      <span class="box-chip ${b.status === '완료' ? 'done' : 'run'}">${b.status || '-'}</span>
+      <span class="box-arrow">→</span>
+    </div>`).join('')}</div>`;
+  wrap.querySelectorAll('.box-item').forEach(el => {
+    el.addEventListener('click', () => renderDetail(el.dataset.coil, el.dataset.box));
+  });
+}
+
+function sampleEvenly(arr, maxPoints){
+  if (arr.length <= maxPoints) return arr;
+  const step = arr.length / maxPoints;
+  const out = [];
+  for (let i = 0; i < maxPoints; i++) out.push(arr[Math.floor(i*step)]);
+  return out;
+}
+
+function lineChartSvg(points, getY, color, min, max){
+  const w = 400, h = 130, pad = 8;
+  if (points.length < 2 || max <= min) return `<div class="status-msg">그래프를 그릴 데이터가 부족합니다.</div>`;
+  const xs = points.map((p,i) => pad + (i/(points.length-1))*(w-pad*2));
+  const ys = points.map(p => h - pad - ((getY(p)-min)/(max-min))*(h-pad*2));
+  const d = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+  const areaD = d + ` L${xs[xs.length-1].toFixed(1)},${h-pad} L${xs[0].toFixed(1)},${h-pad} Z`;
+  return `
+  <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
+    <path d="${areaD}" fill="${color}" opacity="0.12"></path>
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
+  </svg>`;
+}
+
+async function renderDetail(coilId, boxIdx){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <button type="button" class="back-btn" id="backBtn">← 목록으로</button>
+    <div class="card"><div class="status-msg">불러오는 중…</div></div>
+  `;
+  document.getElementById('backBtn').addEventListener('click', renderList);
+
+  const data = await getJson(`leveling_stroke_detail=${encodeURIComponent(coilId)}&leveling_work_date=${selectedDate}&box_idx=${boxIdx}`);
+  if (!data){
+    document.querySelector('.card').innerHTML = `<div class="status-msg">상세 데이터를 불러오지 못했습니다.</div>`;
+    return;
+  }
+
+  const spec = data.spec || {};
+  const strokes = data.strokes || [];
+  const rawLog = data.raw_log || [];
+
+  const cycletms = strokes.map(s => num(s.cycletm)).filter(v => v > 0);
+  const avgCycle = cycletms.length ? (cycletms.reduce((a,b)=>a+b,0)/cycletms.length) : 0;
+  const anomalyCount = strokes.filter(s => s.is_anomaly).length;
+  const lastTs = strokes.length ? strokes[strokes.length-1].timestamp : null;
+
+  const strokeSample = sampleEvenly(strokes, 150);
+  const cycleVals = strokeSample.map(s => num(s.cycletm));
+
+  const rawSample = sampleEvenly(rawLog, 150);
+  // 속도pps 필드는 실제 현장에서 MPM(분당 미터) 단위로 쓰이는 값입니다 — 이름은 PPS이지만 펄스 환산이 아니라
+  // 그대로 MPM 실측 속도로 취급합니다 (현장 확인 사항).
+  const speedVals = rawSample.map(r => num(r.SPEEDPPS));
+  const speedSetVals = rawSample.map(r => num(r.SPEEDSET));
+
+  const app2 = document.getElementById('app');
+  app2.innerHTML = `
+    <button type="button" class="back-btn" id="backBtn">← 목록으로</button>
+    <div class="card">
+      <p class="header-title">${coilId} · ${boxIdx}번 박스</p>
+      <p class="header-sub">${selectedDate} 실측 PLC 기록 (leveler-explore)</p>
+
+      <div class="spec-grid">
+        <div class="spec-cell"><p class="spec-label">절단길이설정</p><p class="spec-value">${num(spec.cutlenset).toLocaleString()}</p><span class="spec-unit">mm</span></div>
+        <div class="spec-cell"><p class="spec-label">가속시간</p><p class="spec-value">${spec.acctm ?? '-'}</p><span class="spec-unit">s</span></div>
+        <div class="spec-cell"><p class="spec-label">감속시간</p><p class="spec-value">${spec.dectm ?? '-'}</p><span class="spec-unit">s</span></div>
+      </div>
+      <div class="spec-grid" style="margin-top:8px">
+        <div class="spec-cell"><p class="spec-label">저속길이설정</p><p class="spec-value">${num(spec.slowlenset).toLocaleString()}</p><span class="spec-unit">mm</span></div>
+        <div class="spec-cell"><p class="spec-label">인버터속도계수</p><p class="spec-value">${spec.inverterspeedcoeff ?? '-'}</p><span class="spec-unit"></span></div>
+        <div class="spec-cell"><p class="spec-label">총 행정 수</p><p class="spec-value">${spec.stroke_count ?? strokes.length}</p><span class="spec-unit">회</span></div>
+      </div>
+
+      <div class="section-title">📊 작업 요약</div>
+      <div class="stat-grid">
+        <div class="stat-cell"><p class="stat-label">평균 1행정시간</p><p class="stat-value">${avgCycle.toFixed(1)} s</p></div>
+        <div class="stat-cell"><p class="stat-label">이상 행정</p><p class="stat-value ${anomalyCount>0?'warn':''}">${anomalyCount} 건</p></div>
+        <div class="stat-cell"><p class="stat-label">최근 기록 시각</p><p class="stat-value">${fmtHM(lastTs)}</p></div>
+        <div class="stat-cell"><p class="stat-label">기록 수(원본 로그)</p><p class="stat-value">${rawLog.length.toLocaleString()}</p></div>
+      </div>
+
+      <div class="section-title">⏱️ 행정별 1행정시간 (사이클타임)</div>
+      <div class="chart-wrap">${lineChartSvg(strokeSample, s => num(s.cycletm), '#3672b0', 0, Math.max(...cycleVals, 1)*1.15)}</div>
+      <div class="chart-caption">행정이 진행된 순서대로(왼쪽→오른쪽) 1행정에 걸린 시간입니다. 값이 튀면 이상 신호일 수 있습니다.</div>
+
+      <div class="section-title">🚀 속도 (MPM · 분당 이동거리)</div>
+      <div class="chart-wrap">${lineChartSvg(rawSample, r => num(r.SPEEDPPS), '#e8830f', 0, Math.max(...speedVals, ...speedSetVals, 1)*1.15)}</div>
+      <div class="chart-caption">실측 속도(주황 실선) — 원본 필드명은 SPEEDPPS이지만 현장 기준 단위는 MPM입니다.</div>
+    </div>
+  `;
+  document.getElementById('backBtn').addEventListener('click', renderList);
+}
+
+renderList();
+</script>
+</body>
+</html>
