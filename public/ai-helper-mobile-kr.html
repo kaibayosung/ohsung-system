@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>AI 헬퍼 · 슬리팅2 (모바일)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+  body { display:flex; justify-content:center; padding:14px; }
+  #app { width:100%; max-width:480px; padding-bottom:24px; }
+
+  .note { display:flex; gap:8px; align-items:flex-start; border-radius:12px; padding:11px 14px; font-size:12.5px; font-weight:700; line-height:1.55; margin-bottom:10px; }
+  .note.info { background:#e6f1fb; color:#185fa5; }
+  .note.warn { background:#fff6ea; color:#a3610a; }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:19px; font-weight:900; color:#0f1e33; margin:0 0 3px; }
+  .header-sub { font-size:12.5px; font-weight:700; color:#7d8ba1; margin:0 0 14px; line-height:1.5; }
+
+  .date-row { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .date-input { font-family:inherit; font-weight:800; font-size:15px; color:#0f1e33; background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 10px; flex:1; }
+  .today-btn { font-family:inherit; font-weight:800; font-size:13px; color:#796cbf; background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:10px; padding:9px 12px; white-space:nowrap; }
+
+  .search-input { width:100%; font-family:inherit; font-size:14px; font-weight:700; padding:10px 12px; border-radius:10px; border:1.5px solid #e3e8f0; margin:12px 0 10px; color:#0f1e33; }
+  .list-count { font-size:12px; font-weight:800; color:#9397ab; margin-bottom:10px; }
+
+  .status-msg { font-size:14px; font-weight:700; color:#7d8ba1; padding:24px 4px; text-align:center; }
+
+  .job-list { display:flex; flex-direction:column; gap:8px; }
+  .job-item { display:flex; align-items:center; gap:10px; background:#f3f5fe; border:1.5px solid #e3e8f0; border-radius:14px; padding:13px 15px; cursor:pointer; }
+  .job-body { flex:1; min-width:0; }
+  .job-coil { font-size:15px; font-weight:900; color:#0f1e33; }
+  .job-sub { font-size:12px; font-weight:700; color:#7d8ba1; margin-top:2px; }
+  .job-dur { font-size:11px; font-weight:800; color:#796cbf; margin-top:3px; }
+  .chip { font-size:10.5px; font-weight:900; padding:3px 10px; border-radius:999px; flex-shrink:0; white-space:nowrap; }
+  .chip.ready { background:#eef1f6; color:#5c6478; }
+  .chip.run { background:#e6eef8; color:#185fa5; }
+  .chip.done { background:#e2f5ea; color:#1c7a4d; }
+  .arrow { font-size:16px; color:#c2c9d8; }
+
+  .back-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:800; color:#4d5c72; margin-bottom:12px; font-family:inherit; }
+
+  .badge { font-size:12px; font-weight:900; padding:4px 12px; border-radius:999px; }
+  .badge.accent { background:#f5f4ff; color:#796cbf; }
+
+  .status-pill { display:inline-flex; align-items:center; gap:7px; font-size:18px; font-weight:900; padding:8px 18px; border-radius:999px; margin-top:6px; }
+  .status-pill.green { background:#e2f5ea; color:#1c7a4d; }
+  .status-pill.amber { background:#fdecd6; color:#a3610a; }
+  .status-pill.red { background:#fbe4e2; color:#b3261e; }
+  .status-pill.gray { background:#eef1f6; color:#5c6478; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .kpi-cell { background:#f3f5fe; border-radius:12px; padding:12px; }
+  .kpi-cell.wide { grid-column:1 / -1; }
+  .kpi-label { font-size:11px; font-weight:800; color:#7d8ba1; margin:0 0 5px; }
+  .kpi-value { font-size:19px; font-weight:900; color:#0f1e33; margin:0; }
+  .kpi-sub { font-size:10.5px; font-weight:700; color:#9397ab; margin-top:3px; }
+
+  .section-title { font-size:12.5px; font-weight:900; color:#4d5c72; margin:16px 0 10px; letter-spacing:0.02em; }
+  .section-title:first-child { margin-top:0; }
+
+  .chart-wrap { background:#f3f5fe; border-radius:14px; padding:14px 12px 8px; margin-bottom:4px; }
+  .chart-caption { font-size:11px; font-weight:700; color:#9397ab; text-align:center; margin:8px 0 2px; }
+  .legend { display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:11px; font-weight:800; color:#4d5c72; margin:8px 0 2px; }
+  .legend-dot { width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:4px; }
+
+  .zone-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:9px; }
+  .zone-cell { background:#f3f5fe; border-radius:12px; padding:11px 13px; border-left:4px solid #cfd3e5; }
+  .zone-label { font-size:10.5px; font-weight:800; color:#7d8ba1; }
+  .zone-val { font-size:18px; font-weight:900; color:#0f1e33; margin:3px 0; }
+  .zone-note { font-size:10.5px; font-weight:800; }
+  .zone-note.ok { color:#1c7a4d; }
+  .zone-note.warn { color:#a3610a; }
+
+  .toggle-note { cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* leveler-explore Edge Function 실데이터 사용 (recommend_for 모드). 인증 헤더 불필요(공개 함수). */
+const FN_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const TENSION_COLORS = ["#378ADD", "#EB6834", "#1BAF7A", "#EDA100"];
+
+function todayKST(){
+  const now = new Date();
+  return new Date(now.getTime() + 9*3600000).toISOString().slice(0, 10);
+}
+function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
+function fmtClock(ts){
+  if (!ts) return "-";
+  const d = new Date(new Date(ts).getTime() + 9*3600000);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+function fmtDuration(sec){
+  if (sec == null) return "-";
+  const totalMin = Math.round(sec / 60);
+  if (totalMin < 60) return `약 ${totalMin}분`;
+  const h = Math.floor(totalMin/60), m = totalMin % 60;
+  return m === 0 ? `약 ${h}시간` : `약 ${h}시간 ${m}분`;
+}
+
+async function getJson(params){
+  try {
+    const res = await fetch(`${FN_URL}?${params}`);
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'unknown error');
+    return json;
+  } catch (err) {
+    console.error('leveler-explore 조회 실패:', err);
+    return null;
+  }
+}
+
+function nearestAtLen(profile, currentLen){
+  if (!profile || profile.length === 0 || currentLen == null) return null;
+  let best = profile[0];
+  for (const row of profile) {
+    if (row.len_bucket <= currentLen) best = row; else break;
+  }
+  return best;
+}
+
+function statusOf(rec, cur){
+  if (rec == null || cur == null) return { label: '비교 데이터 부족', tone: 'gray' };
+  if (rec <= 5) return { label: '가감속 구간', tone: 'gray' };
+  const diff = ((cur - rec) / rec) * 100;
+  if (Math.abs(diff) <= 5) return { label: '적정 속도', tone: 'green', diff };
+  if (diff < -5) return { label: '너무 느림', tone: 'amber', diff };
+  return { label: '너무 빠름', tone: 'red', diff };
+}
+const TONE_ICON = { green: '✓', amber: '▽', red: '△', gray: '·' };
+
+// 라인차트를 순수 SVG로 그림 (외부 차트 라이브러리 없이 모바일 정적 페이지에서 동작).
+// series: [{get:fn, color}], marker: {x, y, color} 옵션으로 현재 위치를 점+세로선으로 표시.
+function chartSvg(points, series, xMin, xMax, yMin, yMax, marker){
+  const w = 420, h = 150, padL = 6, padR = 6, padT = 8, padB = 8;
+  if (!points || points.length < 2 || xMax <= xMin || yMax <= yMin) {
+    return `<div class="status-msg" style="padding:30px 4px;">표시할 데이터가 충분하지 않습니다.</div>`;
+  }
+  const xOf = (v) => padL + ((v - xMin) / (xMax - xMin)) * (w - padL - padR);
+  const yOf = (v) => h - padB - ((v - yMin) / (yMax - yMin)) * (h - padT - padB);
+  const paths = series.map((s) => {
+    const d = points.map((p, i) => `${i===0?'M':'L'}${xOf(p.len_bucket).toFixed(1)},${yOf(num(s.get(p)) ?? yMin).toFixed(1)}`).join(' ');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join('');
+  let markerSvg = '';
+  if (marker && marker.x != null) {
+    const mx = xOf(Math.min(Math.max(marker.x, xMin), xMax));
+    markerSvg += `<line x1="${mx}" y1="${padT}" x2="${mx}" y2="${h-padB}" stroke="#9397ab" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    if (marker.y != null) {
+      const my = yOf(Math.min(Math.max(marker.y, yMin), yMax));
+      markerSvg += `<circle cx="${mx}" cy="${my}" r="6.5" fill="${marker.color || '#796cbf'}" stroke="#fff" stroke-width="2"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${paths}${markerSvg}</svg>`;
+}
+
+let state = { date: todayKST(), jobs: [], search: '' };
+
+async function renderList(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="card">
+      <p class="header-title">🤖 AI 헬퍼 · 슬리팅2</p>
+      <p class="header-sub">코일을 선택하면 동일 사양 완료 코일 실측 데이터 기반 권장치를 보여줍니다. 가동 전이면 예상 프리뷰를, 가동 중/완료면 실시간 비교를 자동으로 보여줍니다.</p>
+      <div class="date-row">
+        <input type="date" class="date-input" id="datePick" max="${todayKST()}" value="${state.date}">
+        <button type="button" class="today-btn" id="todayBtn">오늘</button>
+      </div>
+    </div>
+    <div class="note info">💡 동일 사양(두께 ±0.03mm) 완료 코일 최대 30건의 plc_data 실측치를 leveler-explore Edge Function이 그 자리에서 계산합니다.</div>
+    <div class="note warn">⚠️ LENGTH 필드는 2026년 3월 이후 일부 코일에서 전체 길이가 온전히 기록되지 않는 버그가 있어(장비쪽 수정 예정), 권장 프로파일이 실제보다 짧은 구간에 몰려 보일 수 있습니다.</div>
+    <input type="text" class="search-input" id="searchInput" placeholder="코일ID 또는 거래처 검색" value="${state.search}">
+    <div id="listWrap"><div class="status-msg">불러오는 중...</div></div>
+  `;
+  document.getElementById('datePick').addEventListener('change', (e) => { state.date = e.target.value || todayKST(); renderList(); });
+  document.getElementById('todayBtn').addEventListener('click', () => { state.date = todayKST(); renderList(); });
+  document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderJobList(); });
+
+  const data = await getJson(`work_date=${state.date}`);
+  const wrap = document.getElementById('listWrap');
+  if (!data) { wrap.innerHTML = `<div class="status-msg">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>`; return; }
+  state.jobs = (data.rows || []).filter((r) => r.work_type === 'SLITING2');
+  renderJobList();
+
+  // 목록 항목별 예상 작업시간을 배치로 조회 (참고용, 실패해도 목록은 정상 표시)
+  if (state.jobs.length > 0) {
+    const ids = state.jobs.map((j) => j.product_name).join(',');
+    const durData = await getJson(`duration_for=${encodeURIComponent(ids)}`);
+    if (durData && durData.durations) { state.durations = durData.durations; renderJobList(); }
+  }
+}
+
+function renderJobList(){
+  const wrap = document.getElementById('listWrap');
+  const q = (state.search || '').trim().toLowerCase();
+  const filtered = state.jobs.filter((j) => !q || (j.product_name||'').toLowerCase().includes(q) || (j.company_name||'').toLowerCase().includes(q));
+  if (filtered.length === 0) {
+    wrap.innerHTML = `<div class="status-msg">해당 날짜에 슬리팅2 작업지시서가 없습니다.</div>`;
+    return;
+  }
+  const durations = state.durations || {};
+  wrap.innerHTML = `
+    <div class="list-count">${filtered.length}건</div>
+    <div class="job-list">${filtered.map((j) => {
+      const chipClass = j.status === '완료' ? 'done' : j.status === '가동중' ? 'run' : 'ready';
+      const dur = durations[j.product_name]?.avgDurationSec;
+      return `<div class="job-item" data-coil="${j.product_name}">
+        <div class="job-body">
+          <div class="job-coil">${j.product_name}</div>
+          <div class="job-sub">${j.company_name || '-'} · ${j.specification || '-'}</div>
+          ${dur != null ? `<div class="job-dur">예상 ${fmtDuration(dur)}</div>` : ''}
+        </div>
+        <span class="chip ${chipClass}">${j.status || '-'}</span>
+        <span class="arrow">→</span>
+      </div>`;
+    }).join('')}</div>
+  `;
+  wrap.querySelectorAll('.job-item').forEach((el) => el.addEventListener('click', () => renderDetail(el.dataset.coil)));
+}
+
+async function renderDetail(coilId){
+  const app = document.getElementById('app');
+  app.innerHTML = `<button type="button" class="back-btn" id="backBtn">← 목록으로</button><div class="card"><div class="status-msg">동일 사양 완료 코일을 분석 중...</div></div>`;
+  document.getElementById('backBtn').addEventListener('click', renderList);
+
+  const rec = await getJson(`recommend_for=${encodeURIComponent(coilId)}`);
+  const card = document.querySelector('#app .card');
+  if (!rec) { card.innerHTML = `<div class="status-msg">데이터를 불러오지 못했습니다.</div>`; return; }
+
+  const target = rec.target || {};
+  const hasLive = !!rec.latest;
+  const currentLen = hasLive ? num(rec.latest.LENGTH) : null;
+  const currentSpeed = hasLive ? num(rec.latest.LINE_SPEED_VALUE) : null;
+  const recAtLen = hasLive ? nearestAtLen(rec.speedProfile, currentLen) : null;
+  const recSpeedAtLen = recAtLen ? num(recAtLen.speed) : null;
+  const status = hasLive ? statusOf(recSpeedAtLen, currentSpeed) : null;
+
+  const speedProfile = (rec.speedProfile || []).filter((r) => r.len_bucket >= 0);
+  const tensionProfile = (rec.tensionProfile || []).filter((r) => r.len_bucket >= 0);
+  const speedVals = speedProfile.map((r) => num(r.speed)).filter((v) => v != null);
+  const speedYMax = Math.max(10, ...speedVals, currentSpeed || 0) * 1.15;
+  const lenMax = Math.max(10, ...speedProfile.map((r) => r.len_bucket), currentLen || 0) * 1.05;
+
+  let tensionZones = [];
+  if (hasLive) {
+    const tensionAtLen = nearestAtLen(tensionProfile, currentLen);
+    if (tensionAtLen) {
+      const cur = [rec.latest.TENSION1, rec.latest.TENSION2, rec.latest.TENSION3, rec.latest.TENSION4];
+      const recv = [tensionAtLen.t1, tensionAtLen.t2, tensionAtLen.t3, tensionAtLen.t4];
+      tensionZones = cur.map((c, i) => {
+        const r = num(recv[i]), cv = num(c);
+        const diff = (r != null && cv != null) ? Math.round((cv - r) * 10) / 10 : null;
+        const ok = diff != null && Math.abs(diff) <= Math.max(12, r * 0.08);
+        return { zone: i+1, cur: cv, rec: r, diff, ok };
+      });
+    }
+  } else if (rec.zoneBalance) {
+    // 준비 상태: recommend_for가 이미 계산해 준 zoneBalance(존별 대표 텐션값)를 그대로 사용.
+    tensionZones = [1,2,3,4].map((z) => ({ zone: z, avg: num(rec.zoneBalance['t'+z]) }));
+  }
+
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <span style="font-size:21px;font-weight:900;color:#0f1e33;">${rec.coil_id}</span>
+          <span class="chip ${target.status === '완료' ? 'done' : target.status === '가동중' ? 'run' : 'ready'}">${target.status || '-'}</span>
+        </div>
+        <div style="font-size:12.5px;font-weight:700;color:#7d8ba1;margin-top:5px;">
+          ${target.company_name || '-'} · ${target.specification || '-'} · ${target.original_weight ? Math.round(target.original_weight).toLocaleString() : '-'}kg
+          ${hasLive ? ` · 최근 기록 ${fmtClock(rec.latest.TIMESTAMP)}` : ''}
+        </div>
+      </div>
+      <span class="badge accent">${target.work_type === 'SLITING2' ? '슬리팅2' : '슬리팅1'}</span>
+    </div>
+  `;
+
+  const notes = `
+    <div class="note info toggle-note" id="infoNote">💡 동일 사양(두께 ±0.03mm) 완료 코일 최대 30건의 plc_data 실측치를 그 자리에서 계산한 참고용 권장치입니다. 탭하여 접기</div>
+    <div class="note warn toggle-note" id="warnNote">⚠️ LENGTH 필드는 2026년 3월 이후 일부 코일에서 전체 길이가 온전히 기록되지 않는 버그가 있어, 권장 프로파일이 실제보다 짧은 구간에 몰려 보일 수 있습니다. 탭하여 접기</div>
+  `;
+
+  let body = '';
+
+  if (!hasLive) {
+    const zb = rec.zoneBalance;
+    body += `
+      <div class="section-title">예상 작업 프리뷰</div>
+      <div class="card" style="padding:16px 18px;">
+        <div class="kpi-grid">
+          <div class="kpi-cell wide">
+            <div class="kpi-label">권장 순항속도</div>
+            <div class="kpi-value" style="color:#796cbf;font-size:26px;">${rec.recommendedCruiseSpeed != null ? rec.recommendedCruiseSpeed + ' m/min' : '-'}</div>
+            <div class="kpi-sub">동일 사양(두께 ${rec.thickness}mm) 완료 코일 ${rec.peerCount}건 기준</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-label">예상 가동시간</div>
+            <div class="kpi-value">${fmtDuration(rec.avgDurationSec)}</div>
+          </div>
+          <div class="kpi-cell">
+            <div class="kpi-label">4존 텐션 밸런스</div>
+            <div class="kpi-value" style="font-size:16px;color:${zb?.status === '주의' ? '#b3261e' : '#1c7a4d'}">${zb ? zb.status : '-'}</div>
+            <div class="kpi-sub">${zb ? `Z1 ${zb.t1} · Z2 ${zb.t2} · Z3 ${zb.t3} · Z4 ${zb.t4} (편차 ${zb.gap})` : '데이터 부족'}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">길이 구간별 권장 속도</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart-wrap">${chartSvg(speedProfile, [{get:(p)=>p.speed, color:'#968ae0'}], 0, lenMax, 0, speedYMax)}</div>
+        <div class="chart-caption">0m → ${Math.round(lenMax)}m · 동일 사양 코일 평균</div>
+      </div>
+
+      <div class="section-title">4존 텐션 밸런스 (존별 상세)</div>
+      <div class="card" style="padding:16px 18px;">
+        <div class="zone-grid">
+          ${tensionZones.map((z) => `
+            <div class="zone-cell" style="border-left-color:${TENSION_COLORS[z.zone-1]}">
+              <div class="zone-label">ZONE ${z.zone}</div>
+              <div class="zone-val">${z.avg != null ? z.avg : '-'}</div>
+              <div class="zone-note ok">권장 밸런스</div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="section-title">길이 구간별 권장 텐션 (4존)</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart-wrap">${chartSvg(tensionProfile, [0,1,2,3].map((i)=>({get:(p)=>p['t'+(i+1)], color:TENSION_COLORS[i]})), 0, lenMax,
+          0, Math.max(50, ...tensionProfile.flatMap((r)=>[num(r.t1),num(r.t2),num(r.t3),num(r.t4)]).filter((v)=>v!=null)) * 1.15)}</div>
+        <div class="legend">
+          <span><span class="legend-dot" style="background:${TENSION_COLORS[0]}"></span>Zone 1</span>
+          <span><span class="legend-dot" style="background:${TENSION_COLORS[1]}"></span>Zone 2</span>
+          <span><span class="legend-dot" style="background:${TENSION_COLORS[2]}"></span>Zone 3</span>
+          <span><span class="legend-dot" style="background:${TENSION_COLORS[3]}"></span>Zone 4</span>
+        </div>
+      </div>
+    `;
+  } else {
+    const toneClass = status.tone;
+    body += `
+      <div class="section-title">현재 속도 상태</div>
+      <div class="card" style="padding:18px;">
+        <div class="status-pill ${toneClass}">${TONE_ICON[toneClass]} ${status.label}</div>
+        <div style="display:flex;gap:22px;margin-top:14px;">
+          <div><div class="kpi-label">권장 속도</div><div class="kpi-value">${recSpeedAtLen != null ? recSpeedAtLen+' m/min' : '-'}</div></div>
+          <div><div class="kpi-label">현재 속도</div><div class="kpi-value" style="color:#796cbf;">${currentSpeed != null ? currentSpeed+' m/min' : '-'}</div></div>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-bottom:12px;">
+        <div class="kpi-cell"><div class="kpi-label">현재 진행 길이</div><div class="kpi-value">${currentLen != null ? currentLen+'m' : '-'}</div></div>
+        <div class="kpi-cell"><div class="kpi-label">속도 편차</div><div class="kpi-value" style="color:${toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#7d8ba1'}">${status.diff != null ? (status.diff>=0?'+':'')+Math.round(status.diff)+'%' : '-'}</div></div>
+        <div class="kpi-cell wide"><div class="kpi-label">권장 순항속도</div><div class="kpi-value">${rec.recommendedCruiseSpeed != null ? rec.recommendedCruiseSpeed+' m/min' : '-'}</div><div class="kpi-sub">동일 사양 완료 코일 ${rec.peerCount}건 기준</div></div>
+      </div>
+
+      <div class="section-title">길이별 권장 속도 (현재 위치 표시)</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart-wrap">${chartSvg(speedProfile, [{get:(p)=>p.speed, color:'#968ae0'}], 0, lenMax, 0, speedYMax, { x: currentLen, y: currentSpeed, color: toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#796cbf' })}</div>
+        <div class="chart-caption">● = 현재 위치(${currentLen != null ? currentLen+'m' : '-'})</div>
+      </div>
+
+      <div class="section-title">텐션 1~4존 (현재 vs 권장)</div>
+      <div class="card" style="padding:16px 18px;">
+        <div class="zone-grid">
+          ${tensionZones.length === 0 ? `<div class="status-msg" style="grid-column:1/-1;padding:6px 0;">텐션 비교 데이터가 부족합니다.</div>` : tensionZones.map((z) => `
+            <div class="zone-cell" style="border-left-color:${TENSION_COLORS[z.zone-1]}">
+              <div class="zone-label">ZONE ${z.zone}</div>
+              <div class="zone-val">${z.cur != null ? z.cur : '-'}</div>
+              <div class="zone-note ${z.ok ? 'ok' : 'warn'}">${z.ok ? '정상' : '주의'} · 권장 ${z.rec != null ? z.rec : '-'} (편차 ${z.diff != null ? (z.diff>=0?'+':'')+z.diff : '-'})</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  app.innerHTML += notes + body;
+  document.getElementById('backBtn').addEventListener('click', renderList);
+  const infoNote = document.getElementById('infoNote');
+  const warnNote = document.getElementById('warnNote');
+  [infoNote, warnNote].forEach((el) => {
+    if (!el) return;
+    let collapsed = false;
+    el.addEventListener('click', () => {
+      collapsed = !collapsed;
+      el.style.opacity = collapsed ? '0.55' : '1';
+    });
+  });
+}
+
+renderList();
+</script>
+</body>
+</html>
