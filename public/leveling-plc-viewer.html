@@ -15,6 +15,10 @@
     display:flex; gap:8px; align-items:flex-start; background:#e6f1fb; border:1px solid #b5d4f4;
     border-radius:12px; padding:10px 14px; font-size:12.5px; color:#185fa5; line-height:1.5; margin-bottom:12px;
   }
+  .unsure-note {
+    display:flex; gap:8px; align-items:flex-start; background:#fff6ea; border:1px solid #fdecd6;
+    border-radius:12px; padding:10px 14px; font-size:12px; color:#c46b06; line-height:1.5; margin-bottom:6px;
+  }
 
   .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
   .header-title { font-size:18px; font-weight:800; color:#0f1e33; margin:0 0 2px; }
@@ -27,6 +31,11 @@
   }
 
   .status-msg { font-size:14px; color:#7d8ba1; padding:14px 2px; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  .kpi-cell { background:#eef1f6; border-radius:12px; padding:10px 6px; text-align:center; }
+  .kpi-label { font-size:10.5px; color:#7d8ba1; margin:0 0 4px; }
+  .kpi-value { font-size:16px; font-weight:900; color:#0f1e33; margin:0; }
 
   .box-list { display:flex; flex-direction:column; gap:8px; }
   .box-item {
@@ -63,6 +72,16 @@
 
   .chart-wrap { background:#eef1f6; border-radius:14px; padding:12px 12px 6px; margin-bottom:6px; }
   .chart-caption { font-size:11px; color:#7d8ba1; text-align:center; margin:6px 0 2px; }
+  .legend { display:flex; gap:14px; align-items:center; justify-content:center; font-size:11px; color:#4d5c72; margin:4px 0 10px; }
+  .legend-dot { width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:5px; }
+
+  .erp-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px 14px; }
+  .erp-label { font-size:11px; color:#7d8ba1; margin:0 0 2px; }
+  .erp-value { font-size:15px; font-weight:800; color:#0f1e33; margin:0; }
+
+  table.anomaly-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.anomaly-table th { text-align:left; padding:6px 4px; color:#7d8ba1; font-weight:700; border-bottom:1px solid #e3e8f0; }
+  table.anomaly-table td { padding:6px 4px; border-bottom:1px solid #eef1f6; color:#0f1e33; font-weight:700; }
 </style>
 </head>
 <body>
@@ -81,6 +100,11 @@ function fmtHM(ts){
   if (!ts) return '-';
   const d = new Date(new Date(ts).getTime() + 9*3600000);
   return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+function fmtHMS(ts){
+  if (!ts) return '-';
+  const d = new Date(new Date(ts).getTime() + 9*3600000);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + ':' + String(d.getUTCSeconds()).padStart(2,'0');
 }
 
 async function getJson(params){
@@ -106,6 +130,7 @@ async function renderList(){
       <p class="header-sub">코일(박스)을 선택하면 절단·속도 PLC 실측 기록을 보여줍니다.</p>
       <div class="date-row"><input type="date" class="date-input" id="datePick" value="${selectedDate}"></div>
     </div>
+    <div class="card"><div id="kpiWrap"></div></div>
     <div class="card"><div id="boxListWrap"><div class="status-msg">불러오는 중…</div></div></div>
   `;
   document.getElementById('datePick').addEventListener('change', (e) => {
@@ -115,10 +140,26 @@ async function renderList(){
 
   const data = await getJson(`leveling_stroke_overview=${selectedDate}`);
   const wrap = document.getElementById('boxListWrap');
+  const kpiWrap = document.getElementById('kpiWrap');
   if (!data){
     wrap.innerHTML = `<div class="status-msg">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>`;
+    kpiWrap.innerHTML = '';
     return;
   }
+
+  const kpi = data.kpi;
+  kpiWrap.innerHTML = kpi ? `
+    <div class="section-title" style="margin-top:0">📈 오늘 전체 현황</div>
+    <div class="kpi-grid">
+      <div class="kpi-cell"><p class="kpi-label">총 행정</p><p class="kpi-value">${(kpi.stroke_rows ?? 0).toLocaleString()}</p></div>
+      <div class="kpi-cell"><p class="kpi-label">평균 사이클타임</p><p class="kpi-value">${kpi.avg_cycletm ?? '-'}s</p></div>
+      <div class="kpi-cell"><p class="kpi-label">가동률</p><p class="kpi-value">${kpi.utilization_pct ?? '-'}%</p></div>
+      <div class="kpi-cell"><p class="kpi-label">변동계수</p><p class="kpi-value">${kpi.cv_pct ?? '-'}%</p></div>
+      <div class="kpi-cell"><p class="kpi-label">전체 기록</p><p class="kpi-value">${(kpi.total_rows ?? 0).toLocaleString()}</p></div>
+      <div class="kpi-cell"><p class="kpi-label">가동 코일</p><p class="kpi-value">${data.active_coil_count ?? 0}/${data.total_coil_count ?? 0}</p></div>
+    </div>
+  ` : `<div class="status-msg">이 날짜 전체 현황 데이터가 없습니다.</div>`;
+
   const boxes = data.boxes || [];
   if (!boxes.length){
     wrap.innerHTML = `<div class="status-msg">이 날짜에는 레벨링 작업 기록이 없습니다.</div>`;
@@ -147,18 +188,17 @@ function sampleEvenly(arr, maxPoints){
   return out;
 }
 
-function lineChartSvg(points, getY, color, min, max){
+function lineChartSvg(points, series, min, max){
+  // series: [{ get: fn, color: '#..' }, ...] 1개 이상 라인을 한 좌표계에 겹쳐 그림
   const w = 400, h = 130, pad = 8;
   if (points.length < 2 || max <= min) return `<div class="status-msg">그래프를 그릴 데이터가 부족합니다.</div>`;
   const xs = points.map((p,i) => pad + (i/(points.length-1))*(w-pad*2));
-  const ys = points.map(p => h - pad - ((getY(p)-min)/(max-min))*(h-pad*2));
-  const d = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
-  const areaD = d + ` L${xs[xs.length-1].toFixed(1)},${h-pad} L${xs[0].toFixed(1)},${h-pad} Z`;
-  return `
-  <svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">
-    <path d="${areaD}" fill="${color}" opacity="0.12"></path>
-    <path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>
-  </svg>`;
+  const paths = series.map(s => {
+    const ys = points.map(p => h - pad - ((s.get(p)-min)/(max-min))*(h-pad*2));
+    const d = xs.map((x,i) => `${i===0?'M':'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"></path>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${paths}</svg>`;
 }
 
 async function renderDetail(coilId, boxIdx){
@@ -169,11 +209,15 @@ async function renderDetail(coilId, boxIdx){
   `;
   document.getElementById('backBtn').addEventListener('click', renderList);
 
-  const data = await getJson(`leveling_stroke_detail=${encodeURIComponent(coilId)}&leveling_work_date=${selectedDate}&box_idx=${boxIdx}`);
+  const [data, erpData] = await Promise.all([
+    getJson(`leveling_stroke_detail=${encodeURIComponent(coilId)}&leveling_work_date=${selectedDate}&box_idx=${boxIdx}`),
+    getJson(`leveling_coil_id=${encodeURIComponent(coilId)}&leveling_work_date=${selectedDate}`),
+  ]);
   if (!data){
     document.querySelector('.card').innerHTML = `<div class="status-msg">상세 데이터를 불러오지 못했습니다.</div>`;
     return;
   }
+  const erp = erpData && erpData.erp;
 
   const spec = data.spec || {};
   const strokes = data.strokes || [];
@@ -181,51 +225,95 @@ async function renderDetail(coilId, boxIdx){
 
   const cycletms = strokes.map(s => num(s.cycletm)).filter(v => v > 0);
   const avgCycle = cycletms.length ? (cycletms.reduce((a,b)=>a+b,0)/cycletms.length) : 0;
-  const anomalyCount = strokes.filter(s => s.is_anomaly).length;
+  const anomalies = strokes.filter(s => s.is_anomaly);
   const lastTs = strokes.length ? strokes[strokes.length-1].timestamp : null;
 
   const strokeSample = sampleEvenly(strokes, 150);
   const cycleVals = strokeSample.map(s => num(s.cycletm));
 
   const rawSample = sampleEvenly(rawLog, 150);
-  // 속도pps 필드는 실제 현장에서 MPM(분당 미터) 단위로 쓰이는 값입니다 — 이름은 PPS이지만 펄스 환산이 아니라
-  // 그대로 MPM 실측 속도로 취급합니다 (현장 확인 사항).
   const speedVals = rawSample.map(r => num(r.SPEEDPPS));
-  const speedSetVals = rawSample.map(r => num(r.SPEEDSET));
+  const speedSetVals = rawSample.map(r => num(r.CUTSPEED));
+  const invPctVals = rawSample.map(r => num(r.INVERTERSPEEDPER));
+  const posVals = rawSample.map(r => num(r.POS));
+  const moveVals = rawSample.map(r => num(r.MOVELENSV));
+  const lastRaw = rawLog.length ? rawLog[rawLog.length-1] : null;
 
   const app2 = document.getElementById('app');
   app2.innerHTML = `
     <button type="button" class="back-btn" id="backBtn">← 목록으로</button>
+
+    ${erp ? `
+    <div class="card">
+      <div class="section-title" style="margin-top:0">🧾 작업지시서 (ERP)</div>
+      <div class="erp-grid">
+        <div><p class="erp-label">거래처</p><p class="erp-value">${erp.company_name || '-'}</p></div>
+        <div><p class="erp-label">공정</p><p class="erp-value">${erp.work_type || '-'}</p></div>
+        <div><p class="erp-label">사양</p><p class="erp-value">${erp.specification || '-'}</p></div>
+        <div><p class="erp-label">상태</p><p class="erp-value">${erp.status || '-'}</p></div>
+        <div><p class="erp-label">시작시각</p><p class="erp-value">${erp.started_at ? fmtHM(erp.started_at) : '-'}</p></div>
+        <div><p class="erp-label">발주중량</p><p class="erp-value">${num(erp.original_weight).toLocaleString()} kg</p></div>
+        <div><p class="erp-label">투입중량</p><p class="erp-value">${num(erp.used_weight).toLocaleString()} kg</p></div>
+      </div>
+    </div>` : ''}
+
     <div class="card">
       <p class="header-title">${coilId} · ${boxIdx}번 박스</p>
       <p class="header-sub">${selectedDate} 실측 PLC 기록 (leveler-explore)</p>
 
+      <div class="section-title" style="margin-top:0">⚙️ 설정값</div>
       <div class="spec-grid">
         <div class="spec-cell"><p class="spec-label">절단길이설정</p><p class="spec-value">${num(spec.cutlenset).toLocaleString()}</p><span class="spec-unit">mm</span></div>
-        <div class="spec-cell"><p class="spec-label">가속시간</p><p class="spec-value">${spec.acctm ?? '-'}</p><span class="spec-unit">s</span></div>
-        <div class="spec-cell"><p class="spec-label">감속시간</p><p class="spec-value">${spec.dectm ?? '-'}</p><span class="spec-unit">s</span></div>
+        <div class="spec-cell"><p class="spec-label">절단길이보정</p><p class="spec-value">${num(spec.cutlencorr)}</p><span class="spec-unit">mm</span></div>
+        <div class="spec-cell"><p class="spec-label">저속길이설정</p><p class="spec-value">${num(spec.slowlenset).toLocaleString()}</p><span class="spec-unit">mm</span></div>
       </div>
       <div class="spec-grid" style="margin-top:8px">
-        <div class="spec-cell"><p class="spec-label">저속길이설정</p><p class="spec-value">${num(spec.slowlenset).toLocaleString()}</p><span class="spec-unit">mm</span></div>
+        <div class="spec-cell"><p class="spec-label">가속시간</p><p class="spec-value">${spec.acctm ?? '-'}</p><span class="spec-unit">s</span></div>
+        <div class="spec-cell"><p class="spec-label">감속시간</p><p class="spec-value">${spec.dectm ?? '-'}</p><span class="spec-unit">s</span></div>
         <div class="spec-cell"><p class="spec-label">인버터속도계수</p><p class="spec-value">${spec.inverterspeedcoeff ?? '-'}</p><span class="spec-unit"></span></div>
-        <div class="spec-cell"><p class="spec-label">총 행정 수</p><p class="spec-value">${spec.stroke_count ?? strokes.length}</p><span class="spec-unit">회</span></div>
       </div>
 
       <div class="section-title">📊 작업 요약</div>
       <div class="stat-grid">
+        <div class="stat-cell"><p class="stat-label">총 행정 수</p><p class="stat-value">${spec.stroke_count ?? strokes.length}</p></div>
         <div class="stat-cell"><p class="stat-label">평균 1행정시간</p><p class="stat-value">${avgCycle.toFixed(1)} s</p></div>
-        <div class="stat-cell"><p class="stat-label">이상 행정</p><p class="stat-value ${anomalyCount>0?'warn':''}">${anomalyCount} 건</p></div>
+        <div class="stat-cell"><p class="stat-label">이상 행정</p><p class="stat-value ${anomalies.length>0?'warn':''}">${anomalies.length} 건</p></div>
         <div class="stat-cell"><p class="stat-label">최근 기록 시각</p><p class="stat-value">${fmtHM(lastTs)}</p></div>
-        <div class="stat-cell"><p class="stat-label">기록 수(원본 로그)</p><p class="stat-value">${rawLog.length.toLocaleString()}</p></div>
+        <div class="stat-cell"><p class="stat-label">원본 로그 수</p><p class="stat-value">${rawLog.length.toLocaleString()}</p></div>
+        <div class="stat-cell"><p class="stat-label">최근 가동여부</p><p class="stat-value">${lastRaw ? (lastRaw.RUN == 1 ? '가동중' : '정지') : '-'}</p></div>
       </div>
 
+      ${anomalies.length ? `
+      <div class="section-title">⚠️ 이상 행정 목록</div>
+      <table class="anomaly-table">
+        <thead><tr><th>시각</th><th style="text-align:right">1행정시간</th></tr></thead>
+        <tbody>
+          ${anomalies.slice(0, 12).map(a => `<tr><td>${fmtHMS(a.timestamp)}</td><td style="text-align:right">${num(a.cycletm)}s</td></tr>`).join('')}
+        </tbody>
+      </table>
+      ${anomalies.length > 12 ? `<p class="chart-caption">외 ${anomalies.length - 12}건 더 있음</p>` : ''}
+      ` : ''}
+
       <div class="section-title">⏱️ 행정별 1행정시간 (사이클타임)</div>
-      <div class="chart-wrap">${lineChartSvg(strokeSample, s => num(s.cycletm), '#3672b0', 0, Math.max(...cycleVals, 1)*1.15)}</div>
+      <div class="chart-wrap">${lineChartSvg(strokeSample, [{ get: s => num(s.cycletm), color: '#3672b0' }], 0, Math.max(...cycleVals, 1)*1.15)}</div>
       <div class="chart-caption">행정이 진행된 순서대로(왼쪽→오른쪽) 1행정에 걸린 시간입니다. 값이 튀면 이상 신호일 수 있습니다.</div>
 
-      <div class="section-title">🚀 속도 (MPM · 분당 이동거리)</div>
-      <div class="chart-wrap">${lineChartSvg(rawSample, r => num(r.SPEEDPPS), '#e8830f', 0, Math.max(...speedVals, ...speedSetVals, 1)*1.15)}</div>
-      <div class="chart-caption">실측 속도(주황 실선) — 원본 필드명은 SPEEDPPS이지만 현장 기준 단위는 MPM입니다.</div>
+      <div class="section-title">🚀 속도</div>
+      <div class="unsure-note">⚠️ 이 필드(SPEEDPPS)의 실제 단위를 아직 확정하지 못했습니다. 실기 화면 녹화로 검증 중입니다 — 확정 전까지는 원시값으로만 참고해주세요.</div>
+      <div class="chart-wrap">${lineChartSvg(rawSample, [{ get: r=>num(r.SPEEDPPS), color:'#e8830f' }, { get: r=>num(r.CUTSPEED), color:'#968ae0' }], 0, Math.max(...speedVals, ...speedSetVals, 1)*1.15)}</div>
+      <div class="legend"><span><span class="legend-dot" style="background:#e8830f"></span>실측(SPEEDPPS, 단위 확인중)</span><span><span class="legend-dot" style="background:#968ae0"></span>설정(CUTSPEED)</span></div>
+
+      <div class="section-title">🎛️ 인버터 현재속도 %</div>
+      <div class="chart-wrap">${lineChartSvg(rawSample, [{ get: r=>num(r.INVERTERSPEEDPER), color:'#1c7a4d' }], 0, Math.max(...invPctVals, 1)*1.15)}</div>
+      <div class="chart-caption">인버터 출력 비율(%) 변화입니다.</div>
+
+      <div class="section-title">📍 위치 · 이동거리</div>
+      <div class="stat-grid">
+        <div class="stat-cell"><p class="stat-label">최근 위치(POS)</p><p class="stat-value">${lastRaw ? num(lastRaw.POS) : '-'}</p></div>
+        <div class="stat-cell"><p class="stat-label">최근 이동길이(SV)</p><p class="stat-value">${lastRaw ? num(lastRaw.MOVELENSV) : '-'} mm</p></div>
+      </div>
+      <div class="chart-wrap" style="margin-top:8px">${lineChartSvg(rawSample, [{ get: r=>num(r.POS), color:'#185fa5' }], Math.min(...posVals)-0.5, Math.max(...posVals, 1)+0.5)}</div>
+      <div class="chart-caption">위치(POS) 변화 흐름입니다.</div>
     </div>
   `;
   document.getElementById('backBtn').addEventListener('click', renderList);
