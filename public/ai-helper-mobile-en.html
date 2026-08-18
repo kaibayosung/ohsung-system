@@ -7,74 +7,82 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; font-weight:700; }
   body { display:flex; justify-content:center; padding:14px; }
   #app { width:100%; max-width:480px; padding-bottom:24px; }
 
-  .note { display:flex; gap:8px; align-items:flex-start; border-radius:12px; padding:11px 14px; font-size:12.5px; font-weight:700; line-height:1.55; margin-bottom:10px; }
+  .note { display:flex; gap:8px; align-items:flex-start; border-radius:12px; padding:12px 15px; font-size:14.5px; font-weight:800; line-height:1.55; margin-bottom:10px; }
   .note.info { background:#e6f1fb; color:#185fa5; }
   .note.warn { background:#fff6ea; color:#a3610a; }
 
   .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
-  .header-title { font-size:19px; font-weight:900; color:#0f1e33; margin:0 0 3px; }
-  .header-sub { font-size:12.5px; font-weight:700; color:#7d8ba1; margin:0 0 14px; line-height:1.5; }
+  .header-title { font-size:23px; font-weight:900; color:#0f1e33; margin:0 0 4px; }
+  .header-sub { font-size:14.5px; font-weight:800; color:#5c6478; margin:0 0 14px; line-height:1.5; }
 
   .date-row { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
-  .date-input { font-family:inherit; font-weight:800; font-size:15px; color:#0f1e33; background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 10px; flex:1; }
-  .today-btn { font-family:inherit; font-weight:800; font-size:13px; color:#796cbf; background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:10px; padding:9px 12px; white-space:nowrap; }
+  .date-input { font-family:inherit; font-weight:900; font-size:17px; color:#0f1e33; background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:10px 10px; flex:1; }
+  .today-btn { font-family:inherit; font-weight:900; font-size:15px; color:#796cbf; background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:10px; padding:10px 14px; white-space:nowrap; }
 
-  .search-input { width:100%; font-family:inherit; font-size:14px; font-weight:700; padding:10px 12px; border-radius:10px; border:1.5px solid #e3e8f0; margin:12px 0 10px; color:#0f1e33; }
-  .list-count { font-size:12px; font-weight:800; color:#9397ab; margin-bottom:10px; }
+  .search-input { width:100%; font-family:inherit; font-size:16px; font-weight:800; padding:11px 13px; border-radius:10px; border:1.5px solid #e3e8f0; margin:12px 0 10px; color:#0f1e33; }
+  .list-count { font-size:13.5px; font-weight:900; color:#7d8ba1; margin-bottom:10px; }
 
-  .status-msg { font-size:14px; font-weight:700; color:#7d8ba1; padding:24px 4px; text-align:center; }
+  .status-msg { font-size:16px; font-weight:800; color:#5c6478; padding:24px 4px; text-align:center; }
 
   .job-list { display:flex; flex-direction:column; gap:8px; }
-  .job-item { display:flex; align-items:center; gap:10px; background:#f3f5fe; border:1.5px solid #e3e8f0; border-radius:14px; padding:13px 15px; cursor:pointer; }
+  .job-item { display:flex; align-items:center; gap:10px; background:#f3f5fe; border:1.5px solid #e3e8f0; border-radius:14px; padding:14px 15px; cursor:pointer; }
   .job-body { flex:1; min-width:0; }
-  .job-coil { font-size:15px; font-weight:900; color:#0f1e33; }
-  .job-sub { font-size:12px; font-weight:700; color:#7d8ba1; margin-top:2px; }
-  .job-dur { font-size:11px; font-weight:800; color:#796cbf; margin-top:3px; }
-  .chip { font-size:10.5px; font-weight:900; padding:3px 10px; border-radius:999px; flex-shrink:0; white-space:nowrap; }
+  .job-coil { font-size:17.5px; font-weight:900; color:#0f1e33; }
+  .job-sub { font-size:13.5px; font-weight:800; color:#5c6478; margin-top:3px; }
+  .job-dur { font-size:12.5px; font-weight:900; color:#796cbf; margin-top:4px; }
+  .chip { font-size:12px; font-weight:900; padding:4px 11px; border-radius:999px; flex-shrink:0; white-space:nowrap; }
   .chip.ready { background:#eef1f6; color:#5c6478; }
   .chip.run { background:#e6eef8; color:#185fa5; }
   .chip.done { background:#e2f5ea; color:#1c7a4d; }
-  .arrow { font-size:16px; color:#c2c9d8; }
+  .arrow { font-size:18px; font-weight:900; color:#c2c9d8; }
 
-  .back-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 16px; font-size:13px; font-weight:800; color:#4d5c72; margin-bottom:12px; font-family:inherit; }
+  .back-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:10px 17px; font-size:14.5px; font-weight:900; color:#4d5c72; margin-bottom:12px; font-family:inherit; }
 
-  .badge { font-size:12px; font-weight:900; padding:4px 12px; border-radius:999px; }
+  .badge { font-size:13.5px; font-weight:900; padding:5px 13px; border-radius:999px; }
   .badge.accent { background:#f5f4ff; color:#796cbf; }
 
-  .status-pill { display:inline-flex; align-items:center; gap:7px; font-size:18px; font-weight:900; padding:8px 18px; border-radius:999px; margin-top:6px; }
+  .status-pill { display:inline-flex; align-items:center; gap:7px; font-size:21px; font-weight:900; padding:9px 20px; border-radius:999px; margin-top:6px; }
   .status-pill.green { background:#e2f5ea; color:#1c7a4d; }
   .status-pill.amber { background:#fdecd6; color:#a3610a; }
   .status-pill.red { background:#fbe4e2; color:#b3261e; }
   .status-pill.gray { background:#eef1f6; color:#5c6478; }
 
   .kpi-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
-  .kpi-cell { background:#f3f5fe; border-radius:12px; padding:12px; }
+  .kpi-cell { background:#f3f5fe; border-radius:12px; padding:13px; }
   .kpi-cell.wide { grid-column:1 / -1; }
-  .kpi-label { font-size:11px; font-weight:800; color:#7d8ba1; margin:0 0 5px; }
-  .kpi-value { font-size:19px; font-weight:900; color:#0f1e33; margin:0; }
-  .kpi-sub { font-size:10.5px; font-weight:700; color:#9397ab; margin-top:3px; }
+  .kpi-label { font-size:12.5px; font-weight:900; color:#7d8ba1; margin:0 0 5px; }
+  .kpi-value { font-size:22px; font-weight:900; color:#0f1e33; margin:0; }
+  .kpi-sub { font-size:12px; font-weight:800; color:#7d8ba1; margin-top:3px; }
 
-  .section-title { font-size:12.5px; font-weight:900; color:#4d5c72; margin:16px 0 10px; letter-spacing:0.02em; text-transform:uppercase; }
+  .section-title { font-size:14.5px; font-weight:900; color:#374357; margin:18px 0 10px; letter-spacing:0.02em; text-transform:uppercase; }
   .section-title:first-child { margin-top:0; }
 
   .chart-wrap { background:#f3f5fe; border-radius:14px; padding:14px 12px 8px; margin-bottom:4px; }
-  .chart-caption { font-size:11px; font-weight:700; color:#9397ab; text-align:center; margin:8px 0 2px; }
-  .legend { display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:11px; font-weight:800; color:#4d5c72; margin:8px 0 2px; }
-  .legend-dot { width:8px; height:8px; border-radius:2px; display:inline-block; margin-right:4px; }
+  .chart-caption { font-size:12.5px; font-weight:800; color:#7d8ba1; text-align:center; margin:8px 0 2px; }
+  .legend { display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:12.5px; font-weight:900; color:#374357; margin:8px 0 2px; }
+  .legend-dot { width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:4px; }
+  .legend-line { display:inline-block; width:16px; height:0; border-top:3px solid; margin-right:5px; vertical-align:middle; }
+  .legend-line.dash { border-top-style:dashed; }
 
   .zone-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:9px; }
-  .zone-cell { background:#f3f5fe; border-radius:12px; padding:11px 13px; border-left:4px solid #cfd3e5; }
-  .zone-label { font-size:10.5px; font-weight:800; color:#7d8ba1; }
-  .zone-val { font-size:18px; font-weight:900; color:#0f1e33; margin:3px 0; }
-  .zone-note { font-size:10.5px; font-weight:800; }
+  .zone-cell { background:#f3f5fe; border-radius:12px; padding:12px 14px; border-left:4px solid #cfd3e5; }
+  .zone-label { font-size:12px; font-weight:900; color:#7d8ba1; }
+  .zone-val { font-size:21px; font-weight:900; color:#0f1e33; margin:3px 0; }
+  .zone-note { font-size:12px; font-weight:800; }
   .zone-note.ok { color:#1c7a4d; }
   .zone-note.warn { color:#a3610a; }
 
   .toggle-note { cursor:pointer; }
+
+  .slider-card { background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:16px; padding:15px 17px; margin-bottom:16px; }
+  .slider-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+  .slider-label { font-size:14px; font-weight:900; color:#4d5c72; }
+  .slider-value { font-size:22px; font-weight:900; color:#796cbf; }
+  .slider-input { width:100%; height:10px; accent-color:#796cbf; }
 </style>
 </head>
 <body>
@@ -161,6 +169,34 @@ function chartSvg(points, series, xMin, xMax, yMin, yMax, marker){
   return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${paths}${markerSvg}</svg>`;
 }
 
+// For finished coils: a general multi-series line chart where each series can have its own x (len_bucket) array.
+// series: [{points:[{x,y}], color, dash}], markerDots: [{y, color}] draws dots for each series at that x position.
+function multiChartSvg(series, xMin, xMax, yMin, yMax, markerX, markerDots){
+  const w = 420, h = 168, padL = 6, padR = 6, padT = 8, padB = 8;
+  if (!series || series.length === 0 || xMax <= xMin || yMax <= yMin) {
+    return `<div class="status-msg" style="padding:30px 4px;">Not enough data to chart.</div>`;
+  }
+  const xOf = (v) => padL + ((v - xMin) / (xMax - xMin)) * (w - padL - padR);
+  const yOf = (v) => h - padB - ((Math.min(Math.max(v, yMin), yMax) - yMin) / (yMax - yMin)) * (h - padT - padB);
+  const paths = series.map((s) => {
+    const pts = (s.points || []).filter((p) => p.x != null && p.y != null);
+    if (pts.length < 2) return '';
+    const d = pts.map((p, i) => `${i===0?'M':'L'}${xOf(p.x).toFixed(1)},${yOf(p.y).toFixed(1)}`).join(' ');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="${s.dash ? 2.2 : 2.8}" ${s.dash ? 'stroke-dasharray="6 4"' : ''} stroke-linejoin="round" stroke-linecap="round" opacity="${s.dash ? 0.75 : 1}"/>`;
+  }).join('');
+  let markerSvg = '';
+  if (markerX != null) {
+    const mx = xOf(Math.min(Math.max(markerX, xMin), xMax));
+    markerSvg += `<line x1="${mx}" y1="${padT}" x2="${mx}" y2="${h-padB}" stroke="#9397ab" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    (markerDots || []).forEach((d) => {
+      if (d.y == null) return;
+      const my = yOf(d.y);
+      markerSvg += `<circle cx="${mx}" cy="${my}" r="6" fill="${d.color}" stroke="#fff" stroke-width="2"/>`;
+    });
+  }
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${paths}${markerSvg}</svg>`;
+}
+
 let state = { date: todayKST(), jobs: [], search: '' };
 
 async function renderList(){
@@ -225,6 +261,71 @@ function renderJobList(){
   wrap.querySelectorAll('.job-item').forEach((el) => el.addEventListener('click', () => renderDetail(el.dataset.coil)));
 }
 
+function renderDoneSpeedTension(rec, own, len, doneLenMax){
+  const ownSpeedAt = own ? nearestAtLen(own.speedProfile, len) : null;
+  const recSpeedAt = nearestAtLen(rec.speedProfile, len);
+  const ownSpeedVal = ownSpeedAt ? num(ownSpeedAt.speed) : null;
+  const recSpeedVal = recSpeedAt ? num(recSpeedAt.speed) : null;
+  const st = statusOf(recSpeedVal, ownSpeedVal);
+  const toneClass = st.tone;
+  document.getElementById('doneSpeedCard').innerHTML = `
+    <div class="card" style="padding:18px;">
+      <div class="status-pill ${toneClass}">${TONE_ICON[toneClass]} ${st.label}</div>
+      <div style="display:flex;gap:22px;margin-top:14px;flex-wrap:wrap;">
+        <div><div class="kpi-label">Recommended speed</div><div class="kpi-value">${recSpeedVal != null ? recSpeedVal+' m/min' : '-'}</div></div>
+        <div><div class="kpi-label">Actual worked speed</div><div class="kpi-value" style="color:#796cbf;">${ownSpeedVal != null ? ownSpeedVal+' m/min' : '-'}</div></div>
+        ${st.diff != null ? `<div><div class="kpi-label">Deviation</div><div class="kpi-value" style="color:${toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#7d8ba1'}">${st.diff>=0?'+':''}${Math.round(st.diff)}%</div></div>` : ''}
+      </div>
+    </div>`;
+
+  const ownSpeedPts = (own?.speedProfile || []).map((r) => ({ x: r.len_bucket, y: num(r.speed) }));
+  const recSpeedPts = (rec.speedProfile || []).map((r) => ({ x: r.len_bucket, y: num(r.speed) }));
+  const allSpeedVals = [...ownSpeedPts, ...recSpeedPts].map((p) => p.y).filter((v) => v != null);
+  const speedYMax = Math.max(10, ...allSpeedVals) * 1.15;
+  document.getElementById('doneSpeedChart').innerHTML = multiChartSvg([
+    { points: ownSpeedPts, color: '#796cbf', dash: false },
+    { points: recSpeedPts, color: '#0ea5b7', dash: true },
+  ], 0, doneLenMax, 0, speedYMax, len, [
+    { y: ownSpeedVal, color: '#796cbf' },
+    { y: recSpeedVal, color: '#0ea5b7' },
+  ]);
+
+  const zones = [1,2,3,4].map((z) => {
+    const ownT = own ? nearestAtLen(own.tensionProfile, len) : null;
+    const recT = nearestAtLen(rec.tensionProfile, len);
+    const cv = ownT ? num(ownT['t'+z]) : null;
+    const rv = recT ? num(recT['t'+z]) : null;
+    const diff = (cv != null && rv != null) ? Math.round((cv - rv) * 10) / 10 : null;
+    const ok = diff != null && Math.abs(diff) <= Math.max(12, rv * 0.08);
+    return { zone: z, cur: cv, rec: rv, diff, ok };
+  });
+  document.getElementById('doneZoneGrid').innerHTML = zones.map((z) => `
+    <div class="zone-cell" style="border-left-color:${TENSION_COLORS[z.zone-1]}">
+      <div class="zone-label">ZONE ${z.zone}</div>
+      <div class="zone-val">${z.cur != null ? z.cur : '-'}</div>
+      <div class="zone-note ${z.ok ? 'ok' : 'warn'}">${z.ok ? 'Normal' : 'Caution'} · rec. ${z.rec != null ? z.rec : '-'} (gap ${z.diff != null ? (z.diff>=0?'+':'')+z.diff : '-'})</div>
+    </div>`).join('');
+
+  const tensionSeries = [];
+  [1,2,3,4].forEach((z, i) => {
+    tensionSeries.push({ points: (own?.tensionProfile || []).map((r) => ({ x: r.len_bucket, y: num(r['t'+z]) })), color: TENSION_COLORS[i], dash: false });
+    tensionSeries.push({ points: (rec.tensionProfile || []).map((r) => ({ x: r.len_bucket, y: num(r['t'+z]) })), color: TENSION_COLORS[i], dash: true });
+  });
+  const allTensionVals = tensionSeries.flatMap((s) => s.points.map((p) => p.y)).filter((v) => v != null);
+  const tensionYMax = Math.max(50, ...allTensionVals) * 1.15;
+  document.getElementById('doneTensionChart').innerHTML = multiChartSvg(tensionSeries, 0, doneLenMax, 0, tensionYMax, len, []);
+}
+
+function initDoneDetail(rec, own, defaultLen, doneLenMax){
+  const slider = document.getElementById('lenSlider');
+  const update = (len) => {
+    document.getElementById('lenLabel').textContent = Math.round(len) + 'm';
+    renderDoneSpeedTension(rec, own, len, doneLenMax);
+  };
+  slider.addEventListener('input', (e) => update(Number(e.target.value)));
+  update(defaultLen);
+}
+
 async function renderDetail(coilId){
   const app = document.getElementById('app');
   app.innerHTML = `<button type="button" class="back-btn" id="backBtn">← Back to list</button><div class="card"><div class="status-msg">Analyzing same-spec completed coils...</div></div>`;
@@ -235,12 +336,18 @@ async function renderDetail(coilId){
   if (!rec) { card.innerHTML = `<div class="status-msg">Couldn't load data.</div>`; return; }
 
   const target = rec.target || {};
+  const isDone = target.status === '완료';
+  const isRun = target.status === '가동중';
   const hasLive = !!rec.latest;
-  const currentLen = hasLive ? num(rec.latest.LENGTH) : null;
-  const currentSpeed = hasLive ? num(rec.latest.LINE_SPEED_VALUE) : null;
-  const recAtLen = hasLive ? nearestAtLen(rec.speedProfile, currentLen) : null;
+
+  // Finished coils: recommend_for alone (peer average) isn't enough — also fetch coil_id mode for this coil's own measured profile.
+  const own = isDone ? await getJson(`coil_id=${encodeURIComponent(coilId)}`) : null;
+
+  const currentLen = (isRun && hasLive) ? num(rec.latest.LENGTH) : null;
+  const currentSpeed = (isRun && hasLive) ? num(rec.latest.LINE_SPEED_VALUE) : null;
+  const recAtLen = (isRun && hasLive) ? nearestAtLen(rec.speedProfile, currentLen) : null;
   const recSpeedAtLen = recAtLen ? num(recAtLen.speed) : null;
-  const status = hasLive ? statusOf(recSpeedAtLen, currentSpeed) : null;
+  const status = (isRun && hasLive) ? statusOf(recSpeedAtLen, currentSpeed) : null;
 
   const speedProfile = (rec.speedProfile || []).filter((r) => r.len_bucket >= 0);
   const tensionProfile = (rec.tensionProfile || []).filter((r) => r.len_bucket >= 0);
@@ -248,8 +355,13 @@ async function renderDetail(coilId){
   const speedYMax = Math.max(10, ...speedVals, currentSpeed || 0) * 1.15;
   const lenMax = Math.max(10, ...speedProfile.map((r) => r.len_bucket), currentLen || 0) * 1.05;
 
+  const ownMaxLen = own ? Math.max(own?.summary?.max_length || 0, ...(own.speedProfile || []).map((r) => r.len_bucket), 0) : 0;
+  const recMaxLen = Math.max(0, ...speedProfile.map((r) => r.len_bucket));
+  const doneLenMax = Math.max(10, ownMaxLen, recMaxLen);
+  const defaultLen = Math.round(doneLenMax / 2);
+
   let tensionZones = [];
-  if (hasLive) {
+  if (isRun && hasLive) {
     const tensionAtLen = nearestAtLen(tensionProfile, currentLen);
     if (tensionAtLen) {
       const cur = [rec.latest.TENSION1, rec.latest.TENSION2, rec.latest.TENSION3, rec.latest.TENSION4];
@@ -261,7 +373,7 @@ async function renderDetail(coilId){
         return { zone: i+1, cur: cv, rec: r, diff, ok };
       });
     }
-  } else if (rec.zoneBalance) {
+  } else if (!isDone && rec.zoneBalance) {
     // Not started yet: use the zoneBalance (representative per-zone tension) that recommend_for already computed.
     tensionZones = [1,2,3,4].map((z) => ({ zone: z, avg: num(rec.zoneBalance['t'+z]) }));
   }
@@ -270,12 +382,12 @@ async function renderDetail(coilId){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
       <div>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-          <span style="font-size:21px;font-weight:900;color:#0f1e33;">${rec.coil_id}</span>
-          <span class="chip ${target.status === '완료' ? 'done' : target.status === '가동중' ? 'run' : 'ready'}">${statusLabel(target.status)}</span>
+          <span style="font-size:23px;font-weight:900;color:#0f1e33;">${rec.coil_id}</span>
+          <span class="chip ${isDone ? 'done' : isRun ? 'run' : 'ready'}">${statusLabel(target.status)}</span>
         </div>
-        <div style="font-size:12.5px;font-weight:700;color:#7d8ba1;margin-top:5px;">
+        <div style="font-size:14px;font-weight:800;color:#5c6478;margin-top:6px;">
           ${target.company_name || '-'} · ${target.specification || '-'} · ${target.original_weight ? Math.round(target.original_weight).toLocaleString() : '-'}kg
-          ${hasLive ? ` · Last record ${fmtClock(rec.latest.TIMESTAMP)}` : ''}
+          ${isDone && own?.summary ? ` · Worked ${fmtClock(own.summary.start_ts)}–${fmtClock(own.summary.end_ts)}` : (isRun && hasLive ? ` · Last record ${fmtClock(rec.latest.TIMESTAMP)}` : '')}
         </div>
       </div>
       <span class="badge accent">${target.work_type === 'SLITING2' ? 'Slitting2' : 'Slitting1'}</span>
@@ -289,7 +401,87 @@ async function renderDetail(coilId){
 
   let body = '';
 
-  if (!hasLive) {
+  if (isDone) {
+    body += `
+      <div class="section-title">Choose a length position</div>
+      <div class="slider-card">
+        <div class="slider-row">
+          <span class="slider-label">Current length position</span>
+          <span class="slider-value" id="lenLabel">${defaultLen}m</span>
+        </div>
+        <input type="range" class="slider-input" id="lenSlider" min="0" max="${Math.round(doneLenMax)}" step="5" value="${defaultLen}">
+        <div class="chart-caption" style="margin-top:6px;">Drag the slider to update the status and charts below for that position</div>
+      </div>
+
+      <div class="section-title">Speed comparison at this position</div>
+      <div id="doneSpeedCard"></div>
+
+      <div class="kpi-grid" style="margin-bottom:16px;">
+        <div class="kpi-cell"><div class="kpi-label">Total coil length</div><div class="kpi-value">${ownMaxLen ? Math.round(ownMaxLen)+'m' : '-'}</div></div>
+        <div class="kpi-cell"><div class="kpi-label">Average worked speed</div><div class="kpi-value">${own?.summary?.avg_speed != null ? Math.round(own.summary.avg_speed)+' m/min' : '-'}</div></div>
+        <div class="kpi-cell wide"><div class="kpi-label">Recommended cruise speed</div><div class="kpi-value">${rec.recommendedCruiseSpeed != null ? rec.recommendedCruiseSpeed+' m/min' : '-'}</div><div class="kpi-sub">Based on ${rec.peerCount} completed coils of the same spec</div></div>
+      </div>
+
+      <div class="section-title">Speed graph (full length, actual vs recommended)</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart-wrap" id="doneSpeedChart"></div>
+        <div class="legend">
+          <span><span class="legend-line" style="border-color:#796cbf;"></span>Actual worked speed</span>
+          <span><span class="legend-line dash" style="border-color:#0ea5b7;"></span>Recommended speed</span>
+        </div>
+      </div>
+
+      <div class="section-title">Tension graph (4 zones, full length, actual vs recommended)</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart-wrap" id="doneTensionChart"></div>
+        <div class="legend">
+          ${[0,1,2,3].map((i) => `<span><span class="legend-dot" style="background:${TENSION_COLORS[i]}"></span>Zone ${i+1}</span>`).join('')}
+        </div>
+        <div class="chart-caption">Solid = actual worked · dashed = recommended · same color = same zone</div>
+      </div>
+
+      <div class="section-title">Tension zones 1–4 (at this position, actual vs recommended)</div>
+      <div class="card" style="padding:16px 18px;">
+        <div class="zone-grid" id="doneZoneGrid"></div>
+      </div>
+    `;
+  } else if (isRun && hasLive) {
+    const toneClass = status.tone;
+    body += `
+      <div class="section-title">Current speed status</div>
+      <div class="card" style="padding:18px;">
+        <div class="status-pill ${toneClass}">${TONE_ICON[toneClass]} ${status.label}</div>
+        <div style="display:flex;gap:22px;margin-top:14px;">
+          <div><div class="kpi-label">Recommended speed</div><div class="kpi-value">${recSpeedAtLen != null ? recSpeedAtLen+' m/min' : '-'}</div></div>
+          <div><div class="kpi-label">Current speed</div><div class="kpi-value" style="color:#796cbf;">${currentSpeed != null ? currentSpeed+' m/min' : '-'}</div></div>
+        </div>
+      </div>
+
+      <div class="kpi-grid" style="margin-bottom:12px;">
+        <div class="kpi-cell"><div class="kpi-label">Current length</div><div class="kpi-value">${currentLen != null ? currentLen+'m' : '-'}</div></div>
+        <div class="kpi-cell"><div class="kpi-label">Speed deviation</div><div class="kpi-value" style="color:${toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#7d8ba1'}">${status.diff != null ? (status.diff>=0?'+':'')+Math.round(status.diff)+'%' : '-'}</div></div>
+        <div class="kpi-cell wide"><div class="kpi-label">Recommended cruise speed</div><div class="kpi-value">${rec.recommendedCruiseSpeed != null ? rec.recommendedCruiseSpeed+' m/min' : '-'}</div><div class="kpi-sub">Based on ${rec.peerCount} completed coils of the same spec</div></div>
+      </div>
+
+      <div class="section-title">Recommended speed by length (current position marked)</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart-wrap">${chartSvg(speedProfile, [{get:(p)=>p.speed, color:'#968ae0'}], 0, lenMax, 0, speedYMax, { x: currentLen, y: currentSpeed, color: toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#796cbf' })}</div>
+        <div class="chart-caption">● = current position (${currentLen != null ? currentLen+'m' : '-'})</div>
+      </div>
+
+      <div class="section-title">Tension zones 1–4 (current vs recommended)</div>
+      <div class="card" style="padding:16px 18px;">
+        <div class="zone-grid">
+          ${tensionZones.length === 0 ? `<div class="status-msg" style="grid-column:1/-1;padding:6px 0;">Not enough data to compare tension.</div>` : tensionZones.map((z) => `
+            <div class="zone-cell" style="border-left-color:${TENSION_COLORS[z.zone-1]}">
+              <div class="zone-label">ZONE ${z.zone}</div>
+              <div class="zone-val">${z.cur != null ? z.cur : '-'}</div>
+              <div class="zone-note ${z.ok ? 'ok' : 'warn'}">${z.ok ? 'Normal' : 'Caution'} · rec. ${z.rec != null ? z.rec : '-'} (gap ${z.diff != null ? (z.diff>=0?'+':'')+z.diff : '-'})</div>
+            </div>`).join('')}
+        </div>
+      </div>
+    `;
+  } else {
     const zb = rec.zoneBalance;
     body += `
       <div class="section-title">Preview before start</div>
@@ -342,42 +534,6 @@ async function renderDetail(coilId){
         </div>
       </div>
     `;
-  } else {
-    const toneClass = status.tone;
-    body += `
-      <div class="section-title">Current speed status</div>
-      <div class="card" style="padding:18px;">
-        <div class="status-pill ${toneClass}">${TONE_ICON[toneClass]} ${status.label}</div>
-        <div style="display:flex;gap:22px;margin-top:14px;">
-          <div><div class="kpi-label">Recommended speed</div><div class="kpi-value">${recSpeedAtLen != null ? recSpeedAtLen+' m/min' : '-'}</div></div>
-          <div><div class="kpi-label">Current speed</div><div class="kpi-value" style="color:#796cbf;">${currentSpeed != null ? currentSpeed+' m/min' : '-'}</div></div>
-        </div>
-      </div>
-
-      <div class="kpi-grid" style="margin-bottom:12px;">
-        <div class="kpi-cell"><div class="kpi-label">Current length</div><div class="kpi-value">${currentLen != null ? currentLen+'m' : '-'}</div></div>
-        <div class="kpi-cell"><div class="kpi-label">Speed deviation</div><div class="kpi-value" style="color:${toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#7d8ba1'}">${status.diff != null ? (status.diff>=0?'+':'')+Math.round(status.diff)+'%' : '-'}</div></div>
-        <div class="kpi-cell wide"><div class="kpi-label">Recommended cruise speed</div><div class="kpi-value">${rec.recommendedCruiseSpeed != null ? rec.recommendedCruiseSpeed+' m/min' : '-'}</div><div class="kpi-sub">Based on ${rec.peerCount} completed coils of the same spec</div></div>
-      </div>
-
-      <div class="section-title">Recommended speed by length (current position marked)</div>
-      <div class="card" style="padding:14px;">
-        <div class="chart-wrap">${chartSvg(speedProfile, [{get:(p)=>p.speed, color:'#968ae0'}], 0, lenMax, 0, speedYMax, { x: currentLen, y: currentSpeed, color: toneClass==='red'?'#b3261e':toneClass==='amber'?'#a3610a':toneClass==='green'?'#1c7a4d':'#796cbf' })}</div>
-        <div class="chart-caption">● = current position (${currentLen != null ? currentLen+'m' : '-'})</div>
-      </div>
-
-      <div class="section-title">Tension zones 1–4 (current vs recommended)</div>
-      <div class="card" style="padding:16px 18px;">
-        <div class="zone-grid">
-          ${tensionZones.length === 0 ? `<div class="status-msg" style="grid-column:1/-1;padding:6px 0;">Not enough data to compare tension.</div>` : tensionZones.map((z) => `
-            <div class="zone-cell" style="border-left-color:${TENSION_COLORS[z.zone-1]}">
-              <div class="zone-label">ZONE ${z.zone}</div>
-              <div class="zone-val">${z.cur != null ? z.cur : '-'}</div>
-              <div class="zone-note ${z.ok ? 'ok' : 'warn'}">${z.ok ? 'Normal' : 'Caution'} · rec. ${z.rec != null ? z.rec : '-'} (gap ${z.diff != null ? (z.diff>=0?'+':'')+z.diff : '-'})</div>
-            </div>`).join('')}
-        </div>
-      </div>
-    `;
   }
 
   app.innerHTML += notes + body;
@@ -392,6 +548,7 @@ async function renderDetail(coilId){
       el.style.opacity = collapsed ? '0.55' : '1';
     });
   });
+  if (isDone) initDoneDetail(rec, own, defaultLen, doneLenMax);
 }
 
 renderList();
