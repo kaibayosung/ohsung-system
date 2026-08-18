@@ -13,11 +13,24 @@ npm run preview   # preview the production build
 
 There is no test suite configured in this project.
 
-## Workflow preference: plan first, get a go/no-go, then build
+## Workflow preference: MOCKUP FIRST, always, no exceptions
 
-For any new feature or screen (not small fixes/edits to existing screens), don't start writing code on the first pass. First write out a short plan — what the screen/feature will show, which data sources it pulls from (existing endpoints vs. new ones needed), and roughly how it'll look/be laid out — and explicitly ask the user whether to proceed with development. Only start building after the user confirms. This applies even when the request sounds like "build me X" — restate it as a quick plan and confirm before writing files.
+**Hard rule, repeatedly violated before — read carefully.** Before writing a single line into any file inside this connected project folder (`C:\Users\USER\Documents\개발\ohsung-system`), a visual mockup must be shown and explicitly approved. This applies to:
+- Brand new features or screens.
+- Any follow-up request that changes what's rendered on an already-approved screen (more fields, a redesign, "show more info", a new section) — being a "phase 2 of something already approved" does **not** exempt it. If the rendered output would look different afterward, it needs a new mockup.
+- Requests that sound like "just build it" or "go ahead" — restate as a plan + mockup anyway.
 
-For new features (not small fixes/edits to existing screens), once development is confirmed, build and show a UI first — using the 연구실(LabPage) prototype pattern described below, or a lightweight mock/demo screen with sample or read-only real data — and get explicit user confirmation on the design/flow *before* wiring up real persistence (new tables, writes, edge functions, reconciliation logic, etc.). Don't jump straight to full DB-backed implementation on the first pass unless the user explicitly says to build the real thing directly.
+**What counts as approval, and what doesn't:**
+- Answering clarifying questions (e.g. via AskUserQuestion) about scope, data fields, or which option to pick is **not** approval of a design. It only narrows the plan.
+- Real approval means: the user has seen an actual rendered visual (via the visualize/show_widget tool, a screenshot, or a throwaway HTML file opened outside this repo) of the screen as it will look, and has explicitly said to proceed with *that*.
+
+**Sequence to follow every time:**
+1. Short plan in chat: what the screen shows, which data sources (existing endpoints vs. new), rough layout.
+2. Render a mockup — prefer the visualize tool, or build it as a temporary file in the scratchpad/outputs folder (never directly inside this connected repo yet). Sample or read-only real data is fine here.
+3. Get explicit confirmation on the mockup specifically.
+4. Only then write/edit files inside this connected project folder, and only then wire up real persistence (new tables, writes, edge functions, reconciliation logic) if that was part of what was approved.
+
+The 연구실(LabPage) prototype pattern described below is the right *destination* for approved prototypes — it is not a substitute for showing the mockup first.
 
 Deploys are handled by Vercel on push to `main` — this sandbox has no GitHub credentials, so `git push origin main` must be run by the user after any commit made here.
 
