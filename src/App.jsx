@@ -21,10 +21,21 @@ import AccountManagementPage from './pages/AccountManagementPage';
 import InternalSystemsPage from './pages/InternalSystemsPage';
 import ChangePasswordModal from './components/ChangePasswordModal';
 
+// [딥링크] ?lab=<프로젝트키> 로 접속하면 로그인은 그대로 요구하되, 로그인 직후 바로
+// 오성철강 연구실의 해당 화면으로 이동합니다 (예: /?lab=sales-target). 메뉴를 안 거치고
+// 특정 화면을 URL 하나로 공유하고 싶을 때 사용 — 값은 LabPage.jsx의 getDeepLinkView()가 읽습니다.
+function getDeepLinkPage() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('lab')) return 'lab';
+  } catch { /* SSR/구형 브라우저 등 URLSearchParams 미지원 환경 방어 */ }
+  return null;
+}
+
 function App() {
   // 상태 관리: 로그인 세션 및 현재 페이지
   const [session, setSession] = useState(null);
-  const [currentPage, setCurrentPage] = useState('daily'); // 기본 시작 화면: 데일리 리포트
+  const [currentPage, setCurrentPage] = useState(() => getDeepLinkPage() || 'daily'); // 기본 시작 화면: 데일리 리포트 (딥링크 있으면 그 화면)
   const [expensePendingCount, setExpensePendingCount] = useState(0);
   const [openMenu, setOpenMenu] = useState(null); // 현재 열려있는 드롭다운 메뉴 그룹 key
   const navRef = useRef(null); // 메뉴 바깥 클릭 감지용
@@ -206,7 +217,7 @@ function App() {
 
   // 4. [보안 성문] 로그인이 안 되어 있으면 무조건 로그인 화면만 노출
   if (!session) {
-    return <Login onLoginSuccess={() => setCurrentPage('daily')} />;
+    return <Login onLoginSuccess={() => setCurrentPage(getDeepLinkPage() || 'daily')} />;
   }
 
   // 4-1. staff_users 조회가 끝나기 전까지는 아무 화면도 보여주지 않음
