@@ -7,6 +7,14 @@
 //          → "작업 선택으로 돌아가기"를 누르면 중간 확인 없이 바로 ①로 복귀
 // "작업완료" 버튼은 아직 그린ERP/DB에 상태를 기록하지 않습니다 — 지금은 목록으로 돌아가는
 // 용도로만 동작합니다. 실제 작업 상태를 어딘가에 남길지는 추후 결정이 필요합니다.
+//
+// 자동 전환(2026-08): 슬리팅2 대시보드(osungsteel.servehttp.com:38080/pad/sliting2)에서
+// 코일을 "시작"하면 leveler_jobs.status가 '진행중'으로 바뀌고 started_at이 기록됩니다.
+// leveler-sync(서버, 2분 주기)와 이 화면의 재조회(SYNC_INTERVAL_MS, 5분 주기)를 통해
+// 그 변화가 반영되면, ① 작업 선택 화면에 머물러 있는 경우 가장 최근에 시작된 진행중 코일의
+// ② 셋팅 화면으로 자동 전환합니다(동시에 여러 건이 진행중이면 started_at이 가장 늦은 것 우선).
+// 자동으로 열린 화면에서 작업자가 직접 "작업 선택으로 돌아가기"를 누르면, 같은 코일로는
+// 다시 자동 전환하지 않습니다(dismissedAutoIds) — 그래야 뒤로 가기가 먹통처럼 보이지 않습니다.
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
 import { DEFAULT_DENOMS, DEFAULT_PLASTIC_THRESHOLD, DEFAULT_STATIONS, parseProcessRule, computeStationResults } from '../lib/separatorCalc';
@@ -48,6 +56,8 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   const [nowTick, setNowTick] = useState(Date.now());
   const [screen, setScreen] = useState('select'); // 'select' | 'setup'
   const [selectedId, setSelectedId] = useState(null);
+  const [autoBanner, setAutoBanner] = useState(false);
+  const [dismissedAutoIds, setDismissedAutoIds] = useState(() => new Set());
 
   const loadJobs = useCallback(async () => {
     const today = todayKST();
@@ -61,7 +71,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
     // 작업자용 키오스크 화면 — 금액은 보여주지 않으므로 작업지시서 목록만 조회합니다.
     const jobsRes = await supabase
       .from('leveler_jobs')
-      .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date')
+      .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date, started_at')
       .eq('work_type', 'SLITING2')
       .eq('work_date', today)
       .neq('status', '완료')
@@ -82,12 +92,37 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
     return () => { clearInterval(syncTimer); clearInterval(tickTimer); };
   }, [loadJobs]);
 
+  // 슬리팅2 대시보드에서 코일이 "진행중"으로 바뀐 것을 감지하면, 작업 선택 화면에 머물러
+  // 있는 동안에는 가장 최근에 시작된 코일의 셋팅 화면으로 자동 전환합니다.
+  useEffect(() => {
+    if (screen !== 'select') return;
+    const inProgress = jobs.filter((j) => j.status === '진행중' && j.started_at && !dismissedAutoIds.has(j.id));
+    if (inProgress.length === 0) return;
+    inProgress.sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
+    const candidate = inProgress[0];
+    setSelectedId(candidate.id);
+    setScreen('setup');
+    setAutoBanner(true);
+  }, [jobs, screen, dismissedAutoIds]);
+
+  useEffect(() => {
+    if (!autoBanner) return;
+    const t = setTimeout(() => setAutoBanner(false), 6000);
+    return () => clearTimeout(t);
+  }, [autoBanner]);
+
   const selected = jobs.find((j) => j.id === selectedId) || null;
   const strips = useMemo(() => (selected ? parseProcessRule(selected.process_rule) : []), [selected]);
   const stationResults = useMemo(() => computeStationResults(strips, KIOSK_STATIONS, DENOMS_DESC), [strips]);
 
-  const openJob = (id) => { setSelectedId(id); setScreen('setup'); };
-  const backToSelect = () => { setScreen('select'); loadJobs(); };
+  const openJob = (id) => { setSelectedId(id); setScreen('setup'); setAutoBanner(false); };
+  const backToSelect = () => {
+    // 자동으로 열렸던 코일이면, 같은 코일로는 다시 자동 전환하지 않도록 표시해둡니다.
+    if (selectedId) setDismissedAutoIds((prev) => new Set(prev).add(selectedId));
+    setAutoBanner(false);
+    setScreen('select');
+    loadJobs();
+  };
 
   return (
     <div style={styles.page}>
@@ -102,7 +137,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
         <SelectScreen jobs={jobs} loading={loading} syncLabel={minutesAgoLabel(lastSyncAt)} onOpen={openJob} nowTick={nowTick} />
       )}
       {screen === 'setup' && selected && (
-        <SetupScreen job={selected} strips={strips} stationResults={stationResults} onBack={backToSelect} />
+        <SetupScreen job={selected} strips={strips} stationResults={stationResults} onBack={backToSelect} autoDetected={autoBanner} />
       )}
     </div>
   );
@@ -148,9 +183,12 @@ function SelectScreen({ jobs, loading, syncLabel, onOpen }) {
   );
 }
 
-function SetupScreen({ job, strips, stationResults, onBack }) {
+function SetupScreen({ job, strips, stationResults, onBack, autoDetected }) {
   return (
     <div style={styles.screenPad}>
+      {autoDetected && (
+        <div style={styles.autoBanner}>🔄 슬리팅2 대시보드에서 자동 감지됨 — 이 코일로 화면이 자동 전환되었습니다</div>
+      )}
       <div style={styles.infoRowSplit3}>
         <InfoCol label="코일번호" value={job.product_name} />
         <InfoCol label="회사명" value={job.company_name} border />
@@ -251,6 +289,7 @@ const styles = {
   jobValue: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
   goArrow: { width: '64px', height: '64px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
+  autoBanner: { background: PURPLE.panelBg, color: PURPLE.accentDark, fontWeight: 900, fontSize: '20px', padding: '14px 24px', borderRadius: '14px', marginBottom: '14px', border: `1px solid ${PURPLE.border}` },
   infoRowSplit3: { display: 'flex', background: PURPLE.panelBg, borderRadius: '16px', marginBottom: '14px' },
   infoCol: { flex: 1, padding: '14px 24px', textAlign: 'center' },
   infoColBorder: {},
