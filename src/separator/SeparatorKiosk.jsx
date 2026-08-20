@@ -48,7 +48,6 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   const [nowTick, setNowTick] = useState(Date.now());
   const [screen, setScreen] = useState('select'); // 'select' | 'setup'
   const [selectedId, setSelectedId] = useState(null);
-  const [amountStats, setAmountStats] = useState({ current: 0, total: 0 });
 
   const loadJobs = useCallback(async () => {
     const today = todayKST();
@@ -59,32 +58,19 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
     // "오늘 작업 없음"으로 잘못 표시되는 문제가 있었습니다.
     // 이제는 그 날짜 변경까지 반영된 leveler_jobs(레벨러 대시보드 미러, leveler-sync Edge
     // Function이 주기적으로 동기화)를 조회해 실제 현재 상태를 그대로 보여줍니다.
-    const [jobsRes, amountRes] = await Promise.all([
-      supabase
-        .from('leveler_jobs')
-        .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date')
-        .eq('work_type', 'SLITING2')
-        .eq('work_date', today)
-        .neq('status', '완료')
-        .not('process_rule', 'is', null)
-        .order('source_id', { ascending: false })
-        .limit(40),
-      // 상단 진행 금액 표시용 — 완료 여부와 무관하게 오늘 슬리팅2 전체 작업의 금액 합계.
-      supabase
-        .from('leveler_jobs')
-        .select('amount, status')
-        .eq('work_type', 'SLITING2')
-        .eq('work_date', today),
-    ]);
+    // 작업자용 키오스크 화면 — 금액은 보여주지 않으므로 작업지시서 목록만 조회합니다.
+    const jobsRes = await supabase
+      .from('leveler_jobs')
+      .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date')
+      .eq('work_type', 'SLITING2')
+      .eq('work_date', today)
+      .neq('status', '완료')
+      .not('process_rule', 'is', null)
+      .order('source_id', { ascending: false })
+      .limit(40);
     if (!jobsRes.error) {
       setJobs(jobsRes.data || []);
       setLastSyncAt(new Date());
-    }
-    if (!amountRes.error) {
-      const rows = amountRes.data || [];
-      const total = rows.reduce((s, r) => s + Number(r.amount || 0), 0);
-      const current = rows.filter((r) => r.status === '완료').reduce((s, r) => s + Number(r.amount || 0), 0);
-      setAmountStats({ current, total });
     }
     setLoading(false);
   }, []);
@@ -108,11 +94,6 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
       <div style={styles.topStrip}>
         <div style={styles.topStripLeftGroup}>
           <span style={styles.topStripText}>슬리터2 세퍼레이터 셋팅 · {staffName || '작업자'}님</span>
-          <span style={styles.amountStat}>
-            오늘 생산금액 <b style={styles.amountStatCurrent}>{amountStats.current.toLocaleString()}</b>
-            <span style={styles.amountStatSlash}> / </span>
-            {amountStats.total.toLocaleString()}원
-          </span>
         </div>
         <button style={styles.logoutBtn} onClick={onLogout}>로그아웃</button>
       </div>
@@ -255,9 +236,6 @@ const styles = {
   topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 28px', fontSize: '19px', fontWeight: 900, borderBottom: `1px solid ${PURPLE.border}` },
   topStripLeftGroup: { display: 'flex', alignItems: 'center', gap: '26px', flexWrap: 'wrap' },
   topStripText: {},
-  amountStat: { fontSize: '18px', fontWeight: 900, color: PURPLE.textMuted },
-  amountStatCurrent: { fontSize: '20px', fontWeight: 900, color: PURPLE.accentDark },
-  amountStatSlash: { color: PURPLE.textMuted, fontWeight: 900 },
   logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '10px 20px', borderRadius: '8px', fontSize: '16px', fontWeight: 900, cursor: 'pointer' },
   screenPad: { padding: '22px 30px 28px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
 
