@@ -75,12 +75,13 @@ function todayKST() {
   return new Date(kstMs).toISOString().slice(0, 10);
 }
 
+// leveler_jobs.update_time은 leveler-sync가 그대로 미러링한 값이라 이미 "UTC로 잘못 태깅된 KST 숫자"입니다.
+// +9h를 더 더하면 안 됩니다(이중 보정 버그, 2026-08-21 수정).
 function fmtTime(ts) {
   if (!ts) return '-';
   const d = new Date(ts);
-  const kst = new Date(d.getTime() + 9 * 3600000);
-  const hh = String(kst.getUTCHours()).padStart(2, '0');
-  const mm = String(kst.getUTCMinutes()).padStart(2, '0');
+  const hh = String(d.getUTCHours()).padStart(2, '0');
+  const mm = String(d.getUTCMinutes()).padStart(2, '0');
   return `${hh}:${mm}`;
 }
 

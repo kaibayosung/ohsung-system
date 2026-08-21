@@ -38,9 +38,14 @@ function shiftDate(dateStr, days) {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+// leveler-explore/leveler-sync가 돌려주는 ts(erp_data.started_at, LEVELING_DATA.TIMESTAMP 등)는
+// 레벨러 서버(MariaDB)의 KST 벽시계 값이 시간대 정보 없이 그대로 들어와, 우리 쪽에서 UTC로 저장·직렬화되면서
+// "UTC로 잘못 태깅된 KST 숫자"가 됩니다(예: 실제 14:19 KST가 "...T14:19:21Z"로 옴). 즉 UTC 필드 값을 그대로
+// 읽으면 이미 KST 숫자와 같으므로, 여기서 +9시간을 추가로 더하면 안 됩니다(더하면 실제보다 9시간 밀려 표시됨 —
+// 한때 todayKST()에서 고쳤던 것과 같은 "이중 보정" 버그, 2026-08-21 재발견·수정).
 function fmtHM(ts) {
   if (!ts) return '-';
-  const d = new Date(new Date(ts).getTime() + 9 * 3600000);
+  const d = new Date(ts);
   const hh = String(d.getUTCHours()).padStart(2, '0');
   const mm = String(d.getUTCMinutes()).padStart(2, '0');
   const ss = String(d.getUTCSeconds()).padStart(2, '0');
@@ -316,7 +321,7 @@ export function LevelingLineNmsScreen() {
   const kpi = overview?.kpi;
   const isHistorical = effectiveDate && effectiveDate !== todayKST();
   const nowMs = useMemo(() => new Date(new Date().getTime() + 9 * 3600000).getTime(), [clock]);
-  const dataAgeSec = kpi?.last_ts ? secsAgo(new Date(kpi.last_ts).getTime() + 9 * 3600000, nowMs) : null;
+  const dataAgeSec = kpi?.last_ts ? secsAgo(new Date(kpi.last_ts).getTime(), nowMs) : null;
 
   const selectedBoxMeta = useMemo(() => (overview?.boxes || []).find((b) => b.coil_id === selectedCoil && String(b.box_idx) === String(selectedBox)), [overview, selectedCoil, selectedBox]);
 
