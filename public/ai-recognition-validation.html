@@ -72,6 +72,14 @@
       <label class="remember-label"><input type="checkbox" id="rememberKey" checked>이 브라우저에 기억</label>
     </div>
     <div class="ctrl-row">
+      <label class="remember-label">최대 처리 장수 <input type="number" id="limitInput" value="30" min="1" style="width:70px; margin-left:4px; height:30px; font-size:13px; border:1.5px solid #e3e8f0; border-radius:8px; padding:0 8px;"></label>
+      <span style="font-size:11.5px; color:#a3610a;">⚠️ 무료 한도(분당 8,000토큰) 때문에 장당 약 18초 걸립니다. 전체 다 돌리려면 시간이 오래 걸리니 소량으로 먼저 테스트하세요.</span>
+    </div>
+    <div class="ctrl-row">
+      <label class="remember-label"><input type="checkbox" id="resizeCheck">전송 전 리사이즈 (최대 <input type="number" id="resizeMax" value="640" min="128" style="width:60px; height:26px; font-size:12px; border:1.5px solid #e3e8f0; border-radius:6px; padding:0 6px; margin:0 2px;">px, 토큰 절감 테스트)</label>
+      <span style="font-size:11.5px; color:#7d8ba1;">각 행의 "토큰" 열에서 실제 사용된 토큰 수를 비교할 수 있습니다.</span>
+    </div>
+    <div class="ctrl-row">
       <button class="btn primary" id="startBtn" disabled>▶ 인식 시작</button>
       <div class="progress-row" style="flex:1;">
         <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
@@ -92,8 +100,8 @@
   <div class="card">
     <div class="table-scroll">
     <table class="result-table">
-      <thead><tr><th>사진</th><th>파일명</th><th>%</th><th>전압</th><th>두께</th><th>장력율</th><th>시작경</th><th>장력설정</th><th>상태</th></tr></thead>
-      <tbody id="resultBody"><tr><td colspan="9"><div class="status-msg">폴더를 선택하면 여기에 결과가 표시됩니다.</div></td></tr></tbody>
+      <thead><tr><th>사진</th><th>파일명</th><th>%</th><th>전압</th><th>두께</th><th>장력율</th><th>시작경</th><th>장력설정</th><th>토큰</th><th>상태</th></tr></thead>
+      <tbody id="resultBody"><tr><td colspan="10"><div class="status-msg">폴더를 선택하면 여기에 결과가 표시됩니다.</div></td></tr></tbody>
     </table>
     </div>
     <p class="db-note">각 결과는 인식 즉시 ai_recognition_validation_log 테이블에 저장됩니다 (누적 이력용).</p>
@@ -105,7 +113,10 @@ const SUPABASE_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubG5id2NiZ2ZnZnRkZ2F3YW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NTYxMDQsImV4cCI6MjA4NTAzMjEwNH0.-tS-m6hezjEclG0er5yUXERisE0uE3BYVJlviJKkQAo";
 const TABLE = "ai_recognition_validation_log";
 const GROQ_MODEL = "qwen/qwen3.8-27b";
-const CALL_SLEEP_MS = 2200; // Groq 무료 한도(분당 30회) 기준 안전 간격
+// Groq qwen3.8-27b 무료 한도는 분당 요청수(30)보다 분당 토큰(TPM 8,000)이 먼저 걸립니다.
+// 사진 1장(이미지 2048토큰 고정) + 프롬프트+응답 토큰 ≈ 2,300~2,400토큰이라
+// 8000/2350 ≈ 분당 3.4회가 한계 → 18초 이상 간격을 둬야 429(rate limit)를 피할 수 있습니다.
+const CALL_SLEEP_MS = 18000;
 const LS_KEY = "ai_val_groq_key";
 
 const PROMPT = "이 사진은 PORA PR-DTC-3100 타퍼 텐션 컨트롤러 LCD 화면입니다. " +
@@ -117,6 +128,9 @@ const folderInput = document.getElementById('folderInput');
 const startBtn = document.getElementById('startBtn');
 const apiKeyInput = document.getElementById('apiKey');
 const rememberKey = document.getElementById('rememberKey');
+const limitInput = document.getElementById('limitInput');
+const resizeCheck = document.getElementById('resizeCheck');
+const resizeMax = document.getElementById('resizeMax');
 const progressFill = document.getElementById('progressFill');
 const progressLabel = document.getElementById('progressLabel');
 const resultBody = document.getElementById('resultBody');
@@ -136,8 +150,8 @@ folderInput.addEventListener('change', (e) => {
   startBtn.disabled = files.length === 0;
   startBtn.textContent = `▶ 인식 시작 (${files.length}장 선택됨)`;
   resultBody.innerHTML = files.length
-    ? `<tr><td colspan="9"><div class="status-msg">${files.length}장 준비됨. "인식 시작"을 누르세요.</div></td></tr>`
-    : `<tr><td colspan="9"><div class="status-msg">폴더에서 jpg/png 이미지를 찾지 못했습니다.</div></td></tr>`;
+    ? `<tr><td colspan="10"><div class="status-msg">${files.length}장 준비됨. "인식 시작"을 누르세요.</div></td></tr>`
+    : `<tr><td colspan="10"><div class="status-msg">폴더에서 jpg/png 이미지를 찾지 못했습니다.</div></td></tr>`;
   kpiDone.textContent = `0 / ${files.length}`;
   kpiOk.textContent = `0 / 0`;
   progressFill.style.width = '0%';
@@ -153,7 +167,37 @@ function fileToBase64(file) {
   });
 }
 
-async function callGroq(b64, mime, apiKey, timeoutMs = 20000) {
+function resizeToBase64(file, maxDim) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        const scale = maxDim / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      URL.revokeObjectURL(img.src);
+      resolve(dataUrl.split(',')[1]);
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+function parseRetryAfterMs(msg) {
+  const m = /try again in ([\d.]+)(ms|s)/i.exec(msg || '');
+  if (!m) return 3000;
+  const val = parseFloat(m[1]);
+  return Math.ceil((m[2].toLowerCase() === 'ms' ? val : val * 1000)) + 500;
+}
+
+async function callGroqOnce(b64, mime, apiKey, timeoutMs) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(new Error(`${timeoutMs / 1000}초 응답 없음 (타임아웃)`)), timeoutMs);
   let res;
@@ -184,8 +228,28 @@ async function callGroq(b64, mime, apiKey, timeoutMs = 20000) {
     clearTimeout(timer);
   }
   const data = await res.json();
-  if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
-  return data.choices[0].message.content;
+  if (!res.ok) {
+    const msg = data?.error?.message || `HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
+  }
+  return { text: data.choices[0].message.content, usage: data.usage || null };
+}
+
+async function callGroq(b64, mime, apiKey, timeoutMs = 20000, maxRetries = 2) {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await callGroqOnce(b64, mime, apiKey, timeoutMs);
+    } catch (err) {
+      const isRateLimit = err.status === 429 || /rate limit/i.test(err.message);
+      if (isRateLimit && attempt < maxRetries) {
+        await sleep(parseRetryAfterMs(err.message));
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 function parseJsonAnswer(text) {
@@ -224,6 +288,7 @@ function addRow(file, objectUrl) {
     <td class="v-rate" style="color:#7d8ba1;">-</td>
     <td class="v-dia" style="color:#7d8ba1;">-</td>
     <td class="v-set" style="color:#7d8ba1;">-</td>
+    <td class="v-tokens" style="color:#7d8ba1;">-</td>
     <td class="cell-status"><span class="status-chip wait">대기</span></td>
   `;
   if (resultBody.children.length === 1 && resultBody.children[0].querySelector('.status-msg')) {
@@ -233,7 +298,7 @@ function addRow(file, objectUrl) {
   tr.querySelector('.thumb').addEventListener('click', () => openLightbox(objectUrl));
 }
 
-function updateRow(idx, parsed, ok, errMsg) {
+function updateRow(idx, parsed, ok, errMsg, usage) {
   const tr = document.getElementById(`row-${idx}`);
   if (!tr) return;
   const setCell = (cls, val) => {
@@ -241,6 +306,9 @@ function updateRow(idx, parsed, ok, errMsg) {
     el.textContent = val;
     el.style.color = (val === '-' || val === undefined || val === null) ? '#7d8ba1' : '#0f1e33';
   };
+  if (usage && usage.prompt_tokens) {
+    setCell('v-tokens', usage.prompt_tokens);
+  }
   if (ok && parsed) {
     setCell('v-pct', parsed.output_percent ?? '-');
     setCell('v-volt', parsed.output_voltage ?? '-');
@@ -283,38 +351,44 @@ startBtn.addEventListener('click', async () => {
   if (rememberKey.checked) localStorage.setItem(LS_KEY, apiKey);
   else localStorage.removeItem(LS_KEY);
 
+  const limit = Math.max(1, parseInt(limitInput.value, 10) || files.length);
+  const runFiles = files.slice(0, limit);
+
   running = true;
   startBtn.disabled = true;
   pickBtn.disabled = true;
   resultBody.innerHTML = '';
 
   let doneCount = 0, okCount = 0;
-  kpiDone.textContent = `0 / ${files.length}`;
+  kpiDone.textContent = `0 / ${runFiles.length}`;
   kpiOk.textContent = `0 / 0`;
 
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
+  for (let i = 0; i < runFiles.length; i++) {
+    const file = runFiles[i];
     file._idx = i;
     const objectUrl = URL.createObjectURL(file);
     addRow(file, objectUrl);
     markProcessing(i);
 
     try {
-      const b64 = await fileToBase64(file);
-      const mime = file.type || (file.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg');
-      const text = await callGroq(b64, mime, apiKey);
+      const doResize = resizeCheck.checked;
+      const maxDim = Math.max(128, parseInt(resizeMax.value, 10) || 640);
+      const b64 = doResize ? await resizeToBase64(file, maxDim) : await fileToBase64(file);
+      const mime = doResize ? 'image/jpeg' : (file.type || (file.name.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg'));
+      const { text, usage } = await callGroq(b64, mime, apiKey);
       const parsed = parseJsonAnswer(text);
       const ok = !!parsed;
-      updateRow(i, parsed, ok);
+      updateRow(i, parsed, ok, null, usage);
       doneCount++; if (ok) okCount++;
       await saveToDb({
-        file_name: file.name, provider: "groq", model: GROQ_MODEL,
+        file_name: file.name, provider: "groq", model: GROQ_MODEL + (doResize ? `+resize${maxDim}` : ''),
         output_pct: parsed?.output_percent ?? null,
         thickness: parsed?.thickness_um ?? null,
         tension_rate: parsed?.tension_rate ?? null,
         start_dia: parsed?.start_dia_mm ?? null,
         tension_set: parsed?.tension_set ?? null,
-        raw_response: text, parse_ok: ok,
+        raw_response: text + (usage ? ` [tokens: prompt=${usage.prompt_tokens} total=${usage.total_tokens}]` : ''),
+        parse_ok: ok,
       });
     } catch (err) {
       updateRow(i, null, false, err.message);
@@ -325,12 +399,12 @@ startBtn.addEventListener('click', async () => {
       });
     }
 
-    kpiDone.textContent = `${doneCount} / ${files.length}`;
+    kpiDone.textContent = `${doneCount} / ${runFiles.length}`;
     kpiOk.textContent = `${okCount} / ${doneCount}`;
-    progressFill.style.width = `${Math.round((doneCount / files.length) * 100)}%`;
-    progressLabel.textContent = `${doneCount} / ${files.length}`;
+    progressFill.style.width = `${Math.round((doneCount / runFiles.length) * 100)}%`;
+    progressLabel.textContent = `${doneCount} / ${runFiles.length}`;
 
-    if (i < files.length - 1) await sleep(CALL_SLEEP_MS);
+    if (i < runFiles.length - 1) await sleep(CALL_SLEEP_MS);
   }
 
   running = false;
