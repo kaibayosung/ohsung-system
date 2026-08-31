@@ -153,24 +153,36 @@ function fileToBase64(file) {
   });
 }
 
-async function callGroq(b64, mime, apiKey) {
-  const payload = {
-    model: GROQ_MODEL,
-    messages: [{
-      role: "user",
-      content: [
-        { type: "text", text: PROMPT },
-        { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
-      ],
-    }],
-    temperature: 0,
-    max_completion_tokens: 200,
-  };
-  const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
-    body: JSON.stringify(payload),
-  });
+async function callGroq(b64, mime, apiKey, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(new Error(`${timeoutMs / 1000}초 응답 없음 (타임아웃)`)), timeoutMs);
+  let res;
+  try {
+    res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{
+          role: "user",
+          content: [
+            { type: "text", text: PROMPT },
+            { type: "image_url", image_url: { url: `data:${mime};base64,${b64}` } },
+          ],
+        }],
+        temperature: 0,
+        max_completion_tokens: 200,
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`Groq 응답 없음(타임아웃 ${timeoutMs / 1000}초) — 네트워크가 api.groq.com 접속을 막고 있을 수 있습니다.`);
+    }
+    throw new Error(`네트워크 오류: ${err.message} (CORS 차단 또는 연결 실패 가능성)`);
+  } finally {
+    clearTimeout(timer);
+  }
   const data = await res.json();
   if (!res.ok) throw new Error(data?.error?.message || `HTTP ${res.status}`);
   return data.choices[0].message.content;
@@ -221,7 +233,7 @@ function addRow(file, objectUrl) {
   tr.querySelector('.thumb').addEventListener('click', () => openLightbox(objectUrl));
 }
 
-function updateRow(idx, parsed, ok) {
+function updateRow(idx, parsed, ok, errMsg) {
   const tr = document.getElementById(`row-${idx}`);
   if (!tr) return;
   const setCell = (cls, val) => {
@@ -239,8 +251,21 @@ function updateRow(idx, parsed, ok) {
     tr.querySelector('.cell-status').innerHTML = `<span class="status-chip ok">완료</span>`;
   } else {
     ['v-pct', 'v-volt', 'v-thick', 'v-rate', 'v-dia', 'v-set'].forEach(c => setCell(c, '-'));
-    tr.querySelector('.cell-status').innerHTML = `<span class="status-chip fail">파싱실패</span>`;
+    const chip = document.createElement('span');
+    chip.className = 'status-chip fail';
+    chip.textContent = errMsg ? '실패 (마우스 올려보기)' : '파싱실패';
+    if (errMsg) chip.title = errMsg;
+    const statusCell = tr.querySelector('.cell-status');
+    statusCell.innerHTML = '';
+    statusCell.appendChild(chip);
+    if (errMsg) console.error(`[${idx}]`, errMsg);
   }
+}
+
+function markProcessing(idx) {
+  const tr = document.getElementById(`row-${idx}`);
+  if (!tr) return;
+  tr.querySelector('.cell-status').innerHTML = `<span class="status-chip wait">처리중…</span>`;
 }
 
 function openLightbox(src) {
@@ -272,6 +297,7 @@ startBtn.addEventListener('click', async () => {
     file._idx = i;
     const objectUrl = URL.createObjectURL(file);
     addRow(file, objectUrl);
+    markProcessing(i);
 
     try {
       const b64 = await fileToBase64(file);
@@ -291,7 +317,7 @@ startBtn.addEventListener('click', async () => {
         raw_response: text, parse_ok: ok,
       });
     } catch (err) {
-      updateRow(i, null, false);
+      updateRow(i, null, false, err.message);
       doneCount++;
       await saveToDb({
         file_name: file.name, provider: "groq", model: GROQ_MODEL,
