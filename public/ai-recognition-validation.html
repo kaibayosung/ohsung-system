@@ -98,6 +98,25 @@
   </div>
 
   <div class="card">
+    <p class="header-title" style="font-size:15px;">해상도별 최소 크기 찾기 (사진 1장)</p>
+    <p class="header-sub">사진 1장을 여러 크기로 줄여가며 순서대로 인식해서, 토큰이 최소가 되면서도 값이 정확히 나오는 크기를 찾습니다.</p>
+    <div class="ctrl-row">
+      <button class="btn" id="singlePickBtn">🖼️ 테스트할 사진 1장 선택</button>
+      <span id="singleFileName" style="font-size:12.5px; color:#7d8ba1;">선택 안 됨</span>
+    </div>
+    <div class="ctrl-row">
+      <button class="btn primary" id="sizeTestBtn" disabled>▶ 해상도별 비교 시작</button>
+    </div>
+    <input type="file" id="singleFileInput" accept="image/*" style="display:none;">
+    <div class="table-scroll">
+    <table class="result-table">
+      <thead><tr><th>크기(px)</th><th>토큰</th><th>%</th><th>전압</th><th>두께</th><th>장력율</th><th>시작경</th><th>장력설정</th><th>상태</th></tr></thead>
+      <tbody id="sizeTestBody"><tr><td colspan="9"><div class="status-msg">사진을 선택하면 640/480/384/320/256/192/128px 순서로 테스트합니다.</div></td></tr></tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="card">
     <div class="table-scroll">
     <table class="result-table">
       <thead><tr><th>사진</th><th>파일명</th><th>%</th><th>전압</th><th>두께</th><th>장력율</th><th>시작경</th><th>장력설정</th><th>토큰</th><th>상태</th></tr></thead>
@@ -136,6 +155,12 @@ const progressLabel = document.getElementById('progressLabel');
 const resultBody = document.getElementById('resultBody');
 const kpiDone = document.getElementById('kpiDone');
 const kpiOk = document.getElementById('kpiOk');
+const singlePickBtn = document.getElementById('singlePickBtn');
+const singleFileInput = document.getElementById('singleFileInput');
+const singleFileName = document.getElementById('singleFileName');
+const sizeTestBtn = document.getElementById('sizeTestBtn');
+const sizeTestBody = document.getElementById('sizeTestBody');
+const SIZE_LEVELS = [640, 480, 384, 320, 256, 192, 128];
 
 let files = [];
 let running = false;
@@ -410,6 +435,100 @@ startBtn.addEventListener('click', async () => {
   running = false;
   startBtn.disabled = false;
   pickBtn.disabled = false;
+});
+
+let singleFile = null;
+singlePickBtn.addEventListener('click', () => singleFileInput.click());
+singleFileInput.addEventListener('change', (e) => {
+  singleFile = e.target.files[0] || null;
+  singleFileName.textContent = singleFile ? singleFile.name : '선택 안 됨';
+  sizeTestBtn.disabled = !singleFile;
+});
+
+function addSizeRow(size) {
+  const tr = document.createElement('tr');
+  tr.id = `size-row-${size}`;
+  tr.innerHTML = `
+    <td>${size}</td>
+    <td class="s-tokens" style="color:#7d8ba1;">-</td>
+    <td class="s-pct" style="color:#7d8ba1;">-</td>
+    <td class="s-volt" style="color:#7d8ba1;">-</td>
+    <td class="s-thick" style="color:#7d8ba1;">-</td>
+    <td class="s-rate" style="color:#7d8ba1;">-</td>
+    <td class="s-dia" style="color:#7d8ba1;">-</td>
+    <td class="s-set" style="color:#7d8ba1;">-</td>
+    <td class="s-status"><span class="status-chip wait">대기</span></td>
+  `;
+  sizeTestBody.appendChild(tr);
+}
+
+function updateSizeRow(size, parsed, ok, usage, errMsg) {
+  const tr = document.getElementById(`size-row-${size}`);
+  if (!tr) return;
+  const setCell = (cls, val) => {
+    const el = tr.querySelector('.' + cls);
+    el.textContent = val;
+    el.style.color = (val === '-' || val == null) ? '#7d8ba1' : '#0f1e33';
+  };
+  if (usage && usage.prompt_tokens) setCell('s-tokens', usage.prompt_tokens);
+  if (ok && parsed) {
+    setCell('s-pct', parsed.output_percent ?? '-');
+    setCell('s-volt', parsed.output_voltage ?? '-');
+    setCell('s-thick', parsed.thickness_um ?? '-');
+    setCell('s-rate', parsed.tension_rate ?? '-');
+    setCell('s-dia', parsed.start_dia_mm ?? '-');
+    setCell('s-set', parsed.tension_set ?? '-');
+    tr.querySelector('.s-status').innerHTML = `<span class="status-chip ok">완료</span>`;
+  } else {
+    const chip = document.createElement('span');
+    chip.className = 'status-chip fail';
+    chip.textContent = errMsg ? '실패 (마우스 올려보기)' : '파싱실패';
+    if (errMsg) chip.title = errMsg;
+    const statusCell = tr.querySelector('.s-status');
+    statusCell.innerHTML = '';
+    statusCell.appendChild(chip);
+  }
+}
+
+sizeTestBtn.addEventListener('click', async () => {
+  if (!singleFile) return;
+  const apiKey = apiKeyInput.value.trim();
+  if (!apiKey) { alert('Groq API 키를 입력하세요.'); return; }
+
+  sizeTestBtn.disabled = true;
+  singlePickBtn.disabled = true;
+  sizeTestBody.innerHTML = '';
+  SIZE_LEVELS.forEach(addSizeRow);
+
+  for (let s = 0; s < SIZE_LEVELS.length; s++) {
+    const size = SIZE_LEVELS[s];
+    const tr = document.getElementById(`size-row-${size}`);
+    tr.querySelector('.s-status').innerHTML = `<span class="status-chip wait">처리중…</span>`;
+    try {
+      const b64 = await resizeToBase64(singleFile, size);
+      const { text, usage } = await callGroq(b64, 'image/jpeg', apiKey);
+      const parsed = parseJsonAnswer(text);
+      const ok = !!parsed;
+      updateSizeRow(size, parsed, ok, usage);
+      await saveToDb({
+        file_name: `${singleFile.name}@${size}px`, provider: "groq",
+        model: GROQ_MODEL + `+resize${size}`,
+        output_pct: parsed?.output_percent ?? null,
+        thickness: parsed?.thickness_um ?? null,
+        tension_rate: parsed?.tension_rate ?? null,
+        start_dia: parsed?.start_dia_mm ?? null,
+        tension_set: parsed?.tension_set ?? null,
+        raw_response: text + (usage ? ` [tokens: prompt=${usage.prompt_tokens}]` : ''),
+        parse_ok: ok,
+      });
+    } catch (err) {
+      updateSizeRow(size, null, false, null, err.message);
+    }
+    if (s < SIZE_LEVELS.length - 1) await sleep(CALL_SLEEP_MS);
+  }
+
+  sizeTestBtn.disabled = false;
+  singlePickBtn.disabled = false;
 });
 </script>
 </body>
