@@ -206,7 +206,12 @@ function addRow(file, objectUrl) {
   tr.innerHTML = `
     <td><img class="thumb" src="${objectUrl}" data-full="${objectUrl}"></td>
     <td>${file.name}</td>
-    <td colspan="5" class="cell-values" style="color:#7d8ba1;">대기 중…</td>
+    <td class="v-pct" style="color:#7d8ba1;">대기</td>
+    <td class="v-volt" style="color:#7d8ba1;">-</td>
+    <td class="v-thick" style="color:#7d8ba1;">-</td>
+    <td class="v-rate" style="color:#7d8ba1;">-</td>
+    <td class="v-dia" style="color:#7d8ba1;">-</td>
+    <td class="v-set" style="color:#7d8ba1;">-</td>
     <td class="cell-status"><span class="status-chip wait">대기</span></td>
   `;
   if (resultBody.children.length === 1 && resultBody.children[0].querySelector('.status-msg')) {
@@ -219,16 +224,21 @@ function addRow(file, objectUrl) {
 function updateRow(idx, parsed, ok) {
   const tr = document.getElementById(`row-${idx}`);
   if (!tr) return;
-  const cells = tr.querySelectorAll('td');
+  const setCell = (cls, val) => {
+    const el = tr.querySelector('.' + cls);
+    el.textContent = val;
+    el.style.color = (val === '-' || val === undefined || val === null) ? '#7d8ba1' : '#0f1e33';
+  };
   if (ok && parsed) {
-    cells[2].outerHTML = `<td>${parsed.output_percent ?? '-'}</td>`;
-    cells[3].outerHTML = `<td>${parsed.output_voltage ?? '-'}</td>`;
-    cells[4].outerHTML = `<td>${parsed.thickness_um ?? '-'}</td>`;
-    cells[5].outerHTML = `<td>${parsed.tension_rate ?? '-'}</td>`;
-    cells[6].outerHTML = `<td>${parsed.start_dia_mm ?? '-'}</td>`;
+    setCell('v-pct', parsed.output_percent ?? '-');
+    setCell('v-volt', parsed.output_voltage ?? '-');
+    setCell('v-thick', parsed.thickness_um ?? '-');
+    setCell('v-rate', parsed.tension_rate ?? '-');
+    setCell('v-dia', parsed.start_dia_mm ?? '-');
+    setCell('v-set', parsed.tension_set ?? '-');
     tr.querySelector('.cell-status').innerHTML = `<span class="status-chip ok">완료</span>`;
   } else {
-    for (let i = 2; i <= 6; i++) cells[i].outerHTML = `<td style="color:#7d8ba1;">-</td>`;
+    ['v-pct', 'v-volt', 'v-thick', 'v-rate', 'v-dia', 'v-set'].forEach(c => setCell(c, '-'));
     tr.querySelector('.cell-status').innerHTML = `<span class="status-chip fail">파싱실패</span>`;
   }
 }
