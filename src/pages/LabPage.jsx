@@ -24,6 +24,7 @@ import { LevelingCoilDetailScreen } from './test/levelingCoilDetailScreen';
 import { LevelingProcessDashboardScreen } from './test/levelingProcessDashboardScreen';
 import { LevelingStrokeMonitorScreen } from './test/levelingStrokeMonitorScreen';
 import { LevelingLineNmsScreen } from './test/levelingLineNmsScreen';
+import { DashboardSyncMonitorScreen } from './test/dashboardSyncMonitorScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // external을 채우면(별도 배포 URL이 있는 경우) 카드 클릭 시 새 탭으로 열리고, 없으면 이 페이지 안에서 바로 열립니다.
@@ -60,6 +61,7 @@ const PROJECTS = [
   { key: 'incident-analysis', label: '장애 원인 분석 (AI)', icon: '🧯', category: '설비 진단', desc: 'PLC 이력·CCTV 데이터를 AI가 분석해 사고 원인을 30분 내로 규명합니다. 실제 슬리터 사고 사례로 만든 샘플입니다.', badge: '샘플' },
   { key: 'cashflow-pnl', label: '계좌 손익 통합 대시보드', icon: '💰', category: '경영 · 재무', desc: '통장 거래내역을 업로드하면 그린ERP 매출(가공+고철)과 합쳐 월간 손익을 자동 계산합니다. 매출은 실데이터, 통장 내역은 화면에서만 계산(미저장)됩니다.', badge: '실데이터 연동' },
   { key: 'deposit-reconcile', label: '거래명세서 입금 확인', icon: '🧾', category: '경영 · 재무', desc: '기간을 정하고 매출 거래명세서 + 통장 거래내역 엑셀을 올리면 금액·거래처·시기를 맞춰 입금 여부를 자동 분류합니다. 장기 미입금 건만 따로 걸러볼 수 있습니다.' },
+  { key: 'dashboard-sync-monitor', label: '대시보드 자동연동 모니터링', icon: '🔗', category: '시스템 연동', desc: '그린ERP 작업지시서를 슬리팅 대시보드(servehttp.com)에 자동 등록하는 dashboard-instant-sync(RPA 대체)가 정상 동작 중인지, 오늘 몇 건이 자동 등록됐는지 실시간으로 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
 ];
 
 // FAX 작업요청서 접수(No.13-1)와 현장 코일확정(No.13-2)은 하나의 흐름(초안 → 배차대기 → 배정완료)을
@@ -200,6 +202,7 @@ function LabPage() {
           {view === 'coil-analysis' && <CoilAnalysisScreen />}
           {view === 'coil-ai-helper' && <CoilAiHelperScreen />}
           {view === 'coil-ai-helper-work' && <CoilAiHelperWorkScreen />}
+          {view === 'dashboard-sync-monitor' && <DashboardSyncMonitorScreen />}
         </div>
       )}
     </div>
