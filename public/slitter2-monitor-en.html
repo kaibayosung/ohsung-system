@@ -67,7 +67,7 @@
   .section-title { font-size:17px; font-weight:900; color:#374357; margin:18px 0 10px; letter-spacing:0.02em; text-transform:uppercase; }
   .section-title:first-child { margin-top:0; }
 
-  .chart-wrap { background:#f3f5fe; border-radius:14px; padding:10px 10px 6px; margin-bottom:4px; }
+  .chart-wrap { background:#f3f5fe; border-radius:12px; padding:6px 8px 4px; margin-bottom:2px; }
   .chart-caption { font-size:14px; font-weight:800; color:#7d8ba1; text-align:center; margin:6px 0 2px; }
   .legend { display:flex; gap:14px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:14px; font-weight:900; color:#374357; margin:8px 0 2px; }
   .legend-dot { width:10px; height:10px; border-radius:2px; display:inline-block; margin-right:4px; }
@@ -134,7 +134,7 @@ async function getJson(params){
 }
 
 function multiChartSvg(series, xMin, xMax, yMin, yMax, markerX, markerDots){
-  const w = 420, h = 95, padL = 6, padR = 6, padT = 8, padB = 8;
+  const w = 420, h = 68, padL = 6, padR = 6, padT = 6, padB = 6;
   if (!series || series.length === 0 || xMax <= xMin || yMax <= yMin) {
     return `<div class="status-msg" style="padding:24px 4px;">Not enough data to chart.</div>`;
   }
@@ -337,8 +337,15 @@ async function renderDetail(coilId){
     : '';
 
   let reqCounter = 0;
+  let fetchTimer = null;
 
-  async function update(len){
+  // Dragging the slider fires dozens of 'input' events per second. Sending a network
+  // request on every one causes responses to queue up, so the screen keeps showing an
+  // older position (this is the exact symptom reported). The chart marker and length
+  // label update immediately (local calculation only); the PLC lookup for speed/tension
+  // is debounced (150ms) to when the user briefly pauses, and dimmed while waiting so
+  // it's clear "this value is stale."
+  function update(len){
     document.getElementById('lenLabel').textContent = Math.round(len) + ' m';
     const pct = maxLength > 0 ? Math.min(100, Math.round((len / maxLength) * 1000) / 10) : 0;
     document.getElementById('progressFill').style.width = Math.min(100, pct) + '%';
@@ -357,6 +364,13 @@ async function renderDetail(coilId){
       [0,1,2,3].map((i) => ({ y: bucketTension ? num(bucketTension['t'+(i+1)]) : null, color: TENSION_COLORS[i] }))
     );
 
+    document.getElementById('statusRow').style.opacity = '0.35';
+    document.getElementById('zoneGrid').style.opacity = '0.35';
+    clearTimeout(fetchTimer);
+    fetchTimer = setTimeout(() => fetchPosition(len), 150);
+  }
+
+  async function fetchPosition(len){
     const myReq = ++reqCounter;
     const raw = await getJson(`plc_at_length_coil_id=${encodeURIComponent(coilId)}&length=${len}`);
     if (myReq !== reqCounter) return;
@@ -364,6 +378,8 @@ async function renderDetail(coilId){
     const statusRow = document.getElementById('statusRow');
     const zoneGrid = document.getElementById('zoneGrid');
     const rawWrap = document.getElementById('rawCard');
+    statusRow.style.opacity = '1';
+    zoneGrid.style.opacity = '1';
     if (!raw || !raw.ok || !raw.nearest) {
       statusRow.innerHTML = `<div class="status-msg" style="padding:16px 4px;">No PLC record near this position.</div>`;
       zoneGrid.innerHTML = '';
