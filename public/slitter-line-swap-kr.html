@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>슬리터1 / 슬리터2 작업 배정 변경</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; font-weight:700; }
+  body { display:flex; justify-content:center; padding:14px; }
+  #app { width:100%; max-width:480px; padding-bottom:24px; position:relative; }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px 20px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:19px; font-weight:900; color:#0f1e33; margin:0 0 4px; }
+  .header-sub { font-size:13.5px; font-weight:700; color:#5c6478; margin:0; line-height:1.5; }
+
+  .date-row { display:flex; align-items:center; gap:8px; margin-top:14px; }
+  .date-input { font-family:inherit; font-weight:900; font-size:16px; color:#0f1e33; background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 10px; flex:1; }
+  .today-btn { font-family:inherit; font-weight:900; font-size:14px; color:#796cbf; background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:10px; padding:9px 14px; white-space:nowrap; }
+
+  .note { display:flex; gap:8px; align-items:flex-start; border-radius:10px; padding:10px 14px; font-size:13px; font-weight:800; line-height:1.55; margin-bottom:14px; background:#fff6ea; color:#a3610a; }
+
+  .search-input { width:100%; box-sizing:border-box; font-family:inherit; font-size:15px; font-weight:800; padding:11px 14px; border-radius:10px; border:1.5px solid #e3e8f0; margin-bottom:10px; color:#0f1e33; }
+
+  .tab-row { display:flex; gap:8px; margin-bottom:10px; }
+  .tab-btn { font-weight:900; font-size:13px; padding:8px 16px; border-radius:999px; border:1.5px solid #e3e8f0; background:#fff; color:#5c6478; cursor:pointer; font-family:inherit; }
+  .tab-btn.active { border-color:#796cbf; background:#f5f4ff; color:#796cbf; }
+
+  .list-count { font-size:12.5px; font-weight:900; color:#7d8ba1; margin-bottom:8px; }
+  .status-msg { font-size:15px; font-weight:800; color:#5c6478; padding:24px 4px; text-align:center; }
+
+  .job-list { display:flex; flex-direction:column; gap:8px; }
+  .job-item { display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #e3e8f0; border-radius:14px; padding:13px 14px; }
+  .job-body { flex:1; min-width:0; }
+  .job-coil { font-size:16px; font-weight:900; color:#0f1e33; }
+  .job-sub { font-size:12.5px; font-weight:800; color:#5c6478; margin-top:3px; }
+  .line-chip { font-size:12px; font-weight:900; padding:5px 12px; border-radius:999px; white-space:nowrap; }
+  .line-chip.l1 { background:#e6eef8; color:#185fa5; }
+  .line-chip.l2 { background:#f5f4ff; color:#796cbf; }
+  .swap-btn { font-size:12.5px; font-weight:900; padding:8px 13px; border-radius:9px; border:1.5px solid #e3e8f0; background:#fff; color:#374357; cursor:pointer; white-space:nowrap; font-family:inherit; }
+
+  .history-wrap { margin-top:8px; padding-top:12px; border-top:1px solid #e3e8f0; }
+  .history-title { font-size:12px; font-weight:900; color:#7d8ba1; margin-bottom:8px; letter-spacing:0.02em; }
+  .history-row { font-size:12.5px; font-weight:700; color:#5c6478; padding:4px 0; }
+
+  .modal-overlay { position:fixed; inset:0; background:rgba(15,30,51,0.45); display:flex; align-items:center; justify-content:center; padding:20px; z-index:50; }
+  .modal-box { background:#fff; border-radius:16px; padding:22px 24px; max-width:340px; width:100%; }
+  .modal-title { font-size:16px; font-weight:900; color:#0f1e33; margin-bottom:6px; }
+  .modal-sub { font-size:13px; font-weight:700; color:#5c6478; margin-bottom:16px; }
+  .modal-swap-row { display:flex; align-items:center; justify-content:center; gap:10px; background:#f3f5fe; border-radius:12px; padding:14px; margin-bottom:14px; }
+  .modal-err { font-size:12.5px; font-weight:800; color:#b3261e; background:#fbe4e2; border-radius:8px; padding:9px 12px; margin-bottom:14px; }
+  .modal-btn-row { display:flex; gap:8px; }
+  .modal-btn { flex:1; font-size:14px; font-weight:900; padding:10px; border-radius:10px; cursor:pointer; font-family:inherit; }
+  .modal-btn.cancel { border:1.5px solid #e3e8f0; background:#fff; color:#5c6478; }
+  .modal-btn.confirm { border:none; background:#0f1e33; color:#fff; }
+  .modal-btn.confirm:disabled { opacity:0.6; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const EXPLORE_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const SWAP_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-line-swap";
+
+const LINE_LABEL = { SLITING: '슬리터1', SLITING2: '슬리터2' };
+const LINE_CLASS = { SLITING: 'l1', SLITING2: 'l2' };
+
+function todayKST(){
+  const now = new Date();
+  return new Date(now.getTime() + 9*3600000).toISOString().slice(0, 10);
+}
+function fmtWeight(v){ return v == null ? '-' : Math.round(v).toLocaleString() + 'kg'; }
+function fmtClock(ts){
+  if (!ts) return "-";
+  const d = new Date(ts);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+
+async function getJson(url, params){
+  try {
+    const res = await fetch(`${url}?${params}`);
+    return await res.json();
+  } catch (err) {
+    console.error('fetch failed:', err);
+    return null;
+  }
+}
+
+let state = { date: todayKST(), tab: 'ALL', search: '', rows: [], history: [], pending: null, modalError: null, submitting: false };
+
+async function loadAndRender(){
+  const [listRes, historyRes] = await Promise.all([
+    getJson(EXPLORE_URL, `slitter_swap_list=${state.date}`),
+    getJson(SWAP_URL, `history=${state.date}`),
+  ]);
+  state.rows = (listRes && listRes.ok) ? listRes.rows : [];
+  state.history = (historyRes && historyRes.ok) ? historyRes.rows : [];
+  state.listError = !listRes || !listRes.ok;
+  render();
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="card">
+      <p class="header-title">🔀 슬리터1 / 슬리터2 작업 배정 변경</p>
+      <p class="header-sub">준비(미가동) 상태인 작업지시서의 라인 배정을 바꿉니다. 이미 가동중이거나 완료된 작업은 변경할 수 없습니다.</p>
+      <div class="date-row">
+        <input type="date" class="date-input" id="datePick" max="${todayKST()}" value="${state.date}">
+        <button type="button" class="today-btn" id="todayBtn">오늘</button>
+      </div>
+    </div>
+    <div class="note">⚠ 준비 상태의 작업만 배정을 바꿀 수 있습니다.</div>
+    <input type="text" class="search-input" id="searchInput" placeholder="코일 ID로 검색" value="${state.search}">
+    <div class="tab-row" id="tabRow"></div>
+    <div id="listWrap"></div>
+  `;
+  document.getElementById('datePick').addEventListener('change', (e) => { state.date = e.target.value || todayKST(); loadAndRender(); });
+  document.getElementById('todayBtn').addEventListener('click', () => { state.date = todayKST(); loadAndRender(); });
+  document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderList(); });
+
+  const tabs = [['ALL', '전체'], ['SLITING', '슬리터1'], ['SLITING2', '슬리터2']];
+  document.getElementById('tabRow').innerHTML = tabs.map(([k, label]) =>
+    `<button type="button" class="tab-btn ${state.tab === k ? 'active' : ''}" data-tab="${k}">${label}</button>`
+  ).join('');
+  document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => { state.tab = b.dataset.tab; render(); }));
+
+  renderList();
+  renderModal();
+}
+
+function renderList(){
+  const wrap = document.getElementById('listWrap');
+  if (state.listError) {
+    wrap.innerHTML = `<div class="status-msg">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>`;
+    return;
+  }
+  const q = state.search.trim().toLowerCase();
+  const rows = state.rows.filter((r) => (state.tab === 'ALL' || r.work_type === state.tab) && (!q || r.product_name.toLowerCase().includes(q)));
+
+  let html = `<div class="list-count">${rows.length}건</div>`;
+  if (rows.length === 0) {
+    html += `<div class="status-msg">해당하는 준비 상태 작업이 없습니다.</div>`;
+  } else {
+    html += `<div class="job-list">${rows.map((r) => `
+      <div class="job-item">
+        <div class="job-body">
+          <div class="job-coil">${r.product_name}</div>
+          <div class="job-sub">${r.company_name || '-'} · ${r.specification || '-'} · ${fmtWeight(r.original_weight)}</div>
+        </div>
+        <span class="line-chip ${LINE_CLASS[r.work_type]}">${LINE_LABEL[r.work_type]}</span>
+        <button type="button" class="swap-btn" data-swap-id="${r.id}">라인변경</button>
+      </div>
+    `).join('')}</div>`;
+  }
+  if (state.history.length) {
+    html += `<div class="history-wrap">
+      <div class="history-title">최근 변경 이력</div>
+      ${state.history.map((h) => `<div class="history-row">${h.coil_id} — ${LINE_LABEL[h.from_line] || h.from_line} → ${LINE_LABEL[h.to_line] || h.to_line} · ${fmtClock(h.changed_at)}</div>`).join('')}
+    </div>`;
+  }
+  wrap.innerHTML = html;
+  wrap.querySelectorAll('[data-swap-id]').forEach((b) => b.addEventListener('click', () => {
+    const id = Number(b.dataset.swapId);
+    state.pending = state.rows.find((r) => r.id === id) || null;
+    state.modalError = null;
+    renderModal();
+  }));
+}
+
+function renderModal(){
+  let root = document.getElementById('modalRoot');
+  if (!root) {
+    root = document.createElement('div');
+    root.id = 'modalRoot';
+    document.getElementById('app').appendChild(root);
+  }
+  if (!state.pending) { root.innerHTML = ''; return; }
+  const row = state.pending;
+  const toLine = row.work_type === 'SLITING' ? 'SLITING2' : 'SLITING';
+  root.innerHTML = `
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal-box">
+        <div class="modal-title">라인 배정을 변경할까요?</div>
+        <div class="modal-sub">${row.product_name} · ${row.company_name || '-'} · ${row.specification || '-'}</div>
+        <div class="modal-swap-row">
+          <span class="line-chip ${LINE_CLASS[row.work_type]}">${LINE_LABEL[row.work_type]}</span>
+          <span style="font-size:16px;color:#7d8ba1;">→</span>
+          <span class="line-chip ${LINE_CLASS[toLine]}">${LINE_LABEL[toLine]}</span>
+        </div>
+        ${state.modalError ? `<div class="modal-err">${state.modalError}</div>` : ''}
+        <div class="modal-btn-row">
+          <button type="button" class="modal-btn cancel" id="modalCancel" ${state.submitting ? 'disabled' : ''}>취소</button>
+          <button type="button" class="modal-btn confirm" id="modalConfirm" ${state.submitting ? 'disabled' : ''}>${state.submitting ? '변경 중…' : '변경'}</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('modalCancel').addEventListener('click', () => { state.pending = null; state.modalError = null; renderModal(); });
+  document.getElementById('modalConfirm').addEventListener('click', () => confirmSwap(row, toLine));
+}
+
+async function confirmSwap(row, toLine){
+  state.submitting = true;
+  state.modalError = null;
+  renderModal();
+  const params = `id=${row.id}&to=${toLine}&coil_id=${encodeURIComponent(row.product_name)}&commit=true`;
+  const res = await getJson(SWAP_URL, params);
+  state.submitting = false;
+  if (!res || !res.ok) {
+    state.modalError = (res && res.error) ? res.error : "변경을 완료하지 못했습니다. 다시 시도해주세요.";
+    renderModal();
+    return;
+  }
+  state.pending = null;
+  state.modalError = null;
+  await loadAndRender();
+}
+
+loadAndRender();
+</script>
+</body>
+</html>
