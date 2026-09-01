@@ -70,7 +70,7 @@ let reqCounter = 0;
 async function search(q){
   const myReq = ++reqCounter;
   state.loading = true;
-  render();
+  renderResults();
   try {
     const res = await fetch(`${EXPLORE_URL}?company_search=${encodeURIComponent(q)}`);
     const json = await res.json();
@@ -84,7 +84,7 @@ async function search(q){
   }
   state.loading = false;
   state.searched = true;
-  render();
+  renderResults();
 }
 
 function onInput(v){
@@ -96,20 +96,23 @@ function onInput(v){
     reqCounter++;
     state.rows = [];
     state.loading = false;
-    render();
+    renderResults();
     return;
   }
   debounceTimer = setTimeout(() => search(trimmed), 400);
 }
 
-function render(){
+// 검색창(input)과 탭 버튼은 최초 1회만 그립니다. 이후 상태 변화(검색 중/결과)는
+// renderResults()가 #resultWrap만 갱신합니다 — 매 타이핑마다 input을 다시 그리면
+// 한글 조합(IME) 중간에 DOM 노드가 교체되어 자모가 분리되는 문제가 있었습니다.
+function renderShell(){
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="card">
       <p class="header-title">📞 작업 확인 (거래처별 검색)</p>
       <p class="header-sub">기사님 전화 응대용 — 거래처명을 입력하면 레벨링·슬리터1·슬리터2 전체에서 코일별 작업 상태를 찾습니다.</p>
       <div class="search-row">
-        <input id="searchInput" type="text" class="search-input" placeholder="거래처명 입력 (예: 대한강재)" value="${state.q}">
+        <input id="searchInput" type="text" class="search-input" placeholder="거래처명 입력 (예: 대한강재)">
       </div>
       <div class="note">💡 검색어를 2글자 이상 입력하면 자동으로 조회됩니다. 최근 150건까지 최신순으로 표시됩니다.</div>
     </div>
@@ -119,13 +122,16 @@ function render(){
   const input = document.getElementById('searchInput');
   input.addEventListener('input', (e) => onInput(e.target.value));
   input.focus();
-  input.selectionStart = input.selectionEnd = input.value.length;
 
   document.getElementById('tabRow').innerHTML = [['ALL','전체'],['LEVELLING','레벨링'],['SLITING','슬리터1'],['SLITING2','슬리터2']].map(([k,l]) => {
     const active = state.line === k;
     return `<button type="button" class="tab-btn ${active ? 'active' : ''}" data-line="${k}">${l}</button>`;
   }).join('');
-  document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => { state.line = b.dataset.line; renderResults(); }));
+  document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => {
+    state.line = b.dataset.line;
+    document.querySelectorAll('.tab-btn').forEach((btn) => btn.classList.toggle('active', btn.dataset.line === state.line));
+    renderResults();
+  }));
 
   renderResults();
 }
@@ -177,7 +183,7 @@ function renderResults(){
   `;
 }
 
-render();
+renderShell();
 </script>
 </body>
 </html>
