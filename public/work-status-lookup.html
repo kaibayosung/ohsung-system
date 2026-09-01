@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>작업 확인 (거래처별 검색)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; font-weight:700; }
+  body { padding:24px; }
+  #app { width:100%; max-width:1000px; margin:0 auto; }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:22px 26px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:16px; }
+  .header-title { font-size:22px; font-weight:900; color:#0f1e33; margin:0 0 6px; }
+  .header-sub { font-size:14px; font-weight:700; color:#5c6478; margin:0 0 16px; line-height:1.5; }
+
+  .search-row { display:flex; gap:10px; }
+  .search-input { flex:1; font-family:inherit; font-size:17px; font-weight:800; padding:13px 16px; border-radius:10px; border:1.5px solid #e3e8f0; color:#0f1e33; }
+  .search-input:focus { outline:none; border-color:#796cbf; }
+
+  .tab-row { display:flex; gap:8px; margin-bottom:14px; }
+  .tab-btn { font-family:inherit; font-weight:900; font-size:13.5px; padding:9px 18px; border-radius:999px; border:1.5px solid #e3e8f0; background:#fff; color:#5c6478; cursor:pointer; }
+  .tab-btn.active { border-color:#796cbf; background:#f5f4ff; color:#796cbf; }
+
+  .status-msg { font-size:15px; font-weight:800; color:#7d8ba1; padding:48px 4px; text-align:center; }
+  .list-count { font-size:13px; font-weight:900; color:#7d8ba1; margin-bottom:10px; }
+
+  table { width:100%; border-collapse:collapse; }
+  thead th { text-align:left; font-size:12.5px; font-weight:900; color:#7d8ba1; padding:11px 16px; border-bottom:1px solid #e3e8f0; background:#f7f8fc; white-space:nowrap; }
+  tbody td { padding:12px 16px; border-bottom:1px solid #eef1f6; font-size:14px; font-weight:700; color:#374357; }
+  tbody tr:last-child td { border-bottom:none; }
+  .coil-id { font-size:14.5px; font-weight:900; color:#0f1e33; }
+  .table-wrap { background:#fff; border:1px solid #e3e8f0; border-radius:14px; overflow:hidden; }
+
+  .chip { font-size:12px; font-weight:900; padding:4px 11px; border-radius:999px; white-space:nowrap; display:inline-block; }
+  .chip.line-LEVELLING { background:#e2f5ea; color:#1c7a4d; }
+  .chip.line-SLITING { background:#e6eef8; color:#185fa5; }
+  .chip.line-SLITING2 { background:#f5f4ff; color:#796cbf; }
+  .chip.status-완료 { background:#e2f5ea; color:#1c7a4d; }
+  .chip.status-진행중 { background:#e6eef8; color:#185fa5; }
+  .chip.status-준비 { background:#eef1f6; color:#5c6478; }
+
+  .note { font-size:12.5px; font-weight:700; color:#a3610a; background:#fff6ea; border-radius:9px; padding:9px 14px; margin-top:12px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const EXPLORE_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const LINE_LABEL = { LEVELLING: '레벨링', SLITING: '슬리터1', SLITING2: '슬리터2' };
+const STATUS_LABEL = { '완료': '완료', '진행중': '진행중', '가동중': '진행중', '준비': '준비' };
+
+function fmtWeight(v){ return v == null ? '-' : Math.round(v).toLocaleString() + 'kg'; }
+function fmtDate(s){
+  if (!s) return '-';
+  return String(s).slice(0, 10);
+}
+function fmtTime(ts){
+  if (!ts) return '-';
+  const d = new Date(ts);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+
+let state = { q: '', line: 'ALL', rows: [], loading: false, searched: false, error: false };
+let debounceTimer = null;
+let reqCounter = 0;
+
+async function search(q){
+  const myReq = ++reqCounter;
+  state.loading = true;
+  render();
+  try {
+    const res = await fetch(`${EXPLORE_URL}?company_search=${encodeURIComponent(q)}`);
+    const json = await res.json();
+    if (myReq !== reqCounter) return;
+    state.rows = (json && json.ok) ? json.rows : [];
+    state.error = !(json && json.ok);
+  } catch (err) {
+    if (myReq !== reqCounter) return;
+    state.rows = [];
+    state.error = true;
+  }
+  state.loading = false;
+  state.searched = true;
+  render();
+}
+
+function onInput(v){
+  state.q = v;
+  state.searched = false;
+  clearTimeout(debounceTimer);
+  const trimmed = v.trim();
+  if (trimmed.length < 2) {
+    reqCounter++;
+    state.rows = [];
+    state.loading = false;
+    render();
+    return;
+  }
+  debounceTimer = setTimeout(() => search(trimmed), 400);
+}
+
+function render(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="card">
+      <p class="header-title">📞 작업 확인 (거래처별 검색)</p>
+      <p class="header-sub">기사님 전화 응대용 — 거래처명을 입력하면 레벨링·슬리터1·슬리터2 전체에서 코일별 작업 상태를 찾습니다.</p>
+      <div class="search-row">
+        <input id="searchInput" type="text" class="search-input" placeholder="거래처명 입력 (예: 대한강재)" value="${state.q}">
+      </div>
+      <div class="note">💡 검색어를 2글자 이상 입력하면 자동으로 조회됩니다. 최근 150건까지 최신순으로 표시됩니다.</div>
+    </div>
+    <div class="tab-row" id="tabRow"></div>
+    <div id="resultWrap"></div>
+  `;
+  const input = document.getElementById('searchInput');
+  input.addEventListener('input', (e) => onInput(e.target.value));
+  input.focus();
+  input.selectionStart = input.selectionEnd = input.value.length;
+
+  document.getElementById('tabRow').innerHTML = [['ALL','전체'],['LEVELLING','레벨링'],['SLITING','슬리터1'],['SLITING2','슬리터2']].map(([k,l]) => {
+    const active = state.line === k;
+    return `<button type="button" class="tab-btn ${active ? 'active' : ''}" data-line="${k}">${l}</button>`;
+  }).join('');
+  document.querySelectorAll('.tab-btn').forEach((b) => b.addEventListener('click', () => { state.line = b.dataset.line; renderResults(); }));
+
+  renderResults();
+}
+
+function renderResults(){
+  const wrap = document.getElementById('resultWrap');
+  if (state.loading) {
+    wrap.innerHTML = `<div class="status-msg">검색 중...</div>`;
+    return;
+  }
+  if (!state.searched) {
+    wrap.innerHTML = `<div class="status-msg">거래처명을 입력해 검색해보세요.</div>`;
+    return;
+  }
+  if (state.error) {
+    wrap.innerHTML = `<div class="status-msg">데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.</div>`;
+    return;
+  }
+  const rows = state.rows.filter((r) => state.line === 'ALL' || r.work_type === state.line);
+  if (rows.length === 0) {
+    wrap.innerHTML = `<div class="status-msg">일치하는 작업이 없습니다.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="list-count">${rows.length}건 (최근순${state.rows.length >= 150 ? ' · 최근 150건까지만 표시' : ''})</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>라인</th><th>코일ID</th><th>거래처</th><th>가공규격</th><th>무게</th><th>작업일자</th><th>작업여부</th><th>최근 업데이트</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map((r) => `
+            <tr>
+              <td><span class="chip line-${r.work_type}">${LINE_LABEL[r.work_type] || r.work_type}</span></td>
+              <td class="coil-id">${r.product_name}</td>
+              <td>${r.company_name || '-'}</td>
+              <td>${r.specification || '-'}</td>
+              <td>${fmtWeight(r.original_weight)}</td>
+              <td>${fmtDate(r.work_date)}</td>
+              <td><span class="chip status-${r.status}">${STATUS_LABEL[r.status] || r.status}</span></td>
+              <td>${fmtTime(r.update_time)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+render();
+</script>
+</body>
+</html>
