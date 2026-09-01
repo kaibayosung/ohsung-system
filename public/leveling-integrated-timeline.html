@@ -30,8 +30,32 @@
     background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:8px 12px;
   }
   .coil-select { flex:1; min-width:160px; }
+  .window-note { font-size:11.5px; color:#7d8ba1; margin-left:auto; }
 
   .status-msg { font-size:14px; color:#7d8ba1; padding:14px 2px; }
+
+  table.job-table { width:100%; border-collapse:collapse; font-size:12.5px; margin-top:12px; }
+  table.job-table th {
+    text-align:left; padding:8px 6px; color:#7d8ba1; font-weight:700; border-bottom:1.5px solid #e3e8f0;
+    white-space:nowrap;
+  }
+  table.job-table th.sortable { cursor:pointer; user-select:none; }
+  table.job-table th.sortable .sort-arrow { font-size:10px; margin-left:3px; }
+  table.job-table td { padding:8px 6px; border-bottom:1px solid #eef1f6; color:#0f1e33; font-weight:600; }
+  table.job-table tbody tr { cursor:pointer; }
+  table.job-table tbody tr:hover { background:#f5f7fb; }
+  table.job-table tbody tr.selected { background:#e6f1fb; }
+  table.job-table tbody tr.selected td { color:#0c447c; font-weight:800; }
+  .job-status-chip { font-size:11px; font-weight:800; padding:2px 8px; border-radius:999px; background:#eef1f6; color:#4d5c72; }
+  .job-status-chip.run { background:#e2f5ea; color:#1c7a4d; }
+  .job-status-chip.done { background:#e6eef8; color:#185fa5; }
+
+  .loadmore-btn {
+    display:block; width:100%; text-align:center; background:#eef1f6; border:1.5px dashed #c9d3e0;
+    border-radius:10px; padding:9px; font-size:12.5px; font-weight:700; color:#4d5c72; margin-top:10px;
+    font-family:inherit; cursor:pointer;
+  }
+  .loadmore-btn:disabled { opacity:0.5; cursor:default; }
 
   .summary-strip { display:flex; align-items:center; gap:10px; flex-wrap:wrap; background:#eef1f6; border-radius:12px; padding:10px 14px; margin-bottom:4px; }
   .strip-name { font-size:15px; font-weight:800; color:#0f1e33; }
@@ -117,7 +141,26 @@ async function getJson(params){
 
 let selectedDate = todayKST();
 let selectedCoil = null;
-let coilList = [];
+
+// --- 작업 목록(여러 날짜 통합, 날짜순 정렬 가능) 상태 ---
+const WINDOW_DAYS = 14;
+let endDate = todayKST();      // 목록 조회 기준일(최신 쪽 끝)
+let loadedThroughDate = null;  // 지금까지 불러온 가장 오래된 날짜(더 보기 기준)
+let jobs = [];                 // {coil_id, company_name, specification, status, update_time, work_date}
+let sortAsc = false;           // 날짜 정렬 방향(기본 최신순)
+
+function addDaysKST(dateStr, delta){
+  const d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+function parseThicknessMm(spec){
+  if (!spec) return null;
+  const raw = String(spec).split(/x/i)[0];
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+}
+function jobKey(j){ return `${j.work_date}__${j.coil_id}`; }
 
 function sampleEvenly(arr, maxPoints){
   if (arr.length <= maxPoints) return arr;
@@ -164,34 +207,121 @@ async function renderList(){
       <p class="header-title">레벨링 통합 타임라인</p>
       <p class="header-sub">작업지시서 · 박스별 진행 · PLC 실측을 한 화면에서 시간순으로 봅니다.</p>
       <div class="filter-row">
-        <input type="date" class="date-input" id="datePick" value="${selectedDate}">
-        <select class="coil-select" id="coilPick"><option>불러오는 중…</option></select>
+        <span style="font-size:12.5px; color:#4d5c72; font-weight:700;">기준일</span>
+        <input type="date" class="date-input" id="datePick" value="${endDate}">
+        <span class="window-note" id="windowNote"></span>
       </div>
+      <div id="jobTableWrap"><div class="status-msg">불러오는 중…</div></div>
+      <button class="loadmore-btn" id="loadMoreBtn" style="display:none;">이전 ${WINDOW_DAYS}일 더 보기</button>
     </div>
-    <div class="card"><div id="bodyWrap"><div class="status-msg">불러오는 중…</div></div></div>
+    <div class="card"><div id="bodyWrap"><div class="status-msg">작업을 선택하면 상세 정보가 표시됩니다.</div></div></div>
   `;
   document.getElementById('datePick').addEventListener('change', (e) => {
-    selectedDate = e.target.value || todayKST();
+    endDate = e.target.value || todayKST();
+    jobs = [];
+    loadedThroughDate = null;
     selectedCoil = null;
-    renderList();
+    selectedDate = null;
+    document.getElementById('bodyWrap').innerHTML = `<div class="status-msg">작업을 선택하면 상세 정보가 표시됩니다.</div>`;
+    loadWindow(false);
+  });
+  document.getElementById('loadMoreBtn').addEventListener('click', () => loadWindow(true));
+
+  await loadWindow(false);
+}
+
+async function loadWindow(append){
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const jobTableWrap = document.getElementById('jobTableWrap');
+  if (loadMoreBtn){ loadMoreBtn.disabled = true; loadMoreBtn.textContent = '불러오는 중…'; }
+  if (!append) jobTableWrap.innerHTML = `<div class="status-msg">불러오는 중…</div>`;
+
+  const rangeEnd = append ? addDaysKST(loadedThroughDate, -1) : endDate;
+  const dates = [];
+  for (let i = 0; i < WINDOW_DAYS; i++) dates.push(addDaysKST(rangeEnd, -i));
+  loadedThroughDate = dates[dates.length - 1];
+
+  const results = await Promise.all(dates.map(d =>
+    getJson(`leveling_stroke_overview=${d}`).then(o => ((o && o.coils) || []).map(c => ({
+      coil_id: c.product_name, company_name: c.company_name, specification: c.specification,
+      status: c.status, update_time: c.update_time, work_date: d,
+    })))
+  ));
+
+  const seen = new Set(jobs.map(jobKey));
+  results.flat().forEach(j => {
+    const k = jobKey(j);
+    if (!seen.has(k)){ jobs.push(j); seen.add(k); }
   });
 
-  const overview = await getJson(`leveling_stroke_overview=${selectedDate}`);
-  const coilPick = document.getElementById('coilPick');
-  const bodyWrap = document.getElementById('bodyWrap');
-  coilList = (overview && overview.coils) || [];
+  const windowNote = document.getElementById('windowNote');
+  if (windowNote) windowNote.textContent = `${loadedThroughDate} ~ ${endDate} (${jobs.length}건)`;
+  if (loadMoreBtn){ loadMoreBtn.disabled = false; loadMoreBtn.textContent = `이전 ${WINDOW_DAYS}일 더 보기`; loadMoreBtn.style.display = jobs.length ? 'block' : 'none'; }
 
-  if (!coilList.length){
-    coilPick.innerHTML = `<option>작업 없음</option>`;
-    bodyWrap.innerHTML = `<div class="status-msg">이 날짜에는 레벨링 작업 기록이 없습니다.</div>`;
+  renderJobTable();
+
+  if (!append && !selectedCoil && jobs.length){
+    selectJob(jobs[0]);
+  }
+}
+
+function renderJobTable(){
+  const jobTableWrap = document.getElementById('jobTableWrap');
+  if (!jobs.length){
+    jobTableWrap.innerHTML = `<div class="status-msg">이 기간에는 레벨링 작업 기록이 없습니다.</div>`;
     return;
   }
-  coilPick.innerHTML = coilList.map(c => `<option value="${c.product_name}">${c.product_name} · ${c.company_name || '-'} (${c.status || '-'})</option>`).join('');
-  coilPick.addEventListener('change', (e) => renderDetail(e.target.value));
+  const sorted = jobs.slice().sort((a, b) => {
+    const ka = `${a.work_date} ${a.update_time || ''}`, kb = `${b.work_date} ${b.update_time || ''}`;
+    return sortAsc ? ka.localeCompare(kb) : kb.localeCompare(ka);
+  });
+  const arrow = sortAsc ? '▲' : '▼';
+  jobTableWrap.innerHTML = `
+    <table class="job-table">
+      <thead><tr>
+        <th class="sortable" id="sortDateTh">날짜 <span class="sort-arrow">${arrow}</span></th>
+        <th>거래처명</th>
+        <th>코일 ID</th>
+        <th>가공규격</th>
+        <th>두께</th>
+        <th>상태</th>
+      </tr></thead>
+      <tbody>
+        ${sorted.map(j => {
+          const thick = parseThicknessMm(j.specification);
+          const isSel = selectedCoil === j.coil_id && selectedDate === j.work_date;
+          const statusCls = j.status === '완료' ? 'done' : (j.status ? 'run' : '');
+          return `<tr class="${isSel ? 'selected' : ''}" data-coil="${j.coil_id}" data-date="${j.work_date}">
+            <td>${j.work_date}</td>
+            <td>${j.company_name || '-'}</td>
+            <td>${j.coil_id}</td>
+            <td>${j.specification || '-'}</td>
+            <td>${thick !== null ? thick + 'mm' : '-'}</td>
+            <td><span class="job-status-chip ${statusCls}">${j.status || '-'}</span></td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('sortDateTh').addEventListener('click', () => {
+    sortAsc = !sortAsc;
+    renderJobTable();
+  });
+  Array.prototype.forEach.call(jobTableWrap.querySelectorAll('tbody tr'), tr => {
+    tr.addEventListener('click', () => {
+      const coilId = tr.getAttribute('data-coil');
+      const workDate = tr.getAttribute('data-date');
+      const job = jobs.find(j => j.coil_id === coilId && j.work_date === workDate);
+      if (job) selectJob(job);
+    });
+  });
+}
 
-  selectedCoil = selectedCoil && coilList.some(c => c.product_name === selectedCoil) ? selectedCoil : coilList[0].product_name;
-  coilPick.value = selectedCoil;
-  renderDetail(selectedCoil);
+function selectJob(job){
+  selectedCoil = job.coil_id;
+  selectedDate = job.work_date;
+  renderJobTable();
+  renderDetail(job.coil_id);
 }
 
 async function renderDetail(coilId){
@@ -245,14 +375,16 @@ async function renderDetail(coilId){
   const speedVals = rawSample.map(r => num(r.SPEEDPPS));
   const speedSetVals = rawSample.map(r => num(r.CUTSPEED));
 
+  const thicknessMm = parseThicknessMm(erp.specification);
   bodyWrap.innerHTML = `
     <div class="summary-strip">
       <span class="strip-name">${erp.company_name || '-'}</span>
       <span class="badge">${erp.specification || '-'}</span>
+      <span class="badge">두께 ${thicknessMm !== null ? thicknessMm + 'mm' : '-'}</span>
       <span class="strip-sub">${coilId} · 투입 ${num(erp.used_weight).toLocaleString()}kg / 발주 ${num(erp.original_weight).toLocaleString()}kg</span>
       <span class="badge ${erp.status === '완료' ? 'done' : ''} strip-status">${erp.status || '-'}</span>
     </div>
-    <p class="chart-caption" style="text-align:left; margin:8px 2px 0;">시작 ${fmtHM(erp.started_at || overall.start_ts)} · 최근 갱신 ${fmtHM(erp.update_time || overall.end_ts)} · 총 ${boxSummaries.length}개 박스</p>
+    <p class="chart-caption" style="text-align:left; margin:8px 2px 0;">코일 ID <b>${coilId}</b> · 작업일 <b>${erp.work_date || selectedDate}</b> · 시작 ${fmtHM(erp.started_at || overall.start_ts)} · 최근 갱신 ${fmtHM(erp.update_time || overall.end_ts)} · 총 ${boxSummaries.length}개 박스</p>
 
     <div class="section-title">📦 박스별 진행 타임라인</div>
     ${ganttBoxes.length ? `
