@@ -108,7 +108,7 @@ function fmtClock(ts){
   const d = new Date(ts);
   return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + ':' + String(d.getUTCSeconds()).padStart(2,'0');
 }
-function fmtDate(s){ return s || '-'; }
+function fmtDate(s){ return s ? String(s).slice(0, 10) : '-'; }
 function fmtWeight(v){ return v == null ? '-' : Math.round(v).toLocaleString() + ' kg'; }
 function fmtDuration(sec){
   if (sec == null || !Number.isFinite(sec)) return "-";
