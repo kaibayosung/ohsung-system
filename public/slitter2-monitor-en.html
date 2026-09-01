@@ -293,23 +293,25 @@ async function renderDetail(coilId){
       <div class="chart-caption" id="progressCaption" style="margin-top:6px;">-</div>
     </div>
 
-    <div id="readoutCard"></div>
+    <div id="anomalyWrap"></div>
 
-    <div class="section-title">Speed by length (full run)</div>
+    <div class="card" style="padding:16px;">
+      <div id="statusRow"></div>
+      <div class="section-title" style="margin:14px 0 8px;">Tension, 4 zones (current position)</div>
+      <div class="zone-grid" id="zoneGrid"></div>
+    </div>
+
+    <div class="section-title">Speed · tension by length (full run)</div>
     <div class="card" style="padding:14px;">
       <div class="chart-wrap" id="speedChart"></div>
       <div class="chart-caption">Line = averaged real speed per length bucket · dot = current position</div>
-    </div>
-
-    <div class="section-title">Tension by length, 4 zones (full run)</div>
-    <div class="card" style="padding:14px;">
-      <div class="chart-wrap" id="tensionChart"></div>
+      <div class="chart-wrap" id="tensionChart" style="margin-top:10px;"></div>
       <div class="legend">
         ${[0,1,2,3].map((i) => `<span><span class="legend-dot" style="background:${TENSION_COLORS[i]}"></span>Zone ${i+1}</span>`).join('')}
       </div>
     </div>
 
-    <div class="section-title">Raw PLC reading at this position</div>
+    <div class="section-title">Detail at this position</div>
     <div id="rawCard"></div>
   `;
 
@@ -319,6 +321,22 @@ async function renderDetail(coilId){
   const speedYMax = Math.max(10, ...speedVals, num(summary.max_speed) || 0) * 1.15;
   const tensionVals = tensionProfile.flatMap((r) => [num(r.t1), num(r.t2), num(r.t3), num(r.t4)]).filter((v) => v != null);
   const tensionYMax = Math.max(50, ...tensionVals) * 1.15;
+
+  // Tension sensor anomaly check: if the coil was actually running (avg speed above
+  // 20 m/min) but a zone's run-wide average tension is still near zero, that zone's
+  // sensor was likely disconnected or faulty. This is raw leveler PLC data, so the
+  // frontend cannot correct the value itself — it can only flag it.
+  const avgSpeedOverall = num(summary.avg_speed);
+  const zoneAvgs = [0,1,2,3].map((i) => {
+    const vals = tensionProfile.map((r) => num(r['t'+(i+1)])).filter((v) => v != null);
+    return vals.length ? vals.reduce((s,v) => s+v, 0) / vals.length : null;
+  });
+  const anomalyZones = (avgSpeedOverall != null && avgSpeedOverall > 20)
+    ? [0,1,2,3].filter((i) => zoneAvgs[i] != null && zoneAvgs[i] < 5)
+    : [];
+  document.getElementById('anomalyWrap').innerHTML = anomalyZones.length > 0
+    ? `<div class="note warn">⚠️ Zone ${anomalyZones.map((i) => i+1).join(', ')} tension sensor may be faulty — the line was running (avg ${round1(avgSpeedOverall)} m/min) but the run-wide average tension is near zero. Please check the sensor wiring on site.</div>`
+    : '';
 
   let reqCounter = 0;
 
@@ -345,10 +363,12 @@ async function renderDetail(coilId){
     const raw = await getJson(`plc_at_length_coil_id=${encodeURIComponent(coilId)}&length=${len}`);
     if (myReq !== reqCounter) return;
 
-    const readoutWrap = document.getElementById('readoutCard');
+    const statusRow = document.getElementById('statusRow');
+    const zoneGrid = document.getElementById('zoneGrid');
     const rawWrap = document.getElementById('rawCard');
     if (!raw || !raw.ok || !raw.nearest) {
-      readoutWrap.innerHTML = `<div class="status-msg">No PLC record near this position.</div>`;
+      statusRow.innerHTML = `<div class="status-msg" style="padding:16px 4px;">No PLC record near this position.</div>`;
+      zoneGrid.innerHTML = '';
       rawWrap.innerHTML = '';
       return;
     }
@@ -363,15 +383,27 @@ async function renderDetail(coilId){
     const validTensions = tensions.filter((v) => v != null);
     const tensionSpread = validTensions.length > 1 ? round1(Math.max(...validTensions) - Math.min(...validTensions)) : null;
 
-    readoutWrap.innerHTML = `
-      <div class="card" style="padding:18px;">
+    statusRow.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
         <span class="status-pill ${run ? 'green' : 'gray'}">${run ? '● Running' : '○ Stopped'}</span>
-        <div style="display:flex;gap:20px;margin-top:14px;flex-wrap:wrap;">
-          <div><div class="kpi-label">Line speed</div><div class="kpi-value">${speed != null ? round1(speed)+' m/min' : '-'}</div></div>
-          <div><div class="kpi-label">vs average</div><div class="kpi-value" style="color:${speedVsAvgPct==null?'#0f1e33':speedVsAvgPct<0?'#a3610a':'#1c7a4d'};">${speedVsAvgPct != null ? (speedVsAvgPct>=0?'+':'')+speedVsAvgPct+'%' : '-'}</div></div>
-          <div><div class="kpi-label">Max recorded</div><div class="kpi-value">${maxSpeed != null ? round1(maxSpeed)+' m/min' : '-'}</div></div>
+        <div style="text-align:right;">
+          <div class="kpi-label">Line speed</div>
+          <div class="kpi-value">${speed != null ? round1(speed)+' m/min' : '-'}</div>
         </div>
       </div>
+      <div style="display:flex;gap:20px;margin-top:12px;flex-wrap:wrap;">
+        <div><div class="kpi-label">vs average</div><div class="kpi-value" style="font-size:16px;color:${speedVsAvgPct==null?'#0f1e33':speedVsAvgPct<0?'#a3610a':'#1c7a4d'};">${speedVsAvgPct != null ? (speedVsAvgPct>=0?'+':'')+speedVsAvgPct+'%' : '-'}</div></div>
+        <div><div class="kpi-label">Max recorded</div><div class="kpi-value" style="font-size:16px;">${maxSpeed != null ? round1(maxSpeed)+' m/min' : '-'}</div></div>
+      </div>
+    `;
+    zoneGrid.innerHTML = `
+      ${[0,1,2,3].map((i) => `
+        <div class="zone-cell" style="border-left-color:${TENSION_COLORS[i]}">
+          <div class="zone-label">ZONE ${i+1}</div>
+          <div class="zone-val">${tensions[i] != null ? round1(tensions[i]) : '-'}</div>
+          <div class="zone-note">raw TENSION${i+1}</div>
+        </div>
+      `).join('')}
     `;
     rawWrap.innerHTML = `
       <div class="card" style="padding:16px 18px;">
@@ -383,15 +415,6 @@ async function renderDetail(coilId){
           <tr><td>RUN flag</td><td>${r.RUN != null ? r.RUN : '-'}</td></tr>
           <tr><td>Tension spread (max−min)</td><td>${tensionSpread != null ? tensionSpread : '-'}</td></tr>
         </table>
-      </div>
-      <div class="zone-grid">
-        ${[0,1,2,3].map((i) => `
-          <div class="zone-cell" style="border-left-color:${TENSION_COLORS[i]}">
-            <div class="zone-label">ZONE ${i+1}</div>
-            <div class="zone-val">${tensions[i] != null ? round1(tensions[i]) : '-'}</div>
-            <div class="zone-note">raw TENSION${i+1}</div>
-          </div>
-        `).join('')}
       </div>
     `;
   }
