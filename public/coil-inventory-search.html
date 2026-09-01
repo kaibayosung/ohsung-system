@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>원자재 코일 검색</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; font-weight:700; }
+  body { padding:16px; }
+  #app { width:100%; max-width:420px; margin:0 auto; }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:16px 16px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:18px; font-weight:900; color:#0f1e33; margin:0 0 4px; }
+  .header-sub { font-size:12.5px; font-weight:700; color:#5c6478; margin:0 0 12px; line-height:1.5; }
+
+  .field-col { display:flex; flex-direction:column; gap:8px; }
+  .field-input { width:100%; font-family:inherit; font-size:15px; font-weight:800; padding:12px 14px; border-radius:10px; border:1.5px solid #e3e8f0; color:#0f1e33; }
+  .field-input:focus { outline:none; border-color:#796cbf; }
+  .search-btn { width:100%; font-family:inherit; font-weight:900; font-size:14.5px; padding:13px; border-radius:10px; border:none; background:#796cbf; color:#fff; }
+  .search-btn:active { opacity:0.85; }
+
+  .error-msg { font-size:12.5px; font-weight:800; color:#c0392b; margin-top:2px; }
+
+  .list-count { font-size:12px; font-weight:900; color:#7d8ba1; margin:6px 2px 8px; }
+  .status-msg { font-size:14px; font-weight:800; color:#7d8ba1; padding:36px 4px; text-align:center; }
+
+  .coil-card { background:#fff; border:1.5px solid #e3e8f0; border-radius:13px; padding:12px 14px; cursor:pointer; margin-bottom:8px; }
+  .coil-card.selected { border-color:#796cbf; }
+  .coil-row-top { display:flex; justify-content:space-between; align-items:flex-start; }
+  .coil-id { font-size:15px; font-weight:900; color:#0f1e33; }
+  .coil-sub { font-size:12.5px; font-weight:700; color:#5c6478; margin-top:2px; }
+  .coil-chk { width:20px; height:20px; margin-top:2px; flex:none; }
+  .coil-weight { font-size:14px; font-weight:900; color:#0f1e33; margin-top:8px; }
+
+  .note { font-size:12px; font-weight:700; color:#a3610a; background:#fff6ea; border-radius:9px; padding:8px 12px; margin-top:10px; }
+
+  .summary-card { background:#f5f4ff; border:1.5px solid #796cbf; border-radius:14px; padding:12px 14px; }
+  .summary-title { font-size:12px; font-weight:900; color:#796cbf; margin-bottom:5px; }
+  .summary-list { font-size:12.5px; font-weight:800; color:#0f1e33; min-height:16px; line-height:1.5; }
+  .copy-btn { width:100%; margin-top:9px; font-family:inherit; font-weight:900; font-size:13px; padding:11px; border-radius:9px; border:1.5px solid #796cbf; background:#fff; color:#796cbf; }
+  .copy-btn.copied { background:#796cbf; color:#fff; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const SEARCH_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/coil-inventory-search";
+
+function fmtWeight(v){ return v == null ? '-' : Math.round(Number(v)).toLocaleString() + 'kg'; }
+
+let state = { company: '대한강재', thickness: '', rows: [], selected: new Set(), loading: false, searched: false, error: '' };
+
+async function runSearch(){
+  const company = state.company.trim();
+  const thickness = state.thickness.trim();
+  if (!company && !thickness) {
+    state.error = '거래처명 또는 두께 중 하나는 입력해주세요.';
+    renderError();
+    return;
+  }
+  state.error = '';
+  renderError();
+  state.loading = true;
+  state.searched = true;
+  renderResults();
+
+  const params = new URLSearchParams();
+  if (company) params.set('company', company);
+  if (thickness) params.set('thickness', thickness);
+
+  try {
+    const res = await fetch(`${SEARCH_URL}?${params.toString()}`);
+    const json = await res.json();
+    if (json && json.ok) {
+      state.rows = json.rows;
+      state.error = '';
+    } else {
+      state.rows = [];
+      state.error = (json && json.error) || '조회 중 오류가 발생했습니다.';
+    }
+  } catch (err) {
+    state.rows = [];
+    state.error = '데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.';
+  }
+  state.loading = false;
+  state.selected = new Set();
+  renderError();
+  renderResults();
+  renderSummary();
+}
+
+// 검색창(input)은 최초 1회만 그립니다. 검색은 버튼 클릭/엔터로만 실행되므로
+// 타이핑 중간에 input이 재생성되는 일이 없어 한글 조합(IME) 문제가 생기지 않습니다.
+function renderShell(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="card">
+      <p class="header-title">🔍 원자재 코일 검색</p>
+      <p class="header-sub">발주서 두께/거래처로 오성철강에 입고된(재고) 코일을 찾아 작업에 쓸 코일을 고릅니다.</p>
+      <div class="field-col">
+        <input id="companyInput" type="text" class="field-input" placeholder="거래처명 (예: 대한강재)" value="${state.company}">
+        <input id="thicknessInput" type="text" inputmode="decimal" class="field-input" placeholder="두께 mm (예: 0.75)" value="${state.thickness}">
+        <button id="searchBtn" type="button" class="search-btn">검색</button>
+        <div id="errorMsg"></div>
+      </div>
+    </div>
+    <div id="resultWrap"></div>
+    <div id="summaryWrap"></div>
+  `;
+  const companyInput = document.getElementById('companyInput');
+  const thicknessInput = document.getElementById('thicknessInput');
+  companyInput.addEventListener('input', (e) => { state.company = e.target.value; });
+  thicknessInput.addEventListener('input', (e) => { state.thickness = e.target.value; });
+  companyInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+  thicknessInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+  document.getElementById('searchBtn').addEventListener('click', runSearch);
+
+  renderError();
+  renderResults();
+  renderSummary();
+}
+
+function renderError(){
+  const box = document.getElementById('errorMsg');
+  if (!box) return;
+  box.innerHTML = state.error && !state.loading ? `<div class="error-msg">${state.error}</div>` : '';
+}
+
+function renderResults(){
+  const wrap = document.getElementById('resultWrap');
+  if (!wrap) return;
+  if (state.loading) {
+    wrap.innerHTML = `<div class="status-msg">검색 중...</div>`;
+    return;
+  }
+  if (!state.searched) {
+    wrap.innerHTML = `<div class="status-msg">거래처명 또는 두께를 입력해 검색해보세요.</div>`;
+    return;
+  }
+  if (state.error) {
+    wrap.innerHTML = '';
+    return;
+  }
+  if (state.rows.length === 0) {
+    wrap.innerHTML = `<div class="status-msg">일치하는 재고 코일이 없습니다.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="list-count">${state.rows.length}건${state.rows.length >= 100 ? ' · 최근 100건까지만 표시' : ''}</div>
+    <div id="cardList"></div>
+    <div class="note">💡 두께 기준으로 찾은 재고입니다. 그린ERP 재고 데이터의 폭 값은 정확히 기록되지 않는 경우가 많아 표시하지 않습니다.</div>
+  `;
+  const list = document.getElementById('cardList');
+  list.innerHTML = state.rows.map((r) => `
+    <div class="coil-card" data-code="${r.product_code}">
+      <div class="coil-row-top">
+        <div>
+          <div class="coil-id">${r.product_name}</div>
+          <div class="coil-sub">${r.spec || '-'} · ${r.received_date || '-'}</div>
+        </div>
+        <input type="checkbox" class="coil-chk" data-code="${r.product_code}">
+      </div>
+      <div class="coil-weight">${fmtWeight(r.remaining_weight)}</div>
+    </div>
+  `).join('');
+
+  list.querySelectorAll('.coil-card').forEach((card) => {
+    card.addEventListener('click', (e) => {
+      const code = card.dataset.code;
+      if (e.target.tagName !== 'INPUT') {
+        if (state.selected.has(code)) state.selected.delete(code); else state.selected.add(code);
+      } else {
+        if (e.target.checked) state.selected.add(code); else state.selected.delete(code);
+      }
+      card.classList.toggle('selected', state.selected.has(code));
+      const chk = card.querySelector('.coil-chk');
+      chk.checked = state.selected.has(code);
+      renderSummary();
+    });
+  });
+}
+
+function renderSummary(){
+  const wrap = document.getElementById('summaryWrap');
+  if (!wrap) return;
+  const selectedRows = state.rows.filter((r) => state.selected.has(String(r.product_code)));
+  const totalWeight = selectedRows.reduce((s, r) => s + (Number(r.remaining_weight) || 0), 0);
+  wrap.innerHTML = `
+    <div class="summary-card">
+      <div class="summary-title">선택 ${selectedRows.length}건 · ${Math.round(totalWeight).toLocaleString()}kg</div>
+      <div class="summary-list">${selectedRows.length ? selectedRows.map((r) => r.product_name).join(', ') : '체크박스로 선택하세요.'}</div>
+      <button type="button" class="copy-btn" id="copyBtn">선택 목록 복사</button>
+    </div>
+  `;
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    if (!selectedRows.length) return;
+    const text = selectedRows.map((r) => r.product_name).join(', ');
+    try {
+      await navigator.clipboard.writeText(text);
+      const btn = document.getElementById('copyBtn');
+      btn.textContent = '복사됨';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '선택 목록 복사'; btn.classList.remove('copied'); }, 1500);
+    } catch (err) {
+      alert(text);
+    }
+  });
+}
+
+renderShell();
+if (state.company) runSearch();
+</script>
+</body>
+</html>
