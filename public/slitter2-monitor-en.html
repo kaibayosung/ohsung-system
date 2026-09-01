@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Slitting2 Run Monitor (Mobile)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; min-height:100%; background:#f3f5fe; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; font-weight:700; }
+  body { display:flex; justify-content:center; padding:14px; }
+  #app { width:100%; max-width:480px; padding-bottom:24px; }
+
+  .note { display:flex; gap:8px; align-items:flex-start; border-radius:12px; padding:12px 15px; font-size:14.5px; font-weight:800; line-height:1.55; margin-bottom:10px; }
+  .note.info { background:#e6f1fb; color:#185fa5; }
+  .note.warn { background:#fff6ea; color:#a3610a; }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:22px; font-weight:900; color:#0f1e33; margin:0 0 4px; }
+  .header-sub { font-size:14px; font-weight:800; color:#5c6478; margin:0 0 14px; line-height:1.5; }
+
+  .date-row { display:flex; align-items:center; gap:8px; margin-bottom:2px; }
+  .date-input { font-family:inherit; font-weight:900; font-size:17px; color:#0f1e33; background:#eef1f6; border:1.5px solid #e3e8f0; border-radius:10px; padding:10px 10px; flex:1; }
+  .today-btn { font-family:inherit; font-weight:900; font-size:15px; color:#796cbf; background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:10px; padding:10px 14px; white-space:nowrap; }
+
+  .search-input { width:100%; font-family:inherit; font-size:16px; font-weight:800; padding:11px 13px; border-radius:10px; border:1.5px solid #e3e8f0; margin:12px 0 10px; color:#0f1e33; }
+  .list-count { font-size:13.5px; font-weight:900; color:#7d8ba1; margin-bottom:10px; }
+
+  .status-msg { font-size:16px; font-weight:800; color:#5c6478; padding:24px 4px; text-align:center; }
+
+  .job-list { display:flex; flex-direction:column; gap:8px; }
+  .job-item { display:flex; align-items:center; gap:10px; background:#fff; border:1.5px solid #e3e8f0; border-radius:14px; padding:13px 14px; cursor:pointer; }
+  .job-body { flex:1; min-width:0; }
+  .job-coil { font-size:17px; font-weight:900; color:#0f1e33; }
+  .job-sub { font-size:13px; font-weight:800; color:#5c6478; margin-top:3px; }
+  .job-meta { font-size:11.5px; font-weight:800; color:#9aa3b5; margin-top:3px; }
+  .chip { font-size:11.5px; font-weight:900; padding:4px 10px; border-radius:999px; flex-shrink:0; white-space:nowrap; }
+  .chip.ready { background:#eef1f6; color:#5c6478; }
+  .chip.run { background:#e6eef8; color:#185fa5; }
+  .chip.done { background:#e2f5ea; color:#1c7a4d; }
+  .arrow { font-size:18px; font-weight:900; color:#c2c9d8; }
+
+  .back-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:10px 17px; font-size:14px; font-weight:900; color:#4d5c72; margin-bottom:12px; font-family:inherit; }
+
+  .badge { font-size:13px; font-weight:900; padding:5px 13px; border-radius:999px; }
+  .badge.accent { background:#f5f4ff; color:#796cbf; }
+
+  .status-pill { display:inline-flex; align-items:center; gap:7px; font-size:19px; font-weight:900; padding:9px 20px; border-radius:999px; }
+  .status-pill.green { background:#e2f5ea; color:#1c7a4d; }
+  .status-pill.gray { background:#eef1f6; color:#5c6478; }
+  .status-pill.amber { background:#fdecd6; color:#a3610a; }
+  .status-pill.red { background:#fbe4e2; color:#b3261e; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+  .kpi-cell { background:#f3f5fe; border-radius:12px; padding:12px 13px; }
+  .kpi-cell.wide { grid-column:1 / -1; }
+  .kpi-label { font-size:11.5px; font-weight:900; color:#7d8ba1; margin:0 0 5px; }
+  .kpi-value { font-size:20px; font-weight:900; color:#0f1e33; margin:0; }
+  .kpi-sub { font-size:11.5px; font-weight:800; color:#7d8ba1; margin-top:3px; }
+
+  .field-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  .field-table td { padding:6px 0; border-bottom:1px solid #eef1f6; }
+  .field-table td:first-child { color:#7d8ba1; font-weight:800; width:44%; }
+  .field-table td:last-child { color:#0f1e33; font-weight:900; text-align:right; }
+  .field-table tr:last-child td { border-bottom:none; }
+
+  .section-title { font-size:13.5px; font-weight:900; color:#374357; margin:18px 0 10px; letter-spacing:0.02em; text-transform:uppercase; }
+  .section-title:first-child { margin-top:0; }
+
+  .chart-wrap { background:#f3f5fe; border-radius:14px; padding:14px 12px 8px; margin-bottom:4px; }
+  .chart-caption { font-size:12px; font-weight:800; color:#7d8ba1; text-align:center; margin:8px 0 2px; }
+  .legend { display:flex; gap:12px; align-items:center; justify-content:center; flex-wrap:wrap; font-size:12px; font-weight:900; color:#374357; margin:8px 0 2px; }
+  .legend-dot { width:9px; height:9px; border-radius:2px; display:inline-block; margin-right:4px; }
+
+  .zone-grid { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:9px; }
+  .zone-cell { background:#f3f5fe; border-radius:12px; padding:12px 14px; border-left:4px solid #cfd3e5; }
+  .zone-label { font-size:11.5px; font-weight:900; color:#7d8ba1; }
+  .zone-val { font-size:20px; font-weight:900; color:#0f1e33; margin:3px 0; }
+  .zone-note { font-size:11.5px; font-weight:800; color:#7d8ba1; }
+
+  .slider-card { background:#f5f4ff; border:1.5px solid #e7e5fe; border-radius:16px; padding:15px 17px; margin-bottom:14px; }
+  .slider-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:9px; }
+  .slider-label { font-size:13.5px; font-weight:900; color:#4d5c72; }
+  .slider-value { font-size:21px; font-weight:900; color:#796cbf; }
+  .slider-input { width:100%; height:10px; accent-color:#796cbf; }
+  .progress-track { height:6px; background:#e7e5fe; border-radius:999px; margin-top:10px; overflow:hidden; }
+  .progress-fill { height:100%; background:#796cbf; border-radius:999px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const FN_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const TENSION_COLORS = ["#378ADD", "#EB6834", "#1BAF7A", "#EDA100"];
+const STATUS_LABEL = { '완료': 'Done', '진행중': 'Running', '가동중': 'Running', '준비': 'Ready' };
+function statusLabel(s){ return STATUS_LABEL[s] || s || '-'; }
+function statusChipClass(s){ return s === '완료' ? 'done' : (s === '진행중' || s === '가동중') ? 'run' : 'ready'; }
+
+function todayKST(){
+  const now = new Date();
+  return new Date(now.getTime() + 9*3600000).toISOString().slice(0, 10);
+}
+function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
+function round1(v){ return v == null ? null : Math.round(v * 10) / 10; }
+function fmtClock(ts){
+  if (!ts) return "-";
+  const d = new Date(ts);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + ':' + String(d.getUTCSeconds()).padStart(2,'0');
+}
+function fmtDate(s){ return s || '-'; }
+function fmtWeight(v){ return v == null ? '-' : Math.round(v).toLocaleString() + ' kg'; }
+function fmtDuration(sec){
+  if (sec == null || !Number.isFinite(sec)) return "-";
+  const totalMin = Math.round(sec / 60);
+  if (totalMin < 60) return `${totalMin} min`;
+  const h = Math.floor(totalMin/60), m = totalMin % 60;
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+}
+function secondsBetween(a, b){
+  if (!a || !b) return null;
+  const s = (new Date(b).getTime() - new Date(a).getTime()) / 1000;
+  return Number.isFinite(s) ? s : null;
+}
+
+async function getJson(params){
+  try {
+    const res = await fetch(`${FN_URL}?${params}`);
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.error('leveler-explore fetch failed:', err);
+    return null;
+  }
+}
+
+function multiChartSvg(series, xMin, xMax, yMin, yMax, markerX, markerDots){
+  const w = 420, h = 150, padL = 6, padR = 6, padT = 8, padB = 8;
+  if (!series || series.length === 0 || xMax <= xMin || yMax <= yMin) {
+    return `<div class="status-msg" style="padding:24px 4px;">Not enough data to chart.</div>`;
+  }
+  const xOf = (v) => padL + ((v - xMin) / (xMax - xMin)) * (w - padL - padR);
+  const yOf = (v) => h - padB - ((Math.min(Math.max(v, yMin), yMax) - yMin) / (yMax - yMin)) * (h - padT - padB);
+  const paths = series.map((s) => {
+    const pts = (s.points || []).filter((p) => p.x != null && p.y != null);
+    if (pts.length < 2) return '';
+    const d = pts.map((p, i) => `${i===0?'M':'L'}${xOf(p.x).toFixed(1)},${yOf(p.y).toFixed(1)}`).join(' ');
+    return `<path d="${d}" fill="none" stroke="${s.color}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }).join('');
+  let markerSvg = '';
+  if (markerX != null) {
+    const mx = xOf(Math.min(Math.max(markerX, xMin), xMax));
+    markerSvg += `<line x1="${mx}" y1="${padT}" x2="${mx}" y2="${h-padB}" stroke="#9397ab" stroke-width="1.5" stroke-dasharray="4 3"/>`;
+    (markerDots || []).forEach((d) => {
+      if (d.y == null) return;
+      const my = yOf(d.y);
+      markerSvg += `<circle cx="${mx}" cy="${my}" r="6" fill="${d.color}" stroke="#fff" stroke-width="2"/>`;
+    });
+  }
+  return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:${h}px;display:block">${paths}${markerSvg}</svg>`;
+}
+
+function nearestBucket(profile, len){
+  if (!profile || profile.length === 0 || len == null) return null;
+  let best = profile[0];
+  for (const row of profile) {
+    if (row.len_bucket <= len) best = row; else break;
+  }
+  return best;
+}
+
+let state = { date: todayKST(), coils: [], search: '' };
+
+async function renderList(){
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="card">
+      <p class="header-title">🧵 Slitting2 Run Monitor</p>
+      <p class="header-sub">Browse real PLC run data for every Slitting2 coil — pick a coil, then drag the length slider to see the exact reading at any point.</p>
+      <div class="date-row">
+        <input type="date" class="date-input" id="datePick" max="${todayKST()}" value="${state.date}">
+        <button type="button" class="today-btn" id="todayBtn">Today</button>
+      </div>
+    </div>
+    <div class="note info">💡 Data comes straight from erp_data (job spec) and plc_data (real-time PLC telemetry) via the leveler-explore Edge Function. This is a raw readout, not a recommendation.</div>
+    <input type="text" class="search-input" id="searchInput" placeholder="Search by coil ID or company" value="${state.search}">
+    <div id="listWrap"><div class="status-msg">Loading...</div></div>
+  `;
+  document.getElementById('datePick').addEventListener('change', (e) => { state.date = e.target.value || todayKST(); renderList(); });
+  document.getElementById('todayBtn').addEventListener('click', () => { state.date = todayKST(); renderList(); });
+  document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderCoilList(); });
+
+  const data = await getJson(`slitter_work_date=${state.date}`);
+  const wrap = document.getElementById('listWrap');
+  if (!data || !data.ok) { wrap.innerHTML = `<div class="status-msg">Couldn't load data. Please try again shortly.</div>`; return; }
+  state.coils = data.rows || [];
+  renderCoilList();
+}
+
+function renderCoilList(){
+  const wrap = document.getElementById('listWrap');
+  const q = (state.search || '').trim().toLowerCase();
+  const filtered = state.coils.filter((c) => !q || (c.product_name||'').toLowerCase().includes(q) || (c.company_name||'').toLowerCase().includes(q));
+  if (filtered.length === 0) {
+    wrap.innerHTML = `<div class="status-msg">No Slitting2 work orders for this date.</div>`;
+    return;
+  }
+  wrap.innerHTML = `
+    <div class="list-count">${filtered.length} coil(s)</div>
+    <div class="job-list">${filtered.map((c) => `
+      <div class="job-item" data-coil="${c.product_name}">
+        <div class="job-body">
+          <div class="job-coil">${c.product_name}</div>
+          <div class="job-sub">${c.company_name || '-'} · ${c.specification || '-'} · ${fmtWeight(c.original_weight)}</div>
+          <div class="job-meta">${c.process_rule ? c.process_rule + ' · ' : ''}Updated ${fmtClock(c.update_time)}</div>
+        </div>
+        <span class="chip ${statusChipClass(c.status)}">${statusLabel(c.status)}</span>
+        <span class="arrow">→</span>
+      </div>
+    `).join('')}</div>
+  `;
+  wrap.querySelectorAll('.job-item').forEach((el) => el.addEventListener('click', () => renderDetail(el.dataset.coil)));
+}
+
+async function renderDetail(coilId){
+  const app = document.getElementById('app');
+  app.innerHTML = `<button type="button" class="back-btn" id="backBtn">← Back to list</button><div class="card"><div class="status-msg">Loading run data...</div></div>`;
+  document.getElementById('backBtn').addEventListener('click', renderList);
+
+  const [detail, profile] = await Promise.all([
+    getJson(`slitter_coil_id=${encodeURIComponent(coilId)}`),
+    getJson(`coil_id=${encodeURIComponent(coilId)}`),
+  ]);
+  const card = document.querySelector('#app .card');
+  if (!detail || !detail.ok) { card.innerHTML = `<div class="status-msg">${(detail && detail.error) || "Couldn't load data."}</div>`; return; }
+
+  const erp = detail.erp || {};
+  const summary = detail.summary || {};
+  const hasPlc = !!detail.has_plc;
+  const maxLength = num(summary.max_length) || 0;
+  const durationSec = secondsBetween(summary.start_ts, summary.end_ts);
+
+  document.querySelector('#app').innerHTML = `<button type="button" class="back-btn" id="backBtn">← Back to list</button>` +
+    `<div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:22px;font-weight:900;color:#0f1e33;">${coilId}</span>
+            <span class="chip ${statusChipClass(erp.status)}">${statusLabel(erp.status)}</span>
+          </div>
+          <div style="font-size:13.5px;font-weight:800;color:#5c6478;margin-top:6px;">${erp.company_name || '-'} · ${erp.specification || '-'}</div>
+        </div>
+        <span class="badge accent">${erp.work_type === 'SLITING2' ? 'Slitting2' : (erp.work_type || '-')}</span>
+      </div>
+      <table class="field-table" style="margin-top:14px;">
+        <tr><td>Target length (ERP)</td><td>${erp.length != null ? erp.length : '-'}</td></tr>
+        <tr><td>Original weight</td><td>${fmtWeight(erp.original_weight)}</td></tr>
+        <tr><td>Used weight</td><td>${fmtWeight(erp.used_weight)}</td></tr>
+        <tr><td>Process rule</td><td>${erp.process_rule || '-'}</td></tr>
+        <tr><td>Work date</td><td>${fmtDate(erp.work_date)}</td></tr>
+        <tr><td>Started at</td><td>${erp.started_at ? fmtClock(erp.started_at) : '-'}</td></tr>
+        <tr><td>Last updated</td><td>${erp.update_time ? fmtClock(erp.update_time) : '-'}</td></tr>
+      </table>
+    </div>
+    <div id="plcSection"></div>`;
+
+  const plcWrap = document.getElementById('plcSection');
+  if (!hasPlc) {
+    plcWrap.innerHTML = `<div class="note warn">⚠️ No PLC telemetry recorded yet for this coil — it may not have started, or the run predates PLC logging.</div>`;
+    document.getElementById('backBtn').addEventListener('click', renderList);
+    return;
+  }
+
+  plcWrap.innerHTML = `
+    <div class="section-title">Run summary</div>
+    <div class="kpi-grid" style="margin-bottom:14px;">
+      <div class="kpi-cell"><div class="kpi-label">Max recorded length</div><div class="kpi-value">${Math.round(maxLength)} m</div></div>
+      <div class="kpi-cell"><div class="kpi-label">PLC records</div><div class="kpi-value">${summary.cnt != null ? Number(summary.cnt).toLocaleString() : '-'}</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Average speed</div><div class="kpi-value">${summary.avg_speed != null ? round1(num(summary.avg_speed))+' m/min' : '-'}</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Max speed</div><div class="kpi-value">${summary.max_speed != null ? round1(num(summary.max_speed))+' m/min' : '-'}</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Worked</div><div class="kpi-value" style="font-size:16px;">${fmtClock(summary.start_ts)} – ${fmtClock(summary.end_ts)}</div></div>
+      <div class="kpi-cell"><div class="kpi-label">Duration</div><div class="kpi-value">${fmtDuration(durationSec)}</div></div>
+    </div>
+
+    <div class="section-title">Length position</div>
+    <div class="slider-card">
+      <div class="slider-row">
+        <span class="slider-label">Drag to any point along the coil</span>
+        <span class="slider-value" id="lenLabel">-</span>
+      </div>
+      <input type="range" class="slider-input" id="lenSlider" min="0" max="${Math.max(1, Math.round(maxLength))}" step="1" value="${Math.round(maxLength/2)}">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="chart-caption" id="progressCaption" style="margin-top:6px;">-</div>
+    </div>
+
+    <div id="readoutCard"></div>
+
+    <div class="section-title">Speed by length (full run)</div>
+    <div class="card" style="padding:14px;">
+      <div class="chart-wrap" id="speedChart"></div>
+      <div class="chart-caption">Line = averaged real speed per length bucket · dot = current position</div>
+    </div>
+
+    <div class="section-title">Tension by length, 4 zones (full run)</div>
+    <div class="card" style="padding:14px;">
+      <div class="chart-wrap" id="tensionChart"></div>
+      <div class="legend">
+        ${[0,1,2,3].map((i) => `<span><span class="legend-dot" style="background:${TENSION_COLORS[i]}"></span>Zone ${i+1}</span>`).join('')}
+      </div>
+    </div>
+
+    <div class="section-title">Raw PLC reading at this position</div>
+    <div id="rawCard"></div>
+  `;
+
+  const speedProfile = (profile && profile.speedProfile) || [];
+  const tensionProfile = (profile && profile.tensionProfile) || [];
+  const speedVals = speedProfile.map((r) => num(r.speed)).filter((v) => v != null);
+  const speedYMax = Math.max(10, ...speedVals, num(summary.max_speed) || 0) * 1.15;
+  const tensionVals = tensionProfile.flatMap((r) => [num(r.t1), num(r.t2), num(r.t3), num(r.t4)]).filter((v) => v != null);
+  const tensionYMax = Math.max(50, ...tensionVals) * 1.15;
+
+  let reqCounter = 0;
+
+  async function update(len){
+    document.getElementById('lenLabel').textContent = Math.round(len) + ' m';
+    const pct = maxLength > 0 ? Math.min(100, Math.round((len / maxLength) * 1000) / 10) : 0;
+    document.getElementById('progressFill').style.width = Math.min(100, pct) + '%';
+    document.getElementById('progressCaption').textContent = `${pct}% of ${Math.round(maxLength)} m`;
+
+    const bucketSpeed = nearestBucket(speedProfile, len);
+    const bucketTension = nearestBucket(tensionProfile, len);
+    document.getElementById('speedChart').innerHTML = multiChartSvg(
+      [{ points: speedProfile.map((r) => ({ x: r.len_bucket, y: num(r.speed) })), color: '#796cbf' }],
+      0, Math.max(10, maxLength), 0, speedYMax, len,
+      [{ y: bucketSpeed ? num(bucketSpeed.speed) : null, color: '#796cbf' }]
+    );
+    document.getElementById('tensionChart').innerHTML = multiChartSvg(
+      [0,1,2,3].map((i) => ({ points: tensionProfile.map((r) => ({ x: r.len_bucket, y: num(r['t'+(i+1)]) })), color: TENSION_COLORS[i] })),
+      0, Math.max(10, maxLength), 0, tensionYMax, len,
+      [0,1,2,3].map((i) => ({ y: bucketTension ? num(bucketTension['t'+(i+1)]) : null, color: TENSION_COLORS[i] }))
+    );
+
+    const myReq = ++reqCounter;
+    const raw = await getJson(`plc_at_length_coil_id=${encodeURIComponent(coilId)}&length=${len}`);
+    if (myReq !== reqCounter) return;
+
+    const readoutWrap = document.getElementById('readoutCard');
+    const rawWrap = document.getElementById('rawCard');
+    if (!raw || !raw.ok || !raw.nearest) {
+      readoutWrap.innerHTML = `<div class="status-msg">No PLC record near this position.</div>`;
+      rawWrap.innerHTML = '';
+      return;
+    }
+    const r = raw.nearest;
+    const speed = num(r.LINE_SPEED_VALUE);
+    const run = Number(r.RUN) === 1;
+    const avgSpeed = num(summary.avg_speed);
+    const maxSpeed = num(summary.max_speed);
+    const speedVsAvgPct = (speed != null && avgSpeed) ? Math.round(((speed - avgSpeed) / avgSpeed) * 1000) / 10 : null;
+    const elapsedSec = secondsBetween(summary.start_ts, r.TIMESTAMP);
+    const tensions = [num(r.TENSION1), num(r.TENSION2), num(r.TENSION3), num(r.TENSION4)];
+    const validTensions = tensions.filter((v) => v != null);
+    const tensionSpread = validTensions.length > 1 ? round1(Math.max(...validTensions) - Math.min(...validTensions)) : null;
+
+    readoutWrap.innerHTML = `
+      <div class="card" style="padding:18px;">
+        <span class="status-pill ${run ? 'green' : 'gray'}">${run ? '● Running' : '○ Stopped'}</span>
+        <div style="display:flex;gap:20px;margin-top:14px;flex-wrap:wrap;">
+          <div><div class="kpi-label">Line speed</div><div class="kpi-value">${speed != null ? round1(speed)+' m/min' : '-'}</div></div>
+          <div><div class="kpi-label">vs average</div><div class="kpi-value" style="color:${speedVsAvgPct==null?'#0f1e33':speedVsAvgPct<0?'#a3610a':'#1c7a4d'};">${speedVsAvgPct != null ? (speedVsAvgPct>=0?'+':'')+speedVsAvgPct+'%' : '-'}</div></div>
+          <div><div class="kpi-label">Max recorded</div><div class="kpi-value">${maxSpeed != null ? round1(maxSpeed)+' m/min' : '-'}</div></div>
+        </div>
+      </div>
+    `;
+    rawWrap.innerHTML = `
+      <div class="card" style="padding:16px 18px;">
+        <table class="field-table">
+          <tr><td>Record time</td><td>${fmtClock(r.TIMESTAMP)}</td></tr>
+          <tr><td>Elapsed since start</td><td>${fmtDuration(elapsedSec)}</td></tr>
+          <tr><td>Matched length</td><td>${r.LENGTH != null ? round1(num(r.LENGTH))+' m' : '-'} (target ${Math.round(len)} m)</td></tr>
+          <tr><td>Line speed (raw)</td><td>${speed != null ? round1(speed)+' m/min' : '-'}</td></tr>
+          <tr><td>RUN flag</td><td>${r.RUN != null ? r.RUN : '-'}</td></tr>
+          <tr><td>Tension spread (max−min)</td><td>${tensionSpread != null ? tensionSpread : '-'}</td></tr>
+        </table>
+      </div>
+      <div class="zone-grid">
+        ${[0,1,2,3].map((i) => `
+          <div class="zone-cell" style="border-left-color:${TENSION_COLORS[i]}">
+            <div class="zone-label">ZONE ${i+1}</div>
+            <div class="zone-val">${tensions[i] != null ? round1(tensions[i]) : '-'}</div>
+            <div class="zone-note">raw TENSION${i+1}</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  const slider = document.getElementById('lenSlider');
+  slider.addEventListener('input', (e) => update(Number(e.target.value)));
+  update(Number(slider.value));
+  document.getElementById('backBtn').addEventListener('click', renderList);
+}
+
+renderList();
+</script>
+</body>
+</html>
