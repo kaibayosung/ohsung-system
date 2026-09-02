@@ -63,6 +63,31 @@
   .status-chip.low { background:#fde8e8; color:#b23a3a; }
   .status-msg { font-size:14px; color:#7d8ba1; padding:14px 2px; }
   .table-scroll { overflow-x:auto; }
+
+  .usage-row { margin-bottom:14px; }
+  .usage-row:last-child { margin-bottom:0; }
+  .usage-label-row { display:flex; justify-content:space-between; font-size:12px; color:#7d8ba1; margin-bottom:5px; }
+  .usage-label-row b { color:#0f1e33; font-weight:800; }
+  .usage-track { height:8px; border-radius:4px; background:#eef1f6; overflow:hidden; }
+  .usage-fill { height:100%; background:#185fa5; }
+  .usage-fill.warn { background:#c46b06; }
+
+  .interval-row { display:flex; gap:8px; margin-top:4px; }
+  .interval-btn {
+    flex:1; padding:10px; border-radius:10px; border:1px solid #e3e8f0; background:#fff;
+    font-size:14px; font-weight:800; color:#4d5c72; cursor:pointer; font-family:inherit;
+  }
+  .interval-btn.active { border:2px solid #185fa5; background:#e6f1fb; color:#0c447c; }
+  .interval-btn:disabled { opacity:0.5; cursor:default; }
+
+  .toggle-btn {
+    width:100%; padding:12px; border-radius:10px; border:none; cursor:pointer; font-family:inherit;
+    font-size:14px; font-weight:800; margin-bottom:10px;
+  }
+  .toggle-btn.pause { background:#fde8e8; color:#b23a3a; }
+  .toggle-btn.resume { background:#185fa5; color:#fff; }
+  .toggle-btn:disabled { opacity:0.5; cursor:default; }
+  .live-dot.paused { background:#8aa0b8; }
 </style>
 </head>
 <body>
@@ -72,8 +97,12 @@
 const SUPABASE_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co";
 const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubG5id2NiZ2ZnZnRkZ2F3YW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NTYxMDQsImV4cCI6MjA4NTAzMjEwNH0.-tS-m6hezjEclG0er5yUXERisE0uE3BYVJlviJKkQAo";
 const TABLE = "ai_tension_readings";
+const SETTINGS_TABLE = "ai_tension_settings";
 const POLL_MS = 8000;
-const CAPTURE_INTERVAL_SEC = 60; // ocr_monitor_production.py 기본 인식 주기
+const CAPTURE_INTERVAL_SEC = 120; // ocr_monitor_production.py 기본 인식 주기 (대시보드에서 변경 가능)
+const INTERVAL_OPTIONS = [60, 120, 300]; // 1분 / 2분 / 5분
+// Groq 무료 한도 (qwen/qwen3.8-27b, console.groq.com/docs/rate-limits 기준). 매일 UTC 자정 리셋.
+const DAILY_LIMITS = { tokens: 200000, requests: 1000 };
 
 function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
 function fmtHMS(ts){
@@ -116,6 +145,39 @@ async function fetchWindow(sinceIso){
   return res.json();
 }
 
+async function fetchTodayTokens(sinceIso){
+  const res = await pgrest(`${TABLE}?select=total_tokens&captured_at=gte.${encodeURIComponent(sinceIso)}`);
+  if (!res.ok) return { tokens:0, requests:0 };
+  const rows = await res.json();
+  const tokens = rows.reduce((sum, r) => sum + (num(r.total_tokens) || 0), 0);
+  return { tokens, requests: rows.length };
+}
+
+async function fetchSettings(){
+  const res = await pgrest(`${SETTINGS_TABLE}?select=capture_interval_sec,enabled&id=eq.1&limit=1`);
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+async function patchSettings(payload){
+  const buttons = document.querySelectorAll('.interval-btn, .toggle-btn');
+  buttons.forEach(b => b.disabled = true);
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/${SETTINGS_TABLE}?id=eq.1`, {
+      method: 'PATCH',
+      headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ ...payload, updated_at: new Date().toISOString() }),
+    });
+  } catch (e) { /* 다음 폴링에서 다시 시도됨 */ }
+  render();
+}
+
+function setIntervalSec(sec){ return patchSettings({ capture_interval_sec: sec }); }
+function setEnabled(enabled){ return patchSettings({ enabled }); }
+window.setIntervalSec = setIntervalSec;
+window.setEnabled = setEnabled;
+
 function todayStartKstIso(){
   const now = new Date();
   const kst = new Date(now.getTime() + 9*3600000);
@@ -143,10 +205,13 @@ let timer = null;
 async function render(){
   const app = document.getElementById('app');
 
-  const [totalCount, todayCount, recent] = await Promise.all([
+  const todayStart = todayStartKstIso();
+  const [totalCount, todayCount, recent, todayUsage, settings] = await Promise.all([
     fetchCount(),
-    fetchCount(`captured_at=gte.${encodeURIComponent(todayStartKstIso())}`),
+    fetchCount(`captured_at=gte.${encodeURIComponent(todayStart)}`),
     fetchRecent(20),
+    fetchTodayTokens(todayStart),
+    fetchSettings(),
   ]);
 
   if (!recent.length){
@@ -165,9 +230,10 @@ async function render(){
   }
 
   const last = recent[0];
+  const isPaused = settings && settings.enabled === false;
   const lastAgoSec = (Date.now() - new Date(last.captured_at).getTime())/1000;
-  const dotClass = lastAgoSec < CAPTURE_INTERVAL_SEC * 1.8 ? 'ok' : (lastAgoSec < 300 ? 'stale' : 'dead');
-  const dotLabel = lastAgoSec < CAPTURE_INTERVAL_SEC * 1.8 ? '정상 수신' : (lastAgoSec < 300 ? '수신 지연' : '수신 끊김');
+  const dotClass = isPaused ? 'paused' : (lastAgoSec < CAPTURE_INTERVAL_SEC * 1.8 ? 'ok' : (lastAgoSec < 300 ? 'stale' : 'dead'));
+  const dotLabel = isPaused ? '중단됨' : (lastAgoSec < CAPTURE_INTERVAL_SEC * 1.8 ? '정상 수신' : (lastAgoSec < 300 ? '수신 지연' : '수신 끊김'));
 
   const windowRows = await fetchWindow(new Date(Date.now() - 6*3600000).toISOString());
   const coverage = buildCoverage(windowRows, 6, 10);
@@ -180,7 +246,7 @@ async function render(){
   const primary = num(last.output_percent);
 
   app.innerHTML = `
-    <div class="real-note">🧪 ai_tension_readings 테이블(Groq 상용 인식)을 8초마다 확인합니다. ocr_monitor_production.py가 이 테이블에 1분마다 기록합니다.</div>
+    <div class="real-note">🧪 ai_tension_readings 테이블(Groq 상용 인식)을 8초마다 확인합니다. ocr_monitor_production.py가 아래 "인식 주기"에 맞춰 이 테이블에 기록합니다.</div>
 
     <div class="card">
       <div class="header-row">
@@ -203,6 +269,35 @@ async function render(){
         <div class="kpi-cell"><p class="kpi-label">장력율</p><p class="kpi-value">${num(last.tension_rate) ?? '-'}</p></div>
         <div class="kpi-cell"><p class="kpi-label">평균 토큰/회</p><p class="kpi-value">${avgTokens !== null ? avgTokens.toLocaleString() : '-'}</p></div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">오늘 API 사용량 (Groq 무료 한도 기준)</div>
+      <div class="usage-row">
+        <div class="usage-label-row"><span>토큰</span><b>${todayUsage.tokens.toLocaleString()} / ${DAILY_LIMITS.tokens.toLocaleString()}</b></div>
+        <div class="usage-track"><div class="usage-fill${todayUsage.tokens/DAILY_LIMITS.tokens > 0.8 ? ' warn' : ''}" style="width:${Math.min(100, todayUsage.tokens/DAILY_LIMITS.tokens*100).toFixed(1)}%"></div></div>
+      </div>
+      <div class="usage-row">
+        <div class="usage-label-row"><span>호출 횟수</span><b>${todayUsage.requests.toLocaleString()} / ${DAILY_LIMITS.requests.toLocaleString()}</b></div>
+        <div class="usage-track"><div class="usage-fill${todayUsage.requests/DAILY_LIMITS.requests > 0.8 ? ' warn' : ''}" style="width:${Math.min(100, todayUsage.requests/DAILY_LIMITS.requests*100).toFixed(1)}%"></div></div>
+      </div>
+      <p class="kpi-sub" style="margin-top:10px;">매일 UTC 자정(KST 오전 9시) 리셋됩니다.</p>
+    </div>
+
+    <div class="card">
+      <div class="section-title">인식 주기</div>
+      ${isPaused
+        ? `<button class="toggle-btn resume" onclick="setEnabled(true)">▶ 인식 재개하기</button>`
+        : `<button class="toggle-btn pause" onclick="setEnabled(false)">⏸ 인식 중단하기</button>`}
+      <div class="interval-row">
+        ${INTERVAL_OPTIONS.map(sec => `<button class="interval-btn${settings && settings.capture_interval_sec === sec ? ' active' : ''}" onclick="setIntervalSec(${sec})">${sec/60}분마다</button>`).join('')}
+      </div>
+      <p class="kpi-sub" style="margin-top:10px;">
+        ${isPaused
+          ? '현재 중단됨 - 개발서버가 카메라 인식/DB 저장을 멈추고 재개 버튼을 기다립니다.'
+          : `현재 ${settings ? (settings.capture_interval_sec/60) : '?'}분마다 자동 인식 중.`}
+        클릭하면 재시작 없이 개발서버가 다음 확인 시점에 자동 반영합니다.
+      </p>
     </div>
 
     <div class="card">
