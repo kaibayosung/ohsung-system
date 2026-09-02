@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR-DTC-3100 실시간 인식 (상용 · Groq)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:#eef1f6; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+  body { display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:680px; }
+
+  .real-note {
+    display:flex; gap:8px; align-items:flex-start; background:#e6f1fb; border:1px solid #b5d4f4;
+    border-radius:12px; padding:10px 14px; font-size:12.5px; color:#185fa5; line-height:1.5; margin-bottom:12px;
+  }
+  .empty-note {
+    display:flex; gap:8px; align-items:flex-start; background:#fff6ea; border:1px solid #fdecd6;
+    border-radius:12px; padding:10px 14px; font-size:12.5px; color:#c46b06; line-height:1.6; margin-bottom:6px;
+  }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }
+  .header-title { font-size:18px; font-weight:800; color:#0f1e33; margin:0; }
+  .header-sub { font-size:12px; color:#7d8ba1; margin:4px 0 0; }
+  .live-dot-wrap { display:flex; align-items:center; gap:6px; font-size:12px; color:#7d8ba1; white-space:nowrap; }
+  .live-dot { width:8px; height:8px; border-radius:50%; background:#8aa0b8; }
+  .live-dot.ok { background:#3aa66c; }
+  .live-dot.stale { background:#e0a13a; }
+  .live-dot.dead { background:#d95f5f; }
+
+  .primary-row { display:flex; align-items:baseline; gap:10px; margin:6px 0 14px; }
+  .primary-label { font-size:12px; color:#7d8ba1; }
+  .primary-value { font-size:44px; font-weight:900; color:#c46b06; font-variant-numeric:tabular-nums; }
+  .primary-unit { font-size:14px; color:#7d8ba1; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+  .kpi-cell { background:#eef1f6; border-radius:12px; padding:12px; }
+  .kpi-label { font-size:11px; color:#7d8ba1; margin:0 0 4px; }
+  .kpi-value { font-size:20px; font-weight:900; color:#0f1e33; margin:0; }
+  .kpi-value.purple { color:#7c5cbf; }
+  .kpi-value.warn { color:#a3610a; }
+  .kpi-sub { font-size:10.5px; color:#7d8ba1; margin:2px 0 0; }
+
+  .section-title { font-size:13px; font-weight:800; color:#4d5c72; margin:18px 0 10px; }
+  .section-title:first-child { margin-top:0; }
+
+  .cov-row { display:flex; gap:2px; }
+  .cov-cell { flex:1; height:26px; border-radius:3px; background:#e3e8f0; }
+  .cov-cell.hit { background:#8fd0ab; }
+  .cov-cell.miss { background:#f0a5a5; }
+  .cov-axis { display:flex; justify-content:space-between; margin-top:4px; }
+  .cov-axis span { font-size:10.5px; color:#7d8ba1; }
+
+  table.recent-table { width:100%; border-collapse:collapse; font-size:12px; }
+  table.recent-table th { text-align:left; padding:6px 4px; color:#7d8ba1; font-weight:700; border-bottom:1px solid #e3e8f0; white-space:nowrap; }
+  table.recent-table td { text-align:right; padding:6px 4px; border-bottom:1px solid #eef1f6; color:#0f1e33; font-weight:700; white-space:nowrap; }
+  table.recent-table td:first-child, table.recent-table th:first-child { text-align:left; }
+  table.recent-table td:last-child, table.recent-table th:last-child { text-align:left; }
+  .status-chip { font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:999px; }
+  .status-chip.ok { background:#e2f5ea; color:#1c7a4d; }
+  .status-chip.low { background:#fde8e8; color:#b23a3a; }
+  .status-msg { font-size:14px; color:#7d8ba1; padding:14px 2px; }
+  .table-scroll { overflow-x:auto; }
+</style>
+</head>
+<body>
+<div id="app"><div class="card"><div class="status-msg">불러오는 중…</div></div></div>
+
+<script>
+const SUPABASE_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co";
+const ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubG5id2NiZ2ZnZnRkZ2F3YW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NTYxMDQsImV4cCI6MjA4NTAzMjEwNH0.-tS-m6hezjEclG0er5yUXERisE0uE3BYVJlviJKkQAo";
+const TABLE = "ai_tension_readings";
+const POLL_MS = 8000;
+const CAPTURE_INTERVAL_SEC = 60; // ocr_monitor_production.py 기본 인식 주기
+
+function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
+function fmtHMS(ts){
+  if (!ts) return '-';
+  const d = new Date(new Date(ts).getTime() + 9*3600000);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0') + ':' + String(d.getUTCSeconds()).padStart(2,'0');
+}
+function agoLabel(ts){
+  if (!ts) return '-';
+  const sec = Math.max(0, Math.floor((Date.now() - new Date(ts).getTime())/1000));
+  if (sec < 60) return `${sec}초 전`;
+  if (sec < 3600) return `${Math.floor(sec/60)}분 전`;
+  return `${Math.floor(sec/3600)}시간 전`;
+}
+
+async function pgrest(path, opts={}){
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}`, ...(opts.headers||{}) },
+  });
+  return res;
+}
+
+async function fetchCount(filter){
+  const res = await pgrest(`${TABLE}?select=id&limit=1${filter ? '&' + filter : ''}`, { headers: { Prefer: 'count=exact' } });
+  const range = res.headers.get('content-range'); // "0-0/1234"
+  if (!range) return 0;
+  const total = range.split('/')[1];
+  return total === '*' ? 0 : parseInt(total, 10) || 0;
+}
+
+async function fetchRecent(limit){
+  const res = await pgrest(`${TABLE}?select=*&order=captured_at.desc&limit=${limit}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+async function fetchWindow(sinceIso){
+  const res = await pgrest(`${TABLE}?select=captured_at&order=captured_at.asc&captured_at=gte.${encodeURIComponent(sinceIso)}`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
+function todayStartKstIso(){
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9*3600000);
+  kst.setUTCHours(0,0,0,0);
+  return new Date(kst.getTime() - 9*3600000).toISOString();
+}
+
+function buildCoverage(rows, hours, bucketMin){
+  const now = Date.now();
+  const startMs = now - hours*3600000;
+  const bucketMs = bucketMin*60000;
+  const bucketCount = Math.ceil((hours*3600000)/bucketMs);
+  const hits = new Array(bucketCount).fill(false);
+  rows.forEach(r => {
+    const t = new Date(r.captured_at).getTime();
+    if (t < startMs) return;
+    const idx = Math.min(bucketCount-1, Math.floor((t - startMs)/bucketMs));
+    hits[idx] = true;
+  });
+  return hits;
+}
+
+let timer = null;
+
+async function render(){
+  const app = document.getElementById('app');
+
+  const [totalCount, todayCount, recent] = await Promise.all([
+    fetchCount(),
+    fetchCount(`captured_at=gte.${encodeURIComponent(todayStartKstIso())}`),
+    fetchRecent(20),
+  ]);
+
+  if (!recent.length){
+    app.innerHTML = `
+      <div class="card">
+        <div class="header-row">
+          <p class="header-title">PR-DTC-3100 실시간 인식 (상용 · Groq)</p>
+          <span class="live-dot-wrap"><span class="live-dot"></span>대기중</span>
+        </div>
+        <p class="header-sub">ai_tension_readings 테이블을 8초마다 확인합니다.</p>
+        <div class="empty-note">📷 아직 수신된 데이터가 없습니다. ocr_monitor_production.py가 이 테이블에 기록하도록 개발서버에서 실행되면 여기 실시간으로 표시됩니다. 테이블·조회 권한은 이미 준비되어 있습니다.</div>
+      </div>`;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(render, POLL_MS);
+    return;
+  }
+
+  const last = recent[0];
+  const lastAgoSec = (Date.now() - new Date(last.captured_at).getTime())/1000;
+  const dotClass = lastAgoSec < CAPTURE_INTERVAL_SEC * 1.8 ? 'ok' : (lastAgoSec < 300 ? 'stale' : 'dead');
+  const dotLabel = lastAgoSec < CAPTURE_INTERVAL_SEC * 1.8 ? '정상 수신' : (lastAgoSec < 300 ? '수신 지연' : '수신 끊김');
+
+  const windowRows = await fetchWindow(new Date(Date.now() - 6*3600000).toISOString());
+  const coverage = buildCoverage(windowRows, 6, 10);
+
+  const failCount = recent.filter(r => r.parse_ok === false).length;
+  const failPct = recent.length ? (failCount/recent.length*100) : 0;
+  const tokenVals = recent.map(r => num(r.total_tokens)).filter(v => v !== null);
+  const avgTokens = tokenVals.length ? Math.round(tokenVals.reduce((a,b)=>a+b,0)/tokenVals.length) : null;
+
+  const primary = num(last.output_percent);
+
+  app.innerHTML = `
+    <div class="real-note">🧪 ai_tension_readings 테이블(Groq 상용 인식)을 8초마다 확인합니다. ocr_monitor_production.py가 이 테이블에 1분마다 기록합니다.</div>
+
+    <div class="card">
+      <div class="header-row">
+        <p class="header-title">PR-DTC-3100 실시간 인식 (상용 · Groq)</p>
+        <span class="live-dot-wrap"><span class="live-dot ${dotClass}"></span>${dotLabel}</span>
+      </div>
+      <p class="header-sub">ai_tension_readings 실측 테이블 · 마지막 수신 ${agoLabel(last.captured_at)} (${fmtHMS(last.captured_at)})</p>
+
+      <div class="primary-row">
+        <span class="primary-label">출력%</span>
+        <span class="primary-value">${primary ?? '-'}</span>
+        <span class="primary-unit">%</span>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-cell"><p class="kpi-label">전압 (V)</p><p class="kpi-value">${num(last.output_voltage) ?? '-'}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">두께 (um)</p><p class="kpi-value">${num(last.thickness_um) ?? '-'}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">시작경 (mm)</p><p class="kpi-value">${num(last.start_dia_mm) ?? '-'}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">장력설정</p><p class="kpi-value purple">${num(last.tension_set) ?? '-'}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">장력율</p><p class="kpi-value">${num(last.tension_rate) ?? '-'}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">평균 토큰/회</p><p class="kpi-value">${avgTokens !== null ? avgTokens.toLocaleString() : '-'}</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">누적 현황</div>
+      <div class="kpi-grid">
+        <div class="kpi-cell"><p class="kpi-label">누적 저장 건수</p><p class="kpi-value">${totalCount.toLocaleString()}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">오늘 저장 건수</p><p class="kpi-value">${todayCount.toLocaleString()}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">최근 20건 중 파싱 실패</p><p class="kpi-value ${failPct > 0 ? 'warn' : ''}">${failPct.toFixed(0)}%</p><p class="kpi-sub">${failCount}건 / ${recent.length}건</p></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">최근 6시간 수신 커버리지 (10분 단위)</div>
+      <div class="cov-row">${coverage.map(h => `<div class="cov-cell ${h ? 'hit' : 'miss'}"></div>`).join('')}</div>
+      <div class="cov-axis"><span>6시간 전</span><span>지금</span></div>
+      ${coverage.some(h => !h) ? `<p class="kpi-sub" style="margin-top:6px; color:#a3610a;">⚠️ 빨간 구간은 해당 10분 동안 수신 기록이 없었다는 뜻입니다.</p>` : ''}
+    </div>
+
+    <div class="card">
+      <div class="section-title">최근 저장 레코드</div>
+      <div class="table-scroll">
+      <table class="recent-table">
+        <thead><tr><th>시각</th><th>출력%</th><th>전압</th><th>두께</th><th>시작경</th><th>장력설정</th><th>장력율</th><th>상태</th></tr></thead>
+        <tbody>
+          ${recent.map(r => {
+            const failed = r.parse_ok === false;
+            return `<tr>
+              <td>${fmtHMS(r.captured_at)}</td>
+              <td>${num(r.output_percent) ?? '-'}</td>
+              <td>${num(r.output_voltage) ?? '-'}</td>
+              <td>${num(r.thickness_um) ?? '-'}</td>
+              <td>${num(r.start_dia_mm) ?? '-'}</td>
+              <td>${num(r.tension_set) ?? '-'}</td>
+              <td>${num(r.tension_rate) ?? '-'}</td>
+              <td>${failed ? `<span class="status-chip low">파싱실패</span>` : `<span class="status-chip ok">정상</span>`}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  `;
+
+  if (timer) clearTimeout(timer);
+  timer = setTimeout(render, POLL_MS);
+}
+
+render();
+</script>
+</body>
+</html>
