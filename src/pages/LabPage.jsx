@@ -70,6 +70,7 @@ const PROJECTS = [
   { key: 'cashflow-pnl', label: '계좌 손익 통합 대시보드', icon: '💰', category: '경영 · 재무', desc: '통장 거래내역을 업로드하면 그린ERP 매출(가공+고철)과 합쳐 월간 손익을 자동 계산합니다. 매출은 실데이터, 통장 내역은 화면에서만 계산(미저장)됩니다.', badge: '실데이터 연동' },
   { key: 'deposit-reconcile', label: '거래명세서 입금 확인', icon: '🧾', category: '경영 · 재무', desc: '기간을 정하고 매출 거래명세서 + 통장 거래내역 엑셀을 올리면 금액·거래처·시기를 맞춰 입금 여부를 자동 분류합니다. 장기 미입금 건만 따로 걸러볼 수 있습니다.' },
   { key: 'dashboard-sync-monitor', label: '대시보드 자동연동 모니터링', icon: '🔗', category: '시스템 연동', desc: '그린ERP 작업지시서를 슬리팅 대시보드(servehttp.com)에 자동 등록하는 dashboard-instant-sync(RPA 대체)가 정상 동작 중인지, 오늘 몇 건이 자동 등록됐는지 실시간으로 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'ceo-chatbot-groq-test', label: '대표님 통합조회 챗봇 (Groq 테스트)', icon: '🤖', category: '통합 챗봇 (테스트)', desc: '작업현황·미출고·미수금·대시보드 자동연동 상태를 자연어로 물어보면 Claude 대신 Groq(Qwen3.8-27B)가 실데이터 기반으로 답합니다. 비용·속도·답변품질을 비교해보는 프로토타입입니다.', external: '/ceo-chatbot-groq-test.html', badge: '실데이터 연동' },
 ];
 
 // FAX 작업요청서 접수(No.13-1)와 현장 코일확정(No.13-2)은 하나의 흐름(초안 → 배차대기 → 배정완료)을

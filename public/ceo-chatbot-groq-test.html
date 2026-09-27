@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>대표님 통합조회 챗봇 (Groq 테스트)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:#eef1f6; font-family:"Pretendard",system-ui,sans-serif; -webkit-text-size-adjust:100%; }
+  body { display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:820px; }
+
+  .real-note {
+    display:flex; gap:8px; align-items:flex-start; background:#e6f1fb; border:1px solid #b5d4f4;
+    border-radius:12px; padding:10px 14px; font-size:12.5px; color:#185fa5; line-height:1.5; margin-bottom:12px;
+  }
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:18px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:12px; }
+  .header-title { font-size:18px; font-weight:800; color:#0f1e33; margin:0 0 2px; }
+  .header-sub { font-size:12px; color:#7d8ba1; margin:0 0 14px; }
+
+  .ctrl-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:12px; }
+  .btn {
+    font-family:inherit; font-weight:700; font-size:13px; color:#0f1e33; background:#eef1f6;
+    border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 16px; cursor:pointer;
+  }
+  .btn.primary { background:#185fa5; color:#fff; border-color:#185fa5; }
+  .btn:disabled { opacity:0.5; cursor:not-allowed; }
+  .key-input {
+    flex:1; min-width:200px; font-family:inherit; font-size:13px; padding:9px 12px;
+    border:1.5px solid #e3e8f0; border-radius:10px; background:#eef1f6; color:#0f1e33;
+  }
+  .remember-label { display:flex; align-items:center; gap:5px; font-size:12px; color:#7d8ba1; white-space:nowrap; }
+
+  .kpi-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; margin-bottom:4px; }
+  .kpi-box { background:#f6f8fb; border:1px solid #e3e8f0; border-radius:12px; padding:10px 12px; }
+  .kpi-label { font-size:11.5px; color:#7d8ba1; margin-bottom:4px; }
+  .kpi-value { font-size:16px; font-weight:800; color:#0f1e33; }
+  .kpi-sub { font-size:11px; color:#9aa6b8; margin-top:2px; }
+  .data-ts { font-size:11.5px; color:#9aa6b8; margin-top:8px; text-align:right; }
+
+  .section-title { font-size:12.5px; font-weight:800; color:#0f1e33; margin:2px 0 12px; }
+  .usage-row { margin-bottom:14px; }
+  .usage-row:last-child { margin-bottom:0; }
+  .usage-label-row { display:flex; justify-content:space-between; font-size:12px; color:#7d8ba1; margin-bottom:5px; }
+  .usage-label-row b { color:#0f1e33; font-weight:800; }
+  .usage-track { height:8px; border-radius:4px; background:#eef1f6; overflow:hidden; }
+  .usage-fill { height:100%; background:#185fa5; }
+  .usage-fill.warn { background:#c46b06; }
+  .usage-note { font-size:11px; color:#9aa6b8; margin-top:8px; }
+
+  .chat-box { display:flex; flex-direction:column; gap:10px; min-height:120px; max-height:52vh; overflow-y:auto; padding:4px 2px 8px; }
+  .msg { max-width:88%; padding:10px 13px; border-radius:14px; font-size:14px; line-height:1.55; white-space:pre-wrap; }
+  .msg.user { align-self:flex-end; background:#185fa5; color:#fff; border-bottom-right-radius:4px; }
+  .msg.bot { align-self:flex-start; background:#f6f8fb; border:1px solid #e3e8f0; color:#0f1e33; border-bottom-left-radius:4px; }
+  .msg.err { align-self:flex-start; background:#fdeceb; border:1px solid #f3b9b3; color:#a3352b; }
+  .msg-meta { font-size:10.5px; color:#9aa6b8; margin-top:5px; }
+  .empty-hint { font-size:12.5px; color:#9aa6b8; text-align:center; padding:20px 0; }
+
+  .input-row { display:flex; gap:8px; margin-top:10px; }
+  .input-row input[type=text] {
+    flex:1; font-family:inherit; font-size:14px; padding:11px 14px; border:1.5px solid #e3e8f0;
+    border-radius:12px; background:#f6f8fb; color:#0f1e33;
+  }
+  .quick-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .quick-btn {
+    font-family:inherit; font-size:12px; color:#185fa5; background:#eaf2fb; border:1px solid #cfe1f5;
+    border-radius:999px; padding:6px 12px; cursor:pointer;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="real-note">🧪 개발/테스트 화면입니다. 저렴한 모델(Groq) 답변 품질·속도를 비교해보기 위한 프로토타입이며, 실제 서비스에 배포된 화면이 아닙니다. Groq API 키는 이 브라우저에만 저장되고 서버로 전송되지 않습니다.</div>
+
+  <div class="card">
+    <p class="header-title">대표님 통합조회 챗봇 (Groq 테스트)</p>
+    <p class="header-sub">작업현황·미출고·미수금·대시보드 자동연동 상태를 자연어로 물어보세요. Claude 대신 Groq(Qwen3.8-27B)로 답합니다.</p>
+
+    <div class="ctrl-row">
+      <input class="key-input" id="apiKey" type="password" placeholder="Groq API 키 (gsk_...)">
+      <label class="remember-label"><input type="checkbox" id="rememberKey"> 이 브라우저에 저장</label>
+      <button class="btn" id="reloadBtn">데이터 새로고침</button>
+    </div>
+
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="kpi-box"><div class="kpi-label">오늘 작업현황</div><div class="kpi-value">불러오는 중…</div></div>
+      <div class="kpi-box"><div class="kpi-label">미출고</div><div class="kpi-value">불러오는 중…</div></div>
+      <div class="kpi-box"><div class="kpi-label">미수금</div><div class="kpi-value">불러오는 중…</div></div>
+    </div>
+    <div class="data-ts" id="dataTs"></div>
+  </div>
+
+  <div class="card">
+    <div class="section-title">오늘 API 사용량 (Groq 무료 한도 기준)</div>
+    <div class="usage-row">
+      <div class="usage-label-row"><span>토큰</span><b id="usageTokensLabel">0 / 200,000</b></div>
+      <div class="usage-track"><div class="usage-fill" id="usageTokensFill" style="width:0%"></div></div>
+    </div>
+    <div class="usage-row">
+      <div class="usage-label-row"><span>호출 횟수</span><b id="usageRequestsLabel">0 / 1,000</b></div>
+      <div class="usage-track"><div class="usage-fill" id="usageRequestsFill" style="width:0%"></div></div>
+    </div>
+    <div class="usage-note">이 브라우저에서 이 화면으로 보낸 호출만 집계합니다(다른 기기·다른 Groq 앱 사용량은 포함 안 됨). KST 자정 기준으로 리셋됩니다. 모델: qwen/qwen3.8-27b 기준 한도.</div>
+  </div>
+
+  <div class="card">
+    <div class="chat-box" id="chatBox">
+      <div class="empty-hint" id="emptyHint">Groq API 키를 입력하고 질문을 보내보세요. 예: "오늘 작업 어때?", "미출고 제일 많은 거래처 어디야?", "대시보드 자동연동 잘 되고 있어?"</div>
+    </div>
+    <div class="input-row">
+      <input type="text" id="questionInput" placeholder="질문을 입력하세요…">
+      <button class="btn primary" id="sendBtn">보내기</button>
+    </div>
+    <div class="quick-row">
+      <button class="quick-btn" data-q="오늘 작업 현황 요약해줘">오늘 작업 현황 요약</button>
+      <button class="quick-btn" data-q="미출고 제일 많은 거래처가 어디야?">미출고 최다 거래처</button>
+      <button class="quick-btn" data-q="미수금 제일 많은 거래처는?">미수금 최다 거래처</button>
+      <button class="quick-btn" data-q="그린ERP 대시보드 자동연동 최근 상태 어때?">자동연동 상태</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORK_STATUS_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/work-status-public";
+const CEO_OVERVIEW_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/ceo-overview-public";
+// llama-3.3-70b-versatile는 2026-08-16부로 Groq 무료/개발자 티어에서 빠지고 엔터프라이즈 전용이 됐습니다.
+// 이 프로젝트에서 이미 검증된 qwen/qwen3.8-27b(PR-DTC-3100 인식에 상용 사용 중)로 통일합니다.
+const GROQ_MODEL = "qwen/qwen3.8-27b";
+const LS_KEY = "ceo_chatbot_groq_key";
+const USAGE_LS_KEY = "ceo_chatbot_groq_usage";
+// Groq 무료 한도 (qwen/qwen3.8-27b, ai-tension-monitor.html과 동일 기준).
+const DAILY_LIMITS = { tokens: 200000, requests: 1000 };
+
+const apiKeyInput = document.getElementById('apiKey');
+const rememberKeyCb = document.getElementById('rememberKey');
+const kpiGrid = document.getElementById('kpiGrid');
+const dataTsEl = document.getElementById('dataTs');
+const chatBox = document.getElementById('chatBox');
+const emptyHint = document.getElementById('emptyHint');
+const questionInput = document.getElementById('questionInput');
+const sendBtn = document.getElementById('sendBtn');
+const reloadBtn = document.getElementById('reloadBtn');
+
+let contextData = null;
+let contextGeneratedAt = null;
+
+(function restoreKey() {
+  try {
+    const saved = localStorage.getItem(LS_KEY);
+    if (saved) { apiKeyInput.value = saved; rememberKeyCb.checked = true; }
+  } catch (e) {}
+})();
+rememberKeyCb.addEventListener('change', () => {
+  try {
+    if (rememberKeyCb.checked) localStorage.setItem(LS_KEY, apiKeyInput.value || '');
+    else localStorage.removeItem(LS_KEY);
+  } catch (e) {}
+});
+apiKeyInput.addEventListener('input', () => {
+  try { if (rememberKeyCb.checked) localStorage.setItem(LS_KEY, apiKeyInput.value || ''); } catch (e) {}
+});
+
+// KST(자정) 기준 오늘 날짜 문자열 — new Date().toISOString()에 그냥 9시간을 더하는 식의 흔한
+// 오프셋 버그를 피하려고, 프로젝트 내 다른 화면(ai-tension-monitor.html)과 같은 계산 방식을 씁니다.
+function todayKstDateStr() {
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9 * 3600000);
+  return kst.toISOString().slice(0, 10);
+}
+
+function loadUsage() {
+  try {
+    const raw = localStorage.getItem(USAGE_LS_KEY);
+    if (!raw) return { date: todayKstDateStr(), tokens: 0, requests: 0 };
+    const parsed = JSON.parse(raw);
+    if (parsed.date !== todayKstDateStr()) return { date: todayKstDateStr(), tokens: 0, requests: 0 };
+    return parsed;
+  } catch (e) {
+    return { date: todayKstDateStr(), tokens: 0, requests: 0 };
+  }
+}
+
+function saveUsage(usage) {
+  try { localStorage.setItem(USAGE_LS_KEY, JSON.stringify(usage)); } catch (e) {}
+}
+
+function renderUsage(usage) {
+  const tokensPct = Math.min(100, (usage.tokens / DAILY_LIMITS.tokens) * 100);
+  const requestsPct = Math.min(100, (usage.requests / DAILY_LIMITS.requests) * 100);
+  document.getElementById('usageTokensLabel').textContent = `${usage.tokens.toLocaleString()} / ${DAILY_LIMITS.tokens.toLocaleString()}`;
+  document.getElementById('usageRequestsLabel').textContent = `${usage.requests.toLocaleString()} / ${DAILY_LIMITS.requests.toLocaleString()}`;
+  const tokensFill = document.getElementById('usageTokensFill');
+  const requestsFill = document.getElementById('usageRequestsFill');
+  tokensFill.style.width = `${tokensPct.toFixed(1)}%`;
+  tokensFill.className = `usage-fill${tokensPct > 80 ? ' warn' : ''}`;
+  requestsFill.style.width = `${requestsPct.toFixed(1)}%`;
+  requestsFill.className = `usage-fill${requestsPct > 80 ? ' warn' : ''}`;
+}
+
+function recordUsage(totalTokens) {
+  const usage = loadUsage();
+  usage.tokens += (totalTokens || 0);
+  usage.requests += 1;
+  saveUsage(usage);
+  renderUsage(usage);
+}
+
+function fmtAgo(iso) {
+  if (!iso) return '';
+  const mins = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+  if (mins < 1) return '방금 전';
+  if (mins < 60) return `${mins}분 전`;
+  return `${Math.round(mins / 60)}시간 전`;
+}
+
+async function loadContext() {
+  kpiGrid.innerHTML = `
+    <div class="kpi-box"><div class="kpi-label">오늘 작업현황</div><div class="kpi-value">불러오는 중…</div></div>
+    <div class="kpi-box"><div class="kpi-label">미출고</div><div class="kpi-value">불러오는 중…</div></div>
+    <div class="kpi-box"><div class="kpi-label">미수금</div><div class="kpi-value">불러오는 중…</div></div>`;
+  try {
+    const [workRes, overviewRes] = await Promise.all([
+      fetch(WORK_STATUS_URL).then(r => r.json()),
+      fetch(CEO_OVERVIEW_URL).then(r => r.json()),
+    ]);
+    if (!workRes.ok) throw new Error(workRes.error || 'work-status-public 오류');
+    if (!overviewRes.ok) throw new Error(overviewRes.error || 'ceo-overview-public 오류');
+
+    contextGeneratedAt = overviewRes.generatedAt;
+    contextData = {
+      기준_그린ERP_미러는_10분_지연: true,
+      오늘작업현황: {
+        날짜: workRes.date,
+        전체금액: workRes.summary.totalAmount,
+        완료금액: workRes.summary.doneAmount,
+        진행률: workRes.summary.donePct,
+        라인별: workRes.lines.map((l, i) => ({
+          라인: ['레벨링', '슬리팅2', '슬리팅1'][i],
+          상태: l.status,
+          완료건수: l.doneCount,
+          완료금액: l.doneAmount,
+        })),
+      },
+      미출고: {
+        총건수: overviewRes.unshipped.totalCount,
+        총중량: overviewRes.unshipped.totalWeightTon,
+        거래처별_상위8: overviewRes.unshipped.byCompanyTop,
+      },
+      미수금: {
+        총액: overviewRes.receivables.totalAmount,
+        거래처수: overviewRes.receivables.companyCount,
+        거래처별_상위8: overviewRes.receivables.top,
+      },
+      대시보드_자동연동: {
+        최근실행: overviewRes.dashboardSync.latest,
+        최근5회: overviewRes.dashboardSync.recentRuns,
+      },
+    };
+
+    kpiGrid.innerHTML = `
+      <div class="kpi-box"><div class="kpi-label">오늘 작업현황</div><div class="kpi-value">${workRes.summary.donePct}</div><div class="kpi-sub">${workRes.summary.doneAmount} / ${workRes.summary.totalAmount}</div></div>
+      <div class="kpi-box"><div class="kpi-label">미출고</div><div class="kpi-value">${overviewRes.unshipped.totalCount}건</div><div class="kpi-sub">${overviewRes.unshipped.totalWeightTon}</div></div>
+      <div class="kpi-box"><div class="kpi-label">미수금</div><div class="kpi-value">${overviewRes.receivables.totalAmount}</div><div class="kpi-sub">${overviewRes.receivables.companyCount}개 거래처</div></div>`;
+    dataTsEl.textContent = `데이터 기준: ${fmtAgo(contextGeneratedAt)} (그린ERP 미러 10분 지연 포함)`;
+  } catch (e) {
+    kpiGrid.innerHTML = `<div class="kpi-box" style="grid-column:1/-1"><div class="kpi-label">데이터 로드 실패</div><div class="kpi-value" style="font-size:13px;color:#a3352b">${String(e.message || e)}</div></div>`;
+  }
+}
+
+function buildSystemPrompt() {
+  return `당신은 오성철강 대표님을 위한 전사 현황 통합조회 챗봇입니다(개발 테스트 버전, Groq 모델 사용).
+아래 JSON은 방금 조회한 전사 현황 데이터입니다. 이 JSON 안에 있는 내용만 근거로 답변하세요.
+
+${JSON.stringify(contextData)}
+
+규칙:
+- 이 JSON에 이미 계산된 집계값(건수, 금액, 진행률 등)이 있으면 그대로 사용하고 직접 계산하지 마세요.
+- 그린ERP 미러 데이터는 10분 주기 동기화입니다. 방금 접수된 주문처럼 실시간성이 중요한 질문에는 "그린ERP 미러 기준이라 최대 10분 전 상황일 수 있다"고 함께 알려주세요.
+- 이 JSON 범위를 벗어난 질문(직원 인사정보, 특정 개인정보, 오성철강 외부의 일반 상식, 다른 회사 재무 추정 등)에는 "죄송하지만 이 챗봇은 작업현황·미출고·미수금·대시보드 자동연동 관련 질문만 답변드릴 수 있어요"라고 정중히 답하고 다른 내용은 지어내지 마세요.
+- 데이터에 없는 숫자나 사실을 절대 추측해서 만들어내지 마세요. 모르면 "모른다"고 답하세요.
+- 친절하고 간결한 한국어로, 보통 2~4문장 이내로 답하세요.
+- 마크다운 문법(별표로 굵게, # 제목, 목록 기호 등)은 쓰지 마세요. 채팅창에 그대로 표시되는 일반 텍스트입니다.
+- 인사말이나 잡담에는 짧게 자연스럽게 응하되, 곧장 무엇을 도와줄 수 있는지 안내하세요.`;
+}
+
+function addMessage(role, text, meta) {
+  emptyHint.style.display = 'none';
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.textContent = text;
+  if (meta) {
+    const metaEl = document.createElement('div');
+    metaEl.className = 'msg-meta';
+    metaEl.textContent = meta;
+    div.appendChild(metaEl);
+  }
+  chatBox.appendChild(div);
+  chatBox.scrollTop = chatBox.scrollHeight;
+  return div;
+}
+
+async function callGroq(question, apiKey) {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      max_tokens: 500,
+      temperature: 0.2,
+      messages: [
+        { role: 'system', content: buildSystemPrompt() },
+        { role: 'user', content: question },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Groq API 오류 (${res.status}): ${errText.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content?.trim();
+  if (!text) throw new Error('Groq 응답에 텍스트가 없습니다.');
+  const totalTokens = data?.usage?.total_tokens || 0;
+  return { text, totalTokens };
+}
+
+async function handleSend() {
+  const question = questionInput.value.trim();
+  const apiKey = apiKeyInput.value.trim();
+  if (!question) return;
+  if (!apiKey) { alert('Groq API 키를 입력하세요.'); return; }
+  if (!contextData) { alert('데이터를 아직 불러오지 못했습니다. 잠시 후 다시 시도하세요.'); return; }
+
+  addMessage('user', question);
+  questionInput.value = '';
+  sendBtn.disabled = true;
+
+  const t0 = performance.now();
+  try {
+    const { text: answer, totalTokens } = await callGroq(question, apiKey);
+    const elapsed = Math.round(performance.now() - t0);
+    addMessage('bot', answer, `Groq · ${GROQ_MODEL} · ${elapsed}ms · ${totalTokens.toLocaleString()} 토큰`);
+    recordUsage(totalTokens);
+  } catch (e) {
+    addMessage('err', String(e.message || e));
+  } finally {
+    sendBtn.disabled = false;
+    questionInput.focus();
+  }
+}
+
+sendBtn.addEventListener('click', handleSend);
+questionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleSend(); });
+reloadBtn.addEventListener('click', loadContext);
+document.querySelectorAll('.quick-btn').forEach((btn) => {
+  btn.addEventListener('click', () => { questionInput.value = btn.dataset.q; handleSend(); });
+});
+
+loadContext();
+renderUsage(loadUsage());
+</script>
+</body>
+</html>
