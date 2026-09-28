@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>오성철강 7-8월 실적 인포그래픽</title>
+<style>
+  :root{
+    --navy:#0F2647; --navy2:#16345F; --amber:#B45309; --amber-bg:#FEF3E2;
+    --red:#B91C1C; --red-bg:#FDEBEB; --green:#15803D; --green-bg:#E8F5EC;
+    --gray:#6B7280; --line:#E5E7EB; --bg:#F6F7F9;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Malgun Gothic','맑은 고딕',sans-serif;
+    background:var(--bg);
+    display:flex; justify-content:center;
+    padding:32px 0;
+  }
+  .sheet{
+    width:1160px; background:#fff; border-radius:4px;
+    overflow:hidden;
+  }
+  .header{
+    background:var(--navy); color:#fff; padding:36px 48px 30px;
+  }
+  .header .eyebrow{ font-size:15px; letter-spacing:2px; color:#9FB3CC; font-weight:600; }
+  .header h1{ font-size:34px; margin-top:8px; font-weight:800; }
+  .header .sub{ margin-top:10px; font-size:15px; color:#C7D3E3; }
+
+  .section{ padding:32px 48px; }
+  .section + .section{ border-top:1px solid var(--line); }
+  .section-title{ font-size:20px; font-weight:800; color:var(--navy); margin-bottom:18px; display:flex; align-items:center; gap:10px;}
+  .section-title .tag{ background:var(--amber); color:#fff; font-size:12px; padding:3px 9px; border-radius:20px; font-weight:700;}
+
+  /* KPI row */
+  .kpi-row{ display:flex; gap:20px; }
+  .kpi-card{ flex:1; border:1px solid var(--line); border-radius:8px; padding:20px 22px; }
+  .kpi-label{ font-size:14px; color:var(--gray); font-weight:700; margin-bottom:12px;}
+  .kpi-values{ display:flex; align-items:baseline; gap:10px; }
+  .kpi-month{ font-size:12px; color:var(--gray); }
+  .kpi-num{ font-size:22px; font-weight:800; color:var(--navy); }
+  .kpi-arrow-row{ display:flex; align-items:center; gap:8px; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);}
+  .kpi-delta{ font-size:15px; font-weight:800; padding:3px 10px; border-radius:5px; }
+  .delta-down-good{ background:var(--green-bg); color:var(--green); }
+  .delta-up-bad{ background:var(--red-bg); color:var(--red); }
+  .delta-neutral{ background:#F0F0F0; color:var(--gray); }
+  .delta-caption{ font-size:12.5px; color:var(--gray); }
+
+  .profit-card{ background:var(--navy); color:#fff; border:none; }
+  .profit-card .kpi-label{ color:#9FB3CC; }
+  .profit-card .kpi-num{ color:#fff; }
+  .profit-card .kpi-month{ color:#B9C6DA; }
+  .profit-card .kpi-arrow-row{ border-top:1px dashed #33507A; }
+
+  /* callout */
+  .callout{
+    margin-top:22px; background:var(--amber-bg); border:1px solid #F4D9A8; border-radius:8px;
+    padding:20px 24px;
+  }
+  .callout-title{ font-size:15px; font-weight:800; color:var(--amber); margin-bottom:8px;}
+  .callout p{ font-size:14px; line-height:1.75; color:#3a2c14; }
+  .callout b{ color:var(--amber); }
+
+  /* bar chart: cost category compare */
+  .chart-wrap{ display:flex; gap:6px; align-items:flex-end; height:220px; padding:0 4px; }
+  .bar-group{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; }
+  .bars{ display:flex; gap:16px; align-items:flex-end; height:180px; }
+  .bar{ width:20px; border-radius:3px 3px 0 0; position:relative; }
+  .bar.jul{ background:#9FB3CC; }
+  .bar.aug{ background:var(--navy); }
+  .bar-val{ position:absolute; top:-18px; left:50%; transform:translateX(-50%); font-size:9.5px; font-weight:700; color:var(--navy); white-space:nowrap; }
+  .bar-label{ margin-top:10px; font-size:12px; color:#333; text-align:center; font-weight:600; line-height:1.3; max-width:90px; }
+  .legend{ display:flex; gap:20px; justify-content:center; margin-top:8px; font-size:12.5px; color:var(--gray); }
+  .legend span{ display:inline-flex; align-items:center; gap:6px; }
+  .legend i{ width:12px; height:12px; border-radius:2px; display:inline-block; }
+
+  /* cash flow trend */
+  .cash-wrap{ display:flex; gap:40px; align-items:center; }
+  .cash-chart{ flex:1.1; display:flex; gap:24px; align-items:flex-end; height:170px; padding-top:30px;}
+  .cash-bar-group{ flex:1; display:flex; flex-direction:column; align-items:center; height:100%; justify-content:flex-end;}
+  .cash-bar{ width:52px; border-radius:4px 4px 0 0; position:relative; background:var(--red); }
+  .cash-bar .val{ position:absolute; top:-24px; left:50%; transform:translateX(-50%); font-size:13px; font-weight:800; color:var(--red); white-space:nowrap;}
+  .cash-bar-label{ margin-top:10px; font-size:13px; font-weight:700; color:var(--navy); }
+  .cash-text{ flex:1; }
+  .cash-text h3{ font-size:16px; color:var(--red); margin-bottom:10px; }
+  .cash-text p{ font-size:14px; line-height:1.8; color:#333; margin-bottom:10px;}
+  .pill-row{ display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;}
+  .pill{ background:var(--green-bg); color:var(--green); font-size:12.5px; font-weight:700; padding:6px 12px; border-radius:20px;}
+  .pill.neg{ background:var(--red-bg); color:var(--red); }
+
+  /* conclusion */
+  .conclusion-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+  .conc-card{ border-left:4px solid var(--amber); background:#FAFAFA; padding:16px 18px; border-radius:0 6px 6px 0; }
+  .conc-card b{ color:var(--navy); display:block; margin-bottom:4px; font-size:14.5px;}
+  .conc-card span{ font-size:13.5px; color:#444; line-height:1.6; }
+  .conc-card.warn{ border-left-color:var(--red); }
+  .conc-card.warn b{ color:var(--red); }
+
+  .footer{ padding:18px 48px; font-size:12px; color:var(--gray); background:var(--bg); }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <div class="header">
+    <div class="eyebrow">오성철강 경영보고</div>
+    <h1>7월 vs 8월 실적 한눈에 보기</h1>
+    <div class="sub">작성일 2026-09-01 · 매출: 그린ERP 작업실적(발생주의) · 비용: 하나·우리은행 실제출금(현금주의)</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">실적 요약 <span class="tag">7월 → 8월</span></div>
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-label">매출</div>
+        <div class="kpi-values">
+          <div><div class="kpi-month">7월</div><div class="kpi-num">57,686,650원</div></div>
+          <div style="color:var(--gray)">→</div>
+          <div><div class="kpi-month">8월</div><div class="kpi-num">55,070,630원</div></div>
+        </div>
+        <div class="kpi-arrow-row">
+          <span class="kpi-delta delta-up-bad">-2,616,020원</span>
+          <span class="delta-caption">-4.5%, 소폭 감소</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">영업비용</div>
+        <div class="kpi-values">
+          <div><div class="kpi-month">7월</div><div class="kpi-num">94,554,314원</div></div>
+          <div style="color:var(--gray)">→</div>
+          <div><div class="kpi-month">8월</div><div class="kpi-num">73,371,083원</div></div>
+        </div>
+        <div class="kpi-arrow-row">
+          <span class="kpi-delta delta-down-good">-21,183,231원</span>
+          <span class="delta-caption">-22.4%, 대부분 부가세 등 일회성</span>
+        </div>
+      </div>
+      <div class="kpi-card profit-card">
+        <div class="kpi-label">영업손익 (매출-비용)</div>
+        <div class="kpi-values">
+          <div><div class="kpi-month">7월</div><div class="kpi-num">(36,867,664)원</div></div>
+          <div style="color:#9FB3CC">→</div>
+          <div><div class="kpi-month">8월</div><div class="kpi-num">(18,300,453)원</div></div>
+        </div>
+        <div class="kpi-arrow-row">
+          <span class="kpi-delta delta-down-good">+18,567,211원 개선</span>
+          <span class="delta-caption" style="color:#B9C6DA">적자 폭 절반 수준으로 축소</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">왜 적자 폭이 줄었나?</div>
+      <p>8월 비용 감소분(21,183,231원)의 대부분은 <b>7월에만 있었던 부가가치세 분기납부(29,284,630원)와 하계휴가비(3,053,400원)</b>가 8월엔 없었기 때문입니다. 이 두 항목을 빼면 실제 경상비용은 7월 65,269,684원 → 8월 73,371,083원으로 <b>오히려 소폭 늘었습니다.</b></p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">비용 항목 TOP 8 비교</div>
+    <div class="chart-wrap">
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:176px"><span class="bar-val">3628만</span></div>
+          <div class="bar aug" style="height:180px"><span class="bar-val">3708만</span></div>
+        </div>
+        <div class="bar-label">인건비-급여</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:142px"><span class="bar-val">2928만</span></div>
+          <div class="bar aug" style="height:2px"><span class="bar-val"></span></div>
+        </div>
+        <div class="bar-label">세금과공과<br>부가가치세</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:33px"><span class="bar-val">690만</span></div>
+          <div class="bar aug" style="height:35px"><span class="bar-val">717만</span></div>
+        </div>
+        <div class="bar-label">이자비용</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:25px"><span class="bar-val">514만</span></div>
+          <div class="bar aug" style="height:28px"><span class="bar-val">567만</span></div>
+        </div>
+        <div class="bar-label">수도광열비<br>전기</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:30px"><span class="bar-val">610만</span></div>
+          <div class="bar aug" style="height:22px"><span class="bar-val">461만</span></div>
+        </div>
+        <div class="bar-label">인건비<br>4대보험</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:10px"><span class="bar-val">203만</span></div>
+          <div class="bar aug" style="height:21px"><span class="bar-val">427만</span></div>
+        </div>
+        <div class="bar-label">카드대금</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:2px"><span class="bar-val"></span></div>
+          <div class="bar aug" style="height:16px"><span class="bar-val">320만</span></div>
+        </div>
+        <div class="bar-label">복리후생비<br>식대</div>
+      </div>
+      <div class="bar-group">
+        <div class="bars">
+          <div class="bar jul" style="height:2px"><span class="bar-val"></span></div>
+          <div class="bar aug" style="height:14px"><span class="bar-val">287만</span></div>
+        </div>
+        <div class="bar-label">외주가공비<br>자재비</div>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i style="background:#9FB3CC"></i>7월</span>
+      <span><i style="background:var(--navy)"></i>8월</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">통장에 돈이 있는데, 왜 적자라고 하나요?</div>
+    <div class="cash-wrap">
+      <div class="cash-chart">
+        <div class="cash-bar-group">
+          <div class="cash-bar" style="height:45px"><span class="val">-532만원</span></div>
+          <div class="cash-bar-label">6월</div>
+        </div>
+        <div class="cash-bar-group">
+          <div class="cash-bar" style="height:55px"><span class="val">-652만원</span></div>
+          <div class="cash-bar-label">7월</div>
+        </div>
+        <div class="cash-bar-group">
+          <div class="cash-bar" style="height:140px"><span class="val">-1669만원</span></div>
+          <div class="cash-bar-label">8월</div>
+        </div>
+      </div>
+      <div class="cash-text">
+        <h3>최근 3개월, 현금이 계속 줄고 있습니다</h3>
+        <p>1년 합산 현금은 <b>+68,650,474원 증가</b>했지만, 이는 <b>2월 세무환급(+26.2M)</b>과 <b>5월 투자자산 매도(+42.8M)</b> 두 달의 일회성 유입 덕분입니다. 이 두 달을 빼면 나머지 10개월 합계는 사실상 0원(-262,343원) 수준입니다.</p>
+        <p>반면 <b style="color:var(--red)">최근 3개월(6~8월)은 매달 현금이 줄고 있고, 그 폭도 커지는 추세</b>입니다 (3개월 합계 -28,530,464원). "통장에 아직 돈이 있다"는 것은 초·중반의 일회성 유입 덕분이며, 최근 흐름만 보면 여유자금이 계속 소진되고 있다는 뜻입니다.</p>
+        <div class="pill-row">
+          <span class="pill neg">6월 -5.3백만원</span>
+          <span class="pill neg">7월 -6.5백만원</span>
+          <span class="pill neg">8월 -16.7백만원</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">핵심 확인 사항</div>
+    <div class="conclusion-grid">
+      <div class="conc-card warn">
+        <b>최근 3개월 현금 유출 추세</b>
+        <span>6~8월 매달 현금이 줄고 폭도 커지는 중. 다음 달 이후에도 계속 모니터링 필요.</span>
+      </div>
+      <div class="conc-card">
+        <b>국민건강보험료 변동</b>
+        <span>7월 3,261,100원 → 8월 1,768,740원, 1,492,360원 감소. 보수총액 정산 등 확인 필요.</span>
+      </div>
+      <div class="conc-card">
+        <b>카드대금 3.8배 증가</b>
+        <span>우리은행 현대카드 1,003,383원(7월) → 3,812,134원(8월). 사용 내역 확인 권장.</span>
+      </div>
+      <div class="conc-card">
+        <b>매달 반복되는 미확인 항목</b>
+        <span>매달 578,000원씩 동일 금액 반복(5건). 정기 구독/회비로 추정, 용도 확인 후 재분류 필요.</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Source: 그린ERP(greenp_production) 8월 작업실적, 하나은행·우리은행 거래내역 · 상세 내역은 「오성철강_2026년_7-8월_비용상세비교_보고서.docx」 참고
+  </div>
+</div>
+
+</body>
+</html>

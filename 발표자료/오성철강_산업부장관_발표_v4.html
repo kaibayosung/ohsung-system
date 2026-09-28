@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>오성철강 AX 전환 발표 v4</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+  :root{
+    --ink:#101828; --ink2:#344054; --gray:#667085; --gray2:#98A2B3;
+    --line:#E4E7EC; --tint:#F9FAFB;
+    --pp:#4F46E5; --ppL:#EEF0FF;
+    --rd:#D92D20; --rdL:#FEF3F2;
+    --gr:#067647; --grL:#ECFDF3;
+    --am:#B54708; --amL:#FFFAEB;
+    --bl:#026AA2; --blL:#F0F9FF;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:#D0D5DD;font-family:Pretendard,-apple-system,sans-serif;color:var(--ink);
+       font-weight:700;-webkit-font-smoothing:antialiased}
+  .slide{width:1280px;height:720px;background:#fff;margin:24px auto;position:relative;
+         padding:56px 64px;overflow:hidden;box-shadow:0 4px 24px rgba(16,24,40,.14)}
+  .num{position:absolute;right:28px;bottom:20px;font-size:17px;color:var(--gray2);font-weight:800}
+  .tag{display:inline-block;font-size:21px;font-weight:900;letter-spacing:.04em;
+       color:var(--pp);background:var(--ppL);padding:8px 18px;border-radius:8px;margin-bottom:22px}
+  .tag.r{color:var(--rd);background:var(--rdL)} .tag.g{color:var(--gr);background:var(--grL)}
+  .tag.a{color:var(--am);background:var(--amL)} .tag.b{color:var(--bl);background:var(--blL)}
+  h1{font-size:64px;line-height:1.16;letter-spacing:-.03em;font-weight:900}
+  h2{font-size:50px;line-height:1.2;letter-spacing:-.03em;font-weight:900;margin-bottom:26px}
+  h3{font-size:34px;line-height:1.28;letter-spacing:-.02em;font-weight:900}
+  .lead{font-size:31px;line-height:1.5;color:var(--ink2);letter-spacing:-.02em}
+  .body{font-size:26px;line-height:1.55;color:var(--ink2);letter-spacing:-.01em}
+  .sm{font-size:22px;line-height:1.5;color:var(--gray)}
+  .xs{font-size:18px;line-height:1.45;color:var(--gray2)}
+  b,strong{font-weight:900;color:var(--ink)}
+  .pp{color:var(--pp)} .rd{color:var(--rd)} .gr{color:var(--gr)} .am{color:var(--am)} .bl{color:var(--bl)}
+  .hl{background:linear-gradient(transparent 58%,#FEF08A 58%)}
+  .row{display:flex;gap:22px} .col{flex:1}
+  .card{border:2px solid var(--line);border-radius:16px;padding:26px;background:#fff}
+  .card.t{background:var(--tint)} .card.p{background:var(--ppL);border-color:#C7CDFF}
+  .card.r{background:var(--rdL);border-color:#FDA29B} .card.g{background:var(--grL);border-color:#A6F4C5}
+  .card.a{background:var(--amL);border-color:#FEC84B}
+  .big{font-size:104px;line-height:1;font-weight:900;letter-spacing:-.05em}
+  .mid{font-size:64px;line-height:1;font-weight:900;letter-spacing:-.04em}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:15px 16px;text-align:left;border-bottom:2px solid var(--line);font-size:23px}
+  th{font-size:20px;color:var(--gray);font-weight:900;background:var(--tint);
+     text-transform:none;letter-spacing:.02em}
+  .quote{font-size:42px;line-height:1.35;font-weight:900;letter-spacing:-.03em;
+         border-left:10px solid var(--pp);padding-left:28px}
+  .center{display:flex;flex-direction:column;justify-content:center;height:100%;text-align:center;align-items:center}
+  ul{list-style:none} li{position:relative;padding-left:34px;margin-bottom:14px;font-size:26px;
+     line-height:1.45;color:var(--ink2)}
+  li:before{content:'';position:absolute;left:6px;top:11px;width:12px;height:12px;
+            border-radius:3px;background:var(--pp)}
+  li.r:before{background:var(--rd)} li.g:before{background:var(--gr)} li.a:before{background:var(--am)}
+  .pill{display:inline-block;font-size:18px;font-weight:900;padding:6px 13px;border-radius:999px;
+        background:var(--tint);color:var(--gray);border:2px solid var(--line)}
+  .pill.g{background:var(--grL);color:var(--gr);border-color:#A6F4C5}
+  .pill.a{background:var(--amL);color:var(--am);border-color:#FEC84B}
+  .pill.p{background:var(--ppL);color:var(--pp);border-color:#C7CDFF}
+  .pill.r{background:var(--rdL);color:var(--rd);border-color:#FDA29B}
+  /* phone mockup */
+  .phone{width:268px;border:11px solid #1D2939;border-radius:34px;overflow:hidden;background:#fff;
+         box-shadow:0 8px 26px rgba(16,24,40,.2);flex-shrink:0}
+  .ph-bar{background:#1D2939;color:#fff;font-size:14px;padding:7px 14px;display:flex;
+          justify-content:space-between;font-weight:800}
+  .ph-body{padding:12px}
+  .ph-h{font-size:16px;font-weight:900;margin-bottom:9px}
+  .ph-kv{display:flex;justify-content:space-between;font-size:14px;padding:6px 0;
+         border-bottom:1px solid var(--line);color:var(--ink2)}
+  .ph-big{font-size:40px;font-weight:900;line-height:1;letter-spacing:-.03em}
+  .ph-box{border:2px solid var(--line);border-radius:9px;padding:9px;margin-bottom:8px}
+  .ph-btn{background:var(--pp);color:#fff;text-align:center;font-size:14px;font-weight:900;
+          padding:9px;border-radius:9px;margin-top:8px}
+  .bar-bg{height:11px;background:var(--line);border-radius:99px;overflow:hidden}
+  .bar-fl{height:100%;background:var(--pp);border-radius:99px}
+  @media print{
+    body{background:#fff}
+    .slide{margin:0;box-shadow:none;page-break-after:always;break-after:page}
+    @page{size:1280px 720px;margin:0}
+  }
+</style>
+</head>
+<body>
+
+<!-- 1 표지 -->
+<div class="slide">
+  <div style="height:100%;display:flex;flex-direction:column;justify-content:center">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:30px">
+      <span class="pill p">1983 잠실 주경기장</span>
+      <span class="pill">43년</span>
+      <span class="pill">직원 12명</span>
+      <span class="pill g">자체개발 41개</span>
+    </div>
+    <h1 style="font-size:78px">낮에만 도는 공장에서,<br><span class="pp">24시간 쉬지 않는 회사</span>로</h1>
+    <div class="lead" style="margin-top:32px;font-size:34px">
+      두 번 실패하고 남은 것은 <b>데이터</b>였습니다
+    </div>
+    <div style="margin-top:60px;padding-top:30px;border-top:3px solid var(--line);
+                display:flex;justify-content:space-between;align-items:flex-end">
+      <div>
+        <div style="font-size:30px;font-weight:900">오성철강 AX 전환 종합 보고</div>
+        <div class="sm" style="margin-top:8px">산업통상자원부 장관 보고</div>
+      </div>
+      <div class="sm">2026. 9.</div>
+    </div>
+  </div>
+  <div class="num">1</div>
+</div>
+
+<!-- 2 한 장 요약 -->
+<div class="slide">
+  <div class="tag">이 보고의 전체 구조</div>
+  <h2>두 번의 실패가 <span class="rd">자산</span>을 남기고,<br>AI가 그것에 <span class="pp">물어볼 방법</span>을 가져왔습니다</h2>
+  <svg viewBox="0 0 1150 400" style="width:100%;height:400px">
+    <!-- 1차 -->
+    <rect x="0" y="30" width="250" height="120" rx="14" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="20" y="66" font-size="21" font-weight="900" fill="#D92D20">1차 실패 · 장비</text>
+    <text x="20" y="98" font-size="19" font-weight="700" fill="#344054">생산성은 올랐지만</text>
+    <text x="20" y="124" font-size="19" font-weight="900" fill="#101828">값은 그대로</text>
+    <!-- 2차 -->
+    <rect x="0" y="175" width="250" height="120" rx="14" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="20" y="211" font-size="21" font-weight="900" fill="#D92D20">2차 실패 · AI 품질측정</text>
+    <text x="20" y="243" font-size="19" font-weight="700" fill="#344054">대상은 받았지만</text>
+    <text x="20" y="269" font-size="19" font-weight="900" fill="#101828">매출은 그대로</text>
+    <!-- arrows -->
+    <path d="M258 90 L318 150" stroke="#98A2B3" stroke-width="3" fill="none" marker-end="url(#ar)"/>
+    <path d="M258 235 L318 180" stroke="#98A2B3" stroke-width="3" fill="none" marker-end="url(#ar)"/>
+    <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#98A2B3"/></marker></defs>
+    <!-- 남은 것 -->
+    <rect x="325" y="95" width="230" height="140" rx="14" fill="#FFFAEB" stroke="#FEC84B" stroke-width="3"/>
+    <text x="345" y="130" font-size="21" font-weight="900" fill="#B54708">남은 것</text>
+    <text x="345" y="162" font-size="18" font-weight="800" fill="#101828">· 생산성 높은 장비</text>
+    <text x="345" y="188" font-size="18" font-weight="800" fill="#101828">· 정밀 품질 측정 자료</text>
+    <text x="345" y="214" font-size="18" font-weight="800" fill="#101828">· 공정 데이터 187만 건</text>
+    <text x="345" y="258" font-size="17" font-weight="800" fill="#98A2B3">AI 이전엔 쓸 수 없었다</text>
+    <path d="M563 165 L623 165" stroke="#4F46E5" stroke-width="4" fill="none" marker-end="url(#ar2)"/>
+    <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#4F46E5"/></marker></defs>
+    <!-- 두 질문 -->
+    <rect x="630" y="20" width="270" height="130" rx="14" fill="#EEF0FF" stroke="#C7CDFF" stroke-width="3"/>
+    <text x="652" y="56" font-size="20" font-weight="900" fill="#4F46E5">질문 ①</text>
+    <text x="652" y="90" font-size="24" font-weight="900" fill="#101828">우리는</text>
+    <text x="652" y="122" font-size="24" font-weight="900" fill="#101828">무엇을 모르는가</text>
+    <rect x="630" y="180" width="270" height="130" rx="14" fill="#EEF0FF" stroke="#C7CDFF" stroke-width="3"/>
+    <text x="652" y="216" font-size="20" font-weight="900" fill="#4F46E5">질문 ②</text>
+    <text x="652" y="250" font-size="24" font-weight="900" fill="#101828">고객들은</text>
+    <text x="652" y="282" font-size="24" font-weight="900" fill="#101828">무엇을 원하는가</text>
+    <path d="M908 85 L958 85" stroke="#067647" stroke-width="4" marker-end="url(#ar3)"/>
+    <path d="M908 245 L958 245" stroke="#067647" stroke-width="4" marker-end="url(#ar3)"/>
+    <defs><marker id="ar3" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#067647"/></marker></defs>
+    <!-- 결과 -->
+    <rect x="965" y="25" width="185" height="120" rx="14" fill="#ECFDF3" stroke="#A6F4C5" stroke-width="3"/>
+    <text x="985" y="66" font-size="22" font-weight="900" fill="#067647">완벽한 품질</text>
+    <text x="985" y="100" font-size="22" font-weight="900" fill="#067647">기술 내재화</text>
+    <text x="985" y="128" font-size="16" font-weight="800" fill="#98A2B3">진도 70%</text>
+    <rect x="965" y="185" width="185" height="120" rx="14" fill="#ECFDF3" stroke="#A6F4C5" stroke-width="3"/>
+    <text x="985" y="226" font-size="22" font-weight="900" fill="#067647">24시간</text>
+    <text x="985" y="258" font-size="22" font-weight="900" fill="#067647">서비스 회사</text>
+    <text x="985" y="288" font-size="16" font-weight="800" fill="#98A2B3">진도 20% · 여기가 남았습니다</text>
+  </svg>
+  <div class="card p" style="margin-top:6px;padding:20px 26px">
+    <div style="font-size:29px;font-weight:900">좋은 장비는 낮에만 돕니다. <span class="pp">서비스는 24시간 돕니다.</span></div>
+  </div>
+  <div class="num">2</div>
+</div>
+
+<!-- 3 우리가 하는 일 -->
+<div class="slide">
+  <div class="tag b">1부 · 우리는 어떤 회사인가</div>
+  <h2>전기차도, 건물도 <span class="pp">이 공정</span>을 지나갑니다</h2>
+  <svg viewBox="0 0 1150 300" style="width:100%;height:290px">
+    <rect x="0" y="70" width="230" height="150" rx="14" fill="#F9FAFB" stroke="#E4E7EC" stroke-width="3"/>
+    <text x="115" y="112" font-size="22" font-weight="900" fill="#667085" text-anchor="middle">제철소</text>
+    <ellipse cx="115" cy="160" rx="52" ry="30" fill="#D0D5DD"/>
+    <ellipse cx="115" cy="160" rx="18" ry="11" fill="#98A2B3"/>
+    <text x="115" y="207" font-size="18" font-weight="800" fill="#344054" text-anchor="middle">넓고 거친 두루마리</text>
+    <path d="M240 145 L300 145" stroke="#98A2B3" stroke-width="4" marker-end="url(#a4)"/>
+    <defs><marker id="a4" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#98A2B3"/></marker></defs>
+    <rect x="308" y="40" width="330" height="210" rx="14" fill="#EEF0FF" stroke="#4F46E5" stroke-width="4"/>
+    <text x="473" y="80" font-size="26" font-weight="900" fill="#4F46E5" text-anchor="middle">오성철강</text>
+    <rect x="332" y="103" width="128" height="58" rx="9" fill="#fff" stroke="#C7CDFF" stroke-width="2"/>
+    <text x="396" y="130" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">슬리터</text>
+    <text x="396" y="151" font-size="15" font-weight="700" fill="#667085" text-anchor="middle">폭으로 자름</text>
+    <rect x="484" y="103" width="128" height="58" rx="9" fill="#fff" stroke="#C7CDFF" stroke-width="2"/>
+    <text x="548" y="130" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">레벨러</text>
+    <text x="548" y="151" font-size="15" font-weight="700" fill="#667085" text-anchor="middle">휜 것을 펴줌</text>
+    <rect x="332" y="177" width="280" height="50" rx="9" fill="#fff" stroke="#C7CDFF" stroke-width="2"/>
+    <text x="472" y="208" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">AI 표면 검사 · 두께 측정 (전수)</text>
+    <path d="M646 145 L706 145" stroke="#98A2B3" stroke-width="4" marker-end="url(#a4)"/>
+    <rect x="714" y="70" width="200" height="150" rx="14" fill="#ECFDF3" stroke="#A6F4C5" stroke-width="3"/>
+    <text x="814" y="112" font-size="21" font-weight="900" fill="#067647" text-anchor="middle">자동차 공장</text>
+    <text x="814" y="145" font-size="17" font-weight="800" fill="#344054" text-anchor="middle">문짝 · 골조</text>
+    <text x="814" y="176" font-size="17" font-weight="800" fill="#344054" text-anchor="middle">전기차 부품</text>
+    <text x="814" y="205" font-size="15" font-weight="700" fill="#98A2B3" text-anchor="middle">바로 쓸 수 있는 상태로</text>
+    <rect x="930" y="70" width="220" height="150" rx="14" fill="#F9FAFB" stroke="#E4E7EC" stroke-width="3"/>
+    <text x="1040" y="108" font-size="19" font-weight="900" fill="#D92D20" text-anchor="middle">그런데</text>
+    <text x="1040" y="142" font-size="19" font-weight="800" fill="#344054" text-anchor="middle">이 공정을 하는</text>
+    <text x="1040" y="170" font-size="19" font-weight="800" fill="#344054" text-anchor="middle">공장들이</text>
+    <text x="1040" y="200" font-size="20" font-weight="900" fill="#D92D20" text-anchor="middle">문을 닫고 있습니다</text>
+  </svg>
+  <div class="card t" style="margin-top:14px">
+    <div class="lead">완성차가 세계에서 경쟁하려면 <b>좋은 소재가 적정한 가격에</b> 들어가야 합니다.<br>
+    <b>소재가 흔들리면 그 위의 산업 전체가 흔들립니다.</b></div>
+  </div>
+  <div class="num">3</div>
+</div>
+
+<!-- 4 1983 -->
+<div class="slide">
+  <div class="tag b">1부 · 우리는 어떤 회사인가</div>
+  <h2>1983년, 저희는 <span class="pp">잠실 주경기장 지붕</span>을 만들었습니다</h2>
+  <div class="row" style="margin-top:10px">
+    <div class="col card p" style="padding:32px">
+      <div class="mid pp">1983</div>
+      <h3 style="margin-top:18px">첨단 제조 회사였습니다</h3>
+      <div class="body" style="margin-top:14px">서울에서 가장 큰 건물의 지붕을<br>맡을 기술이 있었습니다.</div>
+    </div>
+    <div class="col card" style="padding:32px;display:flex;align-items:center;justify-content:center">
+      <div style="text-align:center">
+        <div class="big" style="color:var(--gray2)">43</div>
+        <div class="lead" style="margin-top:10px">년이 지났습니다</div>
+      </div>
+    </div>
+    <div class="col card r" style="padding:32px">
+      <div class="mid rd">2026</div>
+      <h3 style="margin-top:18px">그 경기장은 다시 짓고 있고,<br>저희는 그대로였습니다</h3>
+    </div>
+  </div>
+  <div class="card" style="margin-top:26px;padding:34px;background:var(--ink);border:none">
+    <div style="font-size:44px;font-weight:900;color:#fff;line-height:1.3;text-align:center">
+      43년 전통의 회사가 아닙니다.<br>
+      <span style="color:#FDA29B">회사도 오래되었고, 기계도 오래되었고, 사람도 오래되었습니다.</span>
+    </div>
+  </div>
+  <div class="num">4</div>
+</div>
+
+<!-- 5 숫자 -->
+<div class="slide">
+  <div class="tag b">1부 · 우리는 어떤 회사인가</div>
+  <h2>지금 오성철강</h2>
+  <div class="row">
+    <div class="col card t" style="text-align:center;padding:34px 16px">
+      <div class="big">12</div>
+      <div class="lead" style="margin-top:12px">전체 직원</div>
+    </div>
+    <div class="col card t" style="text-align:center;padding:34px 16px">
+      <div class="big am">5</div>
+      <div class="lead" style="margin-top:12px">외국인 직원</div>
+      <div class="sm" style="margin-top:6px">설명서는 전부 한국어</div>
+    </div>
+    <div class="col card t" style="text-align:center;padding:34px 16px">
+      <div class="big rd">40</div>
+      <div class="lead" style="margin-top:12px">공장장 경력(년)</div>
+      <div class="sm" style="margin-top:6px">정년이 눈앞</div>
+    </div>
+    <div class="col card t" style="text-align:center;padding:34px 16px">
+      <div class="big">3</div>
+      <div class="lead" style="margin-top:12px">생산 라인</div>
+      <div class="sm" style="margin-top:6px">레벨링·슬리터1·2</div>
+    </div>
+  </div>
+  <div class="card r" style="margin-top:30px;padding:32px">
+    <div class="lead" style="font-size:34px">그동안 <b>고객이 요구하는 품질 수준은 계속 올라갔습니다.</b><br>
+    <span class="rd" style="font-weight:900">저희는 따라가지 못했습니다.</span></div>
+  </div>
+  <div class="num">5</div>
+</div>
+
+<!-- 6 1차 실패 -->
+<div class="slide">
+  <div class="tag r">2부 · 두 번의 실패</div>
+  <h2>첫 번째 — <span class="rd">장비를 바꿨습니다</span></h2>
+  <div class="row">
+    <div class="col">
+      <div class="card" style="padding:26px">
+        <div class="sm">우리의 생각</div>
+        <h3 style="margin-top:10px">"생산성을 올리면 살아남는다"</h3>
+      </div>
+      <div style="text-align:center;font-size:34px;color:var(--gray2);margin:10px 0">↓</div>
+      <div class="card g" style="padding:26px">
+        <div class="sm">결과 1</div>
+        <h3 style="margin-top:10px" class="gr">생산성은 실제로 올랐습니다</h3>
+      </div>
+      <div style="text-align:center;font-size:34px;color:var(--gray2);margin:10px 0">↓</div>
+      <div class="card r" style="padding:26px">
+        <div class="sm">결과 2</div>
+        <h3 style="margin-top:10px" class="rd">그런데 값은 오르지 않았습니다</h3>
+      </div>
+    </div>
+    <div class="col card t" style="padding:32px">
+      <div class="tag a" style="margin-bottom:16px">왜 그랬을까</div>
+      <svg viewBox="0 0 440 170" style="width:100%;height:150px">
+        <rect x="10" y="30" width="130" height="110" rx="12" fill="#fff" stroke="#E4E7EC" stroke-width="3"/>
+        <circle cx="75" cy="85" r="34" fill="#EEF0FF" stroke="#4F46E5" stroke-width="3"/>
+        <circle cx="75" cy="85" r="16" fill="#C7CDFF"/>
+        <text x="75" y="22" font-size="16" font-weight="900" fill="#4F46E5" text-anchor="middle">비싼 세탁기</text>
+        <path d="M155 85 L200 85" stroke="#D0D5DD" stroke-width="4" stroke-dasharray="8 6"/>
+        <text x="178" y="72" font-size="30" fill="#D92D20" text-anchor="middle">✕</text>
+        <rect x="215" y="30" width="215" height="110" rx="12" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+        <text x="322" y="72" font-size="18" font-weight="900" fill="#101828" text-anchor="middle">손님은 그 세탁기를</text>
+        <text x="322" y="100" font-size="18" font-weight="900" fill="#101828" text-anchor="middle">볼 수 없습니다</text>
+        <text x="322" y="126" font-size="16" font-weight="800" fill="#D92D20" text-anchor="middle">그래서 세탁비를 못 올립니다</text>
+      </svg>
+      <div class="body" style="margin-top:18px">고객 입장에서는 저희가 <b>어떤 기계를 쓰는지 볼 방법이 없었습니다.</b></div>
+    </div>
+  </div>
+  <div class="num">6</div>
+</div>
+
+<!-- 7 2차 실패 -->
+<div class="slide">
+  <div class="tag r">2부 · 두 번의 실패</div>
+  <h2>두 번째 — <span class="rd">AI 품질측정을 만들었습니다</span></h2>
+  <div class="row" style="align-items:stretch">
+    <div class="col card g" style="padding:28px;max-width:400px">
+      <div class="pill g">기술은 성공</div>
+      <h3 style="margin-top:16px">코일센터 최초<br>AI 기반 불량 측정</h3>
+      <div class="body" style="margin-top:14px">분당 250m로 지나가는 철판을<br>사람 눈으로는 볼 수 없습니다.<br><b>기계는 해냈습니다.</b></div>
+      <div style="margin-top:20px;padding:16px;background:#fff;border-radius:12px;text-align:center">
+        <div class="mid gr">대상</div>
+        <div class="sm" style="margin-top:6px">수상까지 했습니다</div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="pill r" style="margin-bottom:14px">그런데 사업은 실패</div>
+      <div class="card r" style="padding:22px;margin-bottom:12px">
+        <h3 class="rd" style="font-size:28px">① 현장이 쓰지 않았습니다</h3>
+        <div class="body" style="margin-top:8px;font-size:23px">결과를 보려면 다른 프로그램을 따로 켜야 했습니다.
+        작업자는 이미 여러 시스템에 같은 내용을 반복 입력하고 있었습니다.</div>
+      </div>
+      <div class="card r" style="padding:22px;margin-bottom:12px">
+        <h3 class="rd" style="font-size:28px">② 고객이 알지 못했습니다</h3>
+        <div class="body" style="margin-top:8px;font-size:23px">전수 검사를 한다는 사실이 <b>고객에게 전달될 통로가 없었습니다.</b></div>
+      </div>
+      <div class="card" style="padding:22px;background:var(--ink);border:none">
+        <h3 style="font-size:30px;color:#fff">③ 그래서 매출은 그대로였습니다</h3>
+      </div>
+    </div>
+  </div>
+  <div class="num">7</div>
+</div>
+
+<!-- 8 같은 착각 -->
+<div class="slide">
+  <div class="center">
+    <div class="tag r">2부 · 두 번 다 같은 착각이었습니다</div>
+    <div class="quote" style="border-color:var(--rd);text-align:left;max-width:960px;font-size:48px">
+      "좋은 것을 갖추면<br>인정받는다"
+    </div>
+    <div class="row" style="margin-top:48px;width:100%;max-width:1000px">
+      <div class="col card" style="padding:26px">
+        <div class="sm">1차</div><h3 style="margin-top:8px">좋은 장비</h3>
+      </div>
+      <div class="col card" style="padding:26px">
+        <div class="sm">2차</div><h3 style="margin-top:8px">좋은 검사 시스템</h3>
+      </div>
+    </div>
+    <div class="card r" style="margin-top:26px;padding:30px 44px">
+      <div style="font-size:38px;font-weight:900">둘 다 훌륭했습니다. 그런데 둘 다<br>
+      <span class="rd">아무도 볼 수 없는 곳에 있었습니다.</span></div>
+    </div>
+    <div class="lead" style="margin-top:30px;font-size:28px">
+      저희는 목표를 세운 게 아니라 <b>구매와 개발을 한 것</b>이었습니다.<br>
+      <span class="sm" style="font-size:24px">IT를 30년 한 저도 이것을 몰랐습니다.</span>
+    </div>
+  </div>
+  <div class="num">8</div>
+</div>
+
+<!-- 9 남은 것 -->
+<div class="slide">
+  <div class="tag a">3부 · 전환점</div>
+  <h2>그런데 <span class="am">실패가 남긴 것</span>이 있었습니다</h2>
+  <div class="row">
+    <div class="col card a" style="padding:28px">
+      <div class="pill a">1차가 남긴 것</div>
+      <h3 style="margin-top:16px">생산성 높은 장비</h3>
+      <div class="body" style="margin-top:12px;font-size:23px">값은 못 올렸지만 <b>생산 능력 자체는 확보</b>했습니다. 지금도 돌고 있습니다.</div>
+    </div>
+    <div class="col card a" style="padding:28px">
+      <div class="pill a">2차가 남긴 것</div>
+      <h3 style="margin-top:16px">타사에 없는<br>정밀 품질 측정 자료</h3>
+      <div class="body" style="margin-top:12px;font-size:23px">사업은 실패했지만 <b>작동은 계속했습니다.</b>
+      표면 전수 촬영, 결함 위치, 영상, 두께 — 매일, 모든 코일에.</div>
+    </div>
+    <div class="col card a" style="padding:28px">
+      <div class="pill a">장비가 남긴 것</div>
+      <h3 style="margin-top:16px">수백만 건의<br>공정 데이터</h3>
+      <div style="margin-top:14px;display:flex;align-items:baseline;gap:10px">
+        <span class="mid am">187</span><span class="lead">만 건</span>
+      </div>
+      <div class="sm" style="margin-top:8px">2초마다 한 줄씩 · 설비 기록만 182만 줄</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:28px;padding:30px;background:var(--tint)">
+    <div style="font-size:34px;font-weight:900;text-align:center">
+      <span class="gr">저희는 팔 줄을 몰랐을 뿐, 가지고는 있었습니다.</span><br>
+      <span class="sm" style="font-size:26px">— 그런데 아무도 보지 않았습니다. 그냥 쌓이고 있었습니다.</span>
+    </div>
+  </div>
+  <div class="num">9</div>
+</div>
+
+<!-- 10 AI 이전엔 왜 못했나 -->
+<div class="slide">
+  <div class="tag a">3부 · 전환점</div>
+  <h2>그런데 <span class="rd">AI 이전에는</span> 이 데이터로 아무것도 할 수 없었습니다</h2>
+  <div class="row">
+    <div class="col card" style="padding:26px">
+      <div class="big" style="color:var(--line);line-height:.9">1</div>
+      <h3 style="margin-top:14px">읽을 사람이 없었습니다</h3>
+      <div class="body" style="margin-top:12px;font-size:23px">직원 12명 회사에 데이터 분석 인력이 있을 수 없습니다.
+      채용하려 해도 <b>그 인력이 올 만한 회사가 아닙니다.</b></div>
+    </div>
+    <div class="col card" style="padding:26px">
+      <div class="big" style="color:var(--line);line-height:.9">2</div>
+      <h3 style="margin-top:14px">도구를 사려면 먼저<br>무엇을 볼지 정해야 했습니다</h3>
+      <div class="body" style="margin-top:12px;font-size:23px">견적은 수천만 원. 발주하려면 명세서에 써야 합니다.
+      <b>그런데 무엇을 봐야 하는지 몰랐습니다.</b></div>
+    </div>
+    <div class="col card r" style="padding:26px">
+      <div class="big rd" style="line-height:.9;opacity:.3">3</div>
+      <h3 style="margin-top:14px" class="rd">가장 큰 이유 —<br>무엇을 물어야 할지 몰랐습니다</h3>
+      <div class="body" style="margin-top:12px;font-size:23px">데이터는 <b>질문에만</b> 답합니다.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:26px;padding:32px;background:var(--ink);border:none">
+    <div style="font-size:36px;font-weight:900;color:#fff;text-align:center;line-height:1.35">
+      질문이 없으면 데이터는 <span style="color:#FEC84B">창고에 쌓인 재고</span>와 같습니다.<br>
+      <span style="font-size:28px;color:#D0D5DD">자산으로 잡혀 있지만 아무것도 만들어내지 않습니다.</span>
+    </div>
+  </div>
+  <div class="num">10</div>
+</div>
+
+<!-- 11 AI가 나오자 -->
+<div class="slide">
+  <div class="tag g">3부 · 전환점</div>
+  <h2>AI가 나오자 <span class="gr">세 가지가 동시에 풀렸습니다</span></h2>
+  <div class="row">
+    <div class="col card g" style="padding:28px">
+      <h3 class="gr">물어보면 됩니다</h3>
+      <div class="body" style="margin-top:14px;font-size:23px">코일 60개, 2주치 기록을 훑는 일</div>
+      <div style="margin-top:16px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:2px solid #A6F4C5">
+          <span class="sm">사람</span><span style="font-size:30px;font-weight:900">며칠</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:10px 0">
+          <span class="sm">AI</span><span style="font-size:30px;font-weight:900" class="gr">한 번</span></div>
+      </div>
+    </div>
+    <div class="col card g" style="padding:28px">
+      <h3 class="gr">틀린 질문을 해도<br>비용이 안 듭니다</h3>
+      <div class="body" style="margin-top:14px;font-size:23px"><b>이게 결정적이었습니다.</b><br>
+      예전엔 질문 하나 확인하려면 발주서를 써야 했습니다.</div>
+      <div class="card" style="margin-top:16px;padding:16px;background:#fff">
+        <div style="font-size:24px;font-weight:900;line-height:1.4">틀려도 되니까 많이 물었고,<br>많이 물으니까 <span class="gr">발견</span>이 나왔습니다.</div>
+      </div>
+    </div>
+    <div class="col card g" style="padding:28px">
+      <h3 class="gr">화면을 만드는 것까지<br>직접 할 수 있게 됐습니다</h3>
+      <div style="margin-top:18px;text-align:center">
+        <div class="big gr">41</div>
+        <div class="lead" style="margin-top:8px">개 서비스</div>
+        <div class="sm" style="margin-top:8px">30개가 실데이터로 돌아감</div>
+      </div>
+      <div class="sm" style="margin-top:14px">처음 만든 것은 조잡했습니다.<br>그래도 하나씩 만들었습니다.</div>
+    </div>
+  </div>
+  <div class="card a" style="margin-top:26px;padding:26px">
+    <div style="font-size:30px;font-weight:900;text-align:center">
+      두 번의 실패는 <b>자산을 쌓아두는 일</b>이었고, 그것을 쓸 도구가 <b>뒤늦게 도착</b>한 것이었습니다.<br>
+      <span class="am" style="font-size:26px">실패가 헛되지 않았던 이유는 잘했기 때문이 아닙니다. 버티고 있었기 때문입니다.</span>
+    </div>
+  </div>
+  <div class="num">11</div>
+</div>
+
+<!-- 12 두 질문 -->
+<div class="slide">
+  <div class="center">
+    <div class="tag">4부 · 그래서 질문을 다시 바꿨습니다</div>
+    <div class="sm" style="font-size:30px;text-decoration:line-through;margin-bottom:40px">
+      "무엇을 도입하면 경쟁력이 생길까" — 두 번 다 틀렸습니다
+    </div>
+    <div class="row" style="width:100%;max-width:1080px">
+      <div class="col card p" style="padding:42px 32px;text-align:left">
+        <div class="mid pp">①</div>
+        <div style="font-size:44px;font-weight:900;margin-top:20px;line-height:1.25">우리는<br>무엇을 모르는가</div>
+        <div class="lead" style="margin-top:20px;font-size:26px"><b>안</b>을 보는 질문<br>
+        → 품질이 완벽해집니다</div>
+      </div>
+      <div class="col card p" style="padding:42px 32px;text-align:left">
+        <div class="mid pp">②</div>
+        <div style="font-size:44px;font-weight:900;margin-top:20px;line-height:1.25">우리 고객들은<br>무엇을 원하는가</div>
+        <div class="lead" style="margin-top:20px;font-size:26px"><b>밖</b>을 보는 질문<br>
+        → 값을 받을 수 있습니다</div>
+      </div>
+    </div>
+  </div>
+  <div class="num">12</div>
+</div>
+
+<!-- 13 한쪽만 하면 -->
+<div class="slide">
+  <div class="tag">4부 · 두 질문</div>
+  <h2>한쪽만으로는 안 됩니다 — <span class="rd">그게 두 번의 실패였습니다</span></h2>
+  <svg viewBox="0 0 1150 330" style="width:100%;height:320px">
+    <rect x="30" y="20" width="330" height="90" rx="12" fill="#EEF0FF" stroke="#C7CDFF" stroke-width="3"/>
+    <text x="195" y="76" font-size="26" font-weight="900" fill="#4F46E5" text-anchor="middle">① 만 하면</text>
+    <path d="M195 118 L195 152" stroke="#98A2B3" stroke-width="3" marker-end="url(#a5)"/>
+    <defs><marker id="a5" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#98A2B3"/></marker></defs>
+    <rect x="30" y="160" width="330" height="80" rx="12" fill="#F9FAFB" stroke="#E4E7EC" stroke-width="3"/>
+    <text x="195" y="196" font-size="22" font-weight="800" fill="#344054" text-anchor="middle">품질은 좋아지는데</text>
+    <text x="195" y="224" font-size="22" font-weight="900" fill="#101828" text-anchor="middle">아무도 모릅니다</text>
+    <rect x="30" y="258" width="330" height="56" rx="12" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="195" y="294" font-size="24" font-weight="900" fill="#D92D20" text-anchor="middle">= 첫 번째 실패</text>
+
+    <rect x="790" y="20" width="330" height="90" rx="12" fill="#EEF0FF" stroke="#C7CDFF" stroke-width="3"/>
+    <text x="955" y="76" font-size="26" font-weight="900" fill="#4F46E5" text-anchor="middle">② 만 하면</text>
+    <path d="M955 118 L955 152" stroke="#98A2B3" stroke-width="3" marker-end="url(#a5)"/>
+    <rect x="790" y="160" width="330" height="80" rx="12" fill="#F9FAFB" stroke="#E4E7EC" stroke-width="3"/>
+    <text x="955" y="196" font-size="22" font-weight="800" fill="#344054" text-anchor="middle">팔 것은 있는데</text>
+    <text x="955" y="224" font-size="22" font-weight="900" fill="#101828" text-anchor="middle">근거가 없습니다</text>
+    <rect x="790" y="258" width="330" height="56" rx="12" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="955" y="294" font-size="24" font-weight="900" fill="#D92D20" text-anchor="middle">= 두 번째 실패</text>
+
+    <rect x="400" y="110" width="350" height="130" rx="16" fill="#ECFDF3" stroke="#067647" stroke-width="4"/>
+    <text x="575" y="158" font-size="28" font-weight="900" fill="#067647" text-anchor="middle">①과 ②를</text>
+    <text x="575" y="196" font-size="28" font-weight="900" fill="#067647" text-anchor="middle">동시에 물어야</text>
+    <text x="575" y="228" font-size="20" font-weight="800" fill="#344054" text-anchor="middle">했습니다</text>
+    <path d="M368 65 L400 140" stroke="#067647" stroke-width="3" fill="none"/>
+    <path d="M782 65 L750 140" stroke="#067647" stroke-width="3" fill="none"/>
+  </svg>
+  <div class="card" style="margin-top:8px;padding:26px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:34px;font-weight:900;color:#fff">이걸 아는 데 <span style="color:#FEC84B">두 번</span>이 걸렸습니다.</div>
+  </div>
+  <div class="num">13</div>
+</div>
+
+<!-- 14 5부 몰랐던 것 4가지 -->
+<div class="slide">
+  <div class="tag">5부 · 질문 ① 우리는 무엇을 모르는가</div>
+  <h2>큰 시스템을 만들지 않았습니다<br><span class="pp">작업자가 답하지 못하는 질문을 하나씩 없앴습니다</span></h2>
+  <div class="row" style="margin-top:22px">
+    <div class="col">
+      <div class="card" style="padding:24px;margin-bottom:14px">
+        <div style="display:flex;gap:16px;align-items:center">
+          <div class="mid pp" style="font-size:48px">①</div>
+          <div><h3 style="font-size:30px">"지금 잘 돌아가고 있나?"</h3>
+          <div class="sm" style="margin-top:6px">소리와 감으로 판단 · 공장장 머릿속에만 있었다</div></div>
+        </div>
+      </div>
+      <div class="card" style="padding:24px">
+        <div style="display:flex;gap:16px;align-items:center">
+          <div class="mid pp" style="font-size:48px">②</div>
+          <div><h3 style="font-size:30px">"아까 그 불량, 그때 어떻게 돌렸더라?"</h3>
+          <div class="sm" style="margin-top:6px">기억에 의존 · 그래서 같은 불량이 또 났다</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card" style="padding:24px;margin-bottom:14px">
+        <div style="display:flex;gap:16px;align-items:center">
+          <div class="mid pp" style="font-size:48px">③</div>
+          <div><h3 style="font-size:30px">"이건 우리 잘못인가, 원래 그랬나?"</h3>
+          <div class="sm" style="margin-top:6px">숫자만으로는 표면 흠집을 가릴 수 없었다</div></div>
+        </div>
+      </div>
+      <div class="card r" style="padding:24px">
+        <div style="display:flex;gap:16px;align-items:center">
+          <div class="mid rd" style="font-size:48px">④</div>
+          <div><h3 style="font-size:30px" class="rd">"우리 데이터는 믿을 만한가?"</h3>
+          <div class="sm" style="margin-top:6px">가장 중요한 질문이었고, 답은 <b>"아니오"</b>였다</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="num">14</div>
+</div>
+
+<!-- 15 UI: 몰랐던 것 ① -->
+<div class="slide">
+  <div class="tag">5부 · 몰랐던 것 ①</div>
+  <h2>지금 이 순간을 <span class="pp">큰 숫자로</span> 보게 했습니다</h2>
+  <div class="row" style="align-items:flex-start;margin-top:8px">
+    <div class="phone">
+      <div class="ph-bar"><span>AI 헬퍼 · 슬리터2</span><span>11:42</span></div>
+      <div class="ph-body">
+        <div class="ph-h">코일 162205708302</div>
+        <div class="ph-box" style="border-color:#A6F4C5;background:#ECFDF3">
+          <div style="font-size:12px;color:#067647;font-weight:900">현재 속도</div>
+          <div class="ph-big gr">82<span style="font-size:16px"> mpm</span></div>
+          <div style="font-size:12px;color:#344054;margin-top:4px">권장 78~85 · 적정</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div class="ph-box" style="flex:1;padding:7px;margin:0">
+            <div style="font-size:11px;color:#667085">텐션1</div>
+            <div style="font-size:20px;font-weight:900">2.4</div></div>
+          <div class="ph-box" style="flex:1;padding:7px;margin:0">
+            <div style="font-size:11px;color:#667085">텐션2</div>
+            <div style="font-size:20px;font-weight:900">2.3</div></div>
+          <div class="ph-box" style="flex:1;padding:7px;margin:0;border-color:#FEC84B;background:#FFFAEB">
+            <div style="font-size:11px;color:#B54708">텐션3</div>
+            <div style="font-size:20px;font-weight:900" class="am">1.8</div></div>
+        </div>
+        <div style="font-size:12px;color:#667085;margin-bottom:5px">진행 995 / 1,989 m</div>
+        <div class="bar-bg"><div class="bar-fl" style="width:50%"></div></div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card r" style="padding:22px;margin-bottom:14px">
+        <div class="pill r">예전</div>
+        <div class="body" style="margin-top:12px">작업자가 <b>기계 소리와 손끝 감각</b>으로 판단했습니다.
+        40년 경력 공장장님은 아셨습니다. 그런데 그 감각은 <b>어디에도 적혀 있지 않았습니다.</b>
+        <span class="rd">퇴직하시면 같이 사라지는 것이었습니다.</span></div>
+      </div>
+      <div class="card g" style="padding:22px">
+        <div class="pill g">지금</div>
+        <div class="body" style="margin-top:12px">태블릿과 휴대폰에 <b>지금 이 순간의 속도와 힘</b>이 큰 숫자로 뜹니다.
+        공장장님이 암산하던 설정값은 화면이 알려줍니다.</div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <span class="pill">글자 크게</span><span class="pill">한국어판</span><span class="pill">영어판</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="num">15</div>
+</div>
+
+<!-- 16 UI: 몰랐던 것 ② -->
+<div class="slide">
+  <div class="tag">5부 · 몰랐던 것 ②</div>
+  <h2>문제가 생긴 <span class="pp">그 시점으로 되감아</span> 볼 수 있게 했습니다</h2>
+  <div class="row" style="align-items:flex-start">
+    <div class="phone">
+      <div class="ph-bar"><span>슬리터2 운행 정보</span><span>◀ ▶</span></div>
+      <div class="ph-body">
+        <div class="ph-h">2026-09-03 · 코일 1622057</div>
+        <div style="font-size:12px;color:#667085">길이 위치를 움직여 보세요</div>
+        <div style="margin:9px 0 4px">
+          <div class="bar-bg" style="height:9px"><div class="bar-fl" style="width:62%"></div></div>
+          <div style="position:relative;height:0">
+            <div style="position:absolute;left:59%;top:-15px;width:20px;height:20px;border-radius:50%;
+                        background:#4F46E5;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.3)"></div>
+          </div>
+        </div>
+        <div style="text-align:center;margin:12px 0 8px">
+          <span style="font-size:30px;font-weight:900">1,240</span>
+          <span style="font-size:14px;color:#667085"> m 지점</span>
+        </div>
+        <div class="ph-kv"><span>속도</span><b>79 mpm</b></div>
+        <div class="ph-kv"><span>텐션 1~4</span><b>2.4 / 2.3 / 0.0 / 2.5</b></div>
+        <div class="ph-kv"><span>가동 상태</span><b class="gr">RUN</b></div>
+        <div class="ph-kv" style="border:none"><span>시각</span><b>09:21:14</b></div>
+        <div class="ph-box" style="margin-top:9px;border-color:#FDA29B;background:#FEF3F2;padding:8px">
+          <div style="font-size:12px;font-weight:900;color:#D92D20">텐션3 이상 — 작업 내내 0</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card r" style="padding:22px;margin-bottom:14px">
+        <div class="pill r">예전</div>
+        <div class="body" style="margin-top:12px">불량이 나와도 <b>그 순간 기계가 어떤 상태였는지 아무도 답하지 못했습니다.</b>
+        기억은 사람마다 달랐습니다. <span class="rd">그래서 같은 불량이 또 났습니다.</span></div>
+      </div>
+      <div class="card g" style="padding:22px">
+        <div class="pill g">지금</div>
+        <ul style="margin-top:12px">
+          <li class="g" style="font-size:23px">두루마리 번호 + 위치를 넣으면 <b>그 지점의 속도·힘이 그대로</b></li>
+          <li class="g" style="font-size:23px">막대를 움직이면 <b>전 구간을 되감아</b> 봄</li>
+          <li class="g" style="font-size:23px">거래처 이름만 넣으면 <b>3개 라인 전체에서</b> 찾아 바로 답변</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="num">16</div>
+</div>
+
+<!-- 17 카메라 OCR -->
+<div class="slide">
+  <div class="tag a">5부 · 여기서 벽에 부딪혔습니다</div>
+  <h2>장비를 바꾸지 않고 데이터를 얻었습니다 — <span class="am">휴대폰 한 대로</span></h2>
+  <svg viewBox="0 0 1150 300" style="width:100%;height:280px">
+    <rect x="20" y="60" width="250" height="170" rx="14" fill="#F9FAFB" stroke="#E4E7EC" stroke-width="3"/>
+    <text x="145" y="98" font-size="19" font-weight="900" fill="#667085" text-anchor="middle">30년 된 장비</text>
+    <rect x="60" y="118" width="170" height="80" rx="8" fill="#1D2939"/>
+    <text x="145" y="152" font-size="24" font-weight="900" fill="#12B76A" text-anchor="middle" font-family="monospace">2.43</text>
+    <text x="145" y="180" font-size="13" font-weight="700" fill="#98A2B3" text-anchor="middle">PR-DTC-3100</text>
+    <text x="145" y="222" font-size="17" font-weight="900" fill="#D92D20" text-anchor="middle">데이터 단자가 없음</text>
+
+    <rect x="305" y="30" width="240" height="105" rx="12" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="425" y="66" font-size="18" font-weight="900" fill="#D92D20" text-anchor="middle">방법 1 · 장비 교체</text>
+    <text x="425" y="104" font-size="28" font-weight="900" fill="#101828" text-anchor="middle">수천만 원</text>
+    <text x="425" y="126" font-size="15" fill="#D92D20" text-anchor="middle">✕ 포기</text>
+
+    <rect x="305" y="158" width="240" height="122" rx="12" fill="#ECFDF3" stroke="#067647" stroke-width="4"/>
+    <text x="425" y="192" font-size="18" font-weight="900" fill="#067647" text-anchor="middle">방법 2 · 카메라 + AI</text>
+    <rect x="370" y="206" width="52" height="58" rx="8" fill="#1D2939"/>
+    <circle cx="396" cy="228" r="11" fill="#4F46E5"/>
+    <text x="470" y="232" font-size="17" font-weight="900" fill="#101828">휴대폰</text>
+    <text x="470" y="256" font-size="17" font-weight="900" fill="#101828">1대</text>
+
+    <path d="M560 205 L620 205" stroke="#067647" stroke-width="4" marker-end="url(#a6)"/>
+    <defs><marker id="a6" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#067647"/></marker></defs>
+    <text x="590" y="192" font-size="15" font-weight="800" fill="#067647" text-anchor="middle">AI가 화면의</text>
+    <text x="590" y="176" font-size="15" font-weight="800" fill="#067647" text-anchor="middle">숫자를 읽음</text>
+
+    <rect x="630" y="60" width="500" height="170" rx="14" fill="#EEF0FF" stroke="#C7CDFF" stroke-width="3"/>
+    <text x="655" y="98" font-size="19" font-weight="900" fill="#4F46E5">1분마다 6개 값이 자동 기록</text>
+    <text x="655" y="136" font-size="17" font-weight="800" fill="#101828">출력% · 전압 · 두께</text>
+    <text x="655" y="164" font-size="17" font-weight="800" fill="#101828">시작경 · 장력설정 · 장력율</text>
+    <text x="655" y="204" font-size="16" font-weight="800" fill="#667085">→ 데이터베이스에 계속 쌓임</text>
+  </svg>
+  <div class="card g" style="margin-top:10px;padding:24px;text-align:center">
+    <div style="font-size:32px;font-weight:900">오래된 기계라고 데이터를 못 얻는 게 아니었습니다.
+    <span class="gr">방법을 몰랐던 것입니다.</span></div>
+  </div>
+  <div class="num">17</div>
+</div>
+
+<!-- 18 데이터를 의심했다 -->
+<div class="slide">
+  <div class="tag r">5부 · 몰랐던 것 ④ — 가장 중요한 질문</div>
+  <h2>저희는 숫자를 <span class="rd">믿지 않고, 확인합니다</span></h2>
+  <div class="row">
+    <div class="col card r" style="padding:24px">
+      <div class="pill r">우리 설비</div>
+      <h3 style="margin-top:14px;font-size:28px">고장 난 센서를 찾아냈습니다</h3>
+      <div style="margin:16px 0;display:flex;gap:14px;align-items:baseline">
+        <span class="mid rd" style="font-size:52px">3/4</span>
+        <span class="sm">센서가 작업 내내 <b>0</b></span>
+      </div>
+      <div class="body" style="font-size:22px">코일 60개·2주치를 한 번에 훑어 <b>5건</b> 발견.
+      가공 문제가 아니라 <b>배선이 끊어져 있던 것.</b>
+      <span class="rd">사람 눈으로는 평생 못 찾을 문제입니다.</span></div>
+    </div>
+    <div class="col card r" style="padding:24px">
+      <div class="pill r">납품받은 시스템</div>
+      <h3 style="margin-top:14px;font-size:28px">외부 검사 시스템을 뜯어봤습니다</h3>
+      <div style="margin:16px 0">
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:2px solid #FDA29B">
+          <span class="sm">표본 20건 중 문제</span><span style="font-size:26px;font-weight:900">30%</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:2px solid #FDA29B">
+          <span class="sm">시험용 가짜 데이터</span><span style="font-size:26px;font-weight:900" class="rd">다수</span></div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0">
+          <span class="sm">두께 측정값 (표본 5건)</span><span style="font-size:26px;font-weight:900" class="rd">0건</span></div>
+      </div>
+      <div class="body" style="font-size:22px"><b>아예 돌고 있지 않았습니다.</b></div>
+    </div>
+    <div class="col card" style="padding:24px">
+      <div class="pill">우리가 만든 것</div>
+      <h3 style="margin-top:14px;font-size:28px">저희 것도 의심했습니다</h3>
+      <div style="margin:16px 0;text-align:center">
+        <span class="mid" style="font-size:52px">9</span>
+        <span class="sm">시간씩 어긋남</span>
+      </div>
+      <div class="body" style="font-size:22px">시각이 밀려 기록되던 오류를 <b>찾아 전부 고쳤습니다.</b></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:24px;padding:28px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:34px;font-weight:900;color:#fff">
+      187만 건이 있어도, <span style="color:#FEC84B">검증하지 않은 데이터는 자산이 아니라 위험입니다.</span></div>
+  </div>
+  <div class="num">18</div>
+</div>
+
+<!-- 19 얻은 것 1 -->
+<div class="slide">
+  <div class="tag g">5부 · 첫 번째 질문이 남긴 것</div>
+  <h2>얻은 것 1 — <span class="gr">완벽한 품질</span></h2>
+  <div class="row">
+    <div class="col card g" style="padding:24px">
+      <h3 style="font-size:29px" class="gr">공정이 표준화됐습니다</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">감으로 하던 작업이 숫자가 되니 <b>누가 작업하든 같은 기준</b>이 됩니다.
+      경력 40년이든 입사 한 달이든 같은 화면, 같은 값.</div>
+    </div>
+    <div class="col card g" style="padding:24px">
+      <h3 style="font-size:29px" class="gr">설정 불량이 거의 사라졌습니다</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">설정값 계산 도구를 만든 뒤,
+      <b>기계 설정을 잘못해서 나던 불량</b>은 사실상 없어졌습니다.</div>
+    </div>
+    <div class="col card g" style="padding:24px">
+      <h3 style="font-size:29px" class="gr">전수 검증 체계</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">표면은 전부 촬영, 운전 조건은 2초마다 기록, 이상은 자동 필터.
+      <b>샘플로 보지 않습니다. 전부 봅니다.</b></div>
+    </div>
+    <div class="col card g" style="padding:24px">
+      <h3 style="font-size:29px" class="gr">데이터 자체를 검증</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">센서가 죽었는지, 측정이 돌고 있는지, 기록이 밀렸는지를
+      <b>의심하고 확인합니다.</b></div>
+    </div>
+  </div>
+  <div class="card p" style="margin-top:28px;padding:32px;text-align:center">
+    <div style="font-size:36px;font-weight:900;line-height:1.35">
+      좋은 장비에 걸맞는 <span class="pp">품질 기술</span>을, 이제 갖췄습니다.<br>
+      <span class="sm" style="font-size:27px">1차에서 장비를 샀고, 3차에 그 장비를 제대로 쓰는 기술을 얻었습니다.</span></div>
+  </div>
+  <div class="num">19</div>
+</div>
+
+<!-- 20 얻은 것 2 -->
+<div class="slide">
+  <div class="tag g">5부 · 첫 번째 질문이 남긴 것</div>
+  <h2>얻은 것 2 — <span class="gr">기술 내재화</span> (이게 더 중요할지도 모릅니다)</h2>
+  <div class="row" style="align-items:flex-start">
+    <div class="col">
+      <div class="row" style="margin-bottom:14px">
+        <div class="col card g" style="padding:20px;text-align:center">
+          <div class="mid gr" style="font-size:52px">41</div><div class="sm" style="margin-top:6px">직접 만든 서비스</div>
+        </div>
+        <div class="col card g" style="padding:20px;text-align:center">
+          <div class="mid gr" style="font-size:52px">0</div><div class="sm" style="margin-top:6px">외주 개발</div>
+        </div>
+        <div class="col card g" style="padding:20px;text-align:center">
+          <div class="mid gr" style="font-size:52px">며칠</div><div class="sm" style="margin-top:6px">현장 요구 반영 기간</div>
+        </div>
+      </div>
+      <div class="card a" style="padding:22px">
+        <div class="pill a">예상하지 못한 일</div>
+        <h3 style="margin-top:12px;font-size:29px">외국인 직원들이 장비를 고치기 시작했습니다</h3>
+        <div class="body" style="margin-top:12px;font-size:22px">직원 12명 중 5명이 외국에서 오신 분들.
+        그런데 설명서도 작업 기준도 <b>전부 한국어</b>였습니다 — 개선 제안이 나올 수 없는 구조.<br><br>
+        도구를 <b>한국어·영어 두 벌</b>로 만들자, AI의 도움으로 언어의 벽을 넘어
+        기계 기록을 직접 읽기 시작했습니다.</div>
+      </div>
+    </div>
+    <div class="col card" style="padding:24px;max-width:430px">
+      <div class="pill p">지금 저희에게 있는 것</div>
+      <h3 style="margin-top:12px;font-size:27px">장비 개조 도면</h3>
+      <svg viewBox="0 0 360 180" style="width:100%;height:170px;margin-top:10px">
+        <rect x="10" y="10" width="340" height="160" fill="#F9FAFB" stroke="#98A2B3" stroke-width="2"/>
+        <line x1="50" y1="88" x2="310" y2="88" stroke="#344054" stroke-width="2"/>
+        <rect x="70" y="66" width="220" height="44" fill="#fff" stroke="#101828" stroke-width="2.5"/>
+        <circle cx="70" cy="88" r="22" fill="none" stroke="#101828" stroke-width="2.5"/>
+        <circle cx="290" cy="88" r="22" fill="none" stroke="#101828" stroke-width="2.5"/>
+        <line x1="70" y1="130" x2="290" y2="130" stroke="#4F46E5" stroke-width="1.5"/>
+        <text x="180" y="148" font-size="14" font-weight="900" fill="#4F46E5" text-anchor="middle">1,320 mm</text>
+        <line x1="30" y1="66" x2="30" y2="110" stroke="#4F46E5" stroke-width="1.5"/>
+        <text x="30" y="56" font-size="13" font-weight="900" fill="#4F46E5" text-anchor="middle">Ø40</text>
+        <text x="290" y="42" font-size="12" font-weight="800" fill="#667085" text-anchor="middle">축 Ø20</text>
+      </svg>
+      <div class="sm" style="margin-top:6px">롤러 지름 40 · 길이 1,320 · 축 20 · 베어링 규격까지</div>
+      <div class="card g" style="margin-top:16px;padding:18px">
+        <div style="font-size:26px;font-weight:900;line-height:1.35">이 도면을 그린 사람은<br>
+        엔지니어가 아니라 <span class="gr">저희 현장 직원입니다.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="num">20</div>
+</div>
+
+<!-- 21 현장이 먼저 -->
+<div class="slide">
+  <div class="tag g">5부 · 가장 큰 변화</div>
+  <h2>현장에서 <span class="gr">먼저 요구가 올라왔습니다</span></h2>
+  <svg viewBox="0 0 1150 300" style="width:100%;height:290px">
+    <rect x="40" y="30" width="470" height="240" rx="16" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="275" y="72" font-size="26" font-weight="900" fill="#D92D20" text-anchor="middle">1차 · 2차</text>
+    <rect x="150" y="95" width="250" height="52" rx="10" fill="#fff" stroke="#FDA29B" stroke-width="2"/>
+    <text x="275" y="128" font-size="20" font-weight="900" fill="#101828" text-anchor="middle">경영진 / 외부 업체</text>
+    <path d="M275 155 L275 195" stroke="#D92D20" stroke-width="4" marker-end="url(#a7)"/>
+    <defs><marker id="a7" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#D92D20"/></marker></defs>
+    <rect x="150" y="200" width="250" height="52" rx="10" fill="#fff" stroke="#FDA29B" stroke-width="2"/>
+    <text x="275" y="233" font-size="20" font-weight="900" fill="#101828" text-anchor="middle">현장</text>
+    <text x="455" y="233" font-size="30" fill="#D92D20" text-anchor="middle">✕</text>
+    <text x="275" y="290" font-size="18" font-weight="800" fill="#D92D20" text-anchor="middle">위에서 내려준 것 → 안 썼습니다</text>
+
+    <rect x="640" y="30" width="470" height="240" rx="16" fill="#ECFDF3" stroke="#067647" stroke-width="4"/>
+    <text x="875" y="72" font-size="26" font-weight="900" fill="#067647" text-anchor="middle">3차</text>
+    <rect x="750" y="95" width="250" height="52" rx="10" fill="#fff" stroke="#A6F4C5" stroke-width="2"/>
+    <text x="875" y="128" font-size="20" font-weight="900" fill="#101828" text-anchor="middle">경영진</text>
+    <path d="M875 195 L875 155" stroke="#067647" stroke-width="4" marker-end="url(#a8)"/>
+    <defs><marker id="a8" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+      <path d="M0,0 L9,4.5 L0,9 z" fill="#067647"/></marker></defs>
+    <rect x="750" y="200" width="250" height="52" rx="10" fill="#fff" stroke="#A6F4C5" stroke-width="2"/>
+    <text x="875" y="233" font-size="20" font-weight="900" fill="#101828" text-anchor="middle">현장</text>
+    <text x="875" y="290" font-size="18" font-weight="800" fill="#067647" text-anchor="middle">현장이 달라고 한 것 → 씁니다</text>
+  </svg>
+  <div class="card g" style="margin-top:6px;padding:26px">
+    <div class="lead" style="font-size:29px">시키지도 않았는데 직원들끼리 <b>품질 개선 회의</b>를 열었습니다.
+    그리고 <b>"설정값을 계산해주는 도구를 만들어달라"</b>는 요구가 <span class="gr">아래에서 올라왔습니다.</span></div>
+  </div>
+  <div class="num">21</div>
+</div>
+
+<!-- 22 AI 활용 다양성 - 서비스맵 -->
+<div class="slide">
+  <div class="tag p">AI를 얼마나 다양하게 쓰는가</div>
+  <h2><span class="pp">41개</span>를 직접 만들었고, <span class="gr">30개</span>가 실데이터로 돌아갑니다</h2>
+  <div class="row" style="gap:14px">
+    <div class="col card" style="padding:18px">
+      <div class="pill p" style="font-size:16px">생산현장 도구</div>
+      <div class="mid pp" style="font-size:46px;margin:10px 0">21</div>
+      <div class="xs" style="line-height:1.7">세퍼레이터 키오스크 · 작업현황 대시보드 1/2/3 ·
+      코일 상세분석 · 레벨링 공정×ERP · 행정 모니터링 · 라인 통합관제(NMS) ·
+      PLC 상세조회 · 통합 타임라인 · HMI 미러 · AI 헬퍼 3종 ·
+      슬리터2 모니터 KR/EN · 라인배정 변경 KR/EN · 작업확인 · 재고검색 ·
+      테이퍼 텐션 3종</div>
+    </div>
+    <div class="col" style="max-width:250px">
+      <div class="card" style="padding:18px;margin-bottom:12px">
+        <div class="pill" style="font-size:16px">주문접수 자동화</div>
+        <div class="mid" style="font-size:46px;margin:8px 0">5</div>
+        <div class="xs">통합흐름 v2 · OCR 문서인식 · 카카오톡 접수 · FAX 작업요청서 · 현장 코일확정</div>
+      </div>
+      <div class="card" style="padding:18px">
+        <div class="pill" style="font-size:16px">경영 · 재무</div>
+        <div class="mid" style="font-size:46px;margin:8px 0">2</div>
+        <div class="xs">계좌 손익 통합 · 거래명세서 입금확인</div>
+      </div>
+    </div>
+    <div class="col" style="max-width:250px">
+      <div class="card" style="padding:18px;margin-bottom:12px">
+        <div class="pill" style="font-size:16px">고객 대면</div>
+        <div class="mid" style="font-size:46px;margin:8px 0">3</div>
+        <div class="xs">주문 현황 트래커 · 고객사 챗봇 · 영업대상 고객사 리스트</div>
+      </div>
+      <div class="card" style="padding:18px;margin-bottom:12px">
+        <div class="pill" style="font-size:16px">창고 · 설비</div>
+        <div class="mid" style="font-size:46px;margin:8px 0">2</div>
+        <div class="xs">코일창고 3D 뷰어 · 장애 원인 분석(AI)</div>
+      </div>
+      <div class="card" style="padding:18px">
+        <div class="pill" style="font-size:16px">시스템 연동</div>
+        <div class="mid" style="font-size:46px;margin:8px 0">1</div>
+        <div class="xs">대시보드 자동연동 모니터링 (RPA 대체)</div>
+      </div>
+    </div>
+  </div>
+  <div class="row" style="margin-top:18px">
+    <div class="col card g" style="padding:16px;text-align:center">
+      <span class="pill g">현장 배포중 2</span> <span class="pill g">실데이터 연동 28</span>
+      <span class="pill a">샘플·시험판 8</span> <span class="pill">개발용 3</span>
+    </div>
+  </div>
+  <div class="num">22</div>
+</div>
+
+<!-- 23 AI 활용 유형 -->
+<div class="slide">
+  <div class="tag p">AI를 얼마나 다양하게 쓰는가</div>
+  <h2>한 가지 AI가 아닙니다 — <span class="pp">여섯 가지 방식</span>으로 씁니다</h2>
+  <div class="row" style="gap:16px">
+    <div class="col card p" style="padding:22px">
+      <div class="mid pp" style="font-size:40px">01</div>
+      <h3 style="margin-top:10px;font-size:26px">읽는 AI</h3>
+      <div class="sm" style="margin-top:10px;font-size:20px">계기판 사진에서 숫자를 읽고, 팩스 작업요청서와 지출 영수증에서 글자를 뽑아냅니다.</div>
+      <div class="pill p" style="margin-top:12px;font-size:15px">OCR · 이미지 인식</div>
+    </div>
+    <div class="col card p" style="padding:22px">
+      <div class="mid pp" style="font-size:40px">02</div>
+      <h3 style="margin-top:10px;font-size:26px">보는 AI</h3>
+      <div class="sm" style="margin-top:10px;font-size:20px">분당 250m로 지나가는 철판 표면을 전수 촬영해 흠집 위치를 찾아냅니다.</div>
+      <div class="pill p" style="margin-top:12px;font-size:15px">비전 검사</div>
+    </div>
+    <div class="col card p" style="padding:22px">
+      <div class="mid pp" style="font-size:40px">03</div>
+      <h3 style="margin-top:10px;font-size:26px">찾아내는 AI</h3>
+      <div class="sm" style="margin-top:10px;font-size:20px">코일 60개·2주치를 한 번에 훑어 고장 난 센서와 이상 구간을 걸러냅니다.</div>
+      <div class="pill p" style="margin-top:12px;font-size:15px">이상 탐지</div>
+    </div>
+  </div>
+  <div class="row" style="gap:16px;margin-top:16px">
+    <div class="col card p" style="padding:22px">
+      <div class="mid pp" style="font-size:40px">04</div>
+      <h3 style="margin-top:10px;font-size:26px">추천하는 AI</h3>
+      <div class="sm" style="margin-top:10px;font-size:20px">같은 사양 완료 코일들의 실측값으로 권장 속도·힘·예상 가동시간을 제시합니다.</div>
+      <div class="pill p" style="margin-top:12px;font-size:15px">설정값 추천 · 완료 예측</div>
+    </div>
+    <div class="col card p" style="padding:22px">
+      <div class="mid pp" style="font-size:40px">05</div>
+      <h3 style="margin-top:10px;font-size:26px">답하는 AI</h3>
+      <div class="sm" style="margin-top:10px;font-size:20px">고객이 말로 물으면 실제 기록을 근거로 자연어로 답합니다. 사람이 응대하지 않습니다.</div>
+      <div class="pill p" style="margin-top:12px;font-size:15px">대화형 조회</div>
+    </div>
+    <div class="col card p" style="padding:22px">
+      <div class="mid pp" style="font-size:40px">06</div>
+      <h3 style="margin-top:10px;font-size:26px">만드는 AI</h3>
+      <div class="sm" style="margin-top:10px;font-size:20px">화면과 분석 도구 자체를 AI로 만들었습니다. <b>41개가 이 방식으로 나왔습니다.</b></div>
+      <div class="pill p" style="margin-top:12px;font-size:15px">개발 자체를 AI로</div>
+    </div>
+  </div>
+  <div class="card a" style="margin-top:18px;padding:20px;text-align:center">
+    <div style="font-size:28px;font-weight:900">06번이 앞의 다섯 개를 가능하게 했습니다.
+    <span class="am">개발을 AI로 하니, 나머지를 직접 만들 수 있었습니다.</span></div>
+  </div>
+  <div class="num">23</div>
+</div>
+
+<!-- 24 실제 화면들 -->
+<div class="slide">
+  <div class="tag p">AI를 얼마나 다양하게 쓰는가</div>
+  <h2>현장에서 <span class="pp">매일 열리는 화면들</span></h2>
+  <div class="row" style="gap:18px;align-items:flex-start">
+    <div style="flex:1">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="background:#1D2939;color:#fff;padding:10px 14px;font-size:16px;font-weight:900">
+          세퍼레이터 셋팅 계산기 · 태블릿 키오스크</div>
+        <div style="padding:14px">
+          <div style="font-size:14px;color:#667085;margin-bottom:8px">가공규격 0.75 × 4 × C</div>
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <div style="flex:1;border:2px solid #4F46E5;background:#EEF0FF;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:11px;color:#4F46E5;font-weight:900">스페이서 A</div>
+              <div style="font-size:24px;font-weight:900">4.2</div></div>
+            <div style="flex:1;border:2px solid #E4E7EC;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:11px;color:#667085;font-weight:900">B</div>
+              <div style="font-size:24px;font-weight:900">3.0</div></div>
+            <div style="flex:1;border:2px solid #E4E7EC;border-radius:8px;padding:8px;text-align:center">
+              <div style="font-size:11px;color:#667085;font-weight:900">C</div>
+              <div style="font-size:24px;font-weight:900">1.5</div></div>
+          </div>
+          <div style="background:#ECFDF3;border:2px solid #A6F4C5;border-radius:8px;padding:10px;
+                      font-size:14px;font-weight:900;color:#067647">조합 확정 · 합계 8.7mm</div>
+        </div>
+      </div>
+      <div class="sm" style="margin-top:10px;font-size:19px"><b>현장 배포중</b> · 공장장 암산을 화면이 대신합니다</div>
+    </div>
+    <div style="flex:1">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="background:#1D2939;color:#fff;padding:10px 14px;font-size:16px;font-weight:900">
+          레벨링 라인 통합 관제 (NMS)</div>
+        <div style="padding:14px">
+          <div style="display:flex;gap:6px;margin-bottom:10px">
+            <div style="flex:1;border:2px solid #A6F4C5;background:#ECFDF3;border-radius:8px;padding:8px">
+              <div style="font-size:11px;font-weight:900;color:#067647">레벨링 ● 가동</div>
+              <div style="font-size:19px;font-weight:900">68%</div></div>
+            <div style="flex:1;border:2px solid #A6F4C5;background:#ECFDF3;border-radius:8px;padding:8px">
+              <div style="font-size:11px;font-weight:900;color:#067647">슬리터2 ● 가동</div>
+              <div style="font-size:19px;font-weight:900">41%</div></div>
+            <div style="flex:1;border:2px solid #E4E7EC;border-radius:8px;padding:8px">
+              <div style="font-size:11px;font-weight:900;color:#667085">슬리터1 ○ 대기</div>
+              <div style="font-size:19px;font-weight:900">—</div></div>
+          </div>
+          <svg viewBox="0 0 300 46" style="width:100%;height:46px">
+            <polyline points="0,34 25,26 50,30 75,14 100,20 125,10 150,16 175,8 200,18 225,12 250,22 275,16 300,20"
+                      fill="none" stroke="#4F46E5" stroke-width="3"/>
+          </svg>
+          <div style="background:#FFFAEB;border:2px solid #FEC84B;border-radius:8px;padding:8px;
+                      font-size:13px;font-weight:900;color:#B54708;margin-top:8px">⚠ 이상 알림 1건 · 20초 자동 갱신</div>
+        </div>
+      </div>
+      <div class="sm" style="margin-top:10px;font-size:19px"><b>실데이터 연동</b> · 통신사 관제센터 방식을 공장에</div>
+    </div>
+    <div style="flex:1">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="background:#1D2939;color:#fff;padding:10px 14px;font-size:16px;font-weight:900">
+          코일창고 3D 뷰어 · 출고관리</div>
+        <div style="padding:14px">
+          <svg viewBox="0 0 300 100" style="width:100%;height:100px">
+            <rect x="8" y="58" width="284" height="34" fill="#F2F4F7" stroke="#D0D5DD" stroke-width="2"/>
+            <ellipse cx="45" cy="56" rx="26" ry="15" fill="#4F46E5" opacity=".85"/>
+            <ellipse cx="100" cy="56" rx="26" ry="15" fill="#7A73F0" opacity=".85"/>
+            <ellipse cx="155" cy="56" rx="26" ry="15" fill="#4F46E5" opacity=".55"/>
+            <ellipse cx="210" cy="56" rx="26" ry="15" fill="#98A2B3" opacity=".7"/>
+            <ellipse cx="100" cy="30" rx="26" ry="15" fill="#067647" opacity=".8"/>
+            <text x="150" y="16" font-size="12" font-weight="900" fill="#667085" text-anchor="middle">A구역 · 거래처별 보관 코일</text>
+          </svg>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <span class="pill p" style="font-size:12px">대한강재 12</span>
+            <span class="pill g" style="font-size:12px">출고 가능 4</span>
+            <span class="pill" style="font-size:12px">장기 보관 3</span>
+          </div>
+        </div>
+      </div>
+      <div class="sm" style="margin-top:10px;font-size:19px"><b>현장 배포중</b> · 어느 자리에 누구 물건인지 한눈에</div>
+    </div>
+  </div>
+  <div class="num">24</div>
+</div>
+
+<!-- 25 아직 모르는 것 - 표준 -->
+<div class="slide">
+  <div class="tag a">5부 · 다만, 아직 모르는 것이 남았습니다</div>
+  <h2>보여주기는 하고 — <span class="rd">판정은 하지 않습니다</span></h2>
+  <div class="row" style="align-items:stretch">
+    <div class="col card" style="padding:26px">
+      <div class="pill">지금</div>
+      <div style="margin-top:18px;padding:20px;background:var(--tint);border-radius:12px">
+        <div class="sm">추천 도구가 알려주는 값</div>
+        <div style="font-size:40px;font-weight:900;margin-top:8px">권장 속도 82</div>
+      </div>
+      <div class="card r" style="margin-top:18px;padding:20px">
+        <div class="body" style="font-size:23px">그런데 그 82는 <b>과거에 그렇게 돌렸던 평균</b>입니다.
+        <span class="rd">그렇게 돌려야 하는 값이 아닙니다.</span><br><br>
+        <b>과거에 불량이 났던 작업도 그 평균 안에 섞여 있습니다.</b></div>
+      </div>
+    </div>
+    <div class="col card g" style="padding:26px">
+      <div class="pill g">되어야 하는 것</div>
+      <div style="margin-top:18px;padding:20px;background:#fff;border-radius:12px;border:2px solid #A6F4C5">
+        <div class="sm">판정까지 해주는 화면</div>
+        <div style="font-size:28px;font-weight:900;margin-top:10px">속도 82 <span class="gr">— 표준 78~85 이내 ✓</span></div>
+        <div style="font-size:28px;font-weight:900;margin-top:8px">힘 1.8 <span class="rd">— 표준 2.2~2.6 이탈 ⚠</span></div>
+      </div>
+      <div class="card" style="margin-top:18px;padding:20px;background:#fff">
+        <div class="body" style="font-size:23px">그리고 이탈하면 <b>한 줄 이유를 남기게</b> 합니다.<br>
+        <span class="sm" style="font-size:20px">원자재 / 설비 이상 / 고객 요청 / 급한 납기 / 기타</span><br><br>
+        이 한 줄이 쌓이면 1년 뒤 <b>"표준을 못 지키는 진짜 이유"의 순위</b>가 나옵니다.
+        <span class="am">지금은 아무도 모릅니다.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="num">25</div>
+</div>
+
+<!-- 26 운용체계 5단계 -->
+<div class="slide">
+  <div class="tag">5부 · 남은 과제 — 운용 체계</div>
+  <h2>누가 작업해도 <span class="pp">같은 결과</span>가 나오게, 그리고 <span class="pp">증명할 기록</span>이 남게</h2>
+  <div style="display:flex;gap:12px;margin-top:20px">
+    <div class="card p" style="flex:1;padding:20px">
+      <div class="mid pp" style="font-size:38px">1</div>
+      <h3 style="margin-top:10px;font-size:24px">표준값 확정</h3>
+      <div class="xs" style="margin-top:10px;font-size:17px;line-height:1.55">불량·재작업·중단이 <b>없었던 작업만</b> 남겨 표준값을 뽑고 문서로 박습니다.
+      추천을 "과거 평균"에서 <b>"표준값+허용범위"</b>로.</div>
+      <div class="pill a" style="margin-top:10px;font-size:14px">선행: 품질이력↔작업데이터 연결</div>
+    </div>
+    <div class="card p" style="flex:1;padding:20px">
+      <div class="mid pp" style="font-size:38px">2</div>
+      <h3 style="margin-top:10px;font-size:24px">화면이 판정</h3>
+      <div class="xs" style="margin-top:10px;font-size:17px;line-height:1.55">범위 안/밖을 표시하고 경고합니다.
+      이탈하면 <b>이유 한 줄</b>을 남깁니다.</div>
+    </div>
+    <div class="card p" style="flex:1;padding:20px">
+      <div class="mid pp" style="font-size:38px">3</div>
+      <h3 style="margin-top:10px;font-size:24px">작업 표준서를 화면으로</h3>
+      <div class="xs" style="margin-top:10px;font-size:17px;line-height:1.55">사양을 고르면 세팅 순서가 단계별로 뜨고, 확인하면 다음 단계로.</div>
+      <div class="pill r" style="margin-top:10px;font-size:14px">공장장 정년 전에 — 시한 있음</div>
+    </div>
+    <div class="card p" style="flex:1;padding:20px">
+      <div class="mid pp" style="font-size:38px">4</div>
+      <h3 style="margin-top:10px;font-size:24px">데이터 결측 제거</h3>
+      <div class="xs" style="margin-top:10px;font-size:17px;line-height:1.55">센서 배선, 외부 시스템 가동, 카메라 고정, 코일번호 태깅 100%.
+      <b>매일 아침 결측률을 봅니다.</b></div>
+      <div class="pill a" style="margin-top:10px;font-size:14px">가장 지루하고 가장 중요</div>
+    </div>
+    <div class="card p" style="flex:1;padding:20px">
+      <div class="mid pp" style="font-size:38px">5</div>
+      <h3 style="margin-top:10px;font-size:24px">매일 마감</h3>
+      <div class="xs" style="margin-top:10px;font-size:17px;line-height:1.55">저녁마다 한 장이 자동으로: 작업 건수 · 이탈 건수(이유별) · 결측 · 정지.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:24px;padding:26px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:30px;font-weight:900;color:#fff">사람이 챙기는 체계는 사람이 빠지면 멈추지만,
+    <span style="color:#FEC84B">매일 한 장이 나오는 체계는 멈추면 표가 납니다.</span></div>
+  </div>
+  <div class="num">26</div>
+</div>
+
+<!-- 27 고객의 말 -->
+<div class="slide">
+  <div class="center">
+    <div class="tag b">6부 · 질문 ② 우리 고객들은 무엇을 원하는가</div>
+    <div class="sm" style="font-size:28px;margin-bottom:34px">
+      저희는 고객이 <b>더 정밀한 분석</b>을 원할 거라 생각했습니다.<br>
+      <span class="rd">두 번째 실패가 바로 그 생각에서 나왔습니다.</span>
+    </div>
+    <div class="card p" style="padding:52px 60px;max-width:1050px">
+      <div style="font-size:56px;font-weight:900;line-height:1.3;letter-spacing:-.03em">
+        "그냥 아무 때나 물어보고,<br><span class="pp">바로 확인받고 싶습니다.</span>"
+      </div>
+    </div>
+    <div class="lead" style="margin-top:38px;font-size:32px;max-width:900px">
+      정밀한 분석 리포트를 원하는 게 아닙니다.<br>
+      <b>밤 열 시에 궁금한 것이 생겼을 때, 그때 답을 받고 싶은 것입니다.</b>
+    </div>
+  </div>
+  <div class="num">27</div>
+</div>
+
+<!-- 28 고객의 현실 타임라인 -->
+<div class="slide">
+  <div class="tag b">6부 · 지금 고객이 겪는 현실</div>
+  <h2>궁금한 시간은 <span class="pp">아무 때나</span>, 물어볼 시간은 <span class="rd">우리 업무시간뿐</span></h2>
+  <svg viewBox="0 0 1150 260" style="width:100%;height:250px">
+    <!-- timeline -->
+    <line x1="40" y1="130" x2="1110" y2="130" stroke="#E4E7EC" stroke-width="6"/>
+    <!-- 업무시간 구간 -->
+    <rect x="360" y="118" width="290" height="24" rx="12" fill="#4F46E5"/>
+    <text x="505" y="108" font-size="17" font-weight="900" fill="#4F46E5" text-anchor="middle">우리 업무시간 09:00–18:00</text>
+    <!-- 밤 10시 -->
+    <circle cx="140" cy="130" r="14" fill="#D92D20"/>
+    <text x="140" y="182" font-size="19" font-weight="900" fill="#D92D20" text-anchor="middle">밤 22:00</text>
+    <text x="140" y="208" font-size="17" font-weight="800" fill="#344054" text-anchor="middle">궁금증 발생</text>
+    <text x="140" y="230" font-size="15" font-weight="700" fill="#667085" text-anchor="middle">"내 물건 언제 오지?"</text>
+    <!-- 대기 -->
+    <path d="M160 130 L340 130" stroke="#D92D20" stroke-width="6" stroke-dasharray="10 8"/>
+    <text x="250" y="108" font-size="20" font-weight="900" fill="#D92D20" text-anchor="middle">11시간 대기</text>
+    <!-- 아침 9시 -->
+    <circle cx="360" cy="130" r="14" fill="#4F46E5"/>
+    <text x="360" y="182" font-size="19" font-weight="900" fill="#4F46E5" text-anchor="middle">아침 09:00</text>
+    <text x="360" y="208" font-size="17" font-weight="800" fill="#344054" text-anchor="middle">전화</text>
+    <!-- 담당자 부재 -->
+    <circle cx="505" cy="130" r="11" fill="#B54708"/>
+    <text x="505" y="182" font-size="17" font-weight="900" fill="#B54708" text-anchor="middle">담당자 부재</text>
+    <text x="505" y="206" font-size="15" font-weight="700" fill="#667085" text-anchor="middle">다시 걸어야 함</text>
+    <!-- 답 들음 -->
+    <circle cx="650" cy="130" r="14" fill="#067647"/>
+    <text x="650" y="182" font-size="18" font-weight="900" fill="#067647" text-anchor="middle">답 들음</text>
+    <text x="650" y="208" font-size="16" font-weight="800" fill="#D92D20" text-anchor="middle">그런데 어디에도</text>
+    <text x="650" y="230" font-size="16" font-weight="800" fill="#D92D20" text-anchor="middle">남지 않습니다</text>
+    <!-- 다음날 -->
+    <circle cx="840" cy="130" r="11" fill="#98A2B3"/>
+    <text x="840" y="182" font-size="17" font-weight="900" fill="#667085" text-anchor="middle">다음에 또 물어야</text>
+    <!-- 안 묻고 넘어감 -->
+    <rect x="940" y="40" width="190" height="170" rx="14" fill="#FEF3F2" stroke="#FDA29B" stroke-width="3"/>
+    <text x="1035" y="76" font-size="18" font-weight="900" fill="#D92D20" text-anchor="middle">그래서 결국</text>
+    <text x="1035" y="110" font-size="17" font-weight="800" fill="#101828" text-anchor="middle">미안해서</text>
+    <text x="1035" y="134" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">안 묻고 넘어감</text>
+    <text x="1035" y="168" font-size="16" font-weight="800" fill="#D92D20" text-anchor="middle">→ 여유 재고를 쥐고</text>
+    <text x="1035" y="192" font-size="16" font-weight="800" fill="#D92D20" text-anchor="middle">라인을 비워둠</text>
+  </svg>
+  <div class="card r" style="margin-top:6px;padding:24px;text-align:center">
+    <div style="font-size:30px;font-weight:900">고객이 원하는 건 더 좋은 기술이 아니었습니다.
+    <span class="rd">다른 데서 다 되는 것이, 여기서만 안 되는 그 불편이었습니다.</span></div>
+  </div>
+  <div class="num">28</div>
+</div>
+
+<!-- 29 택배는 되는데 -->
+<div class="slide">
+  <div class="tag b">6부 · 고객은 이미 24시간을 경험하고 있습니다</div>
+  <h2>택배는 <span class="gr">어느 터미널에 있는지까지</span> 보는데</h2>
+  <div class="row" style="margin-top:16px">
+    <div class="col card g" style="padding:26px;text-align:center">
+      <div style="font-size:44px">🛒</div>
+      <h3 style="margin-top:14px;font-size:27px">온라인 쇼핑</h3>
+      <div class="sm" style="margin-top:10px;font-size:21px">밤에 주문하고<br>새벽에 배송 상태 확인</div>
+      <div class="pill g" style="margin-top:14px">24시간</div>
+    </div>
+    <div class="col card g" style="padding:26px;text-align:center">
+      <div style="font-size:44px">🏦</div>
+      <h3 style="margin-top:14px;font-size:27px">은행</h3>
+      <div class="sm" style="margin-top:10px;font-size:21px">잔고·이체·명세<br>언제든 조회</div>
+      <div class="pill g" style="margin-top:14px">24시간</div>
+    </div>
+    <div class="col card g" style="padding:26px;text-align:center">
+      <div style="font-size:44px">📦</div>
+      <h3 style="margin-top:14px;font-size:27px">택배</h3>
+      <div class="sm" style="margin-top:10px;font-size:21px">지금 어느 터미널에<br>있는지까지</div>
+      <div class="pill g" style="margin-top:14px">24시간</div>
+    </div>
+    <div class="col card r" style="padding:26px;text-align:center">
+      <div style="font-size:44px">🏭</div>
+      <h3 style="margin-top:14px;font-size:27px">철강 발주</h3>
+      <div class="sm" style="margin-top:10px;font-size:21px">수천만 원짜리인데<br><b>아침 9시를 기다림</b></div>
+      <div class="pill r" style="margin-top:14px">업무시간만</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:30px;padding:34px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:38px;font-weight:900;color:#fff;line-height:1.35">
+      수천만 원짜리 철강 발주 건이,<br>
+      <span style="color:#FEC84B">가장 확인하기 어려운 거래가 되어 있었습니다.</span></div>
+  </div>
+  <div class="num">29</div>
+</div>
+
+<!-- 30 24시간 5가지 -->
+<div class="slide">
+  <div class="tag b">6부 · 고객이 원하는 것</div>
+  <h2>다섯 가지였습니다 — <span class="pp">전부 "24시간"</span></h2>
+  <table style="margin-top:14px">
+    <tr><th style="width:70px"></th><th>고객이 하고 싶은 것</th><th style="width:400px">지금</th></tr>
+    <tr>
+      <td><span class="pill p" style="font-size:20px">①</span></td>
+      <td><b style="font-size:27px">24시간 문의</b> — 언제든 묻고 바로 답받기</td>
+      <td class="sm">업무시간에 전화, 담당자 없으면 다시</td>
+    </tr>
+    <tr>
+      <td><span class="pill p" style="font-size:20px">②</span></td>
+      <td><b style="font-size:27px">24시간 발주</b> — 밤에도 주문 넣기</td>
+      <td class="sm">팩스·전화, 업무시간만</td>
+    </tr>
+    <tr>
+      <td><span class="pill p" style="font-size:20px">③</span></td>
+      <td><b style="font-size:27px">24시간 진행 조회</b> — 내 물건이 지금 어디까지</td>
+      <td class="sm">전화해서 물어봐야 함</td>
+    </tr>
+    <tr>
+      <td><span class="pill p" style="font-size:20px">④</span></td>
+      <td><b style="font-size:27px">24시간 상세 내역</b> — 지난 거래·미출고·미수금·맡긴 재고</td>
+      <td class="sm">요청하면 정리해서 보내줌</td>
+    </tr>
+    <tr style="background:var(--ppL)">
+      <td><span class="pill p" style="font-size:20px">⑤</span></td>
+      <td><b style="font-size:29px" class="pp">24시간 품질 결과</b> — 내가 발주한 그 물건의 AI 검사 결과</td>
+      <td><b class="rd" style="font-size:25px">어디에도 없음</b></td>
+    </tr>
+  </table>
+  <div class="row" style="margin-top:24px">
+    <div class="col card" style="padding:22px">
+      <div class="body" style="font-size:24px">①~④는 <b>온라인 쇼핑에서 이미 당연한 것들</b>입니다.
+      <span class="sm">언젠가 다른 코일센터도 하게 될 것입니다.</span></div>
+    </div>
+    <div class="col card p" style="padding:22px">
+      <div class="body" style="font-size:26px;color:var(--ink)"><b class="pp">⑤가 다릅니다.</b>
+      5부에서 얻은 것이 없으면 불가능합니다.</div>
+    </div>
+  </div>
+  <div class="num">30</div>
+</div>
+
+<!-- 31 ⑤번이 결정적 -->
+<div class="slide">
+  <div class="tag b">6부 · ⑤번이 왜 결정적인가</div>
+  <h2>①~④는 <span class="gray">시스템만 만들면</span> 됩니다. <span class="pp">⑤는 다릅니다.</span></h2>
+  <svg viewBox="0 0 1150 280" style="width:100%;height:270px">
+    <rect x="20" y="30" width="330" height="220" rx="16" fill="#F9FAFB" stroke="#E4E7EC" stroke-width="3"/>
+    <text x="185" y="70" font-size="22" font-weight="900" fill="#667085" text-anchor="middle">①~④ 문의·발주·조회·내역</text>
+    <text x="185" y="112" font-size="18" font-weight="800" fill="#344054" text-anchor="middle">필요한 것: 돈과 시간</text>
+    <text x="185" y="150" font-size="20" font-weight="900" fill="#101828" text-anchor="middle">누구나 할 수 있습니다</text>
+    <text x="185" y="196" font-size="17" font-weight="800" fill="#98A2B3" text-anchor="middle">= 편의</text>
+    <text x="185" y="226" font-size="15" font-weight="700" fill="#98A2B3" text-anchor="middle">경쟁사도 언젠가 합니다</text>
+
+    <rect x="400" y="30" width="330" height="220" rx="16" fill="#EEF0FF" stroke="#4F46E5" stroke-width="4"/>
+    <text x="565" y="70" font-size="22" font-weight="900" fill="#4F46E5" text-anchor="middle">⑤ 품질 결과</text>
+    <text x="565" y="106" font-size="17" font-weight="800" fill="#344054" text-anchor="middle">필요한 것:</text>
+    <text x="565" y="136" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">전수 촬영 자료</text>
+    <text x="565" y="162" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">2초 단위 운전 기록</text>
+    <text x="565" y="188" font-size="17" font-weight="900" fill="#101828" text-anchor="middle">검증된 데이터</text>
+    <text x="565" y="226" font-size="18" font-weight="900" fill="#4F46E5" text-anchor="middle">= 차별화</text>
+
+    <path d="M565 262 L565 275" stroke="#4F46E5" stroke-width="3"/>
+    <rect x="780" y="30" width="350" height="220" rx="16" fill="#ECFDF3" stroke="#067647" stroke-width="4"/>
+    <text x="955" y="70" font-size="20" font-weight="900" fill="#067647" text-anchor="middle">그건 5부의 답입니다</text>
+    <text x="955" y="112" font-size="18" font-weight="800" fill="#344054" text-anchor="middle">첫 번째 질문에 답하지</text>
+    <text x="955" y="140" font-size="18" font-weight="800" fill="#344054" text-anchor="middle">않았다면</text>
+    <text x="955" y="176" font-size="22" font-weight="900" fill="#067647" text-anchor="middle">다섯 번째는 못 합니다</text>
+    <text x="955" y="220" font-size="16" font-weight="800" fill="#98A2B3" text-anchor="middle">두 질문이 여기서 연결됩니다</text>
+  </svg>
+  <div class="card p" style="margin-top:6px;padding:28px;text-align:center">
+    <div style="font-size:31px;font-weight:900;line-height:1.4">
+      진행 상황만 보여주는 포털은 <span style="color:var(--gray)">편리한 서비스</span>입니다.<br>
+      품질 결과까지 보여주는 포털은 <span class="pp">검사를 대신해주는 서비스</span>입니다.</div>
+  </div>
+  <div class="num">31</div>
+</div>
+
+<!-- 32 만약 밤 11시에 - UI -->
+<div class="slide">
+  <div class="tag b">6부 · 그래서 만약</div>
+  <h2>고객이 <span class="pp">밤 열한 시</span>에 휴대폰을 열어서</h2>
+  <div class="row" style="align-items:flex-start;gap:26px">
+    <div class="phone">
+      <div class="ph-bar"><span>오성철강 고객 포털</span><span>23:04</span></div>
+      <div class="ph-body">
+        <div class="ph-h">(주)대한강재님</div>
+        <div class="ph-box" style="border-color:#C7CDFF;background:#EEF0FF">
+          <div style="font-size:12px;font-weight:900;color:#4F46E5">진행중 · 코일 1622057</div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:5px">
+            <span style="font-size:26px;font-weight:900">62%</span>
+            <span style="font-size:13px;font-weight:900">완료 예정 <b>01:40</b></span></div>
+          <div class="bar-bg" style="margin-top:6px;height:8px"><div class="bar-fl" style="width:62%"></div></div>
+        </div>
+        <div class="ph-box" style="border-color:#A6F4C5;background:#ECFDF3">
+          <div style="font-size:12px;font-weight:900;color:#067647">오늘 받은 물건 품질 결과</div>
+          <div style="font-size:19px;font-weight:900;margin-top:4px" class="gr">적합 · 표준 범위 내</div>
+          <div style="font-size:12px;color:#344054;margin-top:3px">표면 결함 0 · 두께 편차 ±0.01 · 중단 없음</div>
+          <div style="font-size:12px;font-weight:900;color:#067647;margin-top:5px">영상 보기 ›</div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <div class="ph-box" style="flex:1;margin:0;padding:8px;text-align:center">
+            <div style="font-size:11px;color:#667085">미출고</div>
+            <div style="font-size:18px;font-weight:900">3건</div></div>
+          <div class="ph-box" style="flex:1;margin:0;padding:8px;text-align:center">
+            <div style="font-size:11px;color:#667085">맡긴 재고</div>
+            <div style="font-size:18px;font-weight:900">12코일</div></div>
+        </div>
+        <div class="ph-btn">+ 새 주문 넣기</div>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="ph-bar"><span>문의</span><span>23:06</span></div>
+      <div class="ph-body">
+        <div style="background:#F2F4F7;border-radius:12px 12px 12px 3px;padding:9px;font-size:13px;
+                    margin-bottom:8px;font-weight:800">어제 보낸 코일 중에<br>중단된 게 있었나요?</div>
+        <div style="background:#EEF0FF;border-radius:12px 12px 3px 12px;padding:9px;font-size:13px;
+                    margin-bottom:8px;color:#101828">
+          <b>어제(9/12) 출고 6건 중 1건</b>에서 작업 중단 기록이 있습니다.<br><br>
+          코일 1622051 · 1,240m 지점에서 <b>4분 정지</b> 후 재가동.
+          해당 구간 표면 검사는 <b>이상 없음</b>입니다.
+          <div style="font-size:11px;color:#4F46E5;font-weight:900;margin-top:6px">근거 기록 보기 ›</div>
+        </div>
+        <div style="background:#F2F4F7;border-radius:12px 12px 12px 3px;padding:9px;font-size:13px;font-weight:800">
+          미수금도 알려주세요</div>
+        <div class="ph-box" style="margin-top:10px;padding:8px;border-color:#FEC84B;background:#FFFAEB">
+          <div style="font-size:11px;font-weight:900;color:#B54708">사람이 응대하지 않습니다</div>
+          <div style="font-size:13px;font-weight:900;margin-top:3px">기록이 응대합니다</div>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <ul>
+        <li>새 주문을 넣고</li>
+        <li>어제 넣은 주문이 <b>지금 어느 라인에서</b> 가공 중인지 보고</li>
+        <li><b>몇 시에 끝나는지</b> 확인하고</li>
+        <li>지난달 거래 내역과 안 나간 물량을 확인하고</li>
+        <li class="g"><b>오늘 받은 물건의 품질 검사 결과를 열어보고</b></li>
+        <li>궁금하면 채팅으로 물어서 <b>실제 기록에 근거한 답</b>을 받는다면</li>
+      </ul>
+      <div class="card p" style="margin-top:20px;padding:24px">
+        <div style="font-size:29px;font-weight:900;line-height:1.35">그 회사는 코일 가공업체가 아닙니다.<br>
+        <span class="pp">24시간 돌아가는 서비스 회사입니다.</span></div>
+      </div>
+      <div class="card g" style="margin-top:14px;padding:20px">
+        <div class="body" style="font-size:23px">그리고 그 고객은 단가가 조금 싼 곳으로 <b>옮기지 않습니다.</b>
+        <span class="gr">옮기면 이 모든 게 없어지기 때문입니다.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="num">32</div>
+</div>
+
+<!-- 33 이미 만든 것 / 남은 것 -->
+<div class="slide">
+  <div class="tag a">6부 · 솔직하게 나누면</div>
+  <h2>기능은 <span class="gr">대부분 있습니다</span>. 그런데 <span class="rd">고객에게 나간 것은 하나도 없습니다.</span></h2>
+  <table style="margin-top:12px">
+    <tr><th style="width:230px"></th><th>이미 만든 것</th><th style="width:400px">남은 것</th></tr>
+    <tr><td><b style="font-size:25px">① 문의</b></td>
+        <td class="body" style="font-size:23px">실데이터로 답하는 채팅 창구</td>
+        <td><span class="pill r">시연용 → 실서비스 전환</span></td></tr>
+    <tr><td><b style="font-size:25px">② 발주</b></td>
+        <td class="body" style="font-size:23px">팩스·카톡·문서인식 자동 접수 (시험판 4개)</td>
+        <td><span class="pill r">실배포 — 현재 0건</span></td></tr>
+    <tr><td><b style="font-size:25px">③ 진행 조회</b></td>
+        <td class="body" style="font-size:23px">고객 포털 · 진행 트래커 · 완료 예측</td>
+        <td><span class="pill a">예정시각 정확도 검증 후 개방</span></td></tr>
+    <tr><td><b style="font-size:25px">④ 상세 내역</b></td>
+        <td class="body" style="font-size:23px">재고·미출고·미수금 조회 · 3D 창고 뷰어</td>
+        <td><span class="pill a">고객 계정에 연결</span></td></tr>
+    <tr style="background:var(--ppL)"><td><b style="font-size:25px" class="pp">⑤ 품질 결과</b></td>
+        <td class="body" style="font-size:23px">전수 촬영 자료 · 운전 기록 · 분석 도구</td>
+        <td><span class="pill p">양식 + 자동 발행 + 판정 기준</span></td></tr>
+  </table>
+  <div class="card r" style="margin-top:26px;padding:28px;text-align:center">
+    <div style="font-size:31px;font-weight:900;line-height:1.4">
+      두 번의 실패가 <b>"아무도 볼 수 없는 곳에 좋은 것을 두었다"</b>는 것이었습니다.<br>
+      <span class="rd">지금 상태는 그 실수의 축소판이고, 저희는 반복 직전에 있습니다.</span></div>
+  </div>
+  <div class="num">33</div>
+</div>
+
+<!-- 34 값 받는 지점 -->
+<div class="slide">
+  <div class="tag a">6부 · 값은 어떻게 받나</div>
+  <h2>전부 무료면 값을 못 받고, 전부 유료면 아무도 안 씁니다</h2>
+  <table style="margin-top:14px">
+    <tr><th>서비스</th><th style="width:330px">제공 방식</th><th style="width:300px">목적</th></tr>
+    <tr><td><b style="font-size:25px">24시간 문의 · 발주 · 진행 조회</b></td>
+        <td class="body" style="font-size:23px">무료, 단 <b>계약서에 명시</b></td>
+        <td><span class="pill">거래 조건화 · 이탈 방지</span></td></tr>
+    <tr><td><b style="font-size:25px">품질 결과 요약</b> <span class="sm">(판정만)</span></td>
+        <td class="body" style="font-size:23px">전 거래처 무료</td>
+        <td><span class="pill">표준으로 자리 잡게</span></td></tr>
+    <tr style="background:var(--grL)"><td><b style="font-size:25px">품질 성적서 상세본</b> <span class="sm">(영상·실측)</span></td>
+        <td class="body" style="font-size:23px">단가 반영 또는 별도</td>
+        <td><span class="pill g">값을 받는 지점</span></td></tr>
+    <tr style="background:var(--grL)"><td><b style="font-size:25px">분쟁 판별 리포트</b></td>
+        <td class="body" style="font-size:23px">건당 유상 또는 연간 약정</td>
+        <td><span class="pill g">값을 받는 지점</span></td></tr>
+    <tr style="background:var(--grL)"><td><b style="font-size:25px">보관 · 재고 대행</b></td>
+        <td class="body" style="font-size:23px">요율 계약</td>
+        <td><span class="pill g">고정 수입 · 이탈 방지</span></td></tr>
+  </table>
+  <div class="card" style="margin-top:24px;padding:28px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:30px;font-weight:900;color:#fff;line-height:1.4">
+      모든 신규 견적서에 <span style="color:#FEC84B">"24시간 조회 · 품질 결과 제공"</span>을 한 줄 적습니다.<br>
+      <span style="font-size:34px">적히지 않은 서비스는 존재하지 않는 서비스입니다.</span></div>
+  </div>
+  <div class="num">34</div>
+</div>
+
+<!-- 35 두 질문이 하나였다 -->
+<div class="slide">
+  <div class="tag g">7부 · 두 질문이 만난 곳</div>
+  <h2>안을 들여다보려고 만든 것이, <span class="gr">그대로 밖에 내보낼 것</span>이 되었습니다</h2>
+  <table style="margin-top:16px">
+    <tr><th style="width:46%">① 우리는 무엇을 모르는가 — 의 답</th><th style="width:8%"></th>
+        <th>② 고객은 무엇을 원하는가 — 의 답</th></tr>
+    <tr><td class="body" style="font-size:24px">지금 잘 돌아가나 <span class="sm">(실시간 상태)</span></td>
+        <td style="text-align:center;font-size:26px;color:var(--pp)">→</td>
+        <td><b style="font-size:25px">③ 24시간 진행 조회</b></td></tr>
+    <tr><td class="body" style="font-size:24px">그때 어떻게 돌렸나 <span class="sm">(구간별 기록)</span></td>
+        <td style="text-align:center;font-size:26px;color:var(--pp)">→</td>
+        <td><b style="font-size:25px" class="pp">⑤ 24시간 품질 결과</b></td></tr>
+    <tr><td class="body" style="font-size:24px">우리 잘못인가 <span class="sm">(원소재/가공 판별)</span></td>
+        <td style="text-align:center;font-size:26px;color:var(--pp)">→</td>
+        <td><b style="font-size:25px">분쟁 판별 리포트</b> <span class="pill g" style="font-size:14px">유상</span></td></tr>
+    <tr><td class="body" style="font-size:24px">데이터를 믿을 수 있나 <span class="sm">(전수 검증)</span></td>
+        <td style="text-align:center;font-size:26px;color:var(--pp)">→</td>
+        <td><b style="font-size:25px">위 전부의 신뢰 근거</b></td></tr>
+  </table>
+  <div class="row" style="margin-top:26px">
+    <div class="col card" style="padding:24px">
+      <div class="pill r">사건</div>
+      <div class="body" style="margin-top:12px;font-size:23px">고객이 불량이라고 했고 저희는 아니라고 했습니다.
+      <b>증명할 방법이 없었습니다.</b> 그래서 AI에게 물어 <b>품질 리포트</b>를 만들어냈습니다.</div>
+    </div>
+    <div class="col card g" style="padding:24px">
+      <div class="pill g">그날의 깨달음</div>
+      <div style="margin-top:12px;font-size:27px;font-weight:900;line-height:1.35">
+        <b>"우리는 무엇을 모르는가"에 답하려고 모은 기록이,<br>
+        그대로 <span class="gr">"고객이 무엇을 원하는가"의 답</span>이었습니다.</b></div>
+    </div>
+  </div>
+  <div class="num">35</div>
+</div>
+
+<!-- 36 세 번의 시도 -->
+<div class="slide">
+  <div class="tag">7부 · 세 번을 나란히 놓으면</div>
+  <h2>앞의 두 번이 <span class="am">실패가 아니었던</span> 이유</h2>
+  <table style="margin-top:18px">
+    <tr><th style="width:130px"></th><th style="width:32%">무엇을 물었나</th><th style="width:32%">얻은 것</th><th>결과</th></tr>
+    <tr><td><b style="font-size:27px">첫 번째</b></td>
+        <td class="body" style="font-size:24px">무엇을 사면 될까</td>
+        <td><b class="am" style="font-size:25px">생산성 높은 장비</b></td>
+        <td class="sm" style="font-size:22px">값은 그대로</td></tr>
+    <tr><td><b style="font-size:27px">두 번째</b></td>
+        <td class="body" style="font-size:24px">무엇을 만들면 될까</td>
+        <td><b class="am" style="font-size:25px">품질 측정 자료 + 공정 데이터</b></td>
+        <td class="sm" style="font-size:22px">매출은 그대로</td></tr>
+    <tr style="background:var(--grL)"><td><b style="font-size:27px" class="gr">세 번째</b></td>
+        <td><b style="font-size:24px">우리는 무엇을 모르나<br>고객은 무엇을 원하나</b></td>
+        <td><b class="gr" style="font-size:25px">완벽한 품질 + 기술 내재화<br>+ 24시간 서비스</b></td>
+        <td><b class="gr" style="font-size:24px">회사의 성격이<br>바뀜</b></td></tr>
+  </table>
+  <div class="card a" style="margin-top:26px;padding:28px;text-align:center">
+    <div style="font-size:32px;font-weight:900;line-height:1.4">
+      첫 번째가 <b>장비</b>를 남기고, 두 번째가 <b>데이터</b>를 남겼고,<br>
+      <span class="am">세 번째가 그 둘을 쓸 수 있게 만들었습니다.</span></div>
+  </div>
+  <div class="card p" style="margin-top:16px;padding:24px;text-align:center">
+    <div style="font-size:32px;font-weight:900">AI로 <b>만들려다</b> 두 번 실패하고,
+    AI로 <span class="pp">묻기 시작하자</span> 달라졌습니다.</div>
+  </div>
+  <div class="num">36</div>
+</div>
+
+<!-- 37 오성철강은 무엇이 되었나 -->
+<div class="slide">
+  <div class="tag g">8부 · 그래서 오성철강은 무엇이 되었나</div>
+  <div class="row" style="margin-top:20px">
+    <div class="col card g" style="padding:34px">
+      <div class="mid gr">1)</div>
+      <h3 style="margin-top:18px;font-size:36px">생산성 높은 장비에 걸맞는<br><span class="gr">완벽한 품질 기술</span>을 확보했습니다</h3>
+      <div class="body" style="margin-top:20px">장비는 첫 번째 시도에서 샀습니다.
+      그런데 <b>그 장비를 제대로 쓰는 기술이 없었습니다.</b><br><br>
+      지금은 있습니다 — 공정 표준화, 설정 불량 제거, 전수 검증, 데이터 자체의 검증.<br><br>
+      <b>그리고 외주로 산 게 아니라 직접 만들었기 때문에, 계속 고칠 수 있습니다.</b></div>
+    </div>
+    <div class="col card p" style="padding:34px">
+      <div class="mid pp">2)</div>
+      <h3 style="margin-top:18px;font-size:36px">이 차별화 기술로<br><span class="pp">24시간 쉬지 않는 서비스 회사</span>로 거듭납니다</h3>
+      <div class="body" style="margin-top:20px">고객이 밤에 주문을 넣고, 진행 상황을 보고, 품질 결과를 확인합니다.<br><br>
+      <b>사람이 응대하지 않아도 됩니다. 기록이 응대합니다.</b><br><br>
+      이건 직원 12명 회사가 <b>인력을 늘리지 않고 영업시간을 세 배로 늘리는 유일한 방법</b>입니다.</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:26px;padding:32px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:40px;font-weight:900;color:#fff;line-height:1.35">
+      오성철강은 이제 철판을 자르는 회사가 아닙니다.<br>
+      <span style="color:#FEC84B">철판을 자르고, 그 결과를 증명하고, 24시간 답하는 회사입니다.</span></div>
+  </div>
+  <div class="num">37</div>
+</div>
+
+<!-- 38 장비 vs 서비스 -->
+<div class="slide">
+  <div class="tag g">8부 · 그리고 이게 가격 경쟁에서 벗어나는 길입니다</div>
+  <h2>장비는 <span class="gray">낮에만</span> 돕니다. 서비스는 <span class="pp">24시간</span> 돕니다.</h2>
+  <svg viewBox="0 0 1150 250" style="width:100%;height:240px">
+    <text x="30" y="46" font-size="20" font-weight="900" fill="#667085">장비 · 사람</text>
+    <rect x="30" y="60" width="1090" height="46" rx="10" fill="#F2F4F7" stroke="#E4E7EC" stroke-width="2"/>
+    <rect x="440" y="60" width="270" height="46" rx="10" fill="#98A2B3"/>
+    <text x="575" y="90" font-size="19" font-weight="900" fill="#fff" text-anchor="middle">09:00 – 18:00</text>
+    <text x="200" y="90" font-size="17" font-weight="800" fill="#98A2B3" text-anchor="middle">멈춤</text>
+    <text x="915" y="90" font-size="17" font-weight="800" fill="#98A2B3" text-anchor="middle">멈춤</text>
+
+    <text x="30" y="158" font-size="20" font-weight="900" fill="#4F46E5">서비스 · 기록</text>
+    <rect x="30" y="172" width="1090" height="46" rx="10" fill="#4F46E5"/>
+    <text x="575" y="202" font-size="21" font-weight="900" fill="#fff" text-anchor="middle">00:00 — 24:00 · 쉬지 않습니다</text>
+    <text x="130" y="202" font-size="16" font-weight="800" fill="#C7CDFF" text-anchor="middle">새벽에도</text>
+    <text x="1020" y="202" font-size="16" font-weight="800" fill="#C7CDFF" text-anchor="middle">주말에도</text>
+  </svg>
+  <div class="card g" style="margin-top:14px;padding:30px">
+    <div class="lead" style="font-size:30px">코일센터는 단가와 납기로만 비교됩니다. 그건 사실입니다.<br><br>
+    그런데 고객이 <b>밤에 확인할 수 있고, 품질 결과를 받아보고, 재고를 맡겨두고 있으면</b> —<br>
+    <span class="gr" style="font-size:34px;font-weight:900">단가 몇 % 차이로는 옮기지 않습니다. 옮기면 이 전부를 잃기 때문입니다.</span></div>
+  </div>
+  <div class="num">38</div>
+</div>
+
+<!-- 39 진단 -->
+<div class="slide">
+  <div class="tag r">9부 · 냉정한 진단 — 지금 어디까지 왔나</div>
+  <h2>두 질문의 진도</h2>
+  <div class="row" style="margin-top:14px">
+    <div class="col card g" style="padding:28px">
+      <div class="pill g">질문 ① 우리는 무엇을 모르는가</div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin:18px 0">
+        <span class="big gr">70</span><span class="mid gr" style="font-size:40px">%</span>
+      </div>
+      <div class="bar-bg" style="height:16px"><div class="bar-fl" style="width:70%;background:var(--gr)"></div></div>
+      <div class="body" style="margin-top:18px;font-size:23px"><b>완벽한 품질과 기술 내재화는 얻었습니다.</b><br>
+      판정하는 <b>표준이 없는 것</b>이 남았습니다.</div>
+    </div>
+    <div class="col card r" style="padding:28px">
+      <div class="pill r">질문 ② 고객은 무엇을 원하는가</div>
+      <div style="display:flex;align-items:baseline;gap:12px;margin:18px 0">
+        <span class="big rd">20</span><span class="mid rd" style="font-size:40px">%</span>
+      </div>
+      <div class="bar-bg" style="height:16px"><div class="bar-fl" style="width:20%;background:var(--rd)"></div></div>
+      <div class="body" style="margin-top:18px;font-size:23px">답은 찾았고 기능도 거의 만들었습니다.<br>
+      <b class="rd">그런데 고객에게 나간 것이 하나도 없습니다.</b><br>
+      24시간 창구가 아직 닫혀 있습니다.</div>
+    </div>
+    <div class="col card" style="padding:24px;max-width:330px">
+      <div class="pill">41개의 실제 상태</div>
+      <table style="margin-top:10px">
+        <tr><td style="padding:9px 0;font-size:20px;border-color:var(--line)">보는 도구</td>
+            <td style="text-align:right;font-weight:900;font-size:22px;padding:9px 0">24</td></tr>
+        <tr><td style="padding:9px 0;font-size:20px">추천 도구</td>
+            <td style="text-align:right;font-weight:900;font-size:22px;padding:9px 0">5</td></tr>
+        <tr><td style="padding:9px 0;font-size:20px">현장이 값을 넣는 도구</td>
+            <td style="text-align:right;font-weight:900;font-size:22px;padding:9px 0">4</td></tr>
+        <tr style="background:var(--rdL)"><td style="padding:9px 6px;font-size:20px">고객에게 나가는 것</td>
+            <td style="text-align:right;font-weight:900;font-size:22px;padding:9px 6px" class="rd">3 <span style="font-size:15px">전부 시연용</span></td></tr>
+        <tr style="background:var(--rdL)"><td style="padding:9px 6px;font-size:20px">주문접수 자동화</td>
+            <td style="text-align:right;font-weight:900;font-size:22px;padding:9px 6px" class="rd">4 <span style="font-size:15px">실배포 0</span></td></tr>
+      </table>
+      <div class="card r" style="margin-top:14px;padding:16px">
+        <div style="font-size:21px;font-weight:900">현장에 매일 상주하는 것은<br><span class="rd">2개뿐입니다.</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="card p" style="margin-top:22px;padding:24px;text-align:center">
+    <div style="font-size:31px;font-weight:900">24시간 서비스 회사라고 말할 수 있으려면,
+    <span class="pp">두 번째 질문을 80%까지 올려야 합니다.</span></div>
+  </div>
+  <div class="num">39</div>
+</div>
+
+<!-- 40 로드맵 -->
+<div class="slide">
+  <div class="tag">10부 · 그래서 무엇부터 하나</div>
+  <h2>새로 만들지 않습니다 — <span class="pp">이미 만든 것을 쓰이게 만듭니다</span></h2>
+  <div class="row" style="margin-top:16px;align-items:stretch">
+    <div class="col card" style="padding:24px">
+      <div class="pill">1~3개월</div>
+      <h3 style="margin-top:12px;font-size:26px">신규 개발 없음</h3>
+      <ul style="margin-top:14px">
+        <li style="font-size:21px">센서 배선 수리 · 카메라 고정</li>
+        <li style="font-size:21px">코일 번호 태깅 <b>100%</b></li>
+        <li style="font-size:21px">외부 검사 두께 측정 가동 요구</li>
+        <li style="font-size:21px">품질이력 ↔ 작업데이터 <b>연결</b></li>
+        <li style="font-size:21px">되는 도구 3개를 <b>현장 상주로</b></li>
+      </ul>
+      <div class="pill a" style="margin-top:12px">전부 ① 데이터 구멍 막기</div>
+    </div>
+    <div class="col card p" style="padding:24px">
+      <div class="pill p">3~6개월</div>
+      <h3 style="margin-top:12px;font-size:26px">기준선을 만들고 창구를 엽니다</h3>
+      <ul style="margin-top:14px">
+        <li style="font-size:21px">사양별 <b>표준값 확정·문서화</b></li>
+        <li style="font-size:21px">화면에 <b>판정·경고 + 이유 한 줄</b></li>
+        <li style="font-size:21px">포털을 <b>시연용 → 실서비스</b> (1곳)</li>
+        <li style="font-size:21px"><b>품질 결과 1호 발행</b> (3개월 무료)</li>
+        <li style="font-size:21px">완료 예정시각 정확도 2개월 측정</li>
+        <li style="font-size:21px">매일 저녁 자동 마감 리포트</li>
+      </ul>
+      <div class="pill r" style="margin-top:12px">못 맞히는 예측은 안 보여주는 것보다 나쁩니다</div>
+    </div>
+    <div class="col card g" style="padding:24px">
+      <div class="pill g">6~12개월</div>
+      <h3 style="margin-top:12px;font-size:26px">24시간을 완성하고 값을 받습니다</h3>
+      <ul style="margin-top:14px">
+        <li class="g" style="font-size:21px"><b>24시간 발주 실배포</b> — 시험판 4개 실전 투입</li>
+        <li class="g" style="font-size:21px">품질 결과 전 거래처 + <b>상세본 유상화</b></li>
+        <li class="g" style="font-size:21px">24시간 조회·품질을 <b>계약서에 명시</b></li>
+        <li class="g" style="font-size:21px">분쟁 판별 리포트 <b>표준 양식</b></li>
+        <li class="g" style="font-size:21px">보관 대행 <b>1개 거래처 요율 계약</b></li>
+        <li class="g" style="font-size:21px">작업 표준서 화면 — <b>정년 전에</b></li>
+      </ul>
+    </div>
+  </div>
+  <div class="num">40</div>
+</div>
+
+<!-- 41 지표 -->
+<div class="slide">
+  <div class="tag">11부 · 1년 뒤에 이걸로 확인해 주십시오</div>
+  <div class="row" style="margin-top:10px">
+    <div class="col card" style="padding:22px">
+      <div class="pill p">① 품질과 기술이 단단해졌는지</div>
+      <table style="margin-top:10px">
+        <tr><th style="font-size:17px">지표</th><th style="font-size:17px;width:130px">지금</th><th style="font-size:17px;width:150px">1년 뒤</th></tr>
+        <tr><td style="font-size:20px">표준값 있는 사양</td><td class="sm" style="font-size:19px">0%</td><td><b style="font-size:20px">주요 80%</b></td></tr>
+        <tr><td style="font-size:20px">표준 이탈률</td><td class="sm" style="font-size:19px">측정 안 됨</td><td><b style="font-size:20px">측정+하락</b></td></tr>
+        <tr><td style="font-size:20px">데이터 결측률</td><td class="sm" style="font-size:19px">구간별 존재</td><td><b style="font-size:20px">3% 이하</b></td></tr>
+        <tr><td style="font-size:20px">코일번호 태깅률</td><td class="sm" style="font-size:19px">미완</td><td><b style="font-size:20px">100%</b></td></tr>
+        <tr><td style="font-size:20px">셋업 시간</td><td class="sm" style="font-size:19px">측정 안 됨</td><td><b style="font-size:20px">측정+하락</b></td></tr>
+        <tr><td style="font-size:20px">재작업·클레임</td><td class="sm" style="font-size:19px">기록 산재</td><td><b style="font-size:20px">집계+하락</b></td></tr>
+      </table>
+      <div class="sm" style="margin-top:12px;font-size:19px"><b>"측정 안 됨 → 측정됨"도 성과입니다.</b></div>
+    </div>
+    <div class="col card g" style="padding:22px">
+      <div class="pill g">② 24시간이 실제로 열렸는지</div>
+      <table style="margin-top:10px">
+        <tr><th style="font-size:17px">지표</th><th style="font-size:17px;width:130px">지금</th><th style="font-size:17px;width:150px">1년 뒤</th></tr>
+        <tr><td style="font-size:20px">24시간 창구 쓰는 거래처</td><td class="sm" style="font-size:19px">0 (시연만)</td><td><b style="font-size:20px">5곳+</b></td></tr>
+        <tr style="background:#fff"><td style="font-size:21px"><b>업무시간 외 접속 비율</b></td>
+            <td class="sm" style="font-size:19px">0%</td><td><b class="gr" style="font-size:22px">30%+</b></td></tr>
+        <tr><td style="font-size:20px">온라인 발주 비율</td><td class="sm" style="font-size:19px">0%</td><td><b style="font-size:20px">30%+</b></td></tr>
+        <tr><td style="font-size:20px">품질 결과 받는 거래처</td><td class="sm" style="font-size:19px">0곳</td><td><b style="font-size:20px">5곳+</b></td></tr>
+        <tr><td style="font-size:20px">진행 문의 전화 건수</td><td class="sm" style="font-size:19px">현재 수준</td><td><b style="font-size:20px">감소</b></td></tr>
+        <tr><td style="font-size:20px">서비스 적힌 견적서</td><td class="sm" style="font-size:19px">0%</td><td><b style="font-size:20px">100%</b></td></tr>
+      </table>
+      <div class="card" style="margin-top:12px;padding:14px;background:#fff">
+        <div style="font-size:19px;font-weight:900">밤과 주말에 고객이 들어온다면 진짜 24시간 회사가 된 것입니다.
+        낮에만 들어온다면 <span class="rd">화면을 하나 더 만든 것</span>입니다.</div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:20px;padding:26px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:34px;font-weight:900;color:#fff">가공 외 매출 <span style="color:#FDA29B">0원</span>
+    → <span style="color:#FEC84B">0원이 아니게</span><br>
+    <span style="font-size:25px;color:#D0D5DD">1원과 0원의 차이가, 1,000만 원과 1,100만 원의 차이보다 큽니다.</span></div>
+  </div>
+  <div class="num">41</div>
+</div>
+
+<!-- 42 4000곳 -->
+<div class="slide">
+  <div class="tag b">12부 · 이건 저희만의 이야기가 아닙니다</div>
+  <h2>반월시화에는 저희 같은 공장이 <span class="pp">4,000곳</span> 있습니다</h2>
+  <div class="row" style="margin-top:16px">
+    <div class="col card" style="padding:28px">
+      <div class="body" style="font-size:25px">저는 통신회사에서 30년 가까이 IT를 했습니다.<br>
+      <b class="rd">그런 저도 AI 이전에는 못 했습니다.</b><br>
+      데이터를 두고도 못 했습니다. 두 번 실패했습니다.<br><br>
+      그런데 AI가 나오자 <b>물어볼 수 있게 됐습니다.</b> 그게 전부였습니다.</div>
+      <div class="card p" style="margin-top:20px;padding:24px">
+        <div style="font-size:31px;font-weight:900;line-height:1.35">이 말은,<br>
+        <span class="pp">이제 IT 전문가가 아니어도 된다</span>는 뜻입니다.</div>
+      </div>
+    </div>
+    <div class="col card a" style="padding:28px">
+      <div class="pill a">왜 외주로는 안 되나</div>
+      <svg viewBox="0 0 420 150" style="width:100%;height:140px;margin-top:12px">
+        <rect x="0" y="20" width="76" height="52" rx="9" fill="#fff" stroke="#FEC84B" stroke-width="2"/>
+        <text x="38" y="52" font-size="14" font-weight="900" fill="#101828" text-anchor="middle">직접 물음</text>
+        <path d="M80 46 L96 46" stroke="#B54708" stroke-width="2.5"/>
+        <rect x="100" y="20" width="76" height="52" rx="9" fill="#fff" stroke="#FEC84B" stroke-width="2"/>
+        <text x="138" y="52" font-size="14" font-weight="900" fill="#101828" text-anchor="middle">직접 만듦</text>
+        <path d="M180 46 L196 46" stroke="#B54708" stroke-width="2.5"/>
+        <rect x="200" y="20" width="96" height="52" rx="9" fill="#fff" stroke="#FEC84B" stroke-width="2"/>
+        <text x="248" y="44" font-size="14" font-weight="900" fill="#101828" text-anchor="middle">며칠 만에</text>
+        <text x="248" y="62" font-size="14" font-weight="900" fill="#101828" text-anchor="middle">고침</text>
+        <path d="M300 46 L316 46" stroke="#B54708" stroke-width="2.5"/>
+        <rect x="320" y="20" width="96" height="52" rx="9" fill="#ECFDF3" stroke="#067647" stroke-width="2.5"/>
+        <text x="368" y="44" font-size="14" font-weight="900" fill="#067647" text-anchor="middle">실제로</text>
+        <text x="368" y="62" font-size="14" font-weight="900" fill="#067647" text-anchor="middle">쓰임</text>
+        <path d="M368 78 L368 96" stroke="#067647" stroke-width="2.5"/>
+        <rect x="230" y="100" width="186" height="44" rx="9" fill="#ECFDF3" stroke="#067647" stroke-width="2.5"/>
+        <text x="323" y="128" font-size="14" font-weight="900" fill="#067647" text-anchor="middle">기록이 쌓임 → 고객에게 답할 근거</text>
+      </svg>
+      <div class="body" style="margin-top:14px;font-size:23px"><b>외주를 줬다면 이 순서가 성립하지 않았을 겁니다.</b>
+      질문 하나를 확인하는 데 견적서부터 받아야 했을 테니까요.
+      <span class="rd">그리고 저희는 무엇을 물어야 할지 처음부터 알지도 못했습니다.</span></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:24px;padding:28px;background:var(--ink);border:none;text-align:center">
+    <div style="font-size:31px;font-weight:900;color:#fff;line-height:1.4">
+      4,000곳 전부 회사도 오래되고, 기계도 오래되고, 사람도 오래되었습니다.<br>
+      <span style="color:#FEC84B">그리고 전부, 쓰지 못하고 쌓아둔 데이터를 갖고 있습니다.
+      그리고 전부, 아침 아홉 시에만 열립니다.</span></div>
+  </div>
+  <div class="num">42</div>
+</div>
+
+<!-- 43 요청 -->
+<div class="slide">
+  <div class="tag">12부 · 요청드립니다</div>
+  <h2>「자체개발형 AI 모델공장」 시범 지정</h2>
+  <div class="card p" style="padding:24px;margin-bottom:20px;text-align:center">
+    <div style="font-size:31px;font-weight:900">솔루션을 사주는 지원이 아니라,
+    <span class="pp">공장이 직접 물어볼 수 있는 역량</span>에 투자하는 지원입니다.</div>
+  </div>
+  <div class="row">
+    <div class="col card" style="padding:26px">
+      <div class="mid pp" style="font-size:44px">2명</div>
+      <h3 style="margin-top:14px;font-size:27px">전담 인력</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">데이터를 다룰 한 명,<br>현장에 적용할 한 명.</div>
+      <div class="card r" style="margin-top:16px;padding:18px">
+        <div style="font-size:22px;font-weight:900;line-height:1.4">지금 이 41개를 <span class="rd">저 혼자</span> 만들고 있습니다.
+        혼자서도 여기까지 왔습니다.<br>
+        <b>혼자가 아니면 어디까지 갈 수 있을지 확인하고 싶습니다.</b></div>
+      </div>
+    </div>
+    <div class="col card" style="padding:26px">
+      <div class="mid pp" style="font-size:44px">실증</div>
+      <h3 style="margin-top:14px;font-size:27px">예산</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">남은 공정의 품질측정을 완성해
+      <b>24시간 품질 결과 제공을 끝까지 완성</b>하고,<br><br>
+      저희가 만든 것을 <b>다른 공장도 쓸 수 있는 형태로</b> 정리하는 데 쓰겠습니다.</div>
+    </div>
+    <div class="col card" style="padding:26px">
+      <div class="mid pp" style="font-size:44px">확산</div>
+      <h3 style="margin-top:14px;font-size:27px">채널</h3>
+      <div class="body" style="margin-top:12px;font-size:22px">산업단지 안에 <b>공개 실증장</b>을 열어
+      다른 공장이 보러 오게 하고, <b>교육 프로그램</b>을 운영하겠습니다.</div>
+      <div style="margin-top:18px;display:flex;gap:8px">
+        <span class="pill p">2027 시범</span>
+        <span class="pill g">2028 반월시화 확대</span>
+      </div>
+    </div>
+  </div>
+  <div class="num">43</div>
+</div>
+
+<!-- 44 클로징 -->
+<div class="slide">
+  <div class="center">
+    <div class="lead" style="font-size:28px;margin-bottom:10px">오디세우스는 고향으로 돌아오는 데 20년이 걸렸다고 합니다.</div>
+    <div style="font-size:38px;font-weight:900;margin-bottom:40px">저는 <span class="pp">30년</span>이 걸렸습니다.</div>
+    <div class="row" style="width:100%;max-width:1060px;margin-bottom:32px">
+      <div class="col card" style="padding:24px;text-align:left">
+        <div class="sm">밖에서 배운 것</div>
+        <div class="body" style="margin-top:10px;font-size:23px">모든 장비를 연결하고, 실시간으로 지켜보고,
+        누구나 할 수 있게 기준을 만들고, 문제가 생기면 원인을 분석해 다시는 안 생기게 하는 것.</div>
+        <div style="margin-top:14px;font-size:25px;font-weight:900">그리고 <span class="pp">통신망은 24시간 돕니다.</span><br>
+        <span class="sm" style="font-size:21px">사람이 자는 동안에도.</span></div>
+      </div>
+      <div class="col card a" style="padding:24px;text-align:left">
+        <div class="sm">두 번의 실패는 헛되지 않았습니다</div>
+        <div style="margin-top:12px;font-size:25px;font-weight:900;line-height:1.5">
+          첫 번째는 <span class="am">장비</span>를 남겼고,<br>
+          두 번째는 <span class="am">데이터</span>를 남겼습니다.<br><br>
+          그리고 AI가 그 데이터에<br><b>물어볼 방법</b>을 가져다주었습니다.</div>
+      </div>
+    </div>
+    <div class="row" style="width:100%;max-width:1060px;margin-bottom:36px">
+      <div class="col card g" style="padding:22px">
+        <div class="pill g">질문 ①로</div>
+        <div style="margin-top:10px;font-size:26px;font-weight:900">완벽한 품질과,<br>직접 만들고 고칠 수 있는 기술</div>
+      </div>
+      <div class="col card p" style="padding:22px">
+        <div class="pill p">질문 ②로</div>
+        <div style="margin-top:10px;font-size:26px;font-weight:900">24시간 쉬지 않는<br>서비스 회사</div>
+      </div>
+    </div>
+    <div class="lead" style="font-size:27px">그 경기장도 지금 다시 짓고 있습니다. <b>저희도 다시 짓고 있습니다.</b></div>
+    <div class="card" style="margin-top:28px;padding:32px 56px;background:var(--ink);border:none">
+      <div style="font-size:40px;font-weight:900;color:#fff;line-height:1.35">
+        AI는 개발이 아니라, <span style="color:#FEC84B">발견</span>이었습니다.<br>
+        <span style="font-size:30px;color:#D0D5DD">그리고 발견은 질문에서만 나옵니다.</span></div>
+    </div>
+  </div>
+  <div class="num">44</div>
+</div>
+
+</body>
+</html>

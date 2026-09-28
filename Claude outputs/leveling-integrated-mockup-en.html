@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leveling Integrated View (Mockup, EN)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--mut:#7d8ba1;--acc:#796cbf;--bg:#f3f5fe;--line:#e3e8f0;--good:#1f8f5f;--warn:#c98a00;--bad:#c93b3b;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:14px}
+  .wrap{max-width:1360px;margin:0 auto;padding:20px 24px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+  header h1{font-size:22px;margin:0}
+  header h1 span{color:var(--mut);font-size:13px;margin-left:10px;font-weight:600}
+  .ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ctrl input,.ctrl select{font:inherit;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;border:1.5px solid var(--line);background:#fff}
+  .pill.run{background:#e6f6ee;border-color:#b7e3cb;color:var(--good)}
+  .pill.warn{background:#fff6e0;border-color:#f3d68a;color:var(--warn)}
+  .pill.bad{background:#fdecec;border-color:#f3b8b8;color:var(--bad)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;position:relative}
+  .card h2{font-size:13px;color:var(--sec);margin:0 0 10px;letter-spacing:.2px}
+  .card h2 small{color:var(--mut);font-weight:600;margin-left:6px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+  .kv .k{color:var(--mut);font-weight:600}
+  .big{font-size:30px;line-height:1.1;margin:2px 0 4px}
+  .sub{color:var(--mut);font-size:12px;font-weight:600}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .tile{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfbfe}
+  .tile .lbl{color:var(--mut);font-size:12px;font-weight:600}
+  .tile .val{font-size:24px;margin-top:4px}
+  .tile .val small{font-size:12px;color:var(--mut);margin-left:3px}
+  .tl{position:relative;height:56px;border:1.5px solid var(--line);border-radius:10px;background:#fbfbfe;overflow:hidden}
+  .tl .hour{position:absolute;top:0;bottom:0;border-left:1px dashed var(--line)}
+  .tl .hour b{position:absolute;top:2px;left:4px;font-size:10px;color:var(--mut);font-weight:600}
+  .tl .seg{position:absolute;top:22px;height:22px;border-radius:6px;background:var(--acc);color:#fff;font-size:11px;line-height:22px;padding:0 8px;white-space:nowrap}
+  .tl .tick{position:absolute;top:46px;width:6px;height:6px;border-radius:50%;background:var(--ink);transform:translateX(-3px)}
+  .tl .now{position:absolute;top:0;bottom:0;border-left:2px solid var(--bad)}
+  svg text{font-family:inherit}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--sec);margin-top:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  .ins{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+  .ins li{display:flex;gap:10px;align-items:flex-start;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;background:#fbfbfe;font-size:13px}
+  .ins .ic{width:26px;height:26px;border-radius:8px;flex:0 0 26px;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff}
+  .ins .ic.good{background:var(--good)} .ins .ic.warn{background:var(--warn)} .ins .ic.bad{background:var(--bad)} .ins .ic.info{background:var(--acc)}
+  .ins .d{color:var(--sec);font-weight:600;font-size:12px;margin-top:2px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--mut);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1.5px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  .foot{color:var(--mut);font-size:11px;font-weight:600;margin-top:14px}
+  /* explanation notes (mockup only) */
+  .note{margin-top:12px;border-left:3px solid var(--acc);background:#f6f4fd;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;font-weight:500;color:var(--sec);line-height:1.5}
+  .note b{color:var(--ink);font-weight:700}
+  .note code{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:#ebe8f7;padding:1px 4px;border-radius:4px;color:var(--ink)}
+  .intro{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;font-weight:500;color:var(--sec);line-height:1.55;font-size:13px}
+  .intro h2{font-size:15px;color:var(--ink);margin:0 0 6px;font-weight:700}
+  .intro ul{margin:6px 0 0 18px;padding:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Leveling Integrated View <span>ERP spec · PLC telemetry · Tension controller (PR-DTC-3100) on one screen</span></h1>
+    <div class="ctrl">
+      <input type="date" value="2026-09-03">
+      <select><option>EPD2871C01 · Daehan Steel · 0.76X4XC</option><option>All coils today (1)</option></select>
+      <span class="pill">Auto-refresh 20s</span>
+      <span class="pill run">● RUNNING</span>
+    </div>
+  </header>
+
+  <div class="intro">
+    <h2>What this page is</h2>
+    Today the leveling line's data lives in three places that never meet: the <b>ERP work order</b> (coil ID, customer, spec, weight — MariaDB <code>erp_data</code>), the <b>PLC log</b> (cut length, stroke cycle time, inverter load, every ~2 seconds — MariaDB <code>LEVELING_DATA</code>), and the <b>tension controller readings</b> captured by camera + AI every 2–5 minutes (Supabase <code>ai_tension_readings</code>). This page joins them: ERP↔PLC by coil ID, and tension↔coil by <b>time</b> (a reading is attributed to whichever coil the PLC says was running at that moment), then turns the joined data into plain-language insights.
+    <ul>
+      <li><b>Audience:</b> office PC — managers and the CEO. Wide layout, no login (public static HTML under <code>public/</code>, linked from a 연구실 Lab card).</li>
+      <li><b>Data sources:</b> existing <code>leveler-explore</code> Edge Function modes (<code>leveling_date</code>, <code>leveling_stroke_overview</code>, <code>leveling_stroke_detail</code>, <code>leveling_rhythm</code>) + Supabase anon read of <code>ai_tension_readings</code>. No new tables. One small new mode ("per-coil run start/end for a date") may be added for the timeline.</li>
+      <li><b>All numbers below are today's real values (2026-09-03, KST)</b> shown as a static mockup. Purple annotation boxes explain each block and are not part of the final page.</li>
+    </ul>
+  </div>
+
+  <div class="grid">
+    <!-- Row 1 -->
+    <div class="card" style="grid-column:span 4">
+      <h2>Current coil <small>erp_data · LEVELLING</small></h2>
+      <div class="big">EPD2871C01</div>
+      <div class="sub" style="margin-bottom:10px">Daehan Steel Co. · ERP updated 09:05 · status In progress</div>
+      <div class="kv">
+        <div class="k">Spec</div><div>0.76 × 4 ft × Coil (thickness 0.76 mm)</div>
+        <div class="k">Weight (orig / used)</div><div>10,410 kg / 10,410 kg</div>
+        <div class="k">Started</div><div>08:25 (ERP) · 08:33 (first PLC RUN)</div>
+        <div class="k">Cut length setting</div><div>2,994 mm · correction 0 · slow zone 50 mm</div>
+        <div class="k">Accel / decel</div><div>ACC 10.0 s · DEC 1.0 s · speed coeff 23.8</div>
+      </div>
+      <div class="note"><b>Header card.</b> One row from <code>erp_data</code> (work_type = LEVELLING, today) merged with the latest <code>LEVELING_DATA</code> row for the same COIL_ID. The first four settings (cut length, correction, slow zone, ACC/DEC) are read straight from PLC columns <code>CUTLENSET / CUTLENCORR / SLOWLENSET / ACCTM / DECTM</code>. Selecting a different coil in the dropdown re-renders the whole page for that coil.</div>
+    </div>
+    <div class="card" style="grid-column:span 8">
+      <h2>Live KPIs <small>latest LEVELING_DATA row 09:40:51</small></h2>
+      <div class="tiles">
+        <div class="tile"><div class="lbl">Stroke progress</div><div class="val">44.6<small>%</small></div><div class="sub">1,335.7 / 2,994 mm</div></div>
+        <div class="tile"><div class="lbl">Strokes (≈ cuts)</div><div class="val">966</div><div class="sub">est. sheets ≈ 512</div></div>
+        <div class="tile"><div class="lbl">Avg cycle time</div><div class="val">7.83<small>s</small></div><div class="sub">CV 35.7% · theoretical 460/h</div></div>
+        <div class="tile"><div class="lbl">Inverter load</div><div class="val">24.8<small>%</small></div><div class="sub">utilization 100% (1,894 rows RUN=1)</div></div>
+      </div>
+      <div class="tiles" style="margin-top:12px">
+        <div class="tile"><div class="lbl">Tension output</div><div class="val">90<small>%</small></div><div class="sub">21.6 V · read 09:21</div></div>
+        <div class="tile"><div class="lbl">Tension set / ratio</div><div class="val">90<small>/ 0.0</small></div><div class="sub">start diameter 1,204 mm</div></div>
+        <div class="tile"><div class="lbl">Thickness (controller)</div><div class="val">760<small>µm</small></div><div class="sub">matches ERP 0.76 mm ✓</div></div>
+        <div class="tile"><div class="lbl">Reading health</div><div class="val" style="font-size:18px;color:var(--good)">OK</div><div class="sub">5-min interval · 11/11 parsed today</div></div>
+      </div>
+      <div class="note"><b>KPI tiles.</b> Top row = PLC. <i>Stroke progress</i> is <code>MOVELENSV / CUTLENSET</code> (not POS — POS is a fixed index, a bug found in Aug). <i>Strokes</i> counts rows with <code>CYCLETM &gt; 0</code>; sheets are estimated as run time ÷ average cycle. <i>CV</i> = std/mean of cycle time — a stability score. Bottom row = the last successful tension reading (<code>output_percent, output_voltage, thickness_um, start_dia_mm, tension_set, tension_rate</code>). The thickness tile turns amber when controller µm ≠ ERP mm×1000. <i>Reading health</i> turns red if the last reading failed (e.g. Groq daily token limit) or is older than 2× the configured interval.</div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="card" style="grid-column:span 12">
+      <h2>Today's integrated timeline <small>bar = PLC run span per coil · dot = tension reading · red line = now</small></h2>
+      <div class="tl">
+        <div class="hour" style="left:0%"><b>08:00</b></div>
+        <div class="hour" style="left:25%"><b>09:00</b></div>
+        <div class="hour" style="left:50%"><b>10:00</b></div>
+        <div class="hour" style="left:75%"><b>11:00</b></div>
+        <div class="seg" style="left:13.75%;width:28%">EPD2871C01 · 08:33 → (running)</div>
+        <div class="tick" style="left:12.9%"></div><div class="tick" style="left:15%"></div>
+        <div class="tick" style="left:17.1%"></div><div class="tick" style="left:19.2%"></div><div class="tick" style="left:21.2%"></div><div class="tick" style="left:23.3%"></div><div class="tick" style="left:25.4%"></div>
+        <div class="tick" style="left:27.5%"></div><div class="tick" style="left:29.6%"></div><div class="tick" style="left:31.7%"></div><div class="tick" style="left:33.7%"></div>
+        <div class="now" style="left:41.7%"></div>
+      </div>
+      <div class="legend"><span><i style="background:var(--acc)"></i>PLC running (RUN=1)</span><span><i style="background:var(--ink);border-radius:50%"></i>Tension reading (parsed)</span><span><i style="background:var(--bad);border-radius:50%"></i>Tension reading failed</span></div>
+      <div class="note"><b>Timeline — the join mechanism.</b> Each coil that ran today becomes a purple bar from its first to last <code>RUN=1</code> timestamp. Each tension reading is a dot at <code>captured_at</code>. A dot inside a bar is attributed to that coil; a dot outside any bar is labelled "before run / between coils". Hovering a dot shows the reading; hovering a bar shows the coil's ERP spec. This is how the page links tension data to coils without changing the OCR script or the database — later, if the script starts storing COIL_ID directly, the page uses that instead and the time rule becomes a fallback.</div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="card" style="grid-column:span 7">
+      <h2>Cycle time · inverter load trend <small>LEVELING_DATA · 2-min buckets</small></h2>
+      <svg viewBox="0 0 640 200" width="100%" height="200">
+        <g stroke="#e3e8f0" stroke-width="1"><line x1="40" y1="30" x2="620" y2="30"/><line x1="40" y1="80" x2="620" y2="80"/><line x1="40" y1="130" x2="620" y2="130"/><line x1="40" y1="180" x2="620" y2="180"/></g>
+        <g fill="#7d8ba1" font-size="10" font-weight="600"><text x="8" y="34">10s</text><text x="8" y="84">7s</text><text x="8" y="134">4s</text><text x="8" y="184">1s</text>
+          <text x="40" y="196">08:34</text><text x="180" y="196">08:50</text><text x="320" y="196">09:06</text><text x="460" y="196">09:22</text><text x="590" y="196">09:40</text></g>
+        <polyline fill="none" stroke="#796cbf" stroke-width="2" points="40,92 70,88 100,95 130,84 160,90 190,86 220,110 250,89 280,85 310,92 340,87 370,84 400,90 430,86 460,120 490,88 520,85 550,90 580,87 610,84"/>
+        <polyline fill="none" stroke="#0f1e33" stroke-width="2" stroke-dasharray="4 3" points="40,150 70,148 100,149 130,146 160,147 190,146 220,158 250,147 280,146 310,147 340,145 370,146 400,146 430,147 460,162 490,146 520,146 550,147 580,146 610,146"/>
+        <rect x="205" y="30" width="30" height="150" fill="#c93b3b" opacity=".08"/><rect x="445" y="30" width="30" height="150" fill="#c93b3b" opacity=".08"/>
+        <text x="220" y="26" fill="#c93b3b" font-size="10" font-weight="700" text-anchor="middle">slow 08:56</text>
+        <text x="460" y="26" fill="#c93b3b" font-size="10" font-weight="700" text-anchor="middle">slow 09:24</text>
+      </svg>
+      <div class="legend"><span><i style="background:#796cbf"></i>Avg cycle time (s)</span><span><i style="background:#0f1e33"></i>Inverter load (%, 0–50 scale)</span><span><i style="background:#c93b3b;opacity:.3"></i>Anomaly window (&gt; mean + 1σ)</span></div>
+      <div class="note"><b>Process rhythm.</b> Uses the existing <code>leveling_rhythm</code> mode: RUN=1 rows bucketed into 1–10 min windows (adaptive to run length), averaging <code>CYCLETM</code> and <code>INVERTERSPEEDPER</code>. Red windows are buckets whose cycle time exceeds mean + 1σ; a load drop in the same window suggests a feed stall or manual pause rather than a heavier cut. Flat segments (4+ identical buckets) are flagged as a possible PLC value freeze, as the mode already does.</div>
+    </div>
+    <div class="card" style="grid-column:span 5">
+      <h2>Tension reading trend <small>ai_tension_readings · 5-min</small></h2>
+      <svg viewBox="0 0 440 200" width="100%" height="200">
+        <g stroke="#e3e8f0"><line x1="40" y1="30" x2="430" y2="30"/><line x1="40" y1="80" x2="430" y2="80"/><line x1="40" y1="130" x2="430" y2="130"/><line x1="40" y1="180" x2="430" y2="180"/></g>
+        <g fill="#7d8ba1" font-size="10" font-weight="600"><text x="8" y="34">100%</text><text x="14" y="84">66%</text><text x="14" y="134">33%</text><text x="20" y="184">0</text>
+          <text x="40" y="196">08:31</text><text x="150" y="196">08:51</text><text x="260" y="196">09:06</text><text x="380" y="196">09:21</text></g>
+        <polyline fill="none" stroke="#796cbf" stroke-width="2" points="50,90 85,180 120,60 155,60 190,60 225,60 260,60 295,45 330,45 365,45 400,45"/>
+        <g fill="#796cbf" stroke="#fff" stroke-width="2"><circle cx="50" cy="90" r="5"/><circle cx="85" cy="180" r="5"/><circle cx="120" cy="60" r="5"/><circle cx="155" cy="60" r="5"/><circle cx="190" cy="60" r="5"/><circle cx="225" cy="60" r="5"/><circle cx="260" cy="60" r="5"/><circle cx="295" cy="45" r="5"/><circle cx="330" cy="45" r="5"/><circle cx="365" cy="45" r="5"/><circle cx="400" cy="45" r="5"/></g>
+        <text x="85" y="170" fill="#5c6478" font-size="10" font-weight="700" text-anchor="middle">0% (coil change?)</text>
+        <text x="190" y="52" fill="#5c6478" font-size="10" font-weight="700" text-anchor="middle">80% · 760 µm</text>
+        <text x="350" y="38" fill="#5c6478" font-size="10" font-weight="700" text-anchor="middle">90% · 760 µm</text>
+      </svg>
+      <div class="legend"><span><i style="background:#796cbf"></i>Output % (= tension set)</span><span class="sub">Thickness changed 800 → 760 µm at 08:36</span></div>
+      <div class="note"><b>Tension trend.</b> One dot per reading; only <code>parse_ok = true</code> rows are plotted, failures appear as red ticks on the timeline instead. Every step change in <code>tension_set</code> or <code>thickness_um</code> is annotated, because a setting change during a run is exactly what an operator or manager wants to see next to the cycle-time chart on the left (same time axis).</div>
+    </div>
+
+    <!-- Row 4 -->
+    <div class="card" style="grid-column:span 5">
+      <h2>Insights <small>rule-based, computed client-side</small></h2>
+      <ul class="ins">
+        <li><span class="ic good">✓</span><div><div>Spec match — controller thickness 760 µm = ERP 0.76 mm</div><div class="d">Readings since 08:41 agree with the work order.</div></div></li>
+        <li><span class="ic warn">!</span><div><div>Tension output raised 80% → 90% at 09:06</div><div class="d">Setting changed mid-run. Cycle time unchanged afterwards (7.8 s).</div></div></li>
+        <li><span class="ic warn">!</span><div><div>Two slow windows — 08:56 and 09:24</div><div class="d">Cycle &gt; mean + 1σ (10.6 s) with a simultaneous load drop → possible feed stall / pause.</div></div></li>
+        <li><span class="ic info">i</span><div><div>Estimated finish 10:52 (~1,100 sheets left)</div><div class="d">10,410 kg ÷ ~6.45 kg/sheet ≈ 1,614 sheets; 512 done; 7.83 s each.</div></div></li>
+        <li><span class="ic bad">×</span><div><div>Untagged PLC data exists historically</div><div class="d">Only 11 distinct coil IDs across 186,050 LEVELING_DATA rows. Today is tagged correctly.</div></div></li>
+      </ul>
+      <div class="note"><b>Insight rules (phase 1).</b> All derived from data already available, no AI call:<br>
+      1) <b>Spec match</b>: <code>thickness_um</code> vs ERP spec thickness ×1000.<br>
+      2) <b>Setting change during run</b>: consecutive readings differ in <code>tension_set</code>/<code>thickness_um</code> while PLC RUN=1.<br>
+      3) <b>Slow windows</b>: rhythm buckets above mean+1σ; severity raised if inverter load also drops.<br>
+      4) <b>Finish estimate</b>: sheet weight = thickness × width × cut length × 7.85 g/cm³; remaining sheets × avg cycle.<br>
+      5) <b>Data-quality warnings</b>: failed/stale tension readings, missing COIL_ID, PLC silence &gt; 3 min while ERP says "in progress".<br>
+      <b>Phase 2</b> (once several coils accumulate): compare this coil's cycle time and tension set against previous coils of the same spec, and flag "slower than usual" or "unusual tension for this thickness".</div>
+    </div>
+    <div class="card" style="grid-column:span 7">
+      <h2>Raw tension readings <small>last 8 · coil matched by PLC run span</small></h2>
+      <table>
+        <thead><tr><th>Time</th><th>Matched coil</th><th class="n">Out %</th><th class="n">Volt</th><th class="n">µm</th><th class="n">Start Ø</th><th class="n">Set</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>09:21:29</td><td>EPD2871C01</td><td class="n">90.0</td><td class="n">21.6</td><td class="n">760</td><td class="n">1204</td><td class="n">90</td><td><span class="pill run">OK</span></td></tr>
+          <tr><td>09:16:27</td><td>EPD2871C01</td><td class="n">90.0</td><td class="n">21.6</td><td class="n">760</td><td class="n">1204</td><td class="n">90</td><td><span class="pill run">OK</span></td></tr>
+          <tr><td>09:11:25</td><td>EPD2871C01</td><td class="n">90.0</td><td class="n">21.6</td><td class="n">760</td><td class="n">1204</td><td class="n">90</td><td><span class="pill run">OK</span></td></tr>
+          <tr><td>09:06:22</td><td>EPD2871C01</td><td class="n">90.0</td><td class="n">21.6</td><td class="n">760</td><td class="n">1204</td><td class="n">90</td><td><span class="pill warn">Changed</span></td></tr>
+          <tr><td>09:01:20</td><td>EPD2871C01</td><td class="n">80.0</td><td class="n">19.2</td><td class="n">760</td><td class="n">1204</td><td class="n">80</td><td><span class="pill run">OK</span></td></tr>
+          <tr><td>08:41:06</td><td>EPD2871C01</td><td class="n">80.0</td><td class="n">19.2</td><td class="n">760</td><td class="n">1204</td><td class="n">80</td><td><span class="pill run">OK</span></td></tr>
+          <tr><td>08:36:04</td><td>— (before run)</td><td class="n">0.0</td><td class="n">0.0</td><td class="n">760</td><td class="n">1204</td><td class="n">0</td><td><span class="pill">Idle</span></td></tr>
+          <tr><td>08:31:02</td><td>— (before run)</td><td class="n">60.0</td><td class="n">14.4</td><td class="n">800</td><td class="n">1204</td><td class="n">60</td><td><span class="pill">Prev. coil</span></td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>Raw table.</b> The audit view: every reading with the coil it was attributed to, so a manager can verify the time-based matching. Rows with <code>parse_ok = false</code> show the error text (e.g. "Rate limit reached … TPD") in place of values. A "Download CSV" button exports the joined table for the day.</div>
+    </div>
+  </div>
+
+  <div class="intro" style="margin-top:14px">
+    <h2>Implementation plan (after mockup approval)</h2>
+    <ul>
+      <li><b>File:</b> <code>public/leveling-integrated.html</code> (vanilla JS, inline styles, Pretendard via jsDelivr — same conventions as the other <code>public/*.html</code> tools). Card added to <code>LabPage.jsx</code> PROJECTS under 레벨링 공정 관리 with <code>external: true</code>, badge 실데이터 연동.</li>
+      <li><b>Fetch cycle (every 20 s):</b> <code>leveling_stroke_overview=&lt;date&gt;</code> → coil list + latest box rows; <code>leveling_stroke_detail</code> + <code>leveling_rhythm</code> for the selected coil; Supabase REST <code>ai_tension_readings?captured_at=gte.&lt;date&gt;</code> with the anon key.</li>
+      <li><b>New backend piece (small):</b> one extra mode in <code>leveler-explore</code>, <code>leveling_spans=&lt;date&gt;</code>, returning per-coil MIN/MAX timestamp of RUN=1 for the timeline bars. Everything else already exists.</li>
+      <li><b>KST handling:</b> "today" computed with the double-offset-safe pattern used elsewhere; MariaDB timestamps are treated as KST wall-clock.</li>
+      <li><b>Out of scope for phase 1:</b> changing <code>ocr_monitor_production.py</code> to store COIL_ID (optional phase 2, improves matching accuracy), mobile layout, login.</li>
+    </ul>
+  </div>
+  <div class="foot">Sources: erp_data / LEVELING_DATA (MariaDB via leveler-explore) · ai_tension_readings (Supabase) · times in KST · mockup with real 2026-09-03 values</div>
+</div>
+</body>
+</html>

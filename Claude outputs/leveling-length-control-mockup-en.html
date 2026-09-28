@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Leveling Length-Based Control Guide (Mockup v2, EN)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--mut:#7d8ba1;--acc:#796cbf;--bg:#f3f5fe;--line:#e3e8f0;--good:#1f8f5f;--warn:#c98a00;--bad:#c93b3b;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Segoe UI",sans-serif;font-weight:700;font-size:14px}
+  .wrap{max-width:1360px;margin:0 auto;padding:20px 24px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  header h1{font-size:22px;margin:0}
+  header h1 span{color:var(--mut);font-size:13px;margin-left:10px;font-weight:600}
+  .ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ctrl input,.ctrl select{font:inherit;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;border:1.5px solid var(--line);background:#fff}
+  .pill.run{background:#e6f6ee;border-color:#b7e3cb;color:var(--good)}
+  .pill.warn{background:#fff6e0;border-color:#f3d68a;color:var(--warn)}
+  .pill.acc{background:#efecfa;border-color:#cfc8ea;color:var(--acc)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card h2{font-size:13px;color:var(--sec);margin:0 0 10px}
+  .card h2 small{color:var(--mut);font-weight:600;margin-left:6px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+  .kv .k{color:var(--mut);font-weight:600}
+  .big{font-size:28px;line-height:1.1;margin:2px 0 4px}
+  .sub{color:var(--mut);font-size:12px;font-weight:600}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .tile{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfbfe}
+  .tile .lbl{color:var(--mut);font-size:12px;font-weight:600}
+  .tile .val{font-size:24px;margin-top:4px}
+  .tile .val small{font-size:12px;color:var(--mut);margin-left:3px}
+  .coil{position:relative;height:64px;border:1.5px solid var(--line);border-radius:10px;background:#fbfbfe;overflow:hidden;margin-top:6px}
+  .coil .seg{position:absolute;top:0;bottom:0;border-right:1px dashed var(--line)}
+  .coil .seg b{position:absolute;top:4px;left:6px;font-size:11px;color:var(--mut);font-weight:600}
+  .coil .seg i{position:absolute;bottom:6px;left:6px;font-size:11px;color:var(--sec);font-style:normal}
+  .coil .done{position:absolute;top:24px;height:16px;left:0;background:var(--acc);border-radius:0 6px 6px 0;opacity:.9}
+  .coil .now{position:absolute;top:0;bottom:0;border-left:2px solid var(--bad)}
+  .coil .now b{position:absolute;top:22px;left:6px;font-size:11px;color:var(--bad)}
+  svg text{font-family:inherit}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--sec);margin-top:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--mut);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1.5px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr.cur td{background:#f6f4fd}
+  .guide{display:grid;gap:8px}
+  .g{display:flex;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfbfe}
+  .g.cur{border-color:var(--acc);background:#f6f4fd}
+  .g .rng{width:120px;flex:0 0 120px}
+  .g .rng b{display:block;font-size:15px}
+  .g .rng span{font-size:11px;color:var(--mut);font-weight:600}
+  .g .vals{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .g .v{font-size:12px;color:var(--mut);font-weight:600}
+  .g .v b{display:block;font-size:17px;color:var(--ink)}
+  .g .v b.dn{color:var(--good)}
+  .g .why{flex:0 0 300px;font-size:12px;color:var(--sec);font-weight:600;line-height:1.45}
+  .note{margin-top:12px;border-left:3px solid var(--acc);background:#f6f4fd;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;font-weight:500;color:var(--sec);line-height:1.5}
+  .note b{color:var(--ink)}
+  .note code{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:#ebe8f7;padding:1px 4px;border-radius:4px;color:var(--ink)}
+  .intro{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;font-weight:500;color:var(--sec);line-height:1.55;font-size:13px}
+  .intro h2{font-size:15px;color:var(--ink);margin:0 0 6px;font-weight:700}
+  .intro ul{margin:6px 0 0 18px;padding:0}
+  .intro code{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:#ebe8f7;padding:1px 4px;border-radius:4px;color:var(--ink)}
+  .foot{color:var(--mut);font-size:11px;font-weight:600;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Leveling Length-Based Control Guide <span>x-axis = coil length (m) · ERP/PLC joined by coil ID · tension joined by time</span></h1>
+    <div class="ctrl">
+      <input type="date" value="2026-09-03">
+      <select><option>EPD2871C01 · Daehan Steel · 0.76X4XC</option></select>
+      <span class="pill acc">Same-spec history: 3 coils</span>
+      <span class="pill run">● RUNNING</span>
+    </div>
+  </header>
+
+  <div class="intro">
+    <h2>Purpose and how the data is joined</h2>
+    The goal of this page is to answer one question for the operator and the manager: <b>"At this point in the coil, how should the line be controlled?"</b> — tension output, line speed, and when to step them down as the coil gets smaller. To do that, three sources are combined:
+    <ul>
+      <li><b>ERP work order</b> (<code>erp_data</code>, MariaDB) — joined by <b>coil ID</b>. Gives customer, spec (thickness × width), weight, status. Weight + spec are converted into the coil's total length, which becomes the x-axis.</li>
+      <li><b>PLC log</b> (<code>LEVELING_DATA</code>, MariaDB, one row every ~2 s) — joined by <b>coil ID</b>. Gives cut length setting, per-stroke movement, inverter load, cycle time. Stroke resets are counted to compute the cumulative length processed so far.</li>
+      <li><b>Tension controller readings</b> (<code>ai_tension_readings</code>, Supabase, camera + AI every 2–5 min) — joined by <b>time</b>: a reading is attributed to the coil that was running at <code>captured_at</code>, and placed on the length axis at the cumulative length reached at that moment.</li>
+    </ul>
+    Everything below uses today's real values (2026-09-03, KST). The purple boxes are annotations for review, not part of the final page. The "same-spec history" recommendations are <b>illustrative</b> — see the honesty note in the guide section.
+  </div>
+
+  <div class="grid">
+    <!-- Row 1 -->
+    <div class="card" style="grid-column:span 4">
+      <h2>Coil <small>erp_data · by COIL_ID</small></h2>
+      <div class="big">EPD2871C01</div>
+      <div class="sub" style="margin-bottom:10px">Daehan Steel Co. · 0.76 × 4 ft (1,219 mm) × Coil · 10,410 kg</div>
+      <div class="kv">
+        <div class="k">Total length (derived)</div><div>≈ 1,432 m <span class="sub">(weight ÷ thickness × width × 7.85)</span></div>
+        <div class="k">Cut length</div><div>2,994 mm → ≈ 478 sheets expected</div>
+        <div class="k">Start diameter (controller)</div><div>1,204 mm</div>
+        <div class="k">Run started</div><div>08:33 (PLC) · 08:25 (ERP)</div>
+      </div>
+      <div class="note"><b>Total length.</b> Leveling has no coil-length sensor, so the full length is derived from ERP: 10,410 kg ÷ (0.076 cm × 121.9 cm × 7.85 g/cm³ = 7.27 kg/m) ≈ 1,432 m. The width token "4자" (4 ft) in the spec string is parsed to 1,219 mm. Expected sheets = total length ÷ cut length.</div>
+    </div>
+    <div class="card" style="grid-column:span 8">
+      <h2>Current position <small>cumulative length = real strokes × cut length · stroke = MOVELENSV reset</small></h2>
+      <div class="tiles">
+        <div class="tile"><div class="lbl">Length processed</div><div class="val">608<small>m</small></div><div class="sub">203 sheets × 2.994 m · 42% done</div></div>
+        <div class="tile"><div class="lbl">Remaining</div><div class="val">824<small>m</small></div><div class="sub">≈ 275 sheets · ETA 11:10</div></div>
+        <div class="tile"><div class="lbl">Remaining coil Ø (est.)</div><div class="val">≈ 900<small>mm</small></div><div class="sub">start 1,204 → core 508</div></div>
+        <div class="tile"><div class="lbl">Real time per sheet</div><div class="val">19.5<small>s</small></div><div class="sub">stroke 9.4 s + feed/stop 10 s</div></div>
+      </div>
+      <div class="coil">
+        <div class="seg" style="left:0;width:17.5%"><b>0–250 m · Start</b><i>tension 60→80%</i></div>
+        <div class="seg" style="left:17.5%;width:35%"><b>250–750 m · Steady</b><i>tension 90% · 19.5 s/sheet</i></div>
+        <div class="seg" style="left:52.5%;width:31%"><b>750–1,200 m · Late</b><i>history: tension ↓ 85%</i></div>
+        <div class="seg" style="left:83.5%;width:16.5%"><b>1,200 m+ · Tail</b><i>history: 75% · slow</i></div>
+        <div class="done" style="width:42.5%"></div>
+        <div class="now" style="left:42.5%"><b>now 608 m</b></div>
+      </div>
+      <div class="note"><b>How position is computed — and a correction to the existing screens.</b> The PLC has no cumulative-length column. <code>MOVELENSV</code> climbs from 0 toward the cut length on every stroke and drops back to 0 when the sheet is cut; each drop is counted as one sheet, × <code>CUTLENSET</code> = length processed. The stroke count shown by the current tools (966) simply counts 2-second rows where <code>CYCLETM &gt; 0</code>; since <code>CYCLETM</code> is a counter that rises 0→9.4 s within one stroke, each sheet is counted 3–4 times. Today's log shows a real sheet takes ≈ 19.5 s (9.4 s stroke + ≈ 10 s feed/stop), i.e. ≈ 203 sheets / 608 m by 09:40 — consistent with the derived 1,432 m total. This page uses the reset-based count. Remaining diameter is estimated from remaining length, thickness and the 508 mm core.</div>
+    </div>
+
+    <!-- Row 2 -->
+    <div class="card" style="grid-column:span 12">
+      <h2>Length profile <small>x = cumulative length (m) · tension placed by time→length mapping · grey = same-spec history</small></h2>
+      <svg viewBox="0 0 1300 260" width="100%" height="260">
+        <g stroke="#e3e8f0"><line x1="60" y1="30" x2="1280" y2="30"/><line x1="60" y1="90" x2="1280" y2="90"/><line x1="60" y1="150" x2="1280" y2="150"/><line x1="60" y1="210" x2="1280" y2="210"/></g>
+        <g fill="#7d8ba1" font-size="11" font-weight="600">
+          <text x="14" y="34">100%</text><text x="20" y="94">75%</text><text x="20" y="154">50%</text><text x="20" y="214">25%</text>
+          <text x="60" y="240">0 m</text><text x="266" y="240">250 m</text><text x="480" y="240">500 m</text><text x="694" y="240">750 m</text><text x="900" y="240">1,000 m</text><text x="1110" y="240">1,250 m</text><text x="1240" y="240">1,432 m</text>
+        </g>
+        <path d="M60,150 L200,105 L300,66 L700,66 L950,80 L1150,100 L1280,118 L1280,140 L1150,124 L950,104 L700,90 L300,90 L200,130 L60,180 Z" fill="#0f1e33" opacity=".07"/>
+        <polyline fill="none" stroke="#7d8ba1" stroke-width="2" stroke-dasharray="5 4" points="60,165 200,118 300,78 700,78 950,92 1150,112 1280,129"/>
+        <polyline fill="none" stroke="#796cbf" stroke-width="2.5" points="60,126 100,126 100,270 130,270 130,78 480,78 480,54 612,54"/>
+        <g fill="#796cbf" stroke="#fff" stroke-width="2"><circle cx="60" cy="126" r="5"/><circle cx="100" cy="126" r="5"/><circle cx="130" cy="78" r="5"/><circle cx="200" cy="78" r="5"/><circle cx="270" cy="78" r="5"/><circle cx="340" cy="78" r="5"/><circle cx="410" cy="78" r="5"/><circle cx="480" cy="54" r="5"/><circle cx="545" cy="54" r="5"/><circle cx="612" cy="54" r="5"/></g>
+        <polyline fill="none" stroke="#0f1e33" stroke-width="2" points="60,170 130,168 200,160 270,158 340,175 410,157 480,158 545,174 612,158"/>
+        <line x1="612" y1="30" x2="612" y2="220" stroke="#c93b3b" stroke-width="2"/>
+        <text x="618" y="44" fill="#c93b3b" font-size="11" font-weight="700">now 608 m</text>
+        <text x="480" y="46" fill="#796cbf" font-size="11" font-weight="700" text-anchor="middle">tension 80→90% (09:06, ≈ 420 m)</text>
+        <text x="1000" y="70" fill="#5c6478" font-size="11" font-weight="700" text-anchor="middle">history: tension stepped down after 750 m</text>
+      </svg>
+      <div class="legend">
+        <span><i style="background:#796cbf"></i>This coil — tension output % (readings, time→length)</span>
+        <span><i style="background:#7d8ba1"></i>Same-spec history — mean tension (n=3, band = min–max)</span>
+        <span><i style="background:#0f1e33"></i>This coil — seconds per sheet (secondary scale 10–30 s)</span>
+        <span><i style="background:#c93b3b"></i>Current position</span>
+      </div>
+      <div class="note"><b>Join rule in detail.</b> ERP and PLC rows share <code>COIL_ID</code>. Each tension reading's <code>captured_at</code> is matched to the coil with RUN=1 at that time, and to the number of sheets cut up to that moment × cut length = its position on the x-axis. Readings arrive every 2–5 minutes, so on the length axis they are 40–120 m apart; between readings the line is drawn as a step (last setting holds). The history band is built from completed coils with the same thickness (±0.03 mm) and width, each normalised to 0–100 % of its own length before averaging, so coils of different weights can be compared.</div>
+    </div>
+
+    <!-- Row 3 -->
+    <div class="card" style="grid-column:span 7">
+      <h2>Control guide by length segment <small>recommended (same-spec history) vs. current setting</small></h2>
+      <div class="guide">
+        <div class="g"><div class="rng"><b>0 – 250 m</b><span>Start (large Ø)</span></div><div class="vals"><div class="v">Rec. tension<b>70–80%</b></div><div class="v">Rec. speed<b>25 m/min</b></div><div class="v">Applied<b>60→80%</b></div></div><div class="why">Done · matches history. The initial 60% is the set-up window right after the coil change.</div></div>
+        <div class="g cur"><div class="rng"><b>250 – 750 m</b><span>Steady · current</span></div><div class="vals"><div class="v">Rec. tension<b>85–90%</b></div><div class="v">Rec. speed<b>25 m/min</b></div><div class="v">Current<b>90%</b> <span class="pill run">OK</span></div></div><div class="why">19.5 s/sheet equals the history mean (19.8 s). Hold.</div></div>
+        <div class="g"><div class="rng"><b>750 – 1,200 m</b><span>Late (Ø shrinking)</span></div><div class="vals"><div class="v">Rec. tension<b class="dn">85% → 80%</b></div><div class="v">Rec. speed<b>25 m/min</b></div><div class="v">Current<b>90%</b> <span class="pill warn">Prepare</span></div></div><div class="why">All 3 history coils stepped down near 750 m. As the remaining diameter shrinks, the same output % means higher real strip tension → risk of camber / scratches.</div></div>
+        <div class="g"><div class="rng"><b>1,200 – 1,432 m</b><span>Tail</span></div><div class="vals"><div class="v">Rec. tension<b class="dn">75%</b></div><div class="v">Rec. speed<b class="dn">20 m/min</b></div><div class="v">Current<b>—</b></div></div><div class="why">Last ~100 m ran slow and low-tension in history. 25 s+/sheet is normal while handling the tail.</div></div>
+      </div>
+      <div class="note"><b>Where the recommendations come from — and their current limit.</b> Phase 1 shows, per length segment, the <b>median tension and speed actually used on previous coils of the same spec</b> (same approach as the slitting AI Helper's <code>recommend_for</code> mode). If this coil's cycle time or inverter load is worse than history, the guide suggests one step more conservative. <b>Honest caveat:</b> tension readings only exist since 2 Sep and only 11 leveling coils have ever been tagged with a coil ID, so there is not yet enough history to produce per-spec recommendations. Until coils accumulate, the guide shows this coil's own measured profile plus "setting changed here → cycle time afterwards", and the history band/recommendations fill in automatically as data grows. The values in this mockup's guide are examples of the final form, not measured recommendations.</div>
+    </div>
+    <div class="card" style="grid-column:span 5">
+      <h2>Tension reading → length mapping <small>ai_tension_readings · by time</small></h2>
+      <table>
+        <thead><tr><th>Time</th><th class="n">Length</th><th class="n">Out %</th><th class="n">µm</th><th>Segment</th></tr></thead>
+        <tbody>
+          <tr><td>08:31</td><td class="n">—</td><td class="n">60</td><td class="n">800</td><td><span class="pill">before run (prev. coil)</span></td></tr>
+          <tr><td>08:36</td><td class="n">0 m</td><td class="n">0</td><td class="n">760</td><td><span class="pill">coil change</span></td></tr>
+          <tr><td>08:41</td><td class="n">≈ 36 m</td><td class="n">80</td><td class="n">760</td><td>Start</td></tr>
+          <tr><td>08:51</td><td class="n">≈ 128 m</td><td class="n">80</td><td class="n">760</td><td>Start</td></tr>
+          <tr><td>09:01</td><td class="n">≈ 258 m</td><td class="n">80</td><td class="n">760</td><td>Steady</td></tr>
+          <tr><td>09:06</td><td class="n">≈ 420 m</td><td class="n">90</td><td class="n">760</td><td>Steady <span class="pill warn">changed</span></td></tr>
+          <tr><td>09:11</td><td class="n">≈ 466 m</td><td class="n">90</td><td class="n">760</td><td>Steady</td></tr>
+          <tr class="cur"><td>09:21</td><td class="n">≈ 608 m</td><td class="n">90</td><td class="n">760</td><td>Steady · now</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>Audit table.</b> Every reading with the length it was attributed to, so the time-based join can be checked by eye. Readings before the first RUN=1 row are labelled "before run"; 0 % output is labelled "coil change".<br><br>
+      <b>Optional steps that make the mapping exact:</b><br>
+      ① Have <code>ocr_monitor_production.py</code> store the running <code>COIL_ID</code> and the sheet count at capture time — removes the need for time matching.<br>
+      ② If the controller's <code>tension_rate</code> (currently always read as 0.0) or remaining diameter becomes readable, length can be cross-checked without the PLC.<br>
+      ③ Collecting a cut-counter tag from the PLC turns the reset-based estimate into a measured value.</div>
+    </div>
+  </div>
+
+  <div class="intro" style="margin-top:14px">
+    <h2>Implementation plan (after approval)</h2>
+    <ul>
+      <li><b>File:</b> <code>public/leveling-length-guide.html</code> (vanilla JS, inline styles, Pretendard via jsDelivr, same conventions as the other <code>public/*.html</code> tools) + a card in <code>LabPage.jsx</code> under 레벨링 공정 관리 with <code>external: true</code>. Office-PC layout; an EN mirror can follow the KR/EN pattern used by the slitting tools.</li>
+      <li><b>Backend:</b> one new mode in <code>leveler-explore</code>, e.g. <code>leveling_length_profile=&lt;coil&gt;&amp;leveling_work_date=&lt;date&gt;</code>, that returns the reset-based sheet count over time (timestamp of each MOVELENSV drop) plus per-sheet cycle and load. A second mode, <code>leveling_history=&lt;thickness&gt;&amp;width=…</code>, returns length-normalised profiles of completed same-spec coils. Everything else reuses existing modes and the Supabase anon read of <code>ai_tension_readings</code>.</li>
+      <li><b>Client logic:</b> total length from ERP weight/spec; time→length mapping for tension readings; segment boundaries at 0 / 250 / 750 / 1,200 m by default (configurable, or as % of total length); recommendation = per-segment median of history, with a conservative step if current cycle/load is worse.</li>
+      <li><b>Refresh:</b> 20 s. KST "today" via the double-offset-safe pattern; MariaDB timestamps treated as KST wall-clock.</li>
+      <li><b>Out of scope for phase 1:</b> changing the OCR script (phase 2, improves accuracy), mobile layout, login.</li>
+    </ul>
+  </div>
+  <div class="foot">Sources: erp_data / LEVELING_DATA (MariaDB via leveler-explore) · ai_tension_readings (Supabase) · times in KST · mockup — real 2026-09-03 values; history recommendations illustrative</div>
+</div>
+</body>
+</html>

@@ -101,7 +101,9 @@ const SETTINGS_TABLE = "ai_tension_settings";
 const POLL_MS = 8000;
 const CAPTURE_INTERVAL_SEC = 120; // ocr_monitor_production.py 기본 인식 주기 (대시보드에서 변경 가능)
 const INTERVAL_OPTIONS = [60, 120, 300]; // 1분 / 2분 / 5분
-// Groq 무료 한도 (qwen/qwen3.8-27b, console.groq.com/docs/rate-limits 기준). 매일 UTC 자정 리셋.
+// Groq 무료 한도 (qwen/qwen3.8-27b, console.groq.com/docs/rate-limits 기준).
+// 고정된 하루 리셋 시각이 아니라 최근 24시간 누적 기준 - 오래된 사용량이 24시간
+// 지나 빠지는 대로 점차 여유가 생긴다(실제 429 오류 메시지의 "n분 후 재시도"로 확인됨).
 const DAILY_LIMITS = { tokens: 200000, requests: 1000 };
 
 function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
@@ -281,7 +283,7 @@ async function render(){
         <div class="usage-label-row"><span>호출 횟수</span><b>${todayUsage.requests.toLocaleString()} / ${DAILY_LIMITS.requests.toLocaleString()}</b></div>
         <div class="usage-track"><div class="usage-fill${todayUsage.requests/DAILY_LIMITS.requests > 0.8 ? ' warn' : ''}" style="width:${Math.min(100, todayUsage.requests/DAILY_LIMITS.requests*100).toFixed(1)}%"></div></div>
       </div>
-      <p class="kpi-sub" style="margin-top:10px;">매일 UTC 자정(KST 오전 9시) 리셋됩니다.</p>
+      <p class="kpi-sub" style="margin-top:10px;">고정된 리셋 시각 없이 최근 24시간 기준이라, 한도에 걸려도 시간이 지나면 점차 회복됩니다.</p>
     </div>
 
     <div class="card">

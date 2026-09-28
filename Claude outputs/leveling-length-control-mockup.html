@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레벨링 길이별 컨트롤 가이드 (목업 v2)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--mut:#7d8ba1;--acc:#796cbf;--bg:#f3f5fe;--line:#e3e8f0;--good:#1f8f5f;--warn:#c98a00;--bad:#c93b3b;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif;font-weight:700;font-size:14px}
+  .wrap{max-width:1360px;margin:0 auto;padding:20px 24px 40px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+  header h1{font-size:22px;margin:0}
+  header h1 span{color:var(--mut);font-size:13px;margin-left:10px;font-weight:600}
+  .ctrl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .ctrl input,.ctrl select{font:inherit;padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;border:1.5px solid var(--line);background:#fff}
+  .pill.run{background:#e6f6ee;border-color:#b7e3cb;color:var(--good)}
+  .pill.warn{background:#fff6e0;border-color:#f3d68a;color:var(--warn)}
+  .pill.bad{background:#fdecec;border-color:#f3b8b8;color:var(--bad)}
+  .pill.acc{background:#efecfa;border-color:#cfc8ea;color:var(--acc)}
+  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+  .card{background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:16px 18px}
+  .card h2{font-size:13px;color:var(--sec);margin:0 0 10px}
+  .card h2 small{color:var(--mut);font-weight:600;margin-left:6px}
+  .kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px}
+  .kv .k{color:var(--mut);font-weight:600}
+  .big{font-size:28px;line-height:1.1;margin:2px 0 4px}
+  .sub{color:var(--mut);font-size:12px;font-weight:600}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .tile{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfbfe}
+  .tile .lbl{color:var(--mut);font-size:12px;font-weight:600}
+  .tile .val{font-size:24px;margin-top:4px}
+  .tile .val small{font-size:12px;color:var(--mut);margin-left:3px}
+  /* coil progress bar */
+  .coil{position:relative;height:64px;border:1.5px solid var(--line);border-radius:10px;background:#fbfbfe;overflow:hidden;margin-top:6px}
+  .coil .seg{position:absolute;top:0;bottom:0;border-right:1px dashed var(--line)}
+  .coil .seg b{position:absolute;top:4px;left:6px;font-size:11px;color:var(--mut);font-weight:600}
+  .coil .seg i{position:absolute;bottom:6px;left:6px;font-size:11px;color:var(--sec);font-style:normal}
+  .coil .done{position:absolute;top:24px;height:16px;left:0;background:var(--acc);border-radius:0 6px 6px 0;opacity:.9}
+  .coil .now{position:absolute;top:0;bottom:0;border-left:2px solid var(--bad)}
+  .coil .now b{position:absolute;top:22px;left:6px;font-size:11px;color:var(--bad)}
+  svg text{font-family:inherit}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--sec);margin-top:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{color:var(--mut);font-weight:600;text-align:left;padding:6px 8px;border-bottom:1.5px solid var(--line)}
+  td{padding:7px 8px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:top}
+  td.n{text-align:right;font-variant-numeric:tabular-nums}
+  tr.cur td{background:#f6f4fd}
+  .guide{display:grid;gap:8px}
+  .g{display:flex;gap:12px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfbfe}
+  .g.cur{border-color:var(--acc);background:#f6f4fd}
+  .g .rng{width:110px;flex:0 0 110px}
+  .g .rng b{display:block;font-size:15px}
+  .g .rng span{font-size:11px;color:var(--mut);font-weight:600}
+  .g .vals{flex:1;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .g .v{font-size:12px;color:var(--mut);font-weight:600}
+  .g .v b{display:block;font-size:17px;color:var(--ink)}
+  .g .v b.dn{color:var(--good)} .g .v b.up{color:var(--warn)}
+  .g .why{flex:0 0 300px;font-size:12px;color:var(--sec);font-weight:600;line-height:1.45}
+  .note{margin-top:12px;border-left:3px solid var(--acc);background:#f6f4fd;border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;font-weight:500;color:var(--sec);line-height:1.5}
+  .note b{color:var(--ink)}
+  .note code{font-family:ui-monospace,Consolas,monospace;font-size:11px;background:#ebe8f7;padding:1px 4px;border-radius:4px;color:var(--ink)}
+  .foot{color:var(--mut);font-size:11px;font-weight:600;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>레벨링 길이별 컨트롤 가이드 <span>코일 길이(m)를 축으로 · PLC/ERP는 코일ID, 텐션은 시각으로 결합</span></h1>
+    <div class="ctrl">
+      <input type="date" value="2026-09-03">
+      <select><option>EPD2871C01 · (주)대한강재 · 0.76X4XC</option></select>
+      <span class="pill acc">동일규격 이력 3코일</span>
+      <span class="pill run">● 가동중</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- Row 1: coil + position -->
+    <div class="card" style="grid-column:span 4">
+      <h2>코일 <small>erp_data · COIL_ID 기준</small></h2>
+      <div class="big">EPD2871C01</div>
+      <div class="sub" style="margin-bottom:10px">(주)대한강재 · 0.76 × 4자(1,219) × C · 10,410 kg</div>
+      <div class="kv">
+        <div class="k">환산 전체길이</div><div>≈ 1,432 m <span class="sub">(중량 ÷ 두께×폭×7.85)</span></div>
+        <div class="k">절단길이</div><div>2,994 mm → 예상 약 478장</div>
+        <div class="k">시작경 (텐션기)</div><div>1,204 mm</div>
+        <div class="k">가동 시작</div><div>08:33 (PLC) · 08:25 (ERP)</div>
+      </div>
+    </div>
+    <div class="card" style="grid-column:span 8">
+      <h2>현재 위치 <small>누적길이 = 실제 행정 수 × 절단길이 · 행정 = MOVELENSV 리셋 감지</small></h2>
+      <div class="tiles">
+        <div class="tile"><div class="lbl">누적 진행 길이</div><div class="val">608<small>m</small></div><div class="sub">203장 × 2.994m · 진행률 42%</div></div>
+        <div class="tile"><div class="lbl">남은 길이</div><div class="val">824<small>m</small></div><div class="sub">≈ 275장 · 예상 완료 11:10</div></div>
+        <div class="tile"><div class="lbl">현재 잔여 코일경 (추정)</div><div class="val">≈ 900<small>mm</small></div><div class="sub">시작 1,204 → 종료 508(내경)</div></div>
+        <div class="tile"><div class="lbl">장당 실소요</div><div class="val">19.5<small>s</small></div><div class="sub">행정 9.4s + 이송/정지 10s</div></div>
+      </div>
+      <div class="coil">
+        <div class="seg" style="left:0;width:17.5%"><b>0–250m 초기</b><i>텐션 60→80%</i></div>
+        <div class="seg" style="left:17.5%;width:35%"><b>250–750m 안정</b><i>텐션 90% · 사이클 19.5s</i></div>
+        <div class="seg" style="left:52.5%;width:31%"><b>750–1,200m 후반</b><i>이력: 텐션 ↓ 85%</i></div>
+        <div class="seg" style="left:83.5%;width:16.5%"><b>1,200m~ 말단</b><i>이력: 텐션 75% · 저속</i></div>
+        <div class="done" style="width:42.5%"></div>
+        <div class="now" style="left:42.5%"><b>현재 608m</b></div>
+      </div>
+      <div class="note"><b>길이 계산 방식.</b> 레벨링 PLC에는 누적 길이 컬럼이 없어서, <code>MOVELENSV</code>가 절단길이 근처까지 올라갔다가 0으로 떨어지는 순간을 "1장 절단"으로 세고 × <code>CUTLENSET</code>으로 누적합니다. 기존 화면의 행정 수(966)는 <code>CYCLETM&gt;0</code>인 2초 행을 그대로 센 값이라 실제 장수(약 203)의 3~4배로 과대 집계되어 있었습니다 — 이 페이지에서는 리셋 기준으로 바로잡습니다. 전체 길이는 ERP 중량과 규격에서 환산합니다(폭 "4자" = 1,219mm 파싱).</div>
+    </div>
+
+    <!-- Row 2: length-axis chart -->
+    <div class="card" style="grid-column:span 12">
+      <h2>길이별 프로파일 <small>x축 = 누적 길이(m) · 텐션은 판독 시각 → 그 시각의 누적길이로 배치 · 회색 = 동일규격 이력 평균</small></h2>
+      <svg viewBox="0 0 1300 260" width="100%" height="260">
+        <g stroke="#e3e8f0"><line x1="60" y1="30" x2="1280" y2="30"/><line x1="60" y1="90" x2="1280" y2="90"/><line x1="60" y1="150" x2="1280" y2="150"/><line x1="60" y1="210" x2="1280" y2="210"/></g>
+        <g fill="#7d8ba1" font-size="11" font-weight="600">
+          <text x="14" y="34">100%</text><text x="20" y="94">75%</text><text x="20" y="154">50%</text><text x="20" y="214">25%</text>
+          <text x="60" y="240">0m</text><text x="266" y="240">250m</text><text x="480" y="240">500m</text><text x="694" y="240">750m</text><text x="900" y="240">1,000m</text><text x="1110" y="240">1,250m</text><text x="1240" y="240">1,432m</text>
+        </g>
+        <!-- history band (same spec, 3 coils) -->
+        <path d="M60,150 L200,105 L300,66 L700,66 L950,80 L1150,100 L1280,118 L1280,140 L1150,124 L950,104 L700,90 L300,90 L200,130 L60,180 Z" fill="#0f1e33" opacity=".07"/>
+        <polyline fill="none" stroke="#7d8ba1" stroke-width="2" stroke-dasharray="5 4" points="60,165 200,118 300,78 700,78 950,92 1150,112 1280,129"/>
+        <!-- current tension (step, matched by time) -->
+        <polyline fill="none" stroke="#796cbf" stroke-width="2.5" points="60,126 100,126 100,270 130,270 130,78 480,78 480,54 612,54"/>
+        <g fill="#796cbf" stroke="#fff" stroke-width="2"><circle cx="60" cy="126" r="5"/><circle cx="100" cy="126" r="5"/><circle cx="130" cy="78" r="5"/><circle cx="200" cy="78" r="5"/><circle cx="270" cy="78" r="5"/><circle cx="340" cy="78" r="5"/><circle cx="410" cy="78" r="5"/><circle cx="480" cy="54" r="5"/><circle cx="545" cy="54" r="5"/><circle cx="612" cy="54" r="5"/></g>
+        <!-- cycle per sheet (current) -->
+        <polyline fill="none" stroke="#0f1e33" stroke-width="2" points="60,170 130,168 200,160 270,158 340,175 410,157 480,158 545,174 612,158"/>
+        <!-- current marker -->
+        <line x1="612" y1="30" x2="612" y2="220" stroke="#c93b3b" stroke-width="2"/>
+        <text x="618" y="44" fill="#c93b3b" font-size="11" font-weight="700">현재 608m</text>
+        <!-- annotations -->
+        <text x="480" y="46" fill="#796cbf" font-size="11" font-weight="700" text-anchor="middle">텐션 80→90% (09:06, ≈420m)</text>
+        <text x="1000" y="70" fill="#5c6478" font-size="11" font-weight="700" text-anchor="middle">이력: 750m 이후 텐션 단계적 하향</text>
+      </svg>
+      <div class="legend">
+        <span><i style="background:#796cbf"></i>이 코일 텐션 출력% (판독값, 시각→길이 매핑)</span>
+        <span><i style="background:#7d8ba1"></i>동일규격 이력 텐션 평균 (n=3, 띠 = 최소~최대)</span>
+        <span><i style="background:#0f1e33"></i>이 코일 장당 소요시간 (s, 보조축 10~30s)</span>
+        <span><i style="background:#c93b3b"></i>현재 위치</span>
+      </div>
+      <div class="note"><b>결합 규칙.</b> ERP·PLC는 <code>COIL_ID</code>로 묶고, 텐션 판독(<code>captured_at</code>)은 그 시각에 RUN=1이던 코일과, 그 시각까지 센 절단 장수 × 절단길이 = 누적길이에 붙입니다. 판독이 2~5분마다 하나라 길이축에서는 40~120m 간격의 점이 되고, 점 사이는 계단(마지막 설정 유지)으로 그립니다. 동일규격 이력은 두께 ±0.03mm·폭 동일한 완료 코일의 프로파일을 길이 정규화(0~100%)해 평균낸 것입니다.</div>
+    </div>
+
+    <!-- Row 3: control guide -->
+    <div class="card" style="grid-column:span 7">
+      <h2>길이 구간별 컨트롤 가이드 <small>동일규격 이력 기준 권장값 vs 현재 설정</small></h2>
+      <div class="guide">
+        <div class="g"><div class="rng"><b>0 – 250 m</b><span>초기 (외경 큼)</span></div><div class="vals"><div class="v">권장 텐션<b>70–80%</b></div><div class="v">권장 속도<b>25 m/min</b></div><div class="v">실제 적용<b>60→80%</b></div></div><div class="why">완료 · 이력과 일치. 초반 60%는 코일 교체 직후 셋업 구간.</div></div>
+        <div class="g cur"><div class="rng"><b>250 – 750 m</b><span>안정 구간 · 현재</span></div><div class="vals"><div class="v">권장 텐션<b>85–90%</b></div><div class="v">권장 속도<b>25 m/min</b></div><div class="v">현재 설정<b>90%</b> <span class="pill run">적정</span></div></div><div class="why">장당 19.5s로 이력 평균(19.8s)과 동일. 유지.</div></div>
+        <div class="g"><div class="rng"><b>750 – 1,200 m</b><span>후반 (코일경 ↓)</span></div><div class="vals"><div class="v">권장 텐션<b class="dn">85% → 80%</b></div><div class="v">권장 속도<b>25 m/min</b></div><div class="v">현재 설정<b>90%</b> <span class="pill warn">사전 조정</span></div></div><div class="why">이력 3코일 모두 750m 부근에서 한 단계 낮춤. 잔여경이 줄수록 같은 출력이면 실제 장력이 커져 사행·긁힘 위험.</div></div>
+        <div class="g"><div class="rng"><b>1,200 – 1,432 m</b><span>말단</span></div><div class="vals"><div class="v">권장 텐션<b class="dn">75%</b></div><div class="v">권장 속도<b class="dn">20 m/min</b></div><div class="v">현재 설정<b>—</b></div></div><div class="why">말단 100m는 이력에서 저속·저텐션. 꼬리 처리 시 장당 소요 25s+ 정상.</div></div>
+      </div>
+      <div class="note"><b>권장값의 근거와 한계.</b> 1차 버전은 "같은 규격의 지난 코일에서 실제로 쓴 텐션·속도의 길이별 중앙값"을 권장값으로 보여줍니다(슬리팅 AI 헬퍼 <code>recommend_for</code>와 같은 방식). 이 코일의 사이클·부하가 이력보다 나쁘면 한 단계 보수적으로 조정하라고 표시합니다. 현재 텐션 판독은 9/2부터, 코일ID가 태깅된 레벨링 코일은 누적 11건이라 <b>지금은 이력이 부족해 규격별 가이드가 나오기까지 코일이 더 쌓여야 합니다</b> — 그 전까지는 이 코일 자체의 길이별 실측 프로파일과 "설정을 바꾼 지점 → 이후 사이클 변화"만 보여줍니다.</div>
+    </div>
+    <div class="card" style="grid-column:span 5">
+      <h2>텐션 판독 → 길이 매핑 <small>ai_tension_readings · 시각 기준</small></h2>
+      <table>
+        <thead><tr><th>시각</th><th class="n">누적길이</th><th class="n">출력%</th><th class="n">두께㎛</th><th>구간</th></tr></thead>
+        <tbody>
+          <tr><td>08:31</td><td class="n">—</td><td class="n">60</td><td class="n">800</td><td><span class="pill">가동 전 (이전 코일)</span></td></tr>
+          <tr><td>08:36</td><td class="n">0 m</td><td class="n">0</td><td class="n">760</td><td><span class="pill">코일 교체</span></td></tr>
+          <tr><td>08:41</td><td class="n">≈ 36 m</td><td class="n">80</td><td class="n">760</td><td>초기</td></tr>
+          <tr><td>08:51</td><td class="n">≈ 128 m</td><td class="n">80</td><td class="n">760</td><td>초기</td></tr>
+          <tr><td>09:01</td><td class="n">≈ 258 m</td><td class="n">80</td><td class="n">760</td><td>안정</td></tr>
+          <tr><td>09:06</td><td class="n">≈ 420 m</td><td class="n">90</td><td class="n">760</td><td>안정 <span class="pill warn">변경</span></td></tr>
+          <tr><td>09:11</td><td class="n">≈ 466 m</td><td class="n">90</td><td class="n">760</td><td>안정</td></tr>
+          <tr class="cur"><td>09:21</td><td class="n">≈ 608 m</td><td class="n">90</td><td class="n">760</td><td>안정 · 현재</td></tr>
+        </tbody>
+      </table>
+      <div class="note"><b>정확도를 높이는 다음 단계(선택).</b> ① <code>ocr_monitor_production.py</code>가 캡처 시점의 <code>COIL_ID</code>와 그때까지의 절단 장수를 함께 저장하면 시각 매핑이 필요 없어집니다. ② 텐션기의 <code>tension_rate</code>(현재 0.0만 판독됨)나 잔여경을 읽을 수 있으면 길이를 PLC 없이 독립 검증할 수 있습니다. ③ PLC에 절단 카운터 태그를 추가 수집하면 리셋 감지 추정이 실측으로 바뀝니다.</div>
+    </div>
+  </div>
+  <div class="foot">출처: erp_data / LEVELING_DATA (MariaDB, leveler-explore) · ai_tension_readings (Supabase) · 시각 KST · 목업 — 9/3 실측값 기반, 이력 권장값은 예시</div>
+</div>
+</body>
+</html>

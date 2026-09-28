@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Real API keys/secrets for the OCR monitor local launcher scripts — never commit
+ocr_monitor_secrets.local.bat

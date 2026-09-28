@@ -175,6 +175,27 @@ export function CustomerChatbotScreen() {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages]);
 
+  // supabase.functions.invoke는 함수가 4xx/5xx를 주면 fnError만 채우고 응답 본문(data)은 버립니다.
+  // 그래서 그냥 fnError.message를 쓰면 원인과 무관하게 늘 "Edge Function returned a non-2xx status code"만
+  // 보여서, 실제 사유를 알려면 매번 Supabase 로그를 열어야 했습니다. 본문은 fnError.context(Response)에
+  // 남아 있으므로 여기서 꺼내 { ok:false, error } 의 error를 실제 사유로 사용합니다.
+  const readFunctionError = async (fnError) => {
+    try {
+      const res = fnError?.context;
+      if (res && typeof res.json === 'function') {
+        const body = await res.clone().json();
+        if (body?.error) return String(body.error);
+      }
+      if (res && typeof res.text === 'function') {
+        const txt = (await res.clone().text()).trim();
+        if (txt) return txt.slice(0, 300);
+      }
+    } catch {
+      /* 본문이 JSON이 아니거나 이미 소비된 경우 — 아래 기본 메시지로 폴백 */
+    }
+    return fnError?.message ? String(fnError.message) : '알 수 없는 오류';
+  };
+
   const ask = async (question) => {
     const q = question.trim();
     if (!q || sending) return;
@@ -189,11 +210,16 @@ export function CustomerChatbotScreen() {
       const { data, error: fnError } = await supabase.functions.invoke('customer-chatbot-ask', {
         body: { question: q, context: ctx },
       });
-      if (fnError) throw fnError;
+      if (fnError) throw new Error(await readFunctionError(fnError));
       if (!data?.ok) throw new Error(data?.error || '답변 생성에 실패했습니다.');
       setMessages((m) => [...m, { role: 'bot', text: data.answer }]);
     } catch (e) {
-      setMessages((m) => [...m, { role: 'bot', text: `죄송해요, 지금 답변을 가져오지 못했어요. (${e.message || e})` }]);
+      setMessages((m) => [...m, {
+        role: 'bot',
+        text: '죄송해요, 지금 답변을 가져오지 못했어요.',
+        errorDetail: String(e?.message || e),
+        retryQuestion: q,
+      }]);
     }
     setSending(false);
   };
@@ -231,14 +257,39 @@ export function CustomerChatbotScreen() {
           {messages.map((m, i) => (
             <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
               <div style={{
-                maxWidth: '72%', whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '15px',
+                maxWidth: m.errorDetail ? '86%' : '72%', whiteSpace: 'pre-wrap', lineHeight: 1.6, fontSize: '15px',
                 padding: '12px 16px', borderRadius: '16px',
                 background: m.role === 'user' ? COLORS.navy : '#F1F3F7',
                 color: m.role === 'user' ? '#fff' : COLORS.navy,
                 borderBottomRightRadius: m.role === 'user' ? '4px' : '16px',
                 borderBottomLeftRadius: m.role === 'user' ? '16px' : '4px',
+                // 오류 말풍선은 왼쪽에 주황 띠를 둘러 정상 답변과 한눈에 구분되게 합니다.
+                ...(m.errorDetail ? { borderLeft: `3px solid ${COLORS.amber}`, borderTopLeftRadius: '6px' } : null),
               }}>
                 {m.text}
+                {m.errorDetail && (
+                  <div style={{
+                    fontSize: '12.5px', fontWeight: 600, color: COLORS.steelLight, lineHeight: 1.5,
+                    marginTop: '8px', paddingTop: '8px', borderTop: `1px solid ${COLORS.border}`,
+                  }}>
+                    사유 · {m.errorDetail}
+                  </div>
+                )}
+                {m.retryQuestion && (
+                  <button
+                    onClick={() => ask(m.retryQuestion)}
+                    disabled={loading || sending}
+                    style={{
+                      marginTop: '10px', fontFamily: 'inherit', fontSize: '13px', fontWeight: 800,
+                      padding: '7px 15px', borderRadius: '999px', border: `1px solid ${COLORS.border}`,
+                      background: '#fff', color: COLORS.navy,
+                      cursor: (loading || sending) ? 'default' : 'pointer',
+                      opacity: (loading || sending) ? 0.5 : 1,
+                    }}
+                  >
+                    ↻ 다시 시도
+                  </button>
+                )}
               </div>
             </div>
           ))}

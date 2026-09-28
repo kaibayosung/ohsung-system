@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>오성철강 — 산업통상자원부 장관 보고</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  :root{
+    --navy:#0F1E33; --purple:#534AB7; --purple-l:#EEEDFE;
+    --amber:#B8791A; --amber-l:#FBEEDA; --red:#A32D2D; --red-l:#FCEBEB;
+    --green:#2F6B2F; --green-l:#E8F3E8; --grey:#5C6478; --line:#DDE2EC;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#2A2F3A;font-family:'Pretendard',system-ui,sans-serif;font-weight:700;color:var(--navy)}
+
+  .deck{display:flex;flex-direction:column;align-items:center;gap:28px;padding:28px 0}
+  .slide{
+    width:1280px;height:720px;background:#fff;position:relative;overflow:hidden;
+    padding:64px 80px;display:flex;flex-direction:column;flex:none;
+    box-shadow:0 8px 40px rgba(0,0,0,.35);
+  }
+  .num{position:absolute;right:44px;bottom:34px;font-size:20px;color:#A8B0C0;font-weight:800}
+  .tag{display:inline-block;font-size:24px;font-weight:900;color:var(--purple);
+       background:var(--purple-l);padding:8px 22px;border-radius:999px;margin-bottom:28px;align-self:flex-start}
+  h1{font-size:82px;line-height:1.18;font-weight:900;letter-spacing:-.02em}
+  h2{font-size:62px;line-height:1.22;font-weight:900;letter-spacing:-.02em}
+  h3{font-size:44px;line-height:1.3;font-weight:900}
+  p{font-size:34px;line-height:1.55;color:#2B3243;font-weight:600}
+  .lead{font-size:40px;line-height:1.5;font-weight:700}
+  .big{font-size:96px;line-height:1.15;font-weight:900;letter-spacing:-.03em}
+  .grey{color:var(--grey)}
+  .pp{color:var(--purple)}
+  .mt16{margin-top:16px}.mt24{margin-top:24px}.mt32{margin-top:32px}.mt48{margin-top:48px}
+  .center{justify-content:center;align-items:center;text-align:center}
+
+  .quote{border-left:12px solid var(--purple);padding:26px 0 26px 34px;margin-top:36px}
+  .quote .lead{font-size:46px;font-weight:900;line-height:1.4}
+
+  .cover{background:linear-gradient(160deg,#0F1E33 0%,#1E2C46 100%);color:#fff;justify-content:flex-end}
+  .cover h1{font-size:92px;color:#fff}
+  .cover .sub{font-size:36px;color:#9FB0CC;margin-top:24px;font-weight:700}
+  .cover .kicker{font-size:28px;color:#7F93B5;font-weight:800;letter-spacing:.06em;margin-bottom:20px}
+
+  .ph{background:#EEF1F6;border:3px dashed #B6BFD0;border-radius:16px;
+      display:flex;align-items:center;justify-content:center;text-align:center;
+      color:#7E8899;font-size:24px;font-weight:800;line-height:1.5;padding:20px}
+
+  .row{display:flex;gap:28px}
+  .col{flex:1}
+  .card{background:#F6F8FC;border-radius:20px;padding:32px 34px}
+  .card.amber{background:var(--amber-l)}
+  .card.red{background:var(--red-l)}
+  .card.green{background:var(--green-l)}
+  .card.purple{background:var(--purple-l)}
+  .card h3{font-size:36px;margin-bottom:12px}
+  .card p{font-size:27px;line-height:1.5}
+
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th{background:var(--navy);color:#fff;font-size:27px;font-weight:900;padding:16px 22px;text-align:left}
+  td{font-size:27px;padding:15px 22px;border-bottom:2px solid var(--line);font-weight:700}
+  tr.hl td{background:var(--purple-l);color:#2A2472;font-weight:900}
+
+  .steps{display:flex;gap:14px;margin-top:34px;align-items:stretch}
+  .step{flex:1;background:#F6F8FC;border-radius:16px;padding:22px 18px;text-align:center}
+  .step .n{font-size:22px;color:var(--purple);font-weight:900}
+  .step .t{font-size:25px;margin-top:10px;line-height:1.35;font-weight:800}
+
+  .statline{display:flex;gap:40px;margin-top:40px}
+  .stat .v{font-size:78px;font-weight:900;line-height:1;letter-spacing:-.03em}
+  .stat .l{font-size:25px;color:var(--grey);margin-top:12px;font-weight:700}
+
+  ul{margin-top:24px;padding-left:0;list-style:none}
+  li{font-size:34px;line-height:1.55;margin-bottom:18px;padding-left:44px;position:relative;font-weight:700}
+  li::before{content:"";position:absolute;left:8px;top:18px;width:14px;height:14px;border-radius:50%;background:var(--purple)}
+
+  @media print{
+    body{background:#fff}
+    .deck{gap:0;padding:0}
+    .slide{box-shadow:none;page-break-after:always;margin:0}
+    @page{size:1280px 720px;margin:0}
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+<!-- 0 표지 -->
+<section class="slide cover">
+  <div class="ph" style="position:absolute;inset:0;background:#16233A;border:none;color:#5A6E90;font-size:26px">
+    〔 배경 사진 : 잠실 주경기장 재건축 현장 항공사진 〕
+  </div>
+  <div style="position:relative;z-index:2">
+    <div class="kicker">산업통상자원부 장관 보고 · 2026</div>
+    <h1>43년 만에,<br>우리도 다시 짓습니다</h1>
+    <div class="sub">오성철강 · AI 전환 보고</div>
+  </div>
+  <div class="num" style="color:#5A6E90">0</div>
+</section>
+
+<!-- 1 -->
+<section class="slide">
+  <div class="tag">왜 이 자리에 왔는가</div>
+  <h2>전기차 한 대에는<br>강판이 들어갑니다</h2>
+  <p class="mt32">완성차가 경쟁력을 가지려면 <b>고품질 소재가 경쟁력 있는 가격에</b> 공급되어야 합니다.<br>
+  그 소재를 자르고 펴서 공장으로 보내는 일은, 우리 같은 회사가 합니다.</p>
+  <div class="row mt32" style="align-items:center">
+    <div class="card" style="flex:1;text-align:center"><h3>코일</h3><p class="grey">소재</p></div>
+    <div style="font-size:52px;color:#B6BFD0">→</div>
+    <div class="card" style="flex:1;text-align:center"><h3>2차 가공</h3><p class="pp">우리</p></div>
+    <div style="font-size:52px;color:#B6BFD0">→</div>
+    <div class="card" style="flex:1;text-align:center"><h3>부품</h3><p class="grey">1차 벤더</p></div>
+    <div style="font-size:52px;color:#B6BFD0">→</div>
+    <div class="card" style="flex:1;text-align:center"><h3>완성차</h3><p class="grey">전기차</p></div>
+  </div>
+  <div class="quote"><div class="lead">그런데 그 기초를 맡은 공장들이 무너지고 있습니다.<br>
+  소재가 흔들리면, 그 위의 모든 산업이 흔들립니다.</div></div>
+  <div class="num">1</div>
+</section>
+
+<!-- 2 -->
+<section class="slide">
+  <div class="tag">우리가 그런 회사입니다</div>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="col">
+      <h2>1983년,<br>우리는 첨단이었습니다</h2>
+      <p class="mt24">잠실 주경기장 지붕을 만들던 회사였습니다.<br>그리고 43년이 지났습니다.</p>
+      <div class="statline">
+        <div class="stat"><div class="v pp">43년</div><div class="l">1983년 설립</div></div>
+        <div class="stat"><div class="v pp">12명</div><div class="l">현재 임직원</div></div>
+      </div>
+    </div>
+    <div class="col ph" style="height:420px">〔 잠실 주경기장 지붕 · 당시 사진 또는 현재 재건축 사진 〕</div>
+  </div>
+  <div class="quote"><div class="lead">43년 전통의 회사가 아닙니다.<br>
+  <span class="pp">회사도 오래되었고, 기계도 오래되었고, 사람도 오래되었습니다.</span></div></div>
+  <div class="num">2</div>
+</section>
+
+<!-- 3 -->
+<section class="slide center">
+  <div class="tag" style="align-self:center">목적</div>
+  <h2 style="text-align:center">그래서 우리가 잡은 목적은<br><span class="pp">생산성 향상</span>이었습니다</h2>
+  <p class="mt32 grey">더 빨리, 더 많이 만들면 살아남을 줄 알았습니다.</p>
+  <div class="num">3</div>
+</section>
+
+<!-- 4 -->
+<section class="slide">
+  <div class="tag" style="color:var(--red);background:var(--red-l)">첫 번째 실패</div>
+  <h2>첫 번째 답은 <span style="color:var(--red)">장비</span>였습니다</h2>
+  <div class="row mt32">
+    <div class="card col green"><h3>올라간 것</h3><p>생산성</p></div>
+    <div class="card col red"><h3>오르지 않은 것</h3><p>값 · 고부가가치</p></div>
+  </div>
+  <div class="quote" style="border-color:var(--amber)"><div class="lead">세탁소가 비싼 세탁기를 들여놨다고<br>
+  세탁비를 더 받지는 못합니다.<br>
+  <span class="grey" style="font-size:36px">손님은 그 세탁기를 볼 수 없기 때문입니다.</span></div></div>
+  <div class="num">4</div>
+</section>
+
+<!-- 5 -->
+<section class="slide">
+  <div class="tag" style="color:var(--red);background:var(--red-l)">두 번째 실패</div>
+  <h2>두 번째 답은 <span style="color:var(--red)">차별화</span>였습니다</h2>
+  <p class="mt24">코일센터 최초로 AI 기반 불량 측정 서비스를 만들었습니다. 대상도 받았습니다.</p>
+  <div class="row mt32">
+    <div class="card col green"><h3>개발</h3><p>완벽하게 성공</p></div>
+    <div class="card col red"><h3>매출</h3><p>그대로</p></div>
+  </div>
+  <div class="quote" style="border-color:var(--red)"><div class="lead">아무리 좋은 서비스도<br>고객에게 닿지 않으면 없는 것과 같았습니다.</div></div>
+  <div class="num">5</div>
+</section>
+
+<!-- 6 -->
+<section class="slide">
+  <div class="tag">왜 실패했는가</div>
+  <h2>우리는 알고 있습니다</h2>
+  <ul class="mt32">
+    <li>목표가 <b>추상적</b>이었습니다 — "생산성을 올린다"는 목표가 아니라 구호였습니다</li>
+    <li>목적이 <b>한쪽에 치우쳤습니다</b> — 만드는 쪽만 보고, 파는 쪽을 보지 않았습니다</li>
+    <li>새 기계로 공정을 개선하려면 공정을 알아야 하는데, <b>우리 공정을 몰랐습니다</b></li>
+  </ul>
+  <div class="quote"><div class="lead">우리는 목표를 세운 게 아니라, 구매를 한 것이었습니다.<br>
+  <span class="pp">IT를 30년 한 저도 못 했습니다.</span></div></div>
+  <div class="num">6</div>
+</section>
+
+<!-- 7 전환점 -->
+<section class="slide center" style="background:linear-gradient(160deg,#F7F6FF 0%,#EEEDFE 100%)">
+  <h2 style="text-align:center">그런데 <span class="pp">AI</span>가 나오면서<br>모든 것이 바뀌었습니다</h2>
+  <p class="mt32" style="text-align:center">직접 만들 수 있게 되었습니다.<br>
+  처음 만든 것은 조잡했습니다. 그래도 하나씩 했습니다.</p>
+  <div class="statline" style="justify-content:center"><div class="stat" style="text-align:center">
+    <div class="v pp">11개</div><div class="l">지금 매일 돌아가는 서비스</div></div></div>
+  <div class="quote mt32" style="text-align:left;max-width:1000px">
+    <div class="lead">IT를 30년 한 저도 못 했던 일이, AI가 나오자 되기 시작했습니다.<br>
+    <span class="pp">이 말은 — 이제 IT 전문가가 아니어도 된다는 뜻입니다.</span></div>
+  </div>
+  <h3 class="mt32">지금부터 우리가 어디로 가는지 말씀드리겠습니다</h3>
+  <div class="num">7</div>
+</section>
+
+<!-- 8 -->
+<section class="slide">
+  <div class="tag">목표를 다시 세웠습니다</div>
+  <h2>국가가 필요한 것과,<br>공장이 필요한 것</h2>
+  <div class="row mt32">
+    <div class="card col purple"><h3>국가</h3><p>고품질 소재를<br>경쟁력 있는 가격에</p></div>
+    <div class="card col amber"><h3>공장</h3><p>품질을 증명하지 못하면 값을 받지 못하고,<br>값을 받지 못하면 품질에 투자할 수 없습니다</p></div>
+  </div>
+  <div class="quote"><div class="lead">"잘 만드는 회사"가 아니라<br>
+  <span class="pp">"품질을 증명해서 값을 받는 회사"</span>가 된다</div></div>
+  <div class="num">8</div>
+</section>
+
+<!-- 9 KT표 -->
+<section class="slide">
+  <div class="tag">밖에서 배운 방식</div>
+  <h3 style="margin-bottom:18px">통신망은 장비만 감시하지 않습니다</h3>
+  <table>
+    <tr><th style="width:50%">KT에서 하던 일</th><th>오성철강에서 하는 일</th></tr>
+    <tr><td>모든 장비를 연결한다</td><td>설비 연결 — 2초 간격, 182만 건</td></tr>
+    <tr><td>실시간으로 감시한다</td><td>라인 관제 · 현장 대시보드</td></tr>
+    <tr><td>누구나 하도록 SOP를 만든다</td><td>태블릿 · 한국어 영어 도구</td></tr>
+    <tr><td>장애를 분석해 재발을 막는다</td><td>작업 상세분석 · 이상 알람</td></tr>
+    <tr class="hl"><td>신청을 받아 자동으로 개통한다</td><td>주문 → 작업지시 자동 생성</td></tr>
+    <tr class="hl"><td>완료되면 고객에게 통보한다</td><td>완료 · 출고 자동 통보</td></tr>
+    <tr class="hl"><td>24시간 조회하게 한다</td><td>고객 포털 — 재고 · 작업 · 단가</td></tr>
+    <tr class="hl"><td>이력을 보고 먼저 제안한다</td><td>조용해진 거래처 자동 탐지</td></tr>
+  </table>
+  <p class="mt16" style="font-size:29px"><b class="pp">두 번째 실패는 정확히 아래 네 줄이 없어서 생긴 일이었습니다.</b></p>
+  <div class="num">9</div>
+</section>
+
+<!-- 10 비유 -->
+<section class="slide">
+  <div class="tag">한 장으로 설명하면</div>
+  <h2>공장에 <span class="pp">내비게이션</span>과<br><span class="pp">블랙박스</span>를 달았습니다</h2>
+  <table class="mt32">
+    <tr><th style="width:50%">자동차</th><th>우리 공장</th></tr>
+    <tr><td>출발 전 경로 안내 — 남들은 몇 분 걸렸나</td><td>작업 전 — 같은 제품을 전에 어떻게 만들었나</td></tr>
+    <tr><td>주행 중 안내 — 지금 과속인가 저속인가</td><td>작업 중 — 지금 빠른가 늦은가</td></tr>
+    <tr><td>블랙박스 — 언제든 되돌려 본다</td><td>작업 후 — 그 순간으로 되돌아간다</td></tr>
+    <tr><td>사고 원인 분석</td><td>불량 원인 분석</td></tr>
+  </table>
+  <div class="num">10</div>
+</section>
+
+<!-- 11 -->
+<section class="slide">
+  <div class="tag">① 경로 안내 · 실시간 안내</div>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="col">
+      <h3>숙련공의 기억이 아니라<br>지난 작업의 실측이 기준입니다</h3>
+      <p class="mt24" style="font-size:30px">같은 제품을 이미 만든 코일들을 찾아, 그때 어떤 속도와 힘으로
+      돌았는지를 평균 내서 보여줍니다. 40년 공장장이 머릿속으로 하던 계산은 태블릿이 대신합니다.</p>
+      <div class="card amber mt24"><p style="font-size:28px">이 서비스는 <b>현장 직원의 요청</b>으로 시작됐습니다.
+      한국어판과 <b>영어판</b>을 따로 만들었습니다.</p></div>
+    </div>
+    <div class="col ph" style="height:400px">〔 현장 사진 : 태블릿을 보는 작업자 〕</div>
+  </div>
+  <p class="mt16 grey" style="font-size:26px">※ 이 도구를 영어로도 만들었습니다. 나중에 이 사람들이 장비를 직접 고치기 시작합니다.</p>
+  <div class="num">11</div>
+</section>
+
+<!-- 11-2 폰카메라 -->
+<section class="slide">
+  <div class="tag">문제 하나가 있었습니다</div>
+  <h2>데이터를 뽑을 <span style="color:var(--red)">단자가 없는</span> 장비</h2>
+  <div class="row mt32">
+    <div class="card col red"><h3>기존 방법</h3><p>장비를 바꾼다<br><b>수천만 원</b></p></div>
+    <div class="card col green"><h3>우리가 한 것</h3><p>휴대폰 카메라를 계기판 앞에 두고<br><b>AI가 숫자를 읽는다</b></p></div>
+  </div>
+  <p class="mt24" style="font-size:30px">1분마다 6개 값이 자동으로 기록됩니다.</p>
+  <div class="quote"><div class="lead">장비를 바꾸지 않고 데이터를 얻었습니다.<br>
+  <span class="pp">억대 설비 교체 대신, 휴대폰 한 대였습니다.</span></div></div>
+  <div class="num">12</div>
+</section>
+
+<!-- 12 블랙박스 -->
+<section class="slide">
+  <div class="tag">② 블랙박스</div>
+  <h2>"그때 어떻게 돌렸지?"에<br>이제 답할 수 있습니다</h2>
+  <div class="row mt48">
+    <div class="card col red"><h3>예전</h3><p>불량이 나와도<br>아무도 답하지 못했습니다</p></div>
+    <div class="card col green"><h3>지금</h3><p>코일 번호와 위치를 넣으면<br>그 순간의 속도와 힘이<br>그대로 나옵니다</p></div>
+  </div>
+  <p class="mt32" style="font-size:30px">기사님이 전화하면 거래처 이름만 넣어 세 개 라인 전체에서 찾습니다.</p>
+  <div class="num">13</div>
+</section>
+
+<!-- 13 사고분석 -->
+<section class="slide">
+  <div class="tag">③ 사고 원인 분석</div>
+  <h2>데이터가 찾아낸 것들</h2>
+  <div class="row mt32">
+    <div class="card col"><h3 class="pp">고장 난 센서</h3>
+      <p>코일 60건을 한 번에 훑었더니,<br><b>5건은 힘을 재는 센서 4개 중 3개가<br>가동 내내 0</b>이었습니다.<br>
+      가공이 아니라 배선 문제였습니다.</p></div>
+    <div class="card col"><h3 class="pp">남의 시스템</h3>
+      <p>납품받은 검사 시스템을 뜯어봤더니<br><b>일부 코일은 결함 기록의 94.2%가<br>시험용 가짜 데이터</b>였습니다.</p></div>
+    <div class="card col"><h3 class="pp">우리 시스템</h3>
+      <p>우리 화면에서 시각이 <b>9시간 밀려</b><br>기록되던 오류를 찾아<br>전부 고쳤습니다.</p></div>
+  </div>
+  <div class="quote"><div class="lead">우리는 숫자를 믿지 않고, <span class="pp">확인합니다.</span></div></div>
+  <div class="num">14</div>
+</section>
+
+<!-- 14 자동화 -->
+<section class="slide">
+  <div class="tag">주문에서 통보까지</div>
+  <h2>사람 손이 없습니다</h2>
+  <div class="steps">
+    <div class="step"><div class="n">1</div><div class="t">주문<br>접수</div></div>
+    <div class="step"><div class="n">2</div><div class="t">내용<br>자동 확인</div></div>
+    <div class="step"><div class="n">3</div><div class="t">작업지시서<br>자동 생성</div></div>
+    <div class="step"><div class="n">4</div><div class="t">현장<br>하달</div></div>
+    <div class="step"><div class="n">5</div><div class="t">생산</div></div>
+    <div class="step"><div class="n">6</div><div class="t">완료<br>보고</div></div>
+    <div class="step"><div class="n">7</div><div class="t">출고 ·<br>고객 통보</div></div>
+  </div>
+  <div class="row mt48">
+    <div class="card col red"><h3>예전</h3><p>사람이 보고 <b>손으로 다시 입력</b><br>빠뜨리면 현장이 모릅니다</p></div>
+    <div class="card col green"><h3>지금</h3><p>업무시간 동안 <b>1분마다 자동</b><br>팩스 요청서는 AI가 읽습니다</p></div>
+  </div>
+  <div class="num">15</div>
+</section>
+
+<!-- 15 고객 -->
+<section class="slide">
+  <div class="tag">고객이 24시간 봅니다</div>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="col">
+      <h3>자기 코일의 재고 · 작업 · 출고를<br>언제든 봅니다</h3>
+      <p class="mt24" style="font-size:30px">진행 상황은 접수부터 출고완료까지 5단계로 추적되고,<br>
+      궁금한 것은 <b>채팅으로 물으면 실제 데이터로 답합니다.</b></p>
+      <div class="card purple mt24">
+        <h3 style="font-size:32px">그리고 우리가 먼저 찾아갑니다</h3>
+        <p style="font-size:28px">재고를 맡겨둔 채 조용해진 거래처를 시스템이 먼저 찾아냅니다.</p>
+      </div>
+    </div>
+    <div class="col">
+      <div class="statline" style="flex-direction:column;gap:28px">
+        <div class="stat"><div class="v" style="color:var(--red)">9곳</div><div class="l">거래처 20곳 중 위험군 자동 식별</div></div>
+        <div class="stat"><div class="v" style="color:var(--red)">171.9톤</div><div class="l">그 거래처들에 묶여 있는 재고</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="num">16</div>
+</section>
+
+<!-- 16 현장이 먼저 -->
+<section class="slide">
+  <div class="tag" style="color:var(--green);background:var(--green-l)">예상하지 못한 일 ①</div>
+  <h2>현장이 <span class="pp">먼저</span><br>요구하기 시작했습니다</h2>
+  <p class="mt32">시키지 않았는데 내부에서 품질 개선 회의가 열렸습니다.<br>
+  <b>설정값을 계산해주는 도구를 만들어달라는 요구가 현장에서 올라왔습니다.</b></p>
+  <div class="card green mt32"><p style="font-size:32px">만들어 적용했더니
+  <b>설정을 잘못해서 나던 불량이 거의 사라졌습니다.</b></p></div>
+  <div class="quote"><div class="lead">지시로 시작된 개선이 아니라,<br>현장이 스스로 낸 요구였습니다.</div></div>
+  <div class="num">17</div>
+</section>
+
+<!-- 17 외국인 도면 -->
+<section class="slide">
+  <div class="tag" style="color:var(--green);background:var(--green-l)">예상하지 못한 일 ②</div>
+  <div class="row" style="flex:1;align-items:center">
+    <div class="col" style="flex:.9">
+      <h3>외국인 직원들이<br>장비를 고치기 시작했습니다</h3>
+      <p class="mt24" style="font-size:29px">직원 12명 중 다섯은 외국인입니다.<br>
+      설명서도 작업 기준도 전부 한국어라, 개선 제안이 나올 수 없는 구조였습니다.</p>
+      <p class="mt16" style="font-size:29px">도구를 <b>한국어와 영어 두 벌</b>로 만들자 상황이 바뀌었습니다.
+      AI의 도움으로 언어의 벽을 넘어 장비 데이터를 직접 읽기 시작했고,
+      원인을 알게 되자 고치는 방법이 보였습니다.</p>
+    </div>
+    <div class="col ph" style="height:440px">〔 롤러 · 샤프트 개조 도면 전면 배치 〕<br>Ø40 롤러 / 1,320mm / Ø20 샤프트 / 6204-2RS</div>
+  </div>
+  <div class="quote"><div class="lead">이 도면을 만든 사람은 엔지니어가 아니라,<br><span class="pp">우리 현장 직원입니다.</span></div></div>
+  <div class="num">18</div>
+</section>
+
+<!-- 18 품질리포트 -->
+<section class="slide">
+  <div class="tag" style="color:var(--green);background:var(--green-l)">예상하지 못한 일 ③</div>
+  <h2>고객이 불량이라 했고,<br>아무도 우리를 믿지 않았습니다</h2>
+  <p class="mt24">증명할 방법이 없었습니다. <b>말은 말을 이기지 못합니다.</b></p>
+  <div class="row mt32">
+    <div class="col card"><h3>그래서 AI에게 물었습니다</h3>
+      <p>그 코일들의 작업 기록을 전부 분석해<br><b>품질 리포트를 만들어냈습니다.</b></p></div>
+    <div class="col ph" style="height:230px">〔 코일별 작업 분석 리포트 표지 〕</div>
+  </div>
+  <div class="quote"><div class="lead">분쟁이 데이터로 끝났습니다.<br>
+  <span class="pp">그리고 깨달았습니다 — 이건 방어 수단이 아니라 팔 수 있는 것이라는 사실을.</span></div></div>
+  <div class="num">19</div>
+</section>
+
+<!-- 19 발견 -->
+<section class="slide center" style="background:linear-gradient(160deg,#0F1E33 0%,#241E4E 100%);color:#fff">
+  <p style="color:#9FB0CC;font-size:36px">우리는 AI로 무언가를 <b style="color:#fff">만들려다</b> 두 번 실패했습니다.<br>
+  세 번째에는 AI로 <b style="color:#fff">보기</b> 시작했습니다.</p>
+  <h1 class="mt48" style="color:#fff;text-align:center;font-size:78px">AI는 개발이 아니라,<br>발견을 하게 해줍니다</h1>
+  <div class="num" style="color:#5A6E90">20</div>
+</section>
+
+<!-- 20 요청 -->
+<section class="slide">
+  <div class="tag">요청드립니다</div>
+  <h2>「자체개발형 AI 모델공장」<br>시범 지정</h2>
+  <p class="mt24" style="font-size:30px">반월시화에는 우리 같은 공장이 <b>4,000곳</b> 있습니다.
+  그런데 <b>이 모든 것을 지금 저 혼자 하고 있습니다.</b></p>
+  <div class="row mt32">
+    <div class="card col purple"><h3 style="font-size:32px">전담 인력 2명</h3>
+      <p style="font-size:26px">데이터 담당 1<br>현장 적용 담당 1</p></div>
+    <div class="card col purple"><h3 style="font-size:32px">실증 예산</h3>
+      <p style="font-size:26px">품질측정 완결 +<br>다른 공장도 쓸 범용 모듈화</p></div>
+    <div class="card col purple"><h3 style="font-size:32px">확산 채널</h3>
+      <p style="font-size:26px">산단 내 공개 실증장<br>견학 · 교육 프로그램</p></div>
+  </div>
+  <p class="mt32" style="font-size:29px"><b>2027년 1년 시범 → 2028년 반월시화 코일가공 업종 확대</b><br>
+  <span class="grey" style="font-size:26px">검증 지표 : 불량률 개선 · 적용 업체 수 · 신규 1곳 적용 소요기간 · 공개 모듈 개수</span></p>
+  <div class="num">21</div>
+</section>
+
+<!-- 21 클로징 -->
+<section class="slide cover" style="justify-content:center;align-items:center;text-align:center">
+  <div class="ph" style="position:absolute;inset:0;background:#16233A;border:none;color:#5A6E90;font-size:26px">
+    〔 배경 사진 : 잠실 주경기장 재건축 현장 〕
+  </div>
+  <div style="position:relative;z-index:2">
+    <p style="color:#9FB0CC;font-size:34px">오디세우스는 고향에 돌아오는 데 20년이 걸렸습니다.<br>
+    저는 30년이 걸렸습니다.<br>
+    돌아와 보니, 밖에서 배운 것이 여기서 쓸모가 있었습니다.</p>
+    <h1 class="mt48" style="color:#fff;font-size:72px">그 경기장도 다시 짓고 있습니다<br>우리도 다시 짓고 있습니다</h1>
+    <p class="mt32" style="color:#C9B8FF;font-size:40px;font-weight:900">AI는 개발이 아니라, 발견이었습니다</p>
+  </div>
+  <div class="num" style="color:#5A6E90">22</div>
+</section>
+
+</div>
+</body>
+</html>
