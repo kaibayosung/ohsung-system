@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>슬리터2 정지 분석</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; min-height:100%; background:#eef1f6; font-family:"Pretendard",system-ui,sans-serif; font-weight:700; }
+  body { display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:920px; padding-bottom:32px; }
+
+  .header-title { font-size:22px; font-weight:900; color:#0f1e33; margin:0 0 4px; }
+  .header-sub { font-size:13.5px; font-weight:700; color:#7d8ba1; margin:0 0 16px; line-height:1.5; }
+
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,0.05); margin-bottom:14px; }
+
+  .date-row { display:flex; align-items:center; gap:8px; margin-bottom:16px; }
+  .date-input { font-family:inherit; font-weight:800; font-size:15px; color:#0f1e33; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 10px; }
+  .quick-btn { font-family:inherit; font-weight:800; font-size:13.5px; color:#185fa5; background:#e6f1fb; border:1.5px solid #cfe2f7; border-radius:10px; padding:9px 13px; white-space:nowrap; cursor:pointer; }
+
+  .status-msg { font-size:14px; font-weight:700; color:#7d8ba1; padding:26px 4px; text-align:center; }
+
+  .stat-grid { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+  @media (max-width: 640px) { .stat-grid { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+  .stat-cell { background:#fff; border:1px solid #e3e8f0; border-radius:14px; padding:14px 15px; }
+  .stat-label { font-size:12px; font-weight:800; color:#7d8ba1; margin:0 0 6px; }
+  .stat-value { font-size:22px; font-weight:900; color:#0f1e33; margin:0; }
+  .stat-value.danger { color:#c0392b; }
+  .stat-sub { font-size:11.5px; font-weight:700; color:#9aa3b5; margin-top:3px; }
+
+  .panel-title { font-size:13.5px; font-weight:900; color:#0f1e33; margin:0 0 12px; }
+  .chart-svg { width:100%; height:auto; display:block; overflow:visible; }
+  .chart-svg .axis { fill:#9aa3b5; font-size:10px; font-family:"Pretendard",sans-serif; font-weight:700; }
+  .chart-svg .val { fill:#0f1e33; font-size:10px; font-weight:800; text-anchor:middle; }
+
+  table.job-table { width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.job-table th { text-align:left; color:#7d8ba1; font-weight:800; padding:7px 6px; border-bottom:1px solid #e3e8f0; white-space:nowrap; }
+  table.job-table td { padding:9px 6px; color:#0f1e33; font-weight:700; border-bottom:1px solid #eef1f6; white-space:nowrap; }
+  table.job-table tr.has-stop td { color:#0f1e33; }
+  table.job-table tr.has-stop { background:#fbe9e7; }
+  table.job-table tr.clickable { cursor:pointer; }
+  table.job-table tr.clickable:hover { background:#f3f5fe; }
+  .stop-chip { font-weight:900; color:#c0392b; }
+  .none-chip { font-weight:700; color:#9aa3b5; }
+  .no-plc { font-weight:700; color:#c9a227; }
+  .table-wrap { overflow-x:auto; }
+
+  .back-btn { display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:9px 15px; font-size:13.5px; font-weight:800; color:#4d5c72; margin-bottom:14px; font-family:inherit; cursor:pointer; }
+
+  .detail-eyebrow { font-family:"Pretendard",sans-serif; font-size:11px; font-weight:800; letter-spacing:0.04em; color:#185fa5; text-transform:uppercase; margin:0 0 6px; }
+  .detail-h1 { font-size:19px; font-weight:900; color:#0f1e33; margin:0 0 8px; }
+  .detail-lede { font-size:12.5px; color:#7d8ba1; line-height:1.6; font-weight:700; margin:0 0 16px; }
+
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width: 720px) { .grid2 { grid-template-columns:1fr; } }
+  .dpanel { background:#fff; border:1px solid #e3e8f0; border-radius:14px; padding:14px 14px 10px; margin-bottom:12px; }
+  .dpanel-head { display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:6px; margin-bottom:8px; }
+  .dpanel-title { font-size:12.5px; font-weight:900; color:#0f1e33; }
+  .dpanel-note { font-size:10px; font-weight:700; color:#9aa3b5; }
+  .series-legend { display:flex; gap:10px; font-size:10px; font-weight:800; color:#7d8ba1; margin-bottom:4px; }
+  .series-legend i { display:inline-block; width:13px; height:3px; border-radius:2px; margin-right:4px; vertical-align:2px; }
+
+  .dchart .grid-line { stroke:#eef1f6; stroke-width:1; }
+  .dchart .axis-label { fill:#9aa3b5; font-size:8.5px; font-family:"Pretendard",sans-serif; font-weight:700; }
+  .dchart .band.stop { fill:rgba(192,57,43,0.10); }
+  .dchart .band.idle { fill:rgba(148,163,184,0.16); }
+
+  .foot { font-size:11px; font-weight:700; color:#7d8ba1; line-height:1.6; padding:8px 2px 0; }
+  .foot b { color:#0f1e33; }
+</style>
+</head>
+<body>
+<div id="app"><div class="status-msg">불러오는 중…</div></div>
+
+<script>
+const API = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const KEY = "sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs";
+const SVGNS = "http://www.w3.org/2000/svg";
+
+async function getJson(params){
+  const qs = new URLSearchParams(params).toString();
+  const res = await fetch(`${API}?${qs}`, { headers: { apikey: KEY, Authorization: `Bearer ${KEY}` } });
+  if (!res.ok) throw new Error("API " + res.status);
+  return res.json();
+}
+function todayKST(){
+  const now = new Date();
+  return new Date(now.getTime() + 9*3600000).toISOString().slice(0, 10);
+}
+function addDaysKST(dateStr, delta){
+  const d = new Date(dateStr + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0,10);
+}
+// plc_data/erp_data TIMESTAMP 값은 서버가 KST 벽시계 값을 그대로 "Z"(UTC) 라벨로 내려줍니다.
+// 여기서 다시 +9h를 더하면 프로젝트에 자주 나오는 "KST 이중 오프셋" 버그가 재현되므로,
+// UTC 게터로 그대로 읽어 실제 표기 그대로 사용합니다 (추가 변환 없음).
+function fmtHM(iso){
+  const d = new Date(iso);
+  return String(d.getUTCHours()).padStart(2,'0') + ':' + String(d.getUTCMinutes()).padStart(2,'0');
+}
+function fmtDurLabel(min){
+  const h = Math.floor(min/60), m = Math.round(min%60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+function fmtSecLabel(sec){
+  const m = Math.floor(sec/60), s = Math.round(sec%60);
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+function shortId(id){ return id.length > 8 ? id.slice(-6) : id; }
+
+// --- 정지 탐지: RUN=1 이지만 실제 속도가 0인 상태가 일정 시간 이상 지속되는 구간을 찾되,
+// (1) 초기 스레딩(<25m) 구간, (2) 구간 중 길이값이 변하는(코일 교체/리셋) 경우,
+// (3) 코일이 이미 완성 길이에 도달한 뒤의 구간, (4) 작업 종료 직전(90초 이내) 구간은
+// 실제 설비 정지가 아니라고 보고 제외합니다. 9/28 실측 데이터(3건/4회/224초)로 검증했습니다.
+function detectStops(rs){
+  if (!rs || rs.length === 0) return { stops: [], idle: [], totalStopSec: 0 };
+  const THREAD_ZONE = 25, TAIL_GUARD_SEC = 90;
+  const finalMaxLen = Math.max(...rs.map(r => Number(r.LENGTH) || 0));
+  const lastTs = new Date(rs[rs.length-1].TIMESTAMP).getTime();
+  const stops = [], idle = [];
+  let runStart = null;
+  for (let i = 0; i < rs.length; i++){
+    const r = rs[i], len = Number(r.LENGTH)||0, spd = Number(r.LINE_SPEED_VALUE)||0, run = Number(r.RUN);
+    const isStopped = run === 1 && spd === 0 && len > THREAD_ZONE;
+    if (isStopped && runStart === null) runStart = i;
+    if (!isStopped && runStart !== null){ finalize(runStart, i-1); runStart = null; }
+  }
+  if (runStart !== null) finalize(runStart, rs.length-1);
+  function finalize(s, e){
+    const durSec = (new Date(rs[e].TIMESTAMP) - new Date(rs[s].TIMESTAMP)) / 1000;
+    if (durSec < 10) return;
+    let minLen = Infinity, maxLen = -Infinity;
+    for (let k = s; k <= e; k++){ const l = Number(rs[k].LENGTH)||0; if (l < minLen) minLen = l; if (l > maxLen) maxLen = l; }
+    const atLen = Number(rs[s].LENGTH) || 0;
+    const seg = { from: rs[s].TIMESTAMP, to: rs[e].TIMESTAMP, durSec: Math.round(durSec), atLen };
+    if (maxLen - minLen > 3) { idle.push({ ...seg, reason: 'reset' }); return; }
+    if (atLen >= finalMaxLen - 5) { idle.push({ ...seg, reason: 'complete' }); return; }
+    const secToEnd = (lastTs - new Date(rs[e].TIMESTAMP).getTime()) / 1000;
+    if (secToEnd < TAIL_GUARD_SEC) { idle.push({ ...seg, reason: 'tail' }); return; }
+    stops.push(seg);
+  }
+  return { stops, idle, totalStopSec: Math.round(stops.reduce((s,x) => s + x.durSec, 0)) };
+}
+
+const state = { date: todayKST(), jobs: [], rawByCoil: new Map() };
+
+async function loadDate(){
+  const app = document.getElementById('app');
+  app.innerHTML = renderShell(`<div class="card"><div class="status-msg">${state.date} 작업 목록을 불러오는 중…</div></div>`);
+  wireHeader();
+  try {
+    const jl = await getJson({ slitter_work_date: state.date });
+    const rows = (jl.rows || []).filter(r => /^[A-Za-z0-9_-]+$/.test(r.product_name));
+    if (rows.length === 0){
+      document.getElementById('bodySlot').innerHTML = `<div class="card"><div class="status-msg">이 날짜에는 슬리터2 작업 기록이 없습니다.</div></div>`;
+      return;
+    }
+    const idList = rows.map(r => `'${r.product_name}'`).join(",");
+    const sql = `SELECT COIL_ID, TIMESTAMP, RUN, LINE_SPEED_VALUE, LENGTH FROM plc_data WHERE COIL_ID IN (${idList}) ORDER BY COIL_ID, TIMESTAMP`;
+    const pj = await getJson({ sql });
+    const byCoil = new Map();
+    (pj.rows || []).forEach(r => {
+      if (!byCoil.has(r.COIL_ID)) byCoil.set(r.COIL_ID, []);
+      byCoil.get(r.COIL_ID).push(r);
+    });
+    state.rawByCoil = byCoil;
+
+    const jobs = rows.map(erp => {
+      const rs = byCoil.get(erp.product_name) || [];
+      if (rs.length === 0) return { coilId: erp.product_name, erp, rs: [], hasPlc: false };
+      const det = detectStops(rs);
+      return {
+        coilId: erp.product_name, erp, rs, hasPlc: true,
+        startTs: rs[0].TIMESTAMP, endTs: rs[rs.length-1].TIMESTAMP,
+        durationMin: (new Date(rs[rs.length-1].TIMESTAMP) - new Date(rs[0].TIMESTAMP)) / 60000,
+        stops: det.stops, idle: det.idle, stopCount: det.stops.length, totalStopSec: det.totalStopSec,
+      };
+    });
+    jobs.sort((a,b) => (a.startTs || '') < (b.startTs || '') ? -1 : 1);
+    state.jobs = jobs;
+    renderListBody();
+  } catch (err){
+    document.getElementById('bodySlot').innerHTML = `<div class="card"><div class="status-msg">불러오지 못했습니다: ${String(err.message||err)}</div></div>`;
+  }
+}
+
+function renderShell(bodyHtml){
+  return `
+    <div class="header-title">슬리터2 정지 분석</div>
+    <div class="header-sub">날짜를 고르면 그날 슬리터2 전체 작업의 소요시간과 중간정지(설비가 RUN 상태에서 실제로 완전히 멈춘 구간)를 보여줍니다. 작업을 클릭하면 해당 코일의 PLC 전 구간 시계열을 볼 수 있습니다.</div>
+    <div class="card date-row">
+      <input type="date" class="date-input" id="datePick" value="${state.date}">
+      <button type="button" class="quick-btn" id="todayBtn">오늘</button>
+      <button type="button" class="quick-btn" id="yesterdayBtn">어제</button>
+    </div>
+    <div id="bodySlot">${bodyHtml}</div>
+  `;
+}
+function wireHeader(){
+  document.getElementById('datePick').addEventListener('change', (e) => { state.date = e.target.value || todayKST(); loadDate(); });
+  document.getElementById('todayBtn').addEventListener('click', () => { state.date = todayKST(); loadDate(); });
+  document.getElementById('yesterdayBtn').addEventListener('click', () => { state.date = addDaysKST(todayKST(), -1); loadDate(); });
+}
+
+function renderListBody(){
+  const jobs = state.jobs;
+  const withPlc = jobs.filter(j => j.hasPlc);
+  const totalJobs = jobs.length;
+  const totalWorkMin = withPlc.reduce((s,j) => s + j.durationMin, 0);
+  const jobsWithStop = withPlc.filter(j => j.stopCount > 0);
+  const totalStopEvents = withPlc.reduce((s,j) => s + j.stopCount, 0);
+  const totalStopSec = withPlc.reduce((s,j) => s + j.totalStopSec, 0);
+
+  const slot = document.getElementById('bodySlot');
+  slot.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-cell"><div class="stat-label">총 작업 수</div><div class="stat-value">${totalJobs}건</div></div>
+      <div class="stat-cell"><div class="stat-label">총 작업시간</div><div class="stat-value">${fmtDurLabel(totalWorkMin)}</div><div class="stat-sub">${totalWorkMin.toFixed(1)}분 합계</div></div>
+      <div class="stat-cell"><div class="stat-label">중간정지 발생</div><div class="stat-value danger">${jobsWithStop.length}건</div><div class="stat-sub">총 ${totalStopEvents}회 정지</div></div>
+      <div class="stat-cell"><div class="stat-label">총 중간정지시간</div><div class="stat-value danger">${fmtSecLabel(totalStopSec)}</div><div class="stat-sub">${totalStopSec}초 합계</div></div>
+    </div>
+    <div class="card">
+      <div class="panel-title">작업별 소요시간 (분) · 빨강 = 중간정지 발생</div>
+      <svg id="c-duration" class="chart-svg" viewBox="0 0 900 170"></svg>
+    </div>
+    <div class="card">
+      <div class="panel-title">작업 중 완전정지 지속시간 (초) · RUN=1이지만 속도 0</div>
+      <svg id="c-stopdur" class="chart-svg" viewBox="0 0 900 170"></svg>
+    </div>
+    <div class="card">
+      <div class="panel-title">전체 작업 목록 · ${state.date} · 행을 클릭하면 PLC 전 구간 타임라인이 열립니다</div>
+      <div class="table-wrap"><table class="job-table">
+        <tr><th>시간</th><th>코일ID</th><th>거래처</th><th>가공규격</th><th style="text-align:right">중량</th><th style="text-align:right">작업시간</th><th>중간정지</th></tr>
+        ${jobs.map(j => renderJobRow(j)).join("")}
+      </table></div>
+    </div>
+  `;
+  renderBarChart('c-duration', jobs.map(j => ({
+    label: shortId(j.coilId), value: j.hasPlc ? Math.round(j.durationMin*10)/10 : 0,
+    color: j.hasPlc && j.stopCount > 0 ? '#c0392b' : '#185fa5', suffix: '분',
+  })));
+  renderBarChart('c-stopdur', jobs.map(j => ({
+    label: shortId(j.coilId), value: j.hasPlc ? j.totalStopSec : 0,
+    color: j.hasPlc && j.totalStopSec > 0 ? '#c0392b' : '#c7ccd6', suffix: '초', hideZeroLabel: true,
+  })));
+  slot.querySelectorAll('tr.clickable').forEach(el => el.addEventListener('click', () => renderDetail(el.dataset.coil)));
+}
+
+function renderJobRow(j){
+  if (!j.hasPlc){
+    return `<tr><td>-</td><td>${j.coilId}</td><td>${j.erp.company_name||''}</td><td>${j.erp.specification||''}</td><td style="text-align:right">${(j.erp.original_weight||0).toLocaleString()}kg</td><td style="text-align:right">-</td><td class="no-plc">PLC 데이터 없음</td></tr>`;
+  }
+  const timeRange = `${fmtHM(j.startTs)}–${fmtHM(j.endTs)}`;
+  const stopLabel = j.stopCount > 0
+    ? `<span class="stop-chip">${j.totalStopSec}초 · ${j.stopCount}회</span>`
+    : `<span class="none-chip">없음</span>`;
+  return `<tr class="clickable${j.stopCount>0?' has-stop':''}" data-coil="${j.coilId}">
+    <td>${timeRange}</td><td>${j.coilId}</td><td>${j.erp.company_name||''}</td><td>${j.erp.specification||''}</td>
+    <td style="text-align:right">${(j.erp.original_weight||0).toLocaleString()}kg</td>
+    <td style="text-align:right">${j.durationMin.toFixed(1)}분</td><td>${stopLabel}</td>
+  </tr>`;
+}
+
+function el(tag, attrs, parent){
+  const e = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function renderBarChart(svgId, items){
+  const svg = document.getElementById(svgId);
+  while (svg.firstChild) svg.removeChild(svg.firstChild);
+  const vb = svg.viewBox.baseVal;
+  const W = vb.width, H = vb.height;
+  const padL = 8, padR = 8, padT = 22, padB = 24;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const n = items.length;
+  const gap = 10;
+  const barW = Math.max(14, (plotW - gap*(n-1)) / n);
+  const maxV = Math.max(1, ...items.map(it => it.value));
+  items.forEach((it, i) => {
+    const x = padL + i * (barW + gap);
+    const h = maxV > 0 ? (it.value / maxV) * plotH : 0;
+    const y = padT + plotH - h;
+    el("rect", { x, y, width: barW, height: Math.max(h,1), rx: 3, fill: it.color }, svg);
+    if (!(it.hideZeroLabel && it.value === 0)) {
+      el("text", { class: "val", x: x + barW/2, y: y - 5 }, svg).textContent = it.value + (it.suffix ? it.suffix : '');
+    }
+    el("text", { class: "axis", x: x + barW/2, y: H - 6, "text-anchor": "middle" }, svg).textContent = it.label;
+  });
+}
+
+// ---------- 상세(코일 전체 타임라인) ----------
+async function renderDetail(coilId){
+  const app = document.getElementById('app');
+  app.innerHTML = `<button type="button" class="back-btn" id="backBtn">← 목록으로</button><div class="card"><div class="status-msg">${coilId} PLC 전 구간 데이터를 불러오는 중…</div></div>`;
+  document.getElementById('backBtn').addEventListener('click', () => { app.innerHTML = renderShell(''); wireHeader(); renderListBody(); });
+
+  const job = state.jobs.find(j => j.coilId === coilId);
+  const sql = `SELECT DATE_FORMAT(MIN(TIMESTAMP),'%H:%i:%s') t0, ROUND(AVG(RUN)) run, ROUND(AVG(LINE_SPEED_SET_VALUE),1) setv, ROUND(AVG(LINE_SPEED_VALUE),1) actv, ROUND(AVG(UNCOILER_CURRENT),1) ucur, ROUND(AVG(UNCOILER_SPEED),1) uspd, ROUND(AVG(UNCOILER_TENSION),1) uten, ROUND(AVG(UNCOILER_OUTDIA),1) uoutdia, ROUND(AVG(UNCOILER_ACTUAL_DIA),1) uactdia, ROUND(AVG(RECOILER_SPEED),1) recspd, ROUND(AVG(RECOILER_ACTUAL_DIA),1) recdia, ROUND(AVG(SLITTER_SPEED),1) slitspd, ROUND(AVG(TENSION1),1) t1, ROUND(AVG(TENSION2),1) t2, ROUND(AVG(TENSION3),1) t3, ROUND(AVG(TENSION4),1) t4, ROUND(AVG(NO1_LOOP_VALUE),1) loop1, ROUND(AVG(NO2_LOOP_VALUE),1) loop2, ROUND(AVG(\`3ROLL_SPEED\`),1) roll3, ROUND(AVG(LENGTH),1) len FROM plc_data WHERE COIL_ID = '${coilId}' GROUP BY FLOOR(UNIX_TIMESTAMP(TIMESTAMP)/10)*10 ORDER BY MIN(TIMESTAMP) ASC`;
+  let rows;
+  try {
+    const j = await getJson({ sql });
+    rows = j.rows || [];
+  } catch (err){
+    document.getElementById('app').innerHTML = `<button type="button" class="back-btn" id="backBtn">← 목록으로</button><div class="card"><div class="status-msg">불러오지 못했습니다: ${String(err.message||err)}</div></div>`;
+    document.getElementById('backBtn').addEventListener('click', () => { app.innerHTML = renderShell(''); wireHeader(); renderListBody(); });
+    return;
+  }
+  if (rows.length === 0){
+    document.getElementById('app').innerHTML = `<button type="button" class="back-btn" id="backBtn">← 목록으로</button><div class="card"><div class="status-msg">이 코일에 대한 PLC 기록이 없습니다.</div></div>`;
+    document.getElementById('backBtn').addEventListener('click', () => { app.innerHTML = renderShell(''); wireHeader(); renderListBody(); });
+    return;
+  }
+
+  const t0sec = (t) => { const [h,m,s] = t.split(":").map(Number); return h*3600+m*60+s; };
+  const startSec = t0sec(rows[0].t0);
+  rows.forEach(r => { r.tSec = t0sec(r.t0) - startSec; });
+  const endSec = rows[rows.length-1].tSec;
+
+  // 목록 조회 때 이미 계산해 둔 stops/idle 구간을 그대로 재사용해 밴드를 그립니다.
+  const rawStart = new Date(job && job.startTs ? job.startTs : (rows[0].t0));
+  function toSec(iso){ return (new Date(iso).getTime() - rawStart.getTime())/1000; }
+  const stopBands = (job && job.hasPlc ? job.stops : []).map(s => ({ from: toSec(s.from), to: toSec(s.to), cls: 'stop', label: `정지 ${s.durSec}s` }));
+  const idleBands = (job && job.hasPlc ? job.idle : []).map(s => ({ from: toSec(s.from), to: toSec(s.to), cls: 'idle', label: '대기' }));
+  const bands = [...stopBands, ...idleBands];
+
+  const durMin = job && job.hasPlc ? job.durationMin : (endSec/60);
+  const stopSummary = job && job.hasPlc && job.stopCount > 0
+    ? `빨간 음영은 작업 중 실제 정지 구간(${job.stops.map(s=>`${fmtHM(s.from)}~${fmtHM(s.to)}, ${s.durSec}초 · ${s.atLen}m 지점`).join('; ')})입니다.`
+    : `이 작업에서는 설비가 RUN 상태에서 완전히 멈춘 구간이 발견되지 않았습니다.`;
+
+  document.getElementById('app').innerHTML = `
+    <button type="button" class="back-btn" id="backBtn">← 목록으로</button>
+    <div class="detail-eyebrow">Ohsung Steel · 슬리터2 · ${coilId}</div>
+    <div class="detail-h1">${coilId} 전체 작업 타임라인</div>
+    <div class="detail-lede">${rows[0].t0}~${rows[rows.length-1].t0}, 총 ${durMin.toFixed(1)}분. plc_data 2초 간격 실측을 10초 단위로 집계(평균)해서 ${rows.length}개 지점으로 표시했습니다. ${stopSummary} 회색 음영은 코일 교체·완료 후 대기 등 정지 판정에서 제외한 구간입니다.</div>
+
+    <div class="grid2">
+      <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">라인속도 — 지령 vs 실제</span><span class="dpanel-note">m/min</span></div>
+        <div class="series-legend"><span><i style="background:#185fa5"></i>지령(SET)</span><span><i style="background:#c46b06"></i>실제(ACT)</span></div>
+        <svg id="d-speed" class="chart-svg dchart" viewBox="0 0 700 190"></svg></div>
+      <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">언코일러 전류</span><span class="dpanel-note">A</span></div>
+        <div class="series-legend"><span><i style="background:#c0392b"></i>UNCOILER_CURRENT</span></div>
+        <svg id="d-current" class="chart-svg dchart" viewBox="0 0 700 190"></svg></div>
+      <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">축별 속도 동조</span><span class="dpanel-note">m/min · 언코일러는 절댓값</span></div>
+        <div class="series-legend"><span><i style="background:#185fa5"></i>언코일러</span><span><i style="background:#c46b06"></i>리코일러</span><span><i style="background:#2ca25f"></i>슬리터</span><span><i style="background:#7c6ee0"></i>3롤</span></div>
+        <svg id="d-axes" class="chart-svg dchart" viewBox="0 0 700 190"></svg></div>
+      <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">슬리트 스트랜드 텐션 1~4</span><span class="dpanel-note">정지 중엔 0 — 정상</span></div>
+        <div class="series-legend"><span><i style="background:#185fa5"></i>T1</span><span><i style="background:#c46b06"></i>T2</span><span><i style="background:#2ca25f"></i>T3</span><span><i style="background:#7c6ee0"></i>T4</span></div>
+        <svg id="d-tension" class="chart-svg dchart" viewBox="0 0 700 190"></svg></div>
+      <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">지름 변화</span><span class="dpanel-note">mm</span></div>
+        <div class="series-legend"><span><i style="background:#185fa5"></i>언코일러 실측경</span><span><i style="background:#c46b06"></i>리코일러 실측경</span></div>
+        <svg id="d-dia" class="chart-svg dchart" viewBox="0 0 700 190"></svg></div>
+      <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">언코일러 텐션 · 루프값</span><span class="dpanel-note">% / 설정단위</span></div>
+        <div class="series-legend"><span><i style="background:#185fa5"></i>UNCOILER_TENSION</span><span><i style="background:#c46b06"></i>LOOP1</span><span><i style="background:#7c6ee0"></i>LOOP2</span></div>
+        <svg id="d-loop" class="chart-svg dchart" viewBox="0 0 700 190"></svg></div>
+    </div>
+    <div class="dpanel"><div class="dpanel-head"><span class="dpanel-title">누적 길이</span><span class="dpanel-note">m · 총 ${Math.round(Math.max(...rows.map(r=>Number(r.len)||0))).toLocaleString()}m</span></div>
+      <div class="series-legend"><span><i style="background:#185fa5"></i>LENGTH</span></div>
+      <svg id="d-length" class="chart-svg dchart" viewBox="0 0 1400 170"></svg></div>
+
+    <div class="foot"><b>읽는 법</b> — 전류 패널이 평평하고 튀는 지점이 없으면 트립(과부하 셧다운)보다는 지령이 서서히 낮아진 정상 정지일 가능성이 높습니다. 지름 패널은 언코일러 실측경이 꾸준히 줄고 리코일러 실측경이 꾸준히 느는 흐름이 정상입니다.</div>
+  `;
+  document.getElementById('backBtn').addEventListener('click', () => { app.innerHTML = renderShell(''); wireHeader(); renderListBody(); });
+
+  function fmtHMchart(sec){
+    const total = startSec + sec;
+    const h = Math.floor(total/3600)%24, m = Math.floor((total%3600)/60);
+    return String(h).padStart(2,'0') + ":" + String(m).padStart(2,'0');
+  }
+  function renderLineChart(svgId, seriesDefs, opts){
+    opts = opts || {};
+    const svg = document.getElementById(svgId);
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    const vb = svg.viewBox.baseVal;
+    const W = vb.width, H = vb.height;
+    const padL = 40, padR = 10, padT = 10, padB = 24;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+
+    let allVals = [];
+    seriesDefs.forEach(s => rows.forEach(r => { const v = opts.abs ? Math.abs(Number(r[s.key])) : Number(r[s.key]); if (!isNaN(v)) allVals.push(v); }));
+    let minV = allVals.length ? Math.min(...allVals) : 0, maxV = allVals.length ? Math.max(...allVals) : 1;
+    if (opts.zeroBase !== false) minV = Math.min(minV, 0);
+    const pad = (maxV - minV) * 0.08 || 1;
+    minV -= pad; maxV += pad;
+
+    const xOf = (t) => padL + (t / (endSec||1)) * plotW;
+    const yOf = (v) => padT + plotH - ((v - minV) / (maxV - minV)) * plotH;
+
+    bands.forEach(b => {
+      el("rect", { class: "band " + b.cls, x: xOf(b.from), y: padT, width: Math.max(xOf(b.to) - xOf(b.from), 1), height: plotH }, svg);
+    });
+
+    const steps = 4;
+    for (let i = 0; i <= steps; i++) {
+      const v = minV + ((maxV - minV) / steps) * i;
+      const y = yOf(v);
+      el("line", { class: "grid-line", x1: padL, x2: W - padR, y1: y, y2: y }, svg);
+      el("text", { class: "axis-label", x: padL - 5, y: y + 3, "text-anchor": "end" }, svg).textContent = Math.round(v * 10) / 10;
+    }
+    const xticks = 6;
+    for (let i = 0; i <= xticks; i++) {
+      const t = (endSec / xticks) * i;
+      el("text", { class: "axis-label", x: xOf(t), y: H - 6, "text-anchor": "middle" }, svg).textContent = fmtHMchart(t);
+    }
+    seriesDefs.forEach(s => {
+      let d = "";
+      rows.forEach((r, i) => {
+        const v = opts.abs ? Math.abs(Number(r[s.key])) : Number(r[s.key]);
+        const x = xOf(r.tSec), y = yOf(isNaN(v)?0:v);
+        d += (i === 0 ? "M" : "L") + x.toFixed(1) + "," + y.toFixed(1) + " ";
+      });
+      el("path", { d, fill: "none", stroke: s.color, "stroke-width": 1.6, "stroke-linejoin": "round" }, svg);
+    });
+  }
+  renderLineChart("d-speed", [{ key: "setv", color: "#185fa5" }, { key: "actv", color: "#c46b06" }]);
+  renderLineChart("d-current", [{ key: "ucur", color: "#c0392b" }]);
+  renderLineChart("d-axes", [{ key: "uspd", color: "#185fa5" }, { key: "recspd", color: "#c46b06" }, { key: "slitspd", color: "#2ca25f" }, { key: "roll3", color: "#7c6ee0" }], { abs: true });
+  renderLineChart("d-tension", [{ key: "t1", color: "#185fa5" }, { key: "t2", color: "#c46b06" }, { key: "t3", color: "#2ca25f" }, { key: "t4", color: "#7c6ee0" }]);
+  renderLineChart("d-dia", [{ key: "uactdia", color: "#185fa5" }, { key: "recdia", color: "#c46b06" }], { zeroBase: false });
+  renderLineChart("d-loop", [{ key: "uten", color: "#185fa5" }, { key: "loop1", color: "#c46b06" }, { key: "loop2", color: "#7c6ee0" }]);
+  renderLineChart("d-length", [{ key: "len", color: "#185fa5" }]);
+}
+
+loadDate();
+</script>
+</body>
+</html>

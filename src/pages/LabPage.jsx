@@ -71,6 +71,8 @@ const PROJECTS = [
   { key: 'deposit-reconcile', label: '거래명세서 입금 확인', icon: '🧾', category: '경영 · 재무', desc: '기간을 정하고 매출 거래명세서 + 통장 거래내역 엑셀을 올리면 금액·거래처·시기를 맞춰 입금 여부를 자동 분류합니다. 장기 미입금 건만 따로 걸러볼 수 있습니다.' },
   { key: 'dashboard-sync-monitor', label: '대시보드 자동연동 모니터링', icon: '🔗', category: '시스템 연동', desc: '그린ERP 작업지시서를 슬리팅 대시보드(servehttp.com)에 자동 등록하는 dashboard-instant-sync(RPA 대체)가 정상 동작 중인지, 오늘 몇 건이 자동 등록됐는지 실시간으로 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'ceo-chatbot-groq-test', label: '대표님 통합조회 챗봇 (Groq 테스트)', icon: '🤖', category: '통합 챗봇 (테스트)', desc: '작업지시서·생산실적·입출고·재고·미출고·미수금·대시보드 자동연동(그린ERP 미러)은 물론 레벨링·슬리팅 PLC 실측(속도·텐션·사이클타임)과 레벨러 시스템 자체 작업이력까지 자연어로 물어보면, Claude 대신 Groq(Qwen3.8-27B)가 tool-calling으로 필요한 테이블/DB를 직접 조회해서 답합니다. 비용·속도·답변품질을 비교해보는 프로토타입입니다.', external: '/ceo-chatbot-groq-test.html', badge: '실데이터 연동' },
+  { key: 'slitter2-stop-analysis-kr', label: '슬리터2 정지 분석 (한국어)', icon: '⏸️', category: '생산현장 도구', desc: '날짜를 고르면 그날 슬리터2 전체 작업의 소요시간과 중간정지(설비가 RUN 상태에서 실제로 완전히 멈춘 구간) 건수·시간을 통계와 그래프로 보여줍니다. 작업을 클릭하면 해당 코일의 PLC 전 구간 시계열(속도·전류·텐션·지름·길이)이 열립니다. 실데이터로 동작합니다.', external: '/slitter2-stop-analysis-kr.html', badge: '실데이터 연동' },
+  { key: 'slitter2-stop-analysis-en', label: 'Slitting2 Stop Analysis (English)', icon: '⏸️', category: '생산현장 도구', desc: 'Pick a date to see that day’s Slitting2 job durations and mid-work stops as stats and charts, then click a job to open its full PLC time series. Real-data.', external: '/slitter2-stop-analysis-en.html', badge: '실데이터 연동' },
 ];
 
 // FAX 작업요청서 접수(No.13-1)와 현장 코일확정(No.13-2)은 하나의 흐름(초안 → 배차대기 → 배정완료)을
