@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>레벨링 코일 선택 · Select Coil</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+<style>
+  :root {
+    --ink:#15233a; --sub:#5c6b82; --faint:#8b98ab; --line:#e4e9f1; --bg:#f2f4f8; --white:#ffffff;
+    --blue:#2b5fa8; --blueBg:#e8f0fb; --green:#1f8a52; --greenBg:#e5f6ec; --amber:#b8720c; --amberBg:#fbedd2;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    -webkit-tap-highlight-color: transparent; user-select:none; }
+  #app { max-width:480px; margin:0 auto; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; }
+
+  /* 상단 바 */
+  .topbar { background:var(--white); border-bottom:1px solid var(--line); padding:16px 18px;
+    display:flex; align-items:center; justify-content:space-between; }
+  .brand { display:flex; align-items:center; gap:9px; }
+  .brand .logo { width:30px; height:30px; border-radius:50%; background:var(--blue); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:900; font-size:14px; flex-shrink:0; }
+  .brand .name { font-size:14px; font-weight:900; line-height:1.2; }
+  .brand .sub { font-size:11.5px; font-weight:700; color:var(--faint); }
+  .status-pill { background:var(--greenBg); color:var(--green); font-size:11px; font-weight:800;
+    padding:5px 12px; border-radius:999px; white-space:nowrap; }
+
+  /* 검색 */
+  .search-wrap { padding:14px 16px 6px; }
+  .search-box { position:relative; }
+  .search-box input { width:100%; padding:14px 16px 14px 42px; border-radius:13px; border:1.5px solid var(--line);
+    background:var(--white); font-size:15px; font-weight:700; font-family:inherit; color:var(--ink); }
+  .search-box input::placeholder { color:var(--faint); font-weight:600; }
+  .search-box .icon { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:15px; color:var(--faint); }
+
+  .section-label { font-size:12px; font-weight:800; color:var(--faint); letter-spacing:0.03em;
+    padding:14px 18px 6px; }
+
+  /* 코일 목록 */
+  #coil-list { flex:1; padding:4px 16px 120px; display:flex; flex-direction:column; gap:10px; }
+  .coil-card { background:var(--white); border:1.5px solid var(--line); border-radius:16px; padding:16px 18px;
+    display:flex; align-items:center; gap:14px; cursor:pointer; transition:border-color .12s, background .12s; }
+  .coil-card:active { background:#eef3fa; }
+  .coil-card.selected { border:2.5px solid var(--blue); background:var(--blueBg); padding:15px 17px; }
+  .coil-card .mark { width:30px; height:30px; border-radius:50%; background:var(--bg); color:var(--faint);
+    display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; flex-shrink:0; }
+  .coil-card.selected .mark { background:var(--blue); color:#fff; }
+  .coil-card .info { flex:1; min-width:0; }
+  .coil-card .row1 { display:flex; align-items:baseline; gap:8px; margin-bottom:4px; flex-wrap:wrap; }
+  .coil-card .coil-id { font-size:17px; font-weight:900; color:var(--ink); }
+  .coil-card .weight { font-size:13px; font-weight:800; color:var(--blue); }
+  .coil-card .row2 { font-size:12.5px; font-weight:700; color:var(--sub); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .coil-card .badge { font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:999px; flex-shrink:0; }
+  .badge.waiting { background:var(--amberBg); color:var(--amber); }
+  .badge.ready { background:var(--greenBg); color:var(--green); }
+
+  .empty { text-align:center; color:var(--faint); font-size:14px; font-weight:700; padding:60px 20px; }
+
+  /* 하단 고정 버튼 */
+  .bottombar { position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:480px;
+    background:var(--white); border-top:1px solid var(--line); padding:14px 16px;
+    box-shadow:0 -4px 14px rgba(21,35,58,0.06); }
+  .bottombar .summary { font-size:12px; font-weight:700; color:var(--sub); margin-bottom:10px; min-height:17px; }
+  .bottombar .summary b { color:var(--ink); }
+  .next-btn { width:100%; background:var(--blue); color:#fff; border:none; border-radius:13px; padding:15px 0;
+    font-size:16px; font-weight:900; font-family:inherit; cursor:pointer; }
+  .next-btn:disabled { background:#c4cedb; cursor:not-allowed; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">오</div>
+      <div>
+        <div class="name">오성철강 OHSUNG STEEL</div>
+        <div class="sub">LEVELLING · 레벨링</div>
+      </div>
+    </div>
+    <div class="status-pill">● 가동중</div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <span class="icon">🔍</span>
+      <input id="search-input" type="text" inputmode="search"
+        placeholder="코일ID 또는 거래처명 검색 · Search coil ID / customer" />
+    </div>
+  </div>
+
+  <div class="section-label" id="list-label">작업할 코일을 선택하세요 · Select a Coil</div>
+  <div id="coil-list"></div>
+
+  <div class="bottombar">
+    <div class="summary" id="summary">코일을 선택해주세요 · Please select a coil</div>
+    <button class="next-btn" id="next-btn" disabled>다음 · NEXT ▶</button>
+  </div>
+
+</div>
+
+<script>
+  // ------------------------------------------------------------------
+  // 실제 DB 연동: leveler-explore Edge Function의 leveling_work_orders 모드를
+  // 사용합니다. 이 모드는 (leveling_date 모드와 달리) 레벨러가 아직 돌기 전인
+  // "오늘자 LEVELLING 작업지시서"까지 전부 반환하도록 새로 추가한 모드입니다
+  // — 작업 시작 "전" 코일을 골라야 하는 이 화면에 맞는 데이터 소스입니다.
+  // status: 'ready'(이미 시작됨 · started_at 존재 → 이어서 진행) | 'waiting'(대기)
+  // ------------------------------------------------------------------
+  const SUPABASE_FN_URL = 'https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
+
+  // KST 기준 "오늘" 날짜 (double-offset 방지: UTC 기준시각 + 9시간 후 ISO 앞 10자리)
+  function todayKST() {
+    const now = new Date();
+    const kst = new Date(now.getTime() + 9 * 3600 * 1000);
+    return kst.toISOString().slice(0, 10);
+  }
+
+  function mapWorkOrderToCoil(row) {
+    return {
+      coilId: row.product_name,
+      company: row.company_name || '-',
+      spec: row.specification || '-',
+      weightKg: Number(row.original_weight) || 0,
+      status: row.started_at ? 'ready' : 'waiting',
+      processRule: row.process_rule || '', // 다음 화면(세트/박스 선택)에서 사용 예정
+    };
+  }
+
+  function loadCoils() {
+    const workDate = todayKST();
+    return fetch(`${SUPABASE_FN_URL}?leveling_work_orders=${workDate}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('서버 응답 오류 (' + res.status + ')');
+        return res.json();
+      })
+      .then((data) => {
+        if (!data.ok) throw new Error(data.error || '데이터를 불러오지 못했습니다.');
+        return (data.rows || [])
+          .filter((r) => r.status !== '완료') // 이미 완료된 작업지시서는 선택 목록에서 제외
+          .map(mapWorkOrderToCoil);
+      })
+      .catch((err) => {
+        console.error('코일 목록 로드 실패:', err);
+        loadError = (err && err.message) ? err.message : '알 수 없는 오류';
+        return [];
+      });
+  }
+
+  let coils = [];
+  let selectedCoilId = null;
+  let loadError = null;
+
+  const listEl = document.getElementById('coil-list');
+  const searchEl = document.getElementById('search-input');
+  const summaryEl = document.getElementById('summary');
+  const nextBtn = document.getElementById('next-btn');
+  const listLabel = document.getElementById('list-label');
+
+  function fmtWeight(kg) {
+    return kg.toLocaleString('ko-KR') + ' kg';
+  }
+
+  function render() {
+    const q = searchEl.value.trim().toLowerCase();
+    const filtered = coils.filter((c) =>
+      !q || c.coilId.toLowerCase().includes(q) || c.company.toLowerCase().includes(q)
+    );
+
+    listLabel.textContent = coils.length > 1
+      ? `작업할 코일을 선택하세요 · Select a Coil (${filtered.length}/${coils.length})`
+      : '작업할 코일을 선택하세요 · Select a Coil';
+
+    if (loadError) {
+      listEl.innerHTML = '<div class="empty">코일 목록을 불러오지 못했습니다<br/>Failed to load coil list<br/><span style="font-size:11px">' +
+        loadError + '</span></div>';
+      return;
+    }
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = coils.length === 0
+        ? '<div class="empty">오늘 작업 예정인 레벨링 코일이 없습니다<br/>No leveling work orders today</div>'
+        : '<div class="empty">검색 결과가 없습니다<br/>No matching coil</div>';
+      return;
+    }
+
+    listEl.innerHTML = filtered.map((c, i) => {
+      const selected = c.coilId === selectedCoilId;
+      const badge = c.status === 'ready'
+        ? '<span class="badge ready">즉시 가능 · READY</span>'
+        : '<span class="badge waiting">대기 · WAITING</span>';
+      return `
+        <div class="coil-card ${selected ? 'selected' : ''}" data-coil-id="${c.coilId}">
+          <div class="mark">${selected ? '✓' : i + 1}</div>
+          <div class="info">
+            <div class="row1">
+              <span class="coil-id">${c.coilId}</span>
+              <span class="weight">${fmtWeight(c.weightKg)}</span>
+            </div>
+            <div class="row2">${c.company} · ${c.spec}</div>
+          </div>
+          ${badge}
+        </div>`;
+    }).join('');
+
+    listEl.querySelectorAll('.coil-card').forEach((el) => {
+      el.addEventListener('click', () => {
+        selectedCoilId = el.getAttribute('data-coil-id');
+        render();
+      });
+    });
+  }
+
+  function updateBottomBar() {
+    const c = coils.find((x) => x.coilId === selectedCoilId);
+    if (!c) {
+      summaryEl.textContent = '코일을 선택해주세요 · Please select a coil';
+      nextBtn.disabled = true;
+      return;
+    }
+    summaryEl.innerHTML = `선택됨: <b>${c.coilId}</b> · ${c.company} · ${fmtWeight(c.weightKg)}`;
+    nextBtn.disabled = false;
+  }
+
+  function renderAll() {
+    render();
+    updateBottomBar();
+  }
+
+  searchEl.addEventListener('input', renderAll);
+
+  nextBtn.addEventListener('click', () => {
+    if (!selectedCoilId) return;
+    // 실제 연동 지점: 여기서 선택한 코일ID를 세트(박스) 선택 화면으로 전달합니다.
+    // 예: location.href = `/pad/leveling/sets?coil_id=${encodeURIComponent(selectedCoilId)}`;
+    alert('다음 화면(세트 선택)으로 이동 — 코일ID: ' + selectedCoilId);
+  });
+
+  loadCoils().then((data) => {
+    coils = data;
+    // 코일이 1건뿐이면 바로 선택된 상태로 시작 (기존 화면 동작과 동일하게 유지)
+    if (coils.length === 1) selectedCoilId = coils[0].coilId;
+    renderAll();
+  });
+</script>
+</body>
+</html>

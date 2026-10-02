@@ -35,7 +35,7 @@ import { DashboardSyncMonitorScreen } from './test/dashboardSyncMonitorScreen';
 // 분류 섹션 순서·소분류 순서·소분류 안의 서비스 순서를 모두 "최근에 만든 것이 위" 기준(git 최초
 // 배포일)으로 재정렬했습니다. 목업 승인 내역은 대화 기록 참고.
 const PROJECTS = [
-  // ── 1. 생산현장 도구 (30개, 최신 9/29) ──────────────────────────────
+  // ── 1. 생산현장 도구 (31개, 최신 10/2) ──────────────────────────────
   // 소분류: 슬리팅2 AI 헬퍼·모니터 (9개, 최신 9/29)
   { key: 'slitter2-stop-analysis-en', label: 'Slitting2 Stop Analysis (English)', icon: '⏸️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: 'Pick a date to see that day’s Slitting2 job durations and mid-work stops as stats and charts, then click a job to open its full PLC time series. Real-data.', external: '/slitter2-stop-analysis-en.html', badge: '실데이터 연동', isNew: true },
   { key: 'slitter2-stop-analysis-kr', label: '슬리터2 정지 분석 (한국어)', icon: '⏸️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: '날짜를 고르면 그날 슬리터2 전체 작업의 소요시간과 중간정지(설비가 RUN 상태에서 실제로 완전히 멈춘 구간) 건수·시간을 통계와 그래프로 보여줍니다. 작업을 클릭하면 해당 코일의 PLC 전 구간 시계열(속도·전류·텐션·지름·길이)이 열립니다. 실데이터로 동작합니다.', external: '/slitter2-stop-analysis-kr.html', badge: '실데이터 연동', isNew: true },
@@ -57,7 +57,7 @@ const PROJECTS = [
   { key: 'work-status-lookup', label: '작업 확인 (거래처별 검색)', icon: '📞', category: '생산현장 도구', group: '현장 조회 · 배정 도구', desc: '기사님 전화 응대용 — 거래처명을 입력하면 레벨링·슬리터1·슬리터2 전체에서 코일ID/가공규격/무게/작업일자/작업여부를 최근순으로 찾아줍니다. 실데이터로 동작합니다.', external: '/work-status-lookup.html', badge: '실데이터 연동' },
   { key: 'slitter-line-swap-en', label: 'Slitter 1/2 Assignment Swap (English)', icon: '🔀', category: '생산현장 도구', group: '현장 조회 · 배정 도구', desc: 'Swap a ready work order between Slitter 1 and Slitter 2. Search by coil ID, filter by line, and see recent changes — writes directly to the live line assignment.', external: '/slitter-line-swap-en.html', badge: '실데이터 연동' },
   { key: 'slitter-line-swap-kr', label: '슬리터1/2 작업 배정 변경 (한국어)', icon: '🔀', category: '생산현장 도구', group: '현장 조회 · 배정 도구', desc: '준비(미가동) 상태인 작업지시서를 골라 슬리터1↔슬리터2 라인 배정을 바꿉니다. 코일ID 검색, 라인 탭, 변경 이력을 지원하며 현장 공유용 링크로 실데이터에 바로 반영됩니다.', external: '/slitter-line-swap-kr.html', badge: '실데이터 연동' },
-  // 소분류: 레벨링 모니터링 (8개, 최신 10/2)
+  // 소분류: 레벨링 모니터링 (9개, 최신 10/2)
   { key: 'leveling-realtime-hmi', label: '레벨링 실시간 전체 데이터 (HMI 미러)', icon: '🖥️', category: '생산현장 도구', group: '레벨링 모니터링', desc: '레벨러 현장 HMI(초기운전화면) 실측 영상과 대조해 매핑한 LEVELING_DATA 테이블 19개 컬럼 전체를 5초마다 그대로 보여줍니다. P17 등 PLC 알람·인터록 코드는 현재 구조상 미수집이라 표시되지 않습니다.', external: '/leveling-realtime-hmi.html', badge: '실데이터 연동' },
   { key: 'leveling-integrated-timeline', label: '레벨링 통합 타임라인', icon: '🧩', category: '생산현장 도구', group: '레벨링 모니터링', desc: '작업일자·코일을 고르면 ERP 작업지시서(거래처·사양·중량), 박스별 진행 간트, 가동률·변동계수 게이지, PLC 설정값, 사이클타임·속도 그래프, 이상 행정을 한 화면에서 시간순으로 봅니다. leveler-explore 실측 데이터. 텐션(DTC-3100)은 카메라 배포 후 연동 예정.', external: '/leveling-integrated-timeline.html', badge: '실데이터 연동' },
   { key: 'leveling-plc-viewer', label: '레벨링 PLC 상세 조회', icon: '📡', category: '생산현장 도구', group: '레벨링 모니터링', desc: '코일(박스)을 선택하면 절단길이·가감속시간·행정별 사이클타임·속도(MPM)를 leveler-explore 실측 데이터 그대로 보여줍니다. DTC-3100 텐션값은 다음 단계에서 추가 예정.', external: '/leveling-plc-viewer.html', badge: '실데이터 연동' },
@@ -66,6 +66,7 @@ const PROJECTS = [
   { key: 'leveling-stroke-monitor', label: '레벨링 공정 현황 모니터링', icon: '🧭', category: '생산현장 도구', group: '레벨링 모니터링', desc: '레벨링 PLC 행정(stroke) 로그를 코일·박스별 실시간 현황 → 절단 사양·이상행정 상세 → 변동계수·저속비율 등 통계 인사이트까지 3단계로 드릴다운합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-process-dashboard', label: '레벨링 공정×ERP 통합 대시보드', icon: '🏭', category: '생산현장 도구', group: '레벨링 모니터링', desc: '하루치 레벨링 작업의 ERP 사양·가동 타임라인·부하율 비교·공정 리듬(이상 구간 탐지)·그린ERP 매출 동기화 여부를 한 화면에 모읍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-coil-detail', label: '레벨링 코일 상세분석', icon: '🧭', category: '생산현장 도구', group: '레벨링 모니터링', desc: '레벨링 라인에 코일ID가 태깅된 작업을 날짜·코일로 선택하면 시트 수 추정, 길이 정확도, 설비 부하, 박스별 현황을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'leveling-coil-select', label: '레벨링 코일 선택 (DB 연동)', icon: '🧲', category: '생산현장 도구', group: '레벨링 모니터링', desc: '오늘자 LEVELLING 작업지시서를 leveler-explore(leveling_work_orders 모드)에서 실시간으로 불러와 코일을 고릅니다. 외부 레벨러 패드(osungsteel.servehttp.com/pad/leveling)의 "박스 1/2/3/4" 선택이 150/200/200/308장 세트와 안 맞아 헷갈리던 문제를 풀기 위해 새로 개발 중인 화면의 1단계이며, 조회만 하고 DB에 쓰지는 않습니다. 실데이터로 동작합니다.', external: '/leveling-coil-select.html', badge: '실데이터 연동', isNew: true },
   // 소분류: 작업현황 대시보드 (3개, 최신 8/12)
   { key: 'work-status-board-3', label: '작업현황 대시보드 3', icon: '🗓️', category: '생산현장 도구', group: '작업현황 대시보드', desc: '레벨링·슬리팅2·슬리팅1을 라인별 카드로 보여주는 반응형(PC/모바일) 대시보드입니다. 날짜 선택, 완료/작업중/예정 구분, 진행률 링, 오늘 완료 가능 예측을 실데이터로 보여줍니다. 로그인 없이 링크로 바로 열 수 있어 대표님도 접속해 볼 수 있습니다.', external: '/work-status-3.html', badge: '실데이터 연동' },
   { key: 'work-status-board-2', label: '작업현황 대시보드 2', icon: '🗂️', category: '생산현장 도구', group: '작업현황 대시보드', desc: '레벨링·슬리팅2·슬리팅1을 라인별 보드로 보고, 라인마다 오늘 번 금액과 남은 작업을 오늘 안에 끝낼 수 있는지(평균 소요시간 기반 예측)까지 확인합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
