@@ -24,6 +24,7 @@ import { LevelingCoilDetailScreen } from './test/levelingCoilDetailScreen';
 import { LevelingProcessDashboardScreen } from './test/levelingProcessDashboardScreen';
 import { LevelingStrokeMonitorScreen } from './test/levelingStrokeMonitorScreen';
 import { LevelingLineNmsScreen } from './test/levelingLineNmsScreen';
+import { LevelingSummaryBoardScreen } from './test/levelingSummaryBoardScreen';
 import { DashboardSyncMonitorScreen } from './test/dashboardSyncMonitorScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
@@ -56,11 +57,12 @@ const PROJECTS = [
   { key: 'work-status-lookup', label: '작업 확인 (거래처별 검색)', icon: '📞', category: '생산현장 도구', group: '현장 조회 · 배정 도구', desc: '기사님 전화 응대용 — 거래처명을 입력하면 레벨링·슬리터1·슬리터2 전체에서 코일ID/가공규격/무게/작업일자/작업여부를 최근순으로 찾아줍니다. 실데이터로 동작합니다.', external: '/work-status-lookup.html', badge: '실데이터 연동' },
   { key: 'slitter-line-swap-en', label: 'Slitter 1/2 Assignment Swap (English)', icon: '🔀', category: '생산현장 도구', group: '현장 조회 · 배정 도구', desc: 'Swap a ready work order between Slitter 1 and Slitter 2. Search by coil ID, filter by line, and see recent changes — writes directly to the live line assignment.', external: '/slitter-line-swap-en.html', badge: '실데이터 연동' },
   { key: 'slitter-line-swap-kr', label: '슬리터1/2 작업 배정 변경 (한국어)', icon: '🔀', category: '생산현장 도구', group: '현장 조회 · 배정 도구', desc: '준비(미가동) 상태인 작업지시서를 골라 슬리터1↔슬리터2 라인 배정을 바꿉니다. 코일ID 검색, 라인 탭, 변경 이력을 지원하며 현장 공유용 링크로 실데이터에 바로 반영됩니다.', external: '/slitter-line-swap-kr.html', badge: '실데이터 연동' },
-  // 소분류: 레벨링 모니터링 (7개, 최신 8/21)
+  // 소분류: 레벨링 모니터링 (8개, 최신 10/2)
   { key: 'leveling-realtime-hmi', label: '레벨링 실시간 전체 데이터 (HMI 미러)', icon: '🖥️', category: '생산현장 도구', group: '레벨링 모니터링', desc: '레벨러 현장 HMI(초기운전화면) 실측 영상과 대조해 매핑한 LEVELING_DATA 테이블 19개 컬럼 전체를 5초마다 그대로 보여줍니다. P17 등 PLC 알람·인터록 코드는 현재 구조상 미수집이라 표시되지 않습니다.', external: '/leveling-realtime-hmi.html', badge: '실데이터 연동' },
   { key: 'leveling-integrated-timeline', label: '레벨링 통합 타임라인', icon: '🧩', category: '생산현장 도구', group: '레벨링 모니터링', desc: '작업일자·코일을 고르면 ERP 작업지시서(거래처·사양·중량), 박스별 진행 간트, 가동률·변동계수 게이지, PLC 설정값, 사이클타임·속도 그래프, 이상 행정을 한 화면에서 시간순으로 봅니다. leveler-explore 실측 데이터. 텐션(DTC-3100)은 카메라 배포 후 연동 예정.', external: '/leveling-integrated-timeline.html', badge: '실데이터 연동' },
   { key: 'leveling-plc-viewer', label: '레벨링 PLC 상세 조회', icon: '📡', category: '생산현장 도구', group: '레벨링 모니터링', desc: '코일(박스)을 선택하면 절단길이·가감속시간·행정별 사이클타임·속도(MPM)를 leveler-explore 실측 데이터 그대로 보여줍니다. DTC-3100 텐션값은 다음 단계에서 추가 예정.', external: '/leveling-plc-viewer.html', badge: '실데이터 연동' },
   { key: 'leveling-line-nms', label: '레벨링 라인 통합 관제 (NMS)', icon: '🛰️', category: '생산현장 도구', group: '레벨링 모니터링', desc: 'ERP 작업지시서와 PLC 실측 텔레메트리를 관제센터 스타일 한 화면에 실시간으로 엮습니다. 라인 상태·진행률·라이브 파형·이상 알림·금일 타임라인을 20초 자동 갱신으로 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'leveling-summary-board', label: '레벨링 종합 현황판', icon: '🎚️', category: '생산현장 도구', group: '레벨링 모니터링', desc: 'ERP 작업지시서 × PLC 실측 × 텐션 OCR 데이터를 설비 흐름도(언코일러→레벨러→루프→샤링기→컨베이어) 위에 얹어 한 화면으로 요약해서 보여줍니다. 루프·샤링기·컨베이어는 개별 계측기가 없어 라인 가동 상태만 함께 표시합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-stroke-monitor', label: '레벨링 공정 현황 모니터링', icon: '🧭', category: '생산현장 도구', group: '레벨링 모니터링', desc: '레벨링 PLC 행정(stroke) 로그를 코일·박스별 실시간 현황 → 절단 사양·이상행정 상세 → 변동계수·저속비율 등 통계 인사이트까지 3단계로 드릴다운합니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-process-dashboard', label: '레벨링 공정×ERP 통합 대시보드', icon: '🏭', category: '생산현장 도구', group: '레벨링 모니터링', desc: '하루치 레벨링 작업의 ERP 사양·가동 타임라인·부하율 비교·공정 리듬(이상 구간 탐지)·그린ERP 매출 동기화 여부를 한 화면에 모읍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
   { key: 'leveling-coil-detail', label: '레벨링 코일 상세분석', icon: '🧭', category: '생산현장 도구', group: '레벨링 모니터링', desc: '레벨링 라인에 코일ID가 태깅된 작업을 날짜·코일로 선택하면 시트 수 추정, 길이 정확도, 설비 부하, 박스별 현황을 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
@@ -323,6 +325,7 @@ function LabPage() {
           {view === 'leveling-process-dashboard' && <LevelingProcessDashboardScreen />}
           {view === 'leveling-stroke-monitor' && <LevelingStrokeMonitorScreen />}
           {view === 'leveling-line-nms' && <LevelingLineNmsScreen />}
+          {view === 'leveling-summary-board' && <LevelingSummaryBoardScreen />}
           {view === 'coil-analysis' && <CoilAnalysisScreen />}
           {view === 'coil-ai-helper' && <CoilAiHelperScreen />}
           {view === 'coil-ai-helper-work' && <CoilAiHelperWorkScreen />}
