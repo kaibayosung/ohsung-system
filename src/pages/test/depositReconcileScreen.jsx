@@ -382,9 +382,11 @@ export function DepositReconcileDemo() {
 
   return (
     <div style={box.page}>
-      <ProposalBanner text="매출 거래명세서와 통장 거래내역, 두 엑셀을 올리면 금액·거래처·기간을 맞춰 입금 여부를 자동으로 분류합니다. 기간이 지났는데도 입금이 확인되지 않은 건만 따로 모아 보여줘서, 매번 손으로 대사하지 않아도 됩니다. 업로드한 파일은 저장되지 않고 화면에서만 계산됩니다." />
+      <div className="no-print">
+        <ProposalBanner text="매출 거래명세서와 통장 거래내역, 두 엑셀을 올리면 금액·거래처·기간을 맞춰 입금 여부를 자동으로 분류합니다. 기간이 지났는데도 입금이 확인되지 않은 건만 따로 모아 보여줘서, 매번 손으로 대사하지 않아도 됩니다. 업로드한 파일은 저장되지 않고 화면에서만 계산됩니다." />
+      </div>
 
-      <div style={box.card}>
+      <div style={box.card} className="no-print">
         <div style={box.subtitle}><StepBadge n={1} />대상 기간 선택</div>
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
           <div>
@@ -399,7 +401,7 @@ export function DepositReconcileDemo() {
         </div>
       </div>
 
-      <div style={box.card}>
+      <div style={box.card} className="no-print">
         <div style={box.subtitle}><StepBadge n={2} />파일 업로드</div>
         <div style={{ display: 'flex', gap: '18px', flexWrap: 'wrap' }}>
           <Dropzone
@@ -431,7 +433,16 @@ export function DepositReconcileDemo() {
 
       {summary && (
         <>
-          <div style={box.card}>
+          <div className="print-only print-report-header">
+            <h1 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: 800, color: COLORS.navy }}>입금 대사 보고서</h1>
+            <div style={{ fontSize: '13px', color: COLORS.steel }}>
+              대상 기간 {periodStart} ~ {periodEnd} · 생성 {new Date().toLocaleString('ko-KR')}
+              {tab !== '전체' ? ` · 필터: ${tab}` : ''}
+              {search.trim() ? ` · 검색어: "${search.trim()}"` : ''}
+            </div>
+          </div>
+
+          <div style={box.card} className="print-card">
             <div style={box.subtitle}><StepBadge n={3} />분석 결과</div>
             <div style={box.statGrid}>
               <div style={{ ...box.statCard, borderLeftColor: COLORS.navy }}>
@@ -457,8 +468,8 @@ export function DepositReconcileDemo() {
             </div>
           </div>
 
-          <div style={box.card}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '18px' }}>
+          <div style={box.card} className="print-card">
+            <div className="no-print" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '14px', marginBottom: '18px' }}>
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 {TABS.map((t) => (
                   <button
@@ -474,10 +485,13 @@ export function DepositReconcileDemo() {
                   </button>
                 ))}
               </div>
-              <input
-                value={search} onChange={(e) => setSearch(e.target.value)}
-                placeholder="거래처명 검색" style={{ ...box.input, width: '200px' }}
-              />
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <input
+                  value={search} onChange={(e) => setSearch(e.target.value)}
+                  placeholder="거래처명 검색" style={{ ...box.input, width: '200px' }}
+                />
+                <button onClick={() => window.print()} style={box.ghostBtn}>📄 보고서 PDF로 저장</button>
+              </div>
             </div>
 
             <div style={{ overflowX: 'auto' }}>
@@ -518,7 +532,7 @@ export function DepositReconcileDemo() {
         </>
       )}
 
-      <div style={{ ...box.card, backgroundColor: '#f7f9fc' }}>
+      <div style={{ ...box.card, backgroundColor: '#f7f9fc' }} className="no-print">
         <div style={box.subtitle}>다음 단계 (방향 확정 시 개발)</div>
         <ul style={{ margin: 0, paddingLeft: '20px', color: COLORS.steel, fontSize: '15px', lineHeight: 1.9 }}>
           <li>거래명세서를 엑셀 업로드 대신 greenp_receivables(그린ERP 미수금) 실데이터로 자동 조회</li>
@@ -527,6 +541,28 @@ export function DepositReconcileDemo() {
           <li>대사 결과를 매번 다시 계산하지 않도록 확정된 건은 저장해 다음 번엔 신규 건만 대사</li>
         </ul>
       </div>
+
+      <style>{`
+        .print-only { display: none; }
+        @media print {
+          @page {
+            size: A4;
+            margin: 14mm;
+          }
+          .no-print { display: none !important; }
+          .print-only { display: block !important; margin-bottom: 16px; }
+          body { background-color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .print-card {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          .print-card + .print-card { margin-top: 18px !important; }
+          table tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+        }
+      `}</style>
     </div>
   );
 }
