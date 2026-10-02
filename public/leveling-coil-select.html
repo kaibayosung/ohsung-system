@@ -121,11 +121,13 @@
 
   function mapWorkOrderToCoil(row) {
     return {
+      id: row.id, // erp_data의 고유 행 id — 같은 코일ID가 하루에 두 번 이상(재입고·정정 등) 잡힐 수 있어
+                  // 화면 선택/하이라이트는 코일ID가 아니라 이 id로 구분합니다.
       coilId: row.product_name,
       company: row.company_name || '-',
       spec: row.specification || '-',
       weightKg: Number(row.original_weight) || 0,
-      status: row.started_at ? 'ready' : 'waiting',
+      status: row.status === '진행중' || row.started_at ? 'ready' : 'waiting',
       processRule: row.process_rule || '', // 다음 화면(세트/박스 선택)에서 사용 예정
     };
   }
@@ -151,7 +153,7 @@
   }
 
   let coils = [];
-  let selectedCoilId = null;
+  let selectedId = null;
   let loadError = null;
 
   const listEl = document.getElementById('coil-list');
@@ -188,12 +190,12 @@
     }
 
     listEl.innerHTML = filtered.map((c, i) => {
-      const selected = c.coilId === selectedCoilId;
+      const selected = c.id === selectedId;
       const badge = c.status === 'ready'
         ? '<span class="badge ready">즉시 가능 · READY</span>'
         : '<span class="badge waiting">대기 · WAITING</span>';
       return `
-        <div class="coil-card ${selected ? 'selected' : ''}" data-coil-id="${c.coilId}">
+        <div class="coil-card ${selected ? 'selected' : ''}" data-id="${c.id}">
           <div class="mark">${selected ? '✓' : i + 1}</div>
           <div class="info">
             <div class="row1">
@@ -208,14 +210,14 @@
 
     listEl.querySelectorAll('.coil-card').forEach((el) => {
       el.addEventListener('click', () => {
-        selectedCoilId = el.getAttribute('data-coil-id');
-        render();
+        selectedId = Number(el.getAttribute('data-id'));
+        renderAll();
       });
     });
   }
 
   function updateBottomBar() {
-    const c = coils.find((x) => x.coilId === selectedCoilId);
+    const c = coils.find((x) => x.id === selectedId);
     if (!c) {
       summaryEl.textContent = '코일을 선택해주세요 · Please select a coil';
       nextBtn.disabled = true;
