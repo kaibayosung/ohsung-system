@@ -37,47 +37,116 @@ function diffDays(a, b) {
   return Math.round((new Date(a) - new Date(b)) / (1000 * 60 * 60 * 24));
 }
 
+function normKey(s) {
+  return String(s || '').replace(/\s+/g, '');
+}
+function monthRangeFromRows(rows, year) {
+  for (let i = 0; i < Math.min(rows.length, 6); i++) {
+    const cells = rows[i] || [];
+    for (const c of cells) {
+      const s = String(c || '');
+      const m = s.match(/(\d{1,2})\s*월/);
+      if (m) {
+        const mo = parseInt(m[1], 10);
+        if (mo >= 1 && mo <= 12) {
+          const start = `${year}-${String(mo).padStart(2, '0')}-01`;
+          const lastDay = new Date(Number(year), mo, 0).getDate();
+          const end = `${year}-${String(mo).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+          return { start, end, label: s.trim() };
+        }
+      }
+    }
+  }
+  return null;
+}
+
 // ---------- 거래명세서 파싱 ----------
 const INVOICE_HEAD_KEYS = ['기간', '업체명', '공급금액', '부가세', '합계금액'];
-function parseInvoiceRows(rows) {
+const SIMPLE_INVOICE_HEAD_KEYS = ['상호', '매출액'];
+
+// 기존 "거래명세서"(기간·업체명·공급금액·부가세·합계금액) 포맷을 우선 시도하고,
+// 못 찾으면 "월별 매출세금계산서 요약"(상호·매출액·입금·미수금, 기간 컬럼 없음) 포맷으로 재시도합니다.
+// 후자는 파일 안에 날짜 범위가 없으므로, 제목 행의 "N월" 표기 또는 화면에서 선택한 기간을 사용합니다.
+function parseInvoiceRows(rows, fallbackStart, fallbackEnd, fallbackYear) {
   let headerIdx = -1;
   for (let i = 0; i < rows.length; i++) {
     const line = (rows[i] || []).map((c) => String(c || ''));
     const hits = INVOICE_HEAD_KEYS.filter((k) => line.some((c) => c.includes(k)));
     if (hits.length >= 3) { headerIdx = i; break; }
   }
-  if (headerIdx === -1) return [];
-  const header = rows[headerIdx].map((c) => String(c || '').trim());
-  const col = (keys) => header.findIndex((h) => keys.some((k) => h.includes(k)));
-  const idxPeriod = col(['기간']);
-  const idxVendor = col(['업체명', '거래처']);
-  const idxSupply = col(['공급금액', '공급가액']);
-  const idxVat = col(['부가세']);
-  const idxTotal = col(['합계금액', '합계']);
+  if (headerIdx !== -1) {
+    const header = rows[headerIdx].map((c) => String(c || '').trim());
+    const col = (keys) => header.findIndex((h) => keys.some((k) => h.includes(k)));
+    const idxPeriod = col(['기간']);
+    const idxVendor = col(['업체명', '거래처']);
+    const idxSupply = col(['공급금액', '공급가액']);
+    const idxVat = col(['부가세']);
+    const idxTotal = col(['합계금액', '합계']);
+
+    const out = [];
+    for (let i = headerIdx + 1; i < rows.length; i++) {
+      const row = rows[i];
+      if (!row || row.every((c) => c === '' || c == null)) continue;
+      const vendor = idxVendor >= 0 ? String(row[idxVendor] || '').trim() : '';
+      if (!vendor) continue;
+      const periodRaw = idxPeriod >= 0 ? String(row[idxPeriod] || '') : '';
+      const m = periodRaw.match(/(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/);
+      const start = m ? m[1] : '';
+      const end = m ? m[2] : start;
+      const total = idxTotal >= 0 ? toNum(row[idxTotal]) : 0;
+      if (!start || total === 0) continue;
+      out.push({
+        id: `inv-${i}`,
+        period: periodRaw,
+        start, end,
+        vendor,
+        supply: idxSupply >= 0 ? toNum(row[idxSupply]) : 0,
+        vat: idxVat >= 0 ? toNum(row[idxVat]) : 0,
+        total,
+      });
+    }
+    return { rows: out, detectedPeriod: null };
+  }
+
+  // ---- 간이 포맷(상호 / 매출액 / 입금 / 미수금) ----
+  let simpleHeaderIdx = -1;
+  for (let i = 0; i < rows.length; i++) {
+    const line = (rows[i] || []).map((c) => normKey(c));
+    const hasVendor = line.some((c) => c === '상호' || c.includes('상호'));
+    const hasAmount = line.some((c) => c.includes('매출액'));
+    if (hasVendor && hasAmount) { simpleHeaderIdx = i; break; }
+  }
+  if (simpleHeaderIdx === -1) return { rows: [], detectedPeriod: null };
+
+  const header = rows[simpleHeaderIdx].map((c) => normKey(c));
+  const idxVendor = header.findIndex((h) => h === '상호' || h.includes('상호'));
+  const idxAmount = header.findIndex((h) => h.includes('매출액'));
+
+  const year = fallbackYear || String(new Date().getFullYear());
+  const titlePeriod = monthRangeFromRows(rows.slice(0, simpleHeaderIdx + 1), year);
+  const start = titlePeriod ? titlePeriod.start : fallbackStart;
+  const end = titlePeriod ? titlePeriod.end : fallbackEnd;
+  const periodLabel = titlePeriod ? titlePeriod.label : `${start} ~ ${end}`;
 
   const out = [];
-  for (let i = headerIdx + 1; i < rows.length; i++) {
+  for (let i = simpleHeaderIdx + 1; i < rows.length; i++) {
     const row = rows[i];
     if (!row || row.every((c) => c === '' || c == null)) continue;
-    const vendor = idxVendor >= 0 ? String(row[idxVendor] || '').trim() : '';
-    if (!vendor) continue;
-    const periodRaw = idxPeriod >= 0 ? String(row[idxPeriod] || '') : '';
-    const m = periodRaw.match(/(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/);
-    const start = m ? m[1] : '';
-    const end = m ? m[2] : start;
-    const total = idxTotal >= 0 ? toNum(row[idxTotal]) : 0;
-    if (!start || total === 0) continue;
+    const vendorRaw = String(row[idxVendor] || '').trim();
+    if (!vendorRaw || normKey(vendorRaw) === '합계') continue;
+    const total = toNum(row[idxAmount]);
+    if (total === 0) continue;
     out.push({
       id: `inv-${i}`,
-      period: periodRaw,
+      period: periodLabel,
       start, end,
-      vendor,
-      supply: idxSupply >= 0 ? toNum(row[idxSupply]) : 0,
-      vat: idxVat >= 0 ? toNum(row[idxVat]) : 0,
+      vendor: vendorRaw,
+      supply: total,
+      vat: 0,
       total,
     });
   }
-  return out;
+  return { rows: out, detectedPeriod: titlePeriod ? { start, end } : null };
 }
 
 // ---------- 통장 거래내역 파싱 (입금/출금 모두 추출, 대사에는 입금만 사용) ----------
@@ -234,13 +303,23 @@ export function DepositReconcileDemo() {
     setParseError('');
     try {
       let all = [];
+      let detected = null;
       for (const f of files) {
         const rows = await readFile(f);
-        all = all.concat(parseInvoiceRows(rows));
+        const { rows: parsed, detectedPeriod } = parseInvoiceRows(rows, periodStart, periodEnd, today.slice(0, 4));
+        all = all.concat(parsed);
+        if (detectedPeriod && !detected) detected = detectedPeriod;
       }
       setInvoices(all);
       setInvoiceFiles(files.map((f) => f.name));
       setResults(null);
+      if (detected) {
+        setPeriodStart(detected.start);
+        setPeriodEnd(detected.end);
+      }
+      if (all.length === 0) {
+        setParseError('거래명세서 파일에서 인식 가능한 데이터를 찾지 못했습니다. 헤더 컬럼명(기간/업체명/합계금액 또는 상호/매출액)을 확인해주세요.');
+      }
     } catch (err) {
       setParseError('거래명세서 파일을 읽는 중 오류: ' + err.message);
     }
@@ -336,6 +415,9 @@ export function DepositReconcileDemo() {
         {(invoices.length > 0 || deposits.length > 0) && (
           <div style={{ ...box.hint, marginTop: '12px' }}>
             거래명세서 {invoices.length}건 · 통장 거래 {deposits.length}건 (입금 {deposits.filter((d) => d.in > 0).length}건) 인식됨
+            {invoices.length > 0 && invoices[0].period && !/\d{4}-\d{2}-\d{2}\s*-/.test(invoices[0].period) && (
+              <span> · "{invoices[0].period}" 형식 인식 — 대상 기간이 {periodStart} ~ {periodEnd}로 자동 설정됨</span>
+            )}
           </div>
         )}
         <button
