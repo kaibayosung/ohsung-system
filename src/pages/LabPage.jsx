@@ -35,7 +35,9 @@ import { DashboardSyncMonitorScreen } from './test/dashboardSyncMonitorScreen';
 // 분류 섹션 순서·소분류 순서·소분류 안의 서비스 순서를 모두 "최근에 만든 것이 위" 기준(git 최초
 // 배포일)으로 재정렬했습니다. 목업 승인 내역은 대화 기록 참고.
 const PROJECTS = [
-  // ── 1. 생산현장 도구 (31개, 최신 10/2) ──────────────────────────────
+  // ── 1. 생산현장 도구 (32개, 최신 10/6) ──────────────────────────────
+  // 소분류: 입출고 · 재고 관제 (1개, 10/6)
+  { key: 'ohsung-flow-hud', label: '입출고 · 재고 인사이트 관제 (홀로그램)', icon: '🛰️', category: '생산현장 도구', group: '입출고 · 재고 관제', desc: '입고→재고→가공→출고 흐름을 홀로그램 관제 화면 한 장으로 보여줍니다. 30일 일별 입출고·누적 순증감, 달력 히트맵, 월별 추이, 요일 패턴, 거래처 집중도(파레토), 재고 보관기간·두께 분포, 미출고 소진 예측, AI 인사이트와 챗봇 시연까지 포함합니다. 입출고·재고·미수는 2026-10-06 그린ERP 실데이터 스냅샷, 라인 가동·품질은 샘플입니다.', external: '/ohsung-flow-hud.html', badge: '실데이터 스냅샷', isNew: true },
   // 소분류: 슬리팅2 AI 헬퍼·모니터 (9개, 최신 9/29)
   { key: 'slitter2-stop-analysis-en', label: 'Slitting2 Stop Analysis (English)', icon: '⏸️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: 'Pick a date to see that day’s Slitting2 job durations and mid-work stops as stats and charts, then click a job to open its full PLC time series. Real-data.', external: '/slitter2-stop-analysis-en.html', badge: '실데이터 연동', isNew: true },
   { key: 'slitter2-stop-analysis-kr', label: '슬리터2 정지 분석 (한국어)', icon: '⏸️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: '날짜를 고르면 그날 슬리터2 전체 작업의 소요시간과 중간정지(설비가 RUN 상태에서 실제로 완전히 멈춘 구간) 건수·시간을 통계와 그래프로 보여줍니다. 작업을 클릭하면 해당 코일의 PLC 전 구간 시계열(속도·전류·텐션·지름·길이)이 열립니다. 실데이터로 동작합니다.', external: '/slitter2-stop-analysis-kr.html', badge: '실데이터 연동', isNew: true },
@@ -122,6 +124,7 @@ const CATEGORY_META = {
 
 // "생산현장 도구" 내부 소분류(group)마다 붙이는 작은 아이콘.
 const GROUP_ICONS = {
+  '입출고 · 재고 관제': '🛰️',
   '슬리팅2 AI 헬퍼 · 모니터': '🤖',
   '테이퍼 텐션 원격 인식': '📟',
   '현장 조회 · 배정 도구': '🔍',
@@ -133,6 +136,7 @@ const GROUP_ICONS = {
 // 카드 배지(badge) 문구별 색상 — 데이터 상태를 한눈에 구분합니다.
 const BADGE_COLORS = {
   '실데이터 연동': { bg: COLORS.greenBg, color: COLORS.green },
+  '실데이터 스냅샷': { bg: COLORS.blueBg, color: COLORS.blue },
   '현장 배포중': { bg: COLORS.blueBg, color: COLORS.blue },
   '샘플': { bg: COLORS.amberBg, color: COLORS.amber },
   '개발용': { bg: '#efe9f9', color: '#6b4fa0' },

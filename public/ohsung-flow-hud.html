@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>입출고 · 재고 인사이트 관제 | 오성철강</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Rajdhani:wght@500;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root { --cy:#4df3ff; --am:#ffb02e; --rd:#ff5d6c; --tl:#2fd4a8; --ink:#d9f7ff; --mut:#8fdcea; --bg:#02060d; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font-family: 'Noto Sans KR', sans-serif; font-size: 14px; line-height: 1.45; }
+button { font-family: inherit; cursor: pointer; }
+#app { position: relative; max-width: 1920px; margin: 0 auto; padding: 20px 28px 36px; display: flex; flex-direction: column; gap: 16px; overflow: hidden; }
+.scan { position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(77,243,255,0.03) 0, rgba(77,243,255,0.03) 1px, transparent 1px, transparent 4px); }
+.holo { position: relative; background: linear-gradient(180deg, rgba(77,243,255,0.075), rgba(77,243,255,0.02)); border: 1px solid rgba(77,243,255,0.28); border-radius: 4px; padding: 14px 18px; min-width: 0; }
+.holo::before { content: ''; position: absolute; top: -1px; left: -1px; width: 16px; height: 16px; border-top: 2px solid var(--cy); border-left: 2px solid var(--cy); }
+.holo::after { content: ''; position: absolute; bottom: -1px; right: -1px; width: 16px; height: 16px; border-bottom: 2px solid var(--cy); border-right: 2px solid var(--cy); }
+.glow { text-shadow: 0 0 12px rgba(77,243,255,0.55); }
+.ttl { font-size: 16px; font-weight: 700; }
+.sub { font-size: 12px; color: #b8e9f2; }
+.num { font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.row { position: relative; display: grid; gap: 14px; }
+.r3 { grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); }
+.r2 { grid-template-columns: repeat(auto-fit, minmax(560px, 1fr)); }
+.head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.tag { font-size: 11px; padding: 1px 8px; border-radius: 3px; border: 1px solid rgba(255,176,46,0.5); color: #ffcf7a; }
+.tag.live { border-color: rgba(77,243,255,0.5); color: #8ff0ff; }
+.tabs { display: flex; gap: 6px; }
+.tab { padding: 4px 12px; min-height: 32px; border-radius: 3px; border: 1px solid rgba(77,243,255,0.4); background: transparent; color: #8ff0ff; font-size: 13px; font-weight: 700; }
+.tab.on { background: var(--cy); color: #02202a; border-color: var(--cy); }
+svg text { font-family: 'Noto Sans KR', sans-serif; }
+svg .n { font-family: 'Rajdhani', sans-serif; font-weight: 700; }
+.leg { display: flex; flex-wrap: wrap; gap: 12px; font-size: 12px; color: #b8e9f2; }
+.leg i { display: inline-block; width: 12px; height: 8px; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spinRev { to { transform: rotate(-360deg); } }
+@keyframes flowdash { from { stroke-dashoffset: 36; } to { stroke-dashoffset: 0; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@keyframes grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes drawline { from { stroke-dashoffset: var(--len); } to { stroke-dashoffset: 0; } }
+.r1c { transform-origin: 110px 110px; animation: spin 38s linear infinite; }
+.r2c { transform-origin: 110px 110px; animation: spinRev 24s linear infinite; }
+.r3c { transform-origin: 110px 110px; animation: spin 12s linear infinite; }
+.flow { stroke-dasharray: 3 15; animation: flowdash 1.1s linear infinite; }
+.blink { animation: pulse 1.6s ease-in-out infinite; }
+.bar { transform-box: fill-box; transform-origin: center bottom; animation: grow .8s ease-out both; }
+.bar.dn { transform-origin: center top; }
+.ln { stroke-dasharray: var(--len); animation: drawline 1.6s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .r1c,.r2c,.r3c,.flow,.blink,.bar,.ln { animation: none; } }
+#tip { position: fixed; z-index: 50; pointer-events: none; display: none; max-width: 280px; padding: 6px 10px; background: rgba(2,14,26,0.95); border: 1px solid var(--cy); border-radius: 3px; font-size: 12px; color: #fff; box-shadow: 0 0 14px rgba(77,243,255,0.35); white-space: pre-line; }
+[data-tip] { cursor: default; }
+.ins { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; background: rgba(2,12,22,0.7); border: 1px solid rgba(77,243,255,0.2); border-radius: 4px; }
+.chip { padding: 5px 12px; min-height: 34px; border-radius: 3px; border: 1px solid rgba(77,243,255,0.4); background: transparent; color: #8ff0ff; font-size: 12px; }
+.chip:hover { background: rgba(77,243,255,0.12); }
+#chatlog { display: flex; flex-direction: column; gap: 8px; min-height: 120px; max-height: 260px; overflow-y: auto; }
+.msg { max-width: 92%; padding: 8px 14px; border-radius: 4px; font-size: 14px; }
+.msg.u { align-self: flex-end; border: 1px solid rgba(77,243,255,0.5); }
+.msg.a { align-self: flex-start; border: 1px solid rgba(255,176,46,0.5); background: rgba(255,176,46,0.06); }
+.kpi { display: flex; flex-direction: column; gap: 2px; }
+.kpi .v { font-size: 40px; line-height: 1.05; }
+</style>
+</head>
+<body>
+<div id="app">
+<div class="scan"></div>
+
+<!-- BANNER -->
+<div class="row" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:18px">
+  <div style="display:flex;align-items:center;gap:22px">
+    <svg width="150" height="150" viewBox="0 0 220 220" aria-hidden="true">
+      <g class="r1c"><circle cx="110" cy="110" r="104" fill="none" stroke="#4df3ff" stroke-opacity=".5" stroke-width="1.5" stroke-dasharray="3 7"/></g>
+      <g class="r2c"><circle cx="110" cy="110" r="90" fill="none" stroke="#4df3ff" stroke-width="3" stroke-dasharray="60 20 14 20"/></g>
+      <g class="r3c"><circle cx="110" cy="110" r="74" fill="none" stroke="#ffb02e" stroke-width="2" stroke-dasharray="30 12"/></g>
+      <circle cx="110" cy="110" r="60" fill="rgba(77,243,255,.06)" stroke="#4df3ff" stroke-opacity=".6"/>
+      <text x="110" y="100" text-anchor="middle" fill="#8fdcea" font-size="12">재고</text>
+      <text x="110" y="128" text-anchor="middle" fill="#fff" font-size="30" class="n">4,175 t</text>
+      <text x="110" y="146" text-anchor="middle" fill="#8fdcea" font-size="11">415 코일</text>
+    </svg>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span class="glow" style="font-family:Orbitron,sans-serif;font-size:13px;letter-spacing:5px;color:var(--cy)">OHSUNG STEEL · FLOW COMMAND</span>
+      <span class="glow" style="font-size:38px;font-weight:900;letter-spacing:1px">입출고 · 재고 인사이트 관제</span>
+      <span style="font-size:13px;color:var(--mut)">그린ERP 입고·출고·재고·미출고·미수 실데이터 스냅샷(2026-10-06 조회) + 라인 가동 샘플</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+    <span id="clock" class="glow" style="font-family:Orbitron,sans-serif;font-size:34px;font-weight:700;letter-spacing:3px">--:--:--</span>
+    <div style="display:flex;gap:8px;font-size:12px">
+      <span class="tag live" style="padding:4px 10px;display:inline-flex;align-items:center;gap:6px"><span class="blink" style="width:7px;height:7px;border-radius:50%;background:var(--cy)"></span>LIVE DB 그린ERP</span>
+      <span class="tag" style="padding:4px 10px">SAMPLE 라인 가동</span>
+    </div>
+  </div>
+</div>
+
+<!-- KPI -->
+<div id="kpis" class="row" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr))"></div>
+
+<!-- SANKEY -->
+<div class="holo">
+  <div class="head">
+    <span class="ttl glow" style="font-size:18px">코일 흐름 · 입고 → 재고 → 가공 → 출고</span>
+    <div class="leg"><span><i style="background:#4df3ff"></i>신규 0~7일</span><span><i style="background:#2fd4a8"></i>8~30일</span><span><i style="background:#ffb02e"></i>31~90일</span><span><i style="background:#ff5d6c"></i>90일 초과</span></div>
+  </div>
+  <svg width="100%" viewBox="0 0 1200 380" role="img" aria-label="최근 30일 입고 3,044톤이 재고 4,175톤을 거쳐 가공되고 미출고 1,387톤을 지나 출고 3,635톤으로 흐르는 도표" style="display:block;height:auto">
+    <path d="M44 155 C190 155 190 190 330 190" fill="none" stroke="#4df3ff" stroke-opacity=".16" stroke-width="150"/>
+    <path d="M354 190 C500 190 500 190 640 190" fill="none" stroke="#4df3ff" stroke-opacity=".13" stroke-width="110"/>
+    <path d="M664 190 C780 190 780 150 900 150" fill="none" stroke="#ffb02e" stroke-opacity=".15" stroke-width="95"/>
+    <path d="M924 150 C1040 150 1040 190 1150 190" fill="none" stroke="#ffb02e" stroke-opacity=".18" stroke-width="130"/>
+    <path class="flow" d="M44 155 C190 155 190 190 330 190" fill="none" stroke="#4df3ff" stroke-width="3" stroke-linecap="round"/>
+    <path class="flow" d="M44 135 C190 135 190 170 330 170" fill="none" stroke="#4df3ff" stroke-width="2" stroke-linecap="round" stroke-opacity=".7"/>
+    <path class="flow" d="M44 178 C190 178 190 212 330 212" fill="none" stroke="#4df3ff" stroke-width="2" stroke-linecap="round" stroke-opacity=".7"/>
+    <path class="flow" d="M354 190 C500 190 500 190 640 190" fill="none" stroke="#4df3ff" stroke-width="3" stroke-linecap="round"/>
+    <path class="flow" d="M664 190 C780 190 780 150 900 150" fill="none" stroke="#ffb02e" stroke-width="3" stroke-linecap="round"/>
+    <path class="flow" d="M924 150 C1040 150 1040 190 1150 190" fill="none" stroke="#ffb02e" stroke-width="3" stroke-linecap="round"/>
+    <path class="flow" d="M924 130 C1040 130 1040 170 1150 170" fill="none" stroke="#ffb02e" stroke-width="2" stroke-linecap="round" stroke-opacity=".7"/>
+    <text x="190" y="338" text-anchor="middle" fill="#8ff0ff" font-size="13">▲ +3,044 t / 30일</text>
+    <text x="497" y="338" text-anchor="middle" fill="#8ff0ff" font-size="13">가공 투입 ▶</text>
+    <text x="800" y="335" text-anchor="middle" fill="#ffcf7a" font-size="13">가공 완료 ▶</text>
+    <text x="1037" y="272" text-anchor="middle" fill="#ffcf7a" font-size="13">−3,635 t / 30일 ▶</text>
+    <rect x="20" y="70" width="24" height="49" fill="#4df3ff"/><rect x="20" y="119" width="24" height="47.5" fill="#2fd4a8"/><rect x="20" y="166.5" width="24" height="32.9" fill="#8bd3ff"/><rect x="20" y="199.4" width="24" height="25" fill="#5aa9d6"/><rect x="20" y="224.4" width="24" height="15.6" fill="#3b6f8f"/>
+    <text x="20" y="26" fill="#8fdcea" font-size="13">입고 · 최근 30일</text>
+    <text x="20" y="56" fill="#fff" font-size="34" class="n">3,044 t</text>
+    <text x="20" y="262" fill="#b8e9f2" font-size="12">299건 · 오늘 24건 266 t</text>
+    <text x="20" y="282" fill="#8fdcea" font-size="11">대한강재 29% · 대창스틸 28% · 유창 19%</text>
+    <rect x="330" y="65" width="24" height="18.3" fill="#4df3ff"/><rect x="330" y="83.3" width="24" height="44.3" fill="#2fd4a8"/><rect x="330" y="127.6" width="24" height="53" fill="#ffb02e"/><rect x="330" y="180.6" width="24" height="134.4" fill="#ff5d6c"/>
+    <text x="330" y="26" fill="#8fdcea" font-size="13">재고 · 현재</text>
+    <text x="330" y="56" fill="#fff" font-size="34" class="n">4,175 t</text>
+    <text x="366" y="250" fill="#ff8a96" font-size="13" font-weight="700">90일 초과 2,244 t · 54%</text>
+    <text x="366" y="270" fill="#b8e9f2" font-size="12">415 코일 · 대한강재가 68%</text>
+    <rect x="640" y="110" width="24" height="160" fill="#4df3ff" fill-opacity=".85"/>
+    <text x="640" y="68" fill="#8fdcea" font-size="13">가공 · 오늘 진행</text>
+    <text x="640" y="98" fill="#fff" font-size="26" class="n">레벨러 · 슬리터1·2</text>
+    <text x="676" y="146" fill="#d9f7ff" font-size="13">레벨러 54%</text>
+    <text x="676" y="190" fill="#d9f7ff" font-size="13">슬리터1 38%</text>
+    <text x="676" y="234" fill="#d9f7ff" font-size="13">슬리터2 71%</text>
+    <text x="676" y="290" fill="#ffcf7a" font-size="11">라인 진행률은 샘플 값</text>
+    <rect x="900" y="95" width="24" height="110" fill="#ffb02e"/>
+    <text x="900" y="52" fill="#8fdcea" font-size="13">미출고 · 출고 대기</text>
+    <text x="900" y="82" fill="#fff" font-size="34" class="n">1,387 t</text>
+    <text x="934" y="226" fill="#b8e9f2" font-size="12">160건 · 하루 290 t 기준 약 4.8일치</text>
+    <rect x="1150" y="105" width="24" height="109" fill="#ffb02e"/><rect x="1150" y="214" width="24" height="29.6" fill="#ffd27a"/><rect x="1150" y="243.6" width="24" height="31.5" fill="#a9803a"/>
+    <text x="1174" y="26" text-anchor="end" fill="#8fdcea" font-size="13">출고 · 최근 30일</text>
+    <text x="1174" y="56" text-anchor="end" fill="#fff" font-size="34" class="n">3,635 t</text>
+    <text x="1174" y="302" text-anchor="end" fill="#b8e9f2" font-size="12">376건 · 오늘 31건 290 t</text>
+    <text x="1174" y="322" text-anchor="end" fill="#ffcf7a" font-size="11">대한강재 64% · 유창 17%</text>
+    <line x1="20" y1="350" x2="1174" y2="350" stroke="#4df3ff" stroke-opacity=".25"/>
+    <text x="20" y="372" fill="#8ff0ff" font-size="13">30일 순증감 −592 t (입고보다 출고가 많아 재고 감소)</text>
+    <text x="1174" y="372" text-anchor="end" fill="#ffcf7a" font-size="13">미수금 31.7억 · 134개 거래처</text>
+  </svg>
+</div>
+
+<!-- DAILY + CALENDAR -->
+<div class="row r2">
+  <div class="holo">
+    <div class="head"><span class="ttl glow">최근 30일 일별 입고 · 출고</span>
+      <div class="tabs" id="dailyTabs"></div></div>
+    <div id="dailyChart"></div>
+    <div class="leg" id="dailyLeg"></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">달력 히트맵 · 하루 물량</span><span class="sub">진할수록 많은 날 (t)</span></div>
+    <div id="heat" style="display:grid;grid-template-columns:1fr 1fr;gap:18px"></div>
+    <div class="sub" style="margin-top:8px">9/24~27 연휴 공백 뒤 9/28~29 입고 집중 · 10/6(오늘)이 출고 최대</div>
+  </div>
+</div>
+
+<!-- MONTHLY / RADAR / PARETO -->
+<div class="row r3">
+  <div class="holo">
+    <div class="head"><span class="ttl glow">월별 입고 · 출고 추이</span><span class="sub">2026-04 ~ 10(6일까지)</span></div>
+    <div id="monthly"></div>
+    <div class="leg"><span><i style="background:#4df3ff"></i>입고(t)</span><span><i style="background:#ffb02e"></i>출고(t)</span><span><i style="background:#2fd4a8"></i>월 순증감 막대</span></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">요일별 물량 패턴</span><span class="sub">최근 90일 누적 t</span></div>
+    <div id="radar" style="max-width:470px;margin:0 auto"></div>
+    <div class="sub">출고는 화·목, 입고는 월·금에 몰립니다</div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">거래처별 재고 · 파레토</span><span class="sub">막대 t · 선 누적 %</span></div>
+    <div id="pareto"></div>
+    <div class="sub">상위 1곳이 재고의 68%, 상위 3곳이 85%</div>
+  </div>
+</div>
+
+<!-- AGING / STACK / THICKNESS -->
+<div class="row r3">
+  <div class="holo">
+    <div class="head"><span class="ttl glow">재고 보관 기간</span><span class="sub">전체 4,175 t</span></div>
+    <div id="donut" style="display:flex;flex-wrap:wrap;align-items:center;gap:16px"></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">거래처 × 보관 기간 (TOP 5)</span><span class="sub">톤</span></div>
+    <div id="stack"></div>
+    <div class="leg" id="stackLeg"></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">재고 두께 분포</span><span class="sub">mm · 막대 t · 숫자 코일 수</span></div>
+    <div id="thick"></div>
+    <div class="sub">0.7~0.9mm가 재고의 37% (1,551 t · 152코일)</div>
+  </div>
+</div>
+
+<!-- PROJECTION -->
+<div class="row r2">
+  <div class="holo">
+    <div class="head"><span class="ttl glow">미출고 번다운 · 며칠 뒤 비워질까</span><span class="sub">1,387 t · 160건 기준 영업일 예측</span></div>
+    <div id="burn"></div>
+    <div class="leg"><span><i style="background:#ffb02e"></i>오늘 속도 290 t/일</span><span><i style="background:#4df3ff"></i>30일 평균 191 t/영업일</span></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">재고 소진 시나리오</span><span class="sub">입고가 멈춘다고 가정</span></div>
+    <div id="deplete"></div>
+    <div class="sub">달력일 기준 30일 평균 출고 121 t/일이면 약 34일, 입고가 계속되면 −592 t/30일 속도로 천천히 줄어듭니다</div>
+  </div>
+</div>
+
+<!-- INSIGHTS -->
+<div class="holo">
+  <div class="head"><span class="ttl glow" style="font-size:18px">AI 인사이트 · 데이터가 말해 주는 것</span><span class="sub">그린ERP 입고·출고·재고·미수 실데이터에서 계산한 값</span></div>
+  <div id="insights" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:12px"></div>
+</div>
+
+<!-- CONC / RECV / LINES -->
+<div class="row r3">
+  <div class="holo">
+    <div class="head"><span class="ttl glow">한 거래처 집중도 · 대한강재</span></div>
+    <div id="conc" style="display:flex;flex-direction:column;gap:12px"></div>
+    <div class="sub" style="margin-top:10px">출고·재고·미수 모두 한 곳에 몰려 있어 이 거래처 상태가 현금흐름과 재고에 직접 영향</div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">미수금 TOP 5</span><span class="num" style="font-size:22px;color:#ff8a96">31.7억</span></div>
+    <div id="recv" style="display:flex;flex-direction:column;gap:9px"></div>
+    <div class="sub" style="margin-top:8px" id="recvNote"></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">라인 가동 · 품질</span><span class="tag">SAMPLE</span></div>
+    <div id="lines" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:space-around"></div>
+    <div id="hours" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- QUALITY SAMPLE -->
+<div class="row r2">
+  <div class="holo">
+    <div class="head"><span class="ttl glow">불량 유형 분포 · 품질 측정</span><span class="tag">SAMPLE</span></div>
+    <div id="defects"></div>
+  </div>
+  <div class="holo">
+    <div class="head"><span class="ttl glow">절단길이 오차 분포 · 샘플</span><span class="tag">SAMPLE</span></div>
+    <div id="lenhist"></div>
+    <div class="sub">목표 대비 ±0.5mm 이내 99.2% · 절단길이 CV 0.21%</div>
+  </div>
+</div>
+
+<!-- CHAT -->
+<div class="holo" style="border-color:rgba(255,176,46,0.5);display:flex;flex-wrap:wrap;gap:18px;align-items:stretch">
+  <div style="flex:1 1 520px;min-width:0;display:flex;flex-direction:column;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="14" fill="none" stroke="#ffb02e" stroke-width="1.6"/><circle cx="17" cy="17" r="8" fill="none" stroke="#4df3ff" stroke-width="1.6" stroke-dasharray="4 3"/><circle cx="17" cy="17" r="3" fill="#ffb02e"/></svg>
+      <span class="glow" style="font-family:Orbitron,sans-serif;font-size:13px;letter-spacing:3px;color:#ffcf7a">OHSUNG AI · 질문하면 바로 답합니다</span>
+    </div>
+    <div id="chatlog"></div>
+  </div>
+  <div style="flex:1 1 360px;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;gap:10px">
+    <div style="display:flex;flex-wrap:wrap;gap:6px" id="chips"></div>
+    <form id="chatform" style="display:flex;align-items:center;gap:8px">
+      <label for="ask" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">질문 입력</label>
+      <input id="ask" type="text" placeholder="무엇이든 물어보세요 (시연: 준비된 질문 칩을 눌러 보세요)" style="flex:1;min-width:0;min-height:44px;padding:0 14px;border-radius:3px;border:1px solid rgba(77,243,255,0.4);background:rgba(2,12,22,0.8);color:#d9f7ff;font-size:14px;font-family:inherit">
+      <button type="submit" aria-label="보내기" style="flex:none;width:44px;height:44px;border-radius:3px;border:1px solid #ffb02e;background:rgba(255,176,46,0.15);display:inline-flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 10 L17 3 L12 17 L10 11 Z" fill="#ffb02e"/></svg></button>
+    </form>
+  </div>
+</div>
+
+<div style="position:relative;text-align:center;font-size:12px;color:#5f9aa8">입고·출고·재고·미출고·미수는 그린ERP 미러(2026-10-06 조회) 실제 값 스냅샷, 라인 가동·품질은 샘플 값입니다</div>
+</div>
+<div id="tip"></div>
+
+<script>
+(function () {
+  var CY = '#4df3ff', AM = '#ffb02e', RD = '#ff5d6c', TL = '#2fd4a8';
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return Math.round(n).toLocaleString('en-US'); };
+  var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); };
+
+  // ───────── 실데이터 스냅샷 (그린ERP 미러, 2026-10-06 조회) ─────────
+  var DAILY = [['09-07',152.5,198.9],['09-08',208.2,181.9],['09-09',139.9,213.8],['09-10',0,116.5],['09-11',92.9,219.4],['09-12',0,0],['09-13',0,0],['09-14',377.5,200.9],['09-15',241.2,202.9],['09-16',170.8,100.2],['09-17',354,323.2],['09-18',322.5,262.1],['09-19',0,0],['09-20',0,0],['09-21',52.4,152.4],['09-22',46.1,160.3],['09-23',0,111.6],['09-24',0,0],['09-25',0,0],['09-26',0,0],['09-27',0,0],['09-28',95.3,233.3],['09-29',317.9,164.6],['09-30',139.6,83.9],['10-01',44.6,183.5],['10-02',22.4,235.6],['10-03',0,0],['10-04',0,0],['10-05',0,0],['10-06',265.8,290.5]];
+  var MONTHLY = [['4월',5274,3619],['5월',3933,4058],['6월',5166,4434],['7월',2571,3768],['8월',2826,3749],['9월',3253,3722],['10월*',333,710]];
+  var WD = ['월','화','수','목','금'], WD_OUT = [1872,2560,2249,2527,1804], WD_IN = [1893,1609,1396,1603,1968];
+  var CUST = [['(주)대한강재',2823],['(주)유창',469],['태경스틸(주)',262],['(주)미래이엔아이',107],['강진밴드산업(주)',80],['정현철강(주)',69],['에버스틸(주)',64],['(주)대한에스엔디',55]];
+  var TOTAL_INV = 4175;
+  var AGE = [['~30일',1046,100,CY],['31~90일',885,92,TL],['91~180일',1208,119,AM],['180일~',1036,104,RD]];
+  var STACK = [['대한강재',[596,647,853,728]],['유창',[206,134,36,92]],['태경스틸',[131,33,98,0]],['미래이엔아이',[0,0,53,54]],['강진밴드',[48,22,10,0]]];
+  var THICK = [['~0.5',1024,100],['0.5~0.7',360,39],['0.7~0.9',1551,152],['0.9~1.2',900,87],['1.2~1.6',190,19],['1.6~',150,18]];
+  var RECV = [['(주)대한강재',9.82],['(주)유창',3.44],['(주)디비에스브릿지스틸',2.05],['에버스틸(주)',1.67],['(주)대한에스엔디',1.14]];
+
+  // ───────── 툴팁 ─────────
+  var tip = $('tip');
+  document.addEventListener('mousemove', function (e) {
+    var t = e.target.closest ? e.target.closest('[data-tip]') : null;
+    if (!t) { tip.style.display = 'none'; return; }
+    tip.textContent = t.getAttribute('data-tip');
+    tip.style.display = 'block';
+    var x = e.clientX + 14, y = e.clientY + 14;
+    if (x + 290 > window.innerWidth) x = e.clientX - 290;
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  });
+
+  // ───────── 시계 ─────────
+  function tick() { var d = new Date(); var p = function (n) { return (n < 10 ? '0' : '') + n; }; $('clock').textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds()); }
+  tick(); setInterval(tick, 1000);
+
+  // ───────── KPI ─────────
+  function spark(vals, color, w, h) {
+    var mx = Math.max.apply(null, vals) || 1, n = vals.length;
+    var pts = vals.map(function (v, i) { return (i / (n - 1) * (w - 4) + 2).toFixed(1) + ',' + (h - 3 - v / mx * (h - 8)).toFixed(1); });
+    return '<svg width="100%" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts.join(' ') + '" fill="none" stroke="' + color + '" stroke-width="2" stroke-linejoin="round" style="filter:drop-shadow(0 0 4px ' + color + ')"/><circle cx="' + pts[n - 1].split(',')[0] + '" cy="' + pts[n - 1].split(',')[1] + '" r="3" fill="' + color + '"/></svg>';
+  }
+  var last14 = DAILY.slice(-14);
+  var cum = [], run = 0; DAILY.forEach(function (d) { run += d[1] - d[2]; cum.push(run); });
+  var cumShift = cum.map(function (v) { return v - Math.min.apply(null, cum); });
+  function bar(pct, color) { return '<div style="height:8px;background:rgba(77,243,255,.1);border-radius:2px;margin-top:6px"><div style="height:8px;width:' + pct + '%;background:' + color + ';box-shadow:0 0 8px ' + color + ';border-radius:2px"></div></div>'; }
+  var stackBar = '<div style="display:flex;height:8px;margin-top:6px;gap:2px">' + AGE.map(function (a) { return '<div style="flex:' + a[1] + ';background:' + a[3] + '"></div>'; }).join('') + '</div>';
+  var KPIS = [
+    { l: '오늘 입고', n: 24, u: '건 · 266 t', note: '최근 14일 입고 2위', c: CY, viz: spark(last14.map(function (d) { return d[1]; }), CY, 200, 34) },
+    { l: '오늘 출고', n: 31, u: '건 · 290 t', note: '최근 14일 출고 최대', c: AM, viz: spark(last14.map(function (d) { return d[2]; }), AM, 200, 34) },
+    { l: '현재 재고', n: 4175, u: 't · 415 코일', note: '90일 초과 54%', c: '#fff', viz: stackBar },
+    { l: '미출고 대기', n: 1387, u: 't · 160건', note: '하루 290 t 기준 4.8일치', c: AM, viz: bar(100 - 4.8 / 10 * 100, AM) },
+    { l: '30일 순증감', n: -592, u: 't', note: '입고 3,044 t · 출고 3,635 t', c: TL, viz: spark(cumShift, TL, 200, 34) },
+    { l: '미수금 합계', n: 31.7, u: '억 · 134곳', note: '대한강재 9.8억 31%', c: RD, viz: bar(31, RD), dec: 1 }
+  ];
+  $('kpis').innerHTML = KPIS.map(function (k, i) {
+    return '<div class="holo kpi"><span style="font-size:12px;letter-spacing:1px;color:var(--mut)">' + k.l + '</span><div style="display:flex;align-items:baseline;gap:6px"><span class="num v glow" data-n="' + k.n + '" data-dec="' + (k.dec || 0) + '" style="color:' + k.c + '">0</span><span style="font-size:13px;color:var(--mut)">' + k.u + '</span></div><span class="sub">' + k.note + '</span><div>' + k.viz + '</div></div>';
+  }).join('');
+  [].forEach.call(document.querySelectorAll('[data-n]'), function (el) {
+    var target = parseFloat(el.getAttribute('data-n')), dec = +el.getAttribute('data-dec'), t0 = performance.now();
+    function f(t) {
+      var p = Math.min(1, (t - t0) / 1100), v = target * (1 - Math.pow(1 - p, 3));
+      var s = dec ? v.toFixed(dec) : fmt(Math.abs(v));
+      el.textContent = (v < 0 && !dec ? '−' : '') + s;
+      if (p < 1) requestAnimationFrame(f);
+    }
+    requestAnimationFrame(f);
+  });
+
+  // ───────── 일별 입출고 / 누적 순증감 ─────────
+  var dailyMode = 'daily';
+  function renderDaily() {
+    var W = 1000, H = 320, L = 44, R = 12, T = 16, B = 28, mid = (H - B + T) / 2, half = (H - B - T) / 2 - 4;
+    var n = DAILY.length, bw = (W - L - R) / n, mx = 400, s = '';
+    var cl = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="최근 30일 일별 입고 출고 차트">';
+    if (dailyMode === 'daily') {
+      [100, 200, 300, 400].forEach(function (g) {
+        [-1, 1].forEach(function (sg) {
+          var y = mid - sg * g / mx * half;
+          s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '" stroke="#4df3ff" stroke-opacity=".08"/>';
+          if (sg === -1 || g === 100) s += '';
+        });
+        s += '<text x="' + (L - 6) + '" y="' + (mid - g / mx * half + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>';
+        s += '<text x="' + (L - 6) + '" y="' + (mid + g / mx * half + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>';
+      });
+      s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + mid + '" y2="' + mid + '" stroke="#4df3ff" stroke-opacity=".4"/>';
+      DAILY.forEach(function (d, i) {
+        var x = L + i * bw + bw * 0.18, w = bw * 0.64, hi = d[1] / mx * half, ho = d[2] / mx * half;
+        var tipTxt = '2026-' + d[0] + '\n입고 ' + d[1] + ' t\n출고 ' + d[2] + ' t';
+        if (hi > 0) s += '<rect class="bar" data-tip="' + tipTxt + '" x="' + x + '" y="' + (mid - hi) + '" width="' + w + '" height="' + hi + '" fill="#4df3ff" style="filter:drop-shadow(0 0 5px rgba(77,243,255,.7));animation-delay:' + i * 18 + 'ms"/>';
+        if (ho > 0) s += '<rect class="bar dn" data-tip="' + tipTxt + '" x="' + x + '" y="' + mid + '" width="' + w + '" height="' + ho + '" fill="#ffb02e" style="filter:drop-shadow(0 0 5px rgba(255,176,46,.6));animation-delay:' + i * 18 + 'ms"/>';
+        if (i % 2 === 0 || i === n - 1) s += '<text x="' + (x + w / 2) + '" y="' + (H - 8) + '" text-anchor="middle" fill="' + (i === n - 1 ? '#fff' : '#8fdcea') + '" font-size="10" font-weight="' + (i === n - 1 ? 700 : 400) + '">' + (i === n - 1 ? '오늘' : d[0].replace('-', '/').replace(/^0/, '')) + '</text>';
+      });
+      s += '<text x="' + (L + 4) + '" y="' + (T + 8) + '" fill="#4df3ff" font-size="11">입고 t</text><text x="' + (L + 4) + '" y="' + (H - B - 2) + '" fill="#ffb02e" font-size="11">출고 t</text>';
+      $('dailyLeg').innerHTML = '<span><i style="background:#4df3ff"></i>위쪽 입고</span><span><i style="background:#ffb02e"></i>아래쪽 출고</span><span>토·일·연휴는 0</span>';
+    } else {
+      var mn = Math.min.apply(null, cum.concat([0])), mxv = Math.max.apply(null, cum.concat([0]));
+      var pad = (mxv - mn) * 0.1 || 1; mn -= pad; mxv += pad;
+      var yy = function (v) { return T + (mxv - v) / (mxv - mn) * (H - B - T); };
+      [0, -200, -400, -600].forEach(function (g) { if (g >= mn && g <= mxv) s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yy(g) + '" y2="' + yy(g) + '" stroke="#4df3ff" stroke-opacity="' + (g === 0 ? .45 : .1) + '"/><text x="' + (L - 6) + '" y="' + (yy(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>'; });
+      var pts = cum.map(function (v, i) { return (L + i * bw + bw / 2).toFixed(1) + ',' + yy(v).toFixed(1); });
+      s += '<polygon points="' + L + ',' + yy(0) + ' ' + pts.join(' ') + ' ' + (L + (n - 1) * bw + bw / 2) + ',' + yy(0) + '" fill="#2fd4a8" fill-opacity=".14"/>';
+      s += '<polyline class="ln" style="--len:2200" points="' + pts.join(' ') + '" fill="none" stroke="#2fd4a8" stroke-width="3" stroke-linejoin="round"/>';
+      DAILY.forEach(function (d, i) {
+        var x = L + i * bw + bw / 2;
+        s += '<circle data-tip="2026-' + d[0] + '\n누적 순증감 ' + Math.round(cum[i]) + ' t\n(입고−출고 합산)" cx="' + x + '" cy="' + yy(cum[i]) + '" r="4.5" fill="#02060d" stroke="#2fd4a8" stroke-width="2"/>';
+        if (i % 2 === 0 || i === n - 1) s += '<text x="' + x + '" y="' + (H - 8) + '" text-anchor="middle" fill="' + (i === n - 1 ? '#fff' : '#8fdcea') + '" font-size="10">' + (i === n - 1 ? '오늘' : d[0].replace('-', '/').replace(/^0/, '')) + '</text>';
+      });
+      s += '<text x="' + (W - R - 4) + '" y="' + (yy(cum[n - 1]) - 10) + '" text-anchor="end" fill="#2fd4a8" font-size="14" class="n">' + Math.round(cum[n - 1]) + ' t</text>';
+      $('dailyLeg').innerHTML = '<span><i style="background:#2fd4a8"></i>입고−출고 누적(t)</span><span>0 아래로 내려갈수록 재고가 줄어듭니다</span>';
+    }
+    $('dailyChart').innerHTML = cl + s + '</svg>';
+    $('dailyTabs').innerHTML = [['daily', '일별 입출고'], ['net', '누적 순증감']].map(function (t) { return '<button class="tab' + (dailyMode === t[0] ? ' on' : '') + '" data-m="' + t[0] + '">' + t[1] + '</button>'; }).join('');
+    [].forEach.call($('dailyTabs').querySelectorAll('button'), function (b) { b.onclick = function () { dailyMode = b.getAttribute('data-m'); renderDaily(); }; });
+  }
+  renderDaily();
+
+  // ───────── 달력 히트맵 ─────────
+  function heatmap(idx, color, title) {
+    var mx = Math.max.apply(null, DAILY.map(function (d) { return d[idx]; }));
+    var cells = '';
+    ['월', '화', '수', '목', '금', '토', '일'].forEach(function (d) { cells += '<div style="text-align:center;font-size:10px;color:#5f9aa8">' + d + '</div>'; });
+    for (var i = 0; i < 35; i++) {
+      var d = DAILY[i];
+      if (!d) { cells += '<div style="aspect-ratio:1.25"></div>'; continue; }
+      var v = d[idx], a = v === 0 ? 0.06 : 0.2 + 0.8 * v / mx, rgb = idx === 1 ? '77,243,255' : '255,176,46';
+      var isToday = i === 29;
+      cells += '<div data-tip="2026-' + d[0] + '\n' + title + ' ' + v + ' t" style="aspect-ratio:1.25;background:rgba(' + rgb + ',' + a.toFixed(2) + ');border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:' + (v ? 700 : 400) + ';color:' + (v / mx > 0.55 ? '#02202a' : (v ? '#fff' : '#4a7480')) + ';' + (isToday ? 'outline:2px solid #fff;' : '') + '">' + d[0].slice(3).replace(/^0/, '') + '</div>';
+    }
+    return '<div><div style="font-size:13px;font-weight:700;color:' + color + ';margin-bottom:6px">' + title + '</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">' + cells + '</div></div>';
+  }
+  $('heat').innerHTML = heatmap(1, CY, '입고') + heatmap(2, AM, '출고');
+
+  // ───────── 월별 추이 ─────────
+  (function () {
+    var W = 640, H = 400, L = 44, R = 14, T = 16, lineB = 260, netT = 296, netH = 70;
+    var n = MONTHLY.length, step = (W - L - R) / (n - 1), mx = 6000, s = '';
+    var y = function (v) { return T + (1 - v / mx) * (lineB - T); };
+    [0, 2000, 4000, 6000].forEach(function (g) { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#4df3ff" stroke-opacity=".1"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g.toLocaleString() + '</text>'; });
+    ['in', 'out'].forEach(function (k, ki) {
+      var idx = ki + 1, col = ki ? AM : CY;
+      var pts = MONTHLY.map(function (m, i) { return (L + i * step).toFixed(1) + ',' + y(m[idx]).toFixed(1); });
+      var full = pts.slice(0, n - 1).join(' ');
+      s += '<polygon points="' + L + ',' + y(0) + ' ' + full + ' ' + (L + (n - 2) * step) + ',' + y(0) + '" fill="' + col + '" fill-opacity=".1"/>';
+      s += '<polyline class="ln" style="--len:900;filter:drop-shadow(0 0 5px ' + col + ')" points="' + full + '" fill="none" stroke="' + col + '" stroke-width="3" stroke-linejoin="round"/>';
+      s += '<line x1="' + pts[n - 2].split(',')[0] + '" y1="' + pts[n - 2].split(',')[1] + '" x2="' + pts[n - 1].split(',')[0] + '" y2="' + pts[n - 1].split(',')[1] + '" stroke="' + col + '" stroke-width="2" stroke-dasharray="4 4"/>';
+      MONTHLY.forEach(function (m, i) {
+        var x = L + i * step;
+        s += '<circle data-tip="' + m[0] + '\n' + (ki ? '출고 ' : '입고 ') + fmt(m[idx]) + ' t' + (i === n - 1 ? '\n(10/6까지 진행 중)' : '') + '" cx="' + x + '" cy="' + y(m[idx]) + '" r="5" fill="' + (i === n - 1 ? '#02060d' : col) + '" stroke="' + col + '" stroke-width="2"/>';
+      });
+    });
+    var netMax = 1750, zy = netT + netH / 2;
+    s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + zy + '" y2="' + zy + '" stroke="#4df3ff" stroke-opacity=".4"/><text x="' + (L - 6) + '" y="' + (zy + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">0</text><text x="' + L + '" y="' + (netT - 6) + '" fill="#8fdcea" font-size="10">월 순증감 (입고−출고, t)</text>';
+    MONTHLY.forEach(function (m, i) {
+      var nv = m[1] - m[2], h = Math.abs(nv) / netMax * (netH / 2), x = L + i * step - 14;
+      s += '<rect class="bar' + (nv < 0 ? ' dn' : '') + '" data-tip="' + m[0] + ' 순증감 ' + (nv > 0 ? '+' : '−') + fmt(Math.abs(nv)) + ' t' + (nv < 0 ? '\n(출고가 많아 재고 감소)' : '\n(입고가 많아 재고 증가)') + '" x="' + x + '" y="' + (nv >= 0 ? zy - h : zy) + '" width="28" height="' + h + '" fill="' + (nv >= 0 ? '#2fd4a8' : '#ff5d6c') + '" fill-opacity=".85"/>';
+      s += '<text x="' + (L + i * step) + '" y="' + (H - 10) + '" text-anchor="middle" fill="#8fdcea" font-size="11">' + m[0] + '</text>';
+    });
+    $('monthly').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="월별 입고 출고 추이">' + s + '</svg><div class="sub">* 10월은 6일까지 · 4~6월은 입고가, 7월부터는 출고가 더 많아 재고가 줄어드는 국면</div>';
+  })();
+
+  // ───────── 요일 레이더 ─────────
+  (function () {
+    var W = 360, H = 320, cx = 180, cy = 160, R = 112, mx = 2600, s = '';
+    var pt = function (i, v) { var a = -Math.PI / 2 + i * 2 * Math.PI / 5; return [cx + Math.cos(a) * R * v / mx, cy + Math.sin(a) * R * v / mx]; };
+    [0.25, 0.5, 0.75, 1].forEach(function (g) {
+      var ps = WD.map(function (_, i) { return pt(i, mx * g).join(','); });
+      s += '<polygon points="' + ps.join(' ') + '" fill="none" stroke="#4df3ff" stroke-opacity="' + (g === 1 ? .35 : .14) + '"/>';
+    });
+    WD.forEach(function (d, i) {
+      var e = pt(i, mx), l = pt(i, mx * 1.2);
+      s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0] + '" y2="' + e[1] + '" stroke="#4df3ff" stroke-opacity=".18"/><text x="' + l[0] + '" y="' + (l[1] + 5) + '" text-anchor="middle" fill="#d9f7ff" font-size="14" font-weight="700">' + d + '</text>';
+    });
+    [[WD_IN, CY, '입고'], [WD_OUT, AM, '출고']].forEach(function (S) {
+      var ps = S[0].map(function (v, i) { return pt(i, v).join(','); });
+      s += '<polygon points="' + ps.join(' ') + '" fill="' + S[1] + '" fill-opacity=".18" stroke="' + S[1] + '" stroke-width="2.5" style="filter:drop-shadow(0 0 6px ' + S[1] + ')"/>';
+      S[0].forEach(function (v, i) { var p = pt(i, v); s += '<circle data-tip="' + WD[i] + '요일 ' + S[2] + ' ' + fmt(v) + ' t (90일 누적)" cx="' + p[0] + '" cy="' + p[1] + '" r="5" fill="' + S[1] + '"/>'; });
+    });
+    $('radar').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="요일별 입고 출고 레이더">' + s + '</svg><div class="leg" style="justify-content:center"><span><i style="background:#4df3ff"></i>입고</span><span><i style="background:#ffb02e"></i>출고</span></div>';
+  })();
+
+  // ───────── 파레토 ─────────
+  (function () {
+    var W = 560, H = 400, L = 40, R = 40, T = 20, B = 84, n = CUST.length, bw = (W - L - R) / n, s = '';
+    var yb = function (v) { return T + (1 - v / 3000) * (H - T - B); }, yp = function (p) { return T + (1 - p / 100) * (H - T - B); };
+    [0, 1000, 2000, 3000].forEach(function (g) { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + yb(g) + '" y2="' + yb(g) + '" stroke="#4df3ff" stroke-opacity=".1"/><text x="' + (L - 5) + '" y="' + (yb(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>'; });
+    [0, 50, 100].forEach(function (g) { s += '<text x="' + (W - R + 5) + '" y="' + (yp(g) + 4) + '" fill="#ffcf7a" font-size="10">' + g + '%</text>'; });
+    var cum = 0, pts = [];
+    CUST.forEach(function (c, i) {
+      cum += c[1]; var pc = cum / TOTAL_INV * 100, x = L + i * bw + bw / 2;
+      s += '<rect class="bar" data-tip="' + c[0] + '\n재고 ' + fmt(c[1]) + ' t (' + (c[1] / TOTAL_INV * 100).toFixed(1) + '%)\n누적 ' + pc.toFixed(1) + '%" x="' + (x - bw * 0.32) + '" y="' + yb(c[1]) + '" width="' + bw * 0.64 + '" height="' + (yb(0) - yb(c[1])) + '" fill="' + (i === 0 ? '#ff5d6c' : '#4df3ff') + '" fill-opacity="' + (i === 0 ? .85 : .6) + '" style="animation-delay:' + i * 70 + 'ms"/>';
+      pts.push(x.toFixed(1) + ',' + yp(pc).toFixed(1));
+      s += '<text transform="translate(' + (x + 4) + ',' + (H - B + 12) + ') rotate(40)" fill="#b8e9f2" font-size="11">' + c[0].replace('(주)', '').replace('(주)', '') + '</text>';
+    });
+    s += '<polyline class="ln" style="--len:700;filter:drop-shadow(0 0 4px #ffb02e)" points="' + pts.join(' ') + '" fill="none" stroke="#ffb02e" stroke-width="2.5"/>';
+    pts.forEach(function (p) { var q = p.split(','); s += '<circle cx="' + q[0] + '" cy="' + q[1] + '" r="4" fill="#ffb02e"/>'; });
+    $('pareto').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="거래처별 재고 파레토">' + s + '</svg>';
+  })();
+
+  // ───────── 도넛 ─────────
+  (function () {
+    var tot = AGE.reduce(function (a, b) { return a + b[1]; }, 0), Cc = 2 * Math.PI * 64, c = 0, s = '';
+    s += '<circle cx="85" cy="85" r="64" fill="none" stroke="rgba(77,243,255,.08)" stroke-width="18"/>';
+    AGE.forEach(function (a) {
+      var len = a[1] / tot * Cc - 2;
+      s += '<circle data-tip="' + a[0] + '\n' + fmt(a[1]) + ' t · ' + a[2] + '코일\n' + (a[1] / tot * 100).toFixed(0) + '%" cx="85" cy="85" r="64" fill="none" stroke="' + a[3] + '" stroke-width="18" stroke-dasharray="' + len.toFixed(1) + ' ' + (Cc - len).toFixed(1) + '" stroke-dashoffset="' + (-c).toFixed(1) + '"/>';
+      c += a[1] / tot * Cc;
+    });
+    var pct = Math.round((AGE[2][1] + AGE[3][1]) / tot * 100);
+    var legend = AGE.map(function (a) { return '<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:10px;height:10px;background:' + a[3] + ';flex:none"></span><span style="flex:1">' + a[0] + ' · ' + a[2] + '코일</span><span class="num" style="font-size:15px">' + fmt(a[1]) + ' t</span></div>'; }).join('');
+    $('donut').innerHTML = '<svg width="170" height="170" viewBox="0 0 170 170" style="flex:none" role="img" aria-label="재고 보관 기간 도넛, 90일 초과 54퍼센트"><g transform="rotate(-90 85 85)">' + s + '</g><text x="85" y="82" text-anchor="middle" fill="#ff8a96" font-size="30" class="n">' + pct + '%</text><text x="85" y="102" text-anchor="middle" fill="#b8e9f2" font-size="11">90일 초과</text></svg><div style="flex:1 1 150px;display:flex;flex-direction:column;gap:8px">' + legend + '</div><div class="sub" style="width:100%">장기재고 최상위 · 대한강재 273코일, 평균 230일 보관</div>';
+  })();
+
+  // ───────── 거래처 × 보관기간 스택 ─────────
+  (function () {
+    var TOTS = [2823, 469, 262, 107, 80], cols = AGE.map(function (a) { return a[3]; }), W = 520, rowH = 44, s = '', mx = 2900, L = 90, barW = W - L - 60;
+    STACK.forEach(function (r, i) {
+      var y = 10 + i * rowH, x = L, tot = r[1].reduce(function (a, b) { return a + b; }, 0);
+      s += '<text x="' + (L - 8) + '" y="' + (y + 19) + '" text-anchor="end" fill="#d9f7ff" font-size="13">' + r[0] + '</text>';
+      r[1].forEach(function (v, j) {
+        if (!v) return; var w = v / mx * barW;
+        s += '<rect class="bar" data-tip="' + r[0] + ' · ' + AGE[j][0] + '\n' + fmt(v) + ' t" x="' + x + '" y="' + y + '" width="' + Math.max(w - 1.5, 1) + '" height="26" fill="' + cols[j] + '" fill-opacity=".85" style="transform-origin:left center;animation-delay:' + i * 60 + 'ms"/>';
+        x += w;
+      });
+      s += '<text x="' + (x + 6) + '" y="' + (y + 19) + '" fill="#fff" font-size="15" class="n">' + fmt(TOTS[i]) + '</text>';
+    });
+    $('stack').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + (STACK.length * rowH + 14) + '" role="img" aria-label="거래처별 보관 기간 누적 막대">' + s + '</svg>';
+    $('stackLeg').innerHTML = AGE.map(function (a) { return '<span><i style="background:' + a[3] + '"></i>' + a[0] + '</span>'; }).join('');
+  })();
+
+  // ───────── 두께 분포 ─────────
+  (function () {
+    var W = 520, H = 290, L = 40, R = 10, T = 26, B = 40, n = THICK.length, bw = (W - L - R) / n, mx = 1800, s = '';
+    var y = function (v) { return T + (1 - v / mx) * (H - T - B); };
+    [0, 600, 1200, 1800].forEach(function (g) { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#4df3ff" stroke-opacity=".1"/><text x="' + (L - 5) + '" y="' + (y(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>'; });
+    THICK.forEach(function (t, i) {
+      var x = L + i * bw + bw * 0.14, w = bw * 0.72, hot = i === 2;
+      s += '<rect class="bar" data-tip="두께 ' + t[0] + ' mm\n' + fmt(t[1]) + ' t · ' + t[2] + '코일\n재고의 ' + (t[1] / TOTAL_INV * 100).toFixed(0) + '%" x="' + x + '" y="' + y(t[1]) + '" width="' + w + '" height="' + (y(0) - y(t[1])) + '" fill="' + (hot ? '#ffb02e' : '#4df3ff') + '" fill-opacity=".8" style="filter:drop-shadow(0 0 5px ' + (hot ? 'rgba(255,176,46,.6)' : 'rgba(77,243,255,.5)') + ');animation-delay:' + i * 70 + 'ms"/>';
+      s += '<text x="' + (x + w / 2) + '" y="' + (y(t[1]) - 14) + '" text-anchor="middle" fill="#fff" font-size="14" class="n">' + fmt(t[1]) + '</text><text x="' + (x + w / 2) + '" y="' + (y(t[1]) - 3) + '" text-anchor="middle" fill="#8fdcea" font-size="10">' + t[2] + '코일</text>';
+      s += '<text x="' + (x + w / 2) + '" y="' + (H - 18) + '" text-anchor="middle" fill="#b8e9f2" font-size="12">' + t[0] + '</text>';
+    });
+    $('thick').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="재고 두께 구간별 분포">' + s + '</svg>';
+  })();
+
+  // ───────── 미출고 번다운 ─────────
+  (function () {
+    var W = 640, H = 330, L = 48, R = 20, T = 22, B = 44, days = 9, STOCK = 1387, mx = 1500, s = '';
+    var x = function (d) { return L + d / days * (W - L - R); }, y = function (v) { return T + (1 - v / mx) * (H - T - B); };
+    [0, 500, 1000, 1500].forEach(function (g) { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#4df3ff" stroke-opacity=".1"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>'; });
+    for (var d = 0; d <= days; d++) s += '<text x="' + x(d) + '" y="' + (H - 12) + '" text-anchor="middle" fill="#8fdcea" font-size="11">' + (d === 0 ? '오늘' : '+' + d + '일') + '</text>';
+    [[290, AM, '오늘 속도'], [191, CY, '30일 평균']].forEach(function (S, k) {
+      var zero = STOCK / S[0], pts = [], dd;
+      for (dd = 0; dd <= Math.min(days, Math.floor(zero)); dd++) pts.push(x(dd).toFixed(1) + ',' + y(STOCK - S[0] * dd).toFixed(1));
+      if (zero <= days) pts.push(x(zero).toFixed(1) + ',' + y(0).toFixed(1));
+      s += '<polygon points="' + x(0) + ',' + y(0) + ' ' + pts.join(' ') + ' ' + pts[pts.length - 1].split(',')[0] + ',' + y(0) + '" fill="' + S[1] + '" fill-opacity=".08"/>';
+      s += '<polyline class="ln" style="--len:800;filter:drop-shadow(0 0 5px ' + S[1] + ')" points="' + pts.join(' ') + '" fill="none" stroke="' + S[1] + '" stroke-width="3" stroke-linejoin="round"/>';
+      s += '<circle data-tip="' + S[2] + ' ' + S[0] + ' t/일\n미출고 소진 약 ' + zero.toFixed(1) + '영업일 뒤" cx="' + x(zero) + '" cy="' + y(0) + '" r="6" fill="#02060d" stroke="' + S[1] + '" stroke-width="2.5"/>';
+      s += '<text x="' + (x(zero) + 12) + '" y="' + (y(0) - 8) + '" fill="' + S[1] + '" font-size="14" class="n">' + zero.toFixed(1) + '일 뒤 0</text>';
+    });
+    s += '<circle cx="' + x(0) + '" cy="' + y(STOCK) + '" r="5" fill="#fff"/><text x="' + (x(0) + 10) + '" y="' + (y(STOCK) - 8) + '" fill="#fff" font-size="15" class="n">1,387 t</text>';
+    $('burn').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="미출고 번다운 차트">' + s + '</svg>';
+  })();
+
+  // ───────── 재고 소진 시나리오 ─────────
+  (function () {
+    var W = 640, H = 330, L = 52, R = 20, T = 22, B = 44, mx = 4500, daysMax = 60, s = '';
+    var x = function (d) { return L + d / daysMax * (W - L - R); }, y = function (v) { return T + (1 - v / mx) * (H - T - B); };
+    [0, 1500, 3000, 4500].forEach(function (g) { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#4df3ff" stroke-opacity=".1"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g.toLocaleString() + '</text>'; });
+    [0, 10, 20, 30, 40, 50, 60].forEach(function (d) { s += '<text x="' + x(d) + '" y="' + (H - 12) + '" text-anchor="middle" fill="#8fdcea" font-size="11">' + (d === 0 ? '오늘' : '+' + d + '일') + '</text>'; });
+    var perDay = 3635 / 30, net = 592 / 30;
+    var a = [], b = [];
+    for (var d = 0; d <= daysMax; d += 2) { a.push(x(d).toFixed(1) + ',' + y(Math.max(0, TOTAL_INV - perDay * d)).toFixed(1)); b.push(x(d).toFixed(1) + ',' + y(TOTAL_INV - net * d).toFixed(1)); }
+    var z = TOTAL_INV / perDay;
+    s += '<polyline class="ln" style="--len:900" points="' + a.join(' ') + '" fill="none" stroke="' + RD + '" stroke-width="3" stroke-dasharray="7 5"/>';
+    s += '<polyline class="ln" style="--len:900" points="' + b.join(' ') + '" fill="none" stroke="' + TL + '" stroke-width="3"/>';
+    s += '<circle data-tip="입고가 완전히 끊기면\n약 ' + z.toFixed(0) + '일 뒤 재고 0" cx="' + x(z) + '" cy="' + y(0) + '" r="6" fill="#02060d" stroke="' + RD + '" stroke-width="2.5"/>';
+    s += '<text x="' + (x(z) + 14) + '" y="' + (y(0) - 12) + '" fill="' + RD + '" font-size="13" class="n">입고 중단 시 약 ' + z.toFixed(0) + '일</text>';
+    s += '<text x="' + (W - R - 4) + '" y="' + (y(TOTAL_INV - net * daysMax) + 26) + '" text-anchor="end" fill="' + TL + '" font-size="13" class="n">현재 속도 유지: 60일 뒤 ' + fmt(TOTAL_INV - net * daysMax) + ' t</text>';
+    s += '<circle cx="' + x(0) + '" cy="' + y(TOTAL_INV) + '" r="5" fill="#fff"/>';
+    $('deplete').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="재고 소진 시나리오">' + s + '</svg><div class="leg"><span><i style="background:#2fd4a8"></i>지금 입출고 속도 유지(−19.7 t/일)</span><span><i style="background:#ff5d6c"></i>입고 중단·출고만 계속(−121 t/일)</span></div>';
+  })();
+
+  // ───────── 인사이트 ─────────
+  var INS = [
+    ['RISK', RD, '장기재고가 절반을 넘었습니다', '2,244 t', '보관 90일 초과 223코일, 전체 재고의 54%입니다. 대한강재 평균 보관은 230일입니다.'],
+    ['CONCENTRATION', AM, '한 거래처에 집중되어 있습니다', '64% · 68% · 31%', '대한강재가 30일 출고의 64%, 재고의 68%, 미수금의 31%를 차지합니다.'],
+    ['BALANCE', TL, '재고가 천천히 줄고 있습니다', '−592 t', '최근 30일 입고 3,044 t, 출고 3,635 t. 지금 속도라면 재고가 하루 약 20 t씩 줄어듭니다.'],
+    ['FORECAST', CY, '출고 대기는 며칠이면 비워질까요', '약 4.8일', '미출고 160건 1,387 t를 오늘 출고 속도(290 t)로 나눈 값입니다. 30일 평균 속도면 약 7.3영업일입니다.'],
+    ['PEAK', AM, '오늘 출고가 최근 14일 최대', '290 t', '오늘 31건은 최근 14일 중 가장 많고, 입고 24건도 9/29 다음으로 많습니다.'],
+    ['PATTERN', CY, '연휴 뒤 입고가 몰렸습니다', '41건 · 413 t', '9/24~27 공백 후 9/28~29 이틀에 입고가 집중됐습니다. 연휴 전후 작업 계획에 참고하세요.'],
+    ['WEEKDAY', AM, '출고는 화·목, 입고는 월·금', '2,560 t', '최근 90일 출고는 화요일(2,560 t)과 목요일(2,527 t)이 가장 많고, 입고는 금요일(1,968 t)과 월요일(1,893 t)에 몰립니다.'],
+    ['MIX', CY, '얇은 코일이 재고의 대부분', '0.7~0.9mm 37%', '두께 0.9mm 이하가 재고의 약 70%입니다. 슬리팅·레벨링 설비 배정과 칼날 교체 계획에 참고할 수 있습니다.']
+  ];
+  $('insights').innerHTML = INS.map(function (i) { return '<div class="ins"><span style="font-size:11px;letter-spacing:1.5px;color:' + i[1] + ';font-weight:700">' + i[0] + '</span><span style="font-size:16px;font-weight:700">' + i[2] + '</span><span class="num" style="font-size:32px;line-height:1.05;color:' + i[1] + '">' + i[3] + '</span><span style="font-size:13px;color:#b8e9f2">' + i[4] + '</span></div>'; }).join('');
+
+  // ───────── 집중도 / 미수 / 라인 ─────────
+  $('conc').innerHTML = [['30일 출고', 64, AM], ['현재 재고', 68, RD], ['미수금', 31, CY]].map(function (c) { return '<div><div style="display:flex;justify-content:space-between;font-size:13px"><span>' + c[0] + '</span><span class="num" style="font-size:17px;color:' + c[2] + '">' + c[1] + '%</span></div><div style="height:12px;background:rgba(77,243,255,.1);border-radius:2px;margin-top:3px"><div style="height:12px;width:' + c[1] + '%;background:' + c[2] + ';box-shadow:0 0 10px ' + c[2] + ';border-radius:2px"></div></div></div>'; }).join('');
+  $('recv').innerHTML = RECV.map(function (r) { return '<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="width:140px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + r[0] + '</span><div style="flex:1;height:10px;background:rgba(255,93,108,.12);border-radius:2px"><div style="height:10px;width:' + Math.round(r[1] / 9.82 * 100) + '%;background:#ff5d6c;box-shadow:0 0 8px rgba(255,93,108,.6);border-radius:2px"></div></div><span class="num" style="width:54px;flex:none;text-align:right;font-size:15px">' + r[1].toFixed(1) + '억</span></div>'; }).join('');
+  $('recvNote').textContent = 'TOP 5가 전체 미수의 약 ' + Math.round(RECV.reduce(function (a, b) { return a + b[1]; }, 0) / 31.73 * 100) + '%';
+  var Cl = 2 * Math.PI * 38;
+  $('lines').innerHTML = [['레벨러', 54, CY, 'EPH2425C02 · 15:48 완료'], ['슬리터1', 38, AM, '마감 +12분 위험'], ['슬리터2', 71, CY, '16:30 완료 예측']].map(function (l) { return '<div style="display:flex;flex-direction:column;align-items:center;gap:3px"><svg width="92" height="92" viewBox="0 0 92 92" role="img" aria-label="' + l[0] + ' ' + l[1] + '퍼센트"><circle cx="46" cy="46" r="38" fill="none" stroke="rgba(77,243,255,.12)" stroke-width="8"/><circle cx="46" cy="46" r="38" fill="none" stroke="' + l[2] + '" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + (l[1] / 100 * Cl).toFixed(1) + ' ' + Cl.toFixed(1) + '" transform="rotate(-90 46 46)"/><text x="46" y="53" text-anchor="middle" fill="#fff" font-size="22" class="n">' + l[1] + '%</text></svg><span style="font-size:13px;font-weight:700">' + l[0] + '</span><span style="font-size:11px;color:var(--mut)">' + l[3] + '</span></div>'; }).join('');
+  // 시간대별 가동 히트스트립 (샘플)
+  (function () {
+    var rows = [['레벨러', [.2,.9,.95,.9,.1,.85,.95,.9,.8,.4]], ['슬리터1', [.1,.7,.8,.85,.2,.6,.75,.5,.3,.0]], ['슬리터2', [.3,.95,.9,.95,.15,.9,.95,.95,.85,.5]]];
+    var h = '<div style="font-size:11px;color:var(--mut);margin-bottom:4px">시간대별 가동률 (08~17시)</div>';
+    rows.forEach(function (r) { h += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="width:48px;font-size:11px;color:#b8e9f2">' + r[0] + '</span><div style="flex:1;display:grid;grid-template-columns:repeat(10,1fr);gap:3px">' + r[1].map(function (v, i) { return '<div data-tip="' + r[0] + ' ' + (8 + i) + '시 가동률 ' + Math.round(v * 100) + '% (샘플)" style="height:16px;background:' + (v < 0.25 ? AM : CY) + ';opacity:' + (0.15 + v * 0.85).toFixed(2) + ';border-radius:2px"></div>'; }).join('') + '</div></div>'; });
+    h += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#5f9aa8;padding-left:54px"><span>08</span><span>12 (점심)</span><span>17</span></div>';
+    $('hours').innerHTML = h;
+  })();
+
+  // ───────── 불량 유형 / 절단길이 오차 (SAMPLE) ─────────
+  (function () {
+    var DEF = [['스크래치', 14, AM], ['에지 버(BURR)', 9, RD], ['찍힘', 6, AM], ['오염·이물', 4, CY], ['기타', 3, '#8bd3ff']], mx = 16, s = '', W = 640, rowH = 40;
+    DEF.forEach(function (d, i) {
+      var y = 8 + i * rowH, w = d[1] / mx * (W - 190);
+      s += '<text x="120" y="' + (y + 20) + '" text-anchor="end" fill="#d9f7ff" font-size="13">' + d[0] + '</text><rect class="bar" data-tip="' + d[0] + ' ' + d[1] + '건 (샘플)" x="130" y="' + y + '" width="' + w + '" height="24" fill="' + d[2] + '" fill-opacity=".8" style="transform-origin:left center;animation-delay:' + i * 80 + 'ms"/><text x="' + (136 + w) + '" y="' + (y + 19) + '" fill="#fff" font-size="16" class="n">' + d[1] + '건</text>';
+    });
+    $('defects').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + (DEF.length * rowH + 14) + '" role="img" aria-label="불량 유형별 건수 샘플">' + s + '</svg>';
+  })();
+  (function () {
+    var bins = [-1.0,-0.8,-0.6,-0.4,-0.2,0,0.2,0.4,0.6,0.8,1.0], vals = [1,2,5,22,78,140,81,24,6,2,1], W = 640, H = 230, L = 36, R = 10, T = 14, B = 34, n = vals.length, bw = (W - L - R) / n, mx = 150, s = '';
+    var y = function (v) { return T + (1 - v / mx) * (H - T - B); };
+    [0, 50, 100, 150].forEach(function (g) { s += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#4df3ff" stroke-opacity=".1"/><text x="' + (L - 5) + '" y="' + (y(g) + 4) + '" text-anchor="end" fill="#5f9aa8" font-size="10">' + g + '</text>'; });
+    vals.forEach(function (v, i) {
+      var x = L + i * bw + bw * 0.1, w = bw * 0.8, out = Math.abs(bins[i]) > 0.5;
+      s += '<rect class="bar" data-tip="오차 ' + bins[i] + 'mm 부근\n' + v + '장 (샘플)" x="' + x + '" y="' + y(v) + '" width="' + w + '" height="' + (y(0) - y(v)) + '" fill="' + (out ? RD : CY) + '" fill-opacity=".8" style="animation-delay:' + i * 50 + 'ms"/><text x="' + (x + w / 2) + '" y="' + (H - 14) + '" text-anchor="middle" fill="#8fdcea" font-size="11">' + (bins[i] > 0 ? '+' : '') + bins[i] + '</text>';
+    });
+    s += '<text x="' + (W / 2) + '" y="' + (H - 1) + '" text-anchor="middle" fill="#5f9aa8" font-size="10">목표 대비 절단길이 오차 (mm) · 빨강은 허용 범위 밖</text>';
+    $('lenhist').innerHTML = '<svg width="100%" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="절단길이 오차 분포 샘플">' + s + '</svg>';
+  })();
+
+  // ───────── 챗봇 (시연용 준비 답변) ─────────
+  var QA = [
+    ['대한강재 재고가 왜 이렇게 많아?', '대한강재는 재고 273코일, 2,823 t로 전체의 68%이고 평균 230일째 보관 중입니다. 90일 초과분이 1,581 t로 대부분이라 출고 일정 협의가 필요해 보여요. 같은 거래처 미수금이 9.8억이니 협의 때 함께 확인하시길 권합니다.'],
+    ['오늘 입고 코일은 어디에 두지?', '오늘 입고 24건 266 t 중 대한강재 물량이 가장 많습니다. 창고 3D 뷰어에서 거래처별 보관 구역의 빈자리를 확인해 배치하는 것을 권합니다. (시연용 답변: 실제 배치 추천은 창고 3D 뷰어 연동 후 제공)'],
+    ['이번 주 출고 예상은?', '최근 90일 기준 화·목요일에 출고가 가장 많습니다. 미출고 160건 1,387 t가 쌓여 있어 오늘 속도(290 t/일)면 약 4.8일, 30일 평균 속도(191 t/영업일)면 약 7.3영업일이 걸립니다.'],
+    ['장기재고 영업 대상 뽑아줘', '90일 초과 재고가 큰 곳은 대한강재(1,581 t), 유창(128 t), 태경스틸(98 t) 순입니다. 대한강재는 출고 비중이 커서 영업보다 출고 협의가 우선이고, 유창·태경스틸 물량은 가공 제안 대상으로 적합합니다.']
+  ];
+  var log = $('chatlog');
+  function addMsg(t, who) { var d = document.createElement('div'); d.className = 'msg ' + who; d.textContent = t; log.appendChild(d); log.scrollTop = log.scrollHeight; return d; }
+  function ask(q, ans) {
+    addMsg(q, 'u');
+    var m = addMsg('', 'a'), i = 0;
+    var timer = setInterval(function () { i += 3; m.textContent = ans.slice(0, i); log.scrollTop = log.scrollHeight; if (i >= ans.length) clearInterval(timer); }, 22);
+  }
+  ask(QA[0][0], QA[0][1]);
+  $('chips').innerHTML = QA.slice(1).map(function (q, i) { return '<button class="chip" data-i="' + (i + 1) + '">' + q[0] + '</button>'; }).join('');
+  [].forEach.call($('chips').querySelectorAll('button'), function (b) { b.onclick = function () { var q = QA[+b.getAttribute('data-i')]; ask(q[0], q[1]); }; });
+  $('chatform').onsubmit = function (e) {
+    e.preventDefault(); var v = $('ask').value.trim(); if (!v) return; $('ask').value = '';
+    var hit = QA.filter(function (q) { return v.indexOf('재고') > -1 && q[0].indexOf('재고') > -1 || v.indexOf('출고') > -1 && q[0].indexOf('출고') > -1 || v.indexOf('입고') > -1 && q[0].indexOf('입고') > -1 || v.indexOf('영업') > -1 && q[0].indexOf('영업') > -1; })[0];
+    ask(v, hit ? hit[1] : '이 화면은 시연용이라 준비된 질문에만 답합니다. 위의 질문 칩을 눌러 보세요. 실제 연결 시에는 그린ERP 전체 데이터를 조회해 자유롭게 답합니다.');
+  };
+})();
+</script>
+</body>
+</html>
