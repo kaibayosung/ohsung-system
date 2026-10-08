@@ -28,6 +28,7 @@
 //         ※ 배포 직후 오늘 건은 서명 형식이 바뀌어 1회 "변경"으로 잡혀 같은 값으로 UPDATE 됨(중복 등록 아님).
 //     (c) 단가가 아직 미러에 없는 경우(null) 기존 대시보드 단가를 null로 덮어쓰지 않도록 COALESCE 사용.
 //     (d) DB 접속 정보를 환경변수(LEVELER_DB_HOST/PORT/USER/PASS/NAME)로 읽도록 변경.
+// v11 [배포 버전 17, 2026-10-08] 비밀번호 평문 폴백 제거 — LEVELER_DB_PASS 시크릿이 없으면 명확한 오류를 낸다.
 
 import forge from "npm:node-forge@1.3.1";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -37,8 +38,7 @@ const GREENP_BASE = "http://greenpweb.co.kr";
 const DASHBOARD_BASE = "http://osungsteel.servehttp.com:38080";
 
 // 레벨러/대시보드 실제 MariaDB — dashboard-price-backfill과 동일한 접속 정보.
-// 비밀번호는 Supabase Edge Function 시크릿 LEVELER_DB_PASS 로 옮기는 것이 원칙.
-// (임시: 시크릿이 아직 없으면 기존 값으로 동작하도록 폴백이 남아 있음 — 시크릿 설정 후 제거)
+// 비밀번호는 Supabase Edge Function 시크릿 LEVELER_DB_PASS 에서만 읽는다(코드에 평문 금지).
 const LEVELER_DB_HOST = Deno.env.get("LEVELER_DB_HOST") || "osungsteel.servehttp.com";
 const LEVELER_DB_PORT = parseInt(Deno.env.get("LEVELER_DB_PORT") || "33306", 10);
 const LEVELER_DB_USER = Deno.env.get("LEVELER_DB_USER") || "ohsung";
@@ -204,6 +204,7 @@ async function fetchBoardStatusByIds(mysql: MysqlClient, ids: number[]): Promise
 }
 
 function connectMysql(): Promise<MysqlClient> {
+  if (!LEVELER_DB_PASS) throw new Error("LEVELER_DB_PASS 시크릿이 설정되어 있지 않습니다.");
   return new MysqlClient().connect({
     hostname: LEVELER_DB_HOST,
     port: LEVELER_DB_PORT,
