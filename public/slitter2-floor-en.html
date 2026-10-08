@@ -47,9 +47,27 @@ section[hidden]{display:none}
 .k span{font-size:16px;color:var(--sb)}
 .k b{display:block;font-size:36px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
 .k small{font-size:14px;color:var(--sb)}
+
+.dbar{display:flex;gap:8px;align-items:center}
+.dbar>button{flex:none;height:48px;min-width:48px;padding:0 14px;font-size:19px;font-weight:700}
+.dbar>button:disabled{opacity:.35;cursor:default}
+.dbar>button.on,#stage .dbar>button.on{background:var(--tx);border-color:var(--tx);color:#fff}
+#pdate{height:48px;font:inherit;font-size:20px;font-weight:700;border:2px solid var(--ln);border-radius:14px;padding:0 12px;color:var(--tx);background:#fff}
+.dstrip{display:flex;gap:6px;overflow-x:auto;flex:1;min-width:0;position:relative;padding:2px 0 6px;scrollbar-width:thin}
+.dstrip button{flex:none;height:48px;padding:0 12px;font-size:16px;font-weight:700;line-height:1.1;text-align:center}
+.dstrip button small{display:block;font-size:12px;font-weight:500;color:var(--sb)}
+.dstrip button.on,#stage .dstrip button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+#stage .dstrip button.on small{color:#dbe5ff}
+.kp.s4{grid-template-columns:repeat(4,1fr)}
+.kp.s4 .k{padding:6px 14px}.kp.s4 .k b{font-size:28px}
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--ln);border-radius:16px;font-size:20px}
+.empty b{font-size:26px}.empty span{color:var(--sb)}
+tr.dim td{color:var(--sb);background:#fafbfd}
+table.pt{font-size:17px}table.pt th{font-size:14px;padding:9px 6px}table.pt td{padding:0 6px;height:52px}td.cn{font-size:15px}td.cu{font-size:16px;color:var(--sb);max-width:150px;overflow:hidden;text-overflow:ellipsis}table.pt .smp{font-size:11px;margin-left:3px}
+.note2{font-size:14px;color:var(--sb)}
 .chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .chips button{padding:0 18px;height:48px;font-size:19px;font-weight:700}
-.chips button.on{background:var(--tx);border-color:var(--tx);color:#fff}
+#stage .chips button.on{background:var(--tx);border-color:var(--tx);color:#fff}
 .tw{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;border:2px solid var(--ln);border-radius:16px}
 table{width:100%;border-collapse:collapse;font-size:19px}
 th{position:sticky;top:0;background:var(--pn);text-align:left;font-size:15px;color:var(--sb);font-weight:700;padding:9px 9px;border-bottom:2px solid var(--ln);z-index:1;white-space:nowrap}
@@ -164,7 +182,7 @@ function fx(v,d){return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toFixed(d)
 function renderShell(){
  $('h1').textContent=t('슬리터2 현장 화면 · 가로 태블릿','Slitter 2 Floor Screen · Landscape Tablet');
  $('h1s').textContent=t('왼쪽 메뉴로 이동합니다 · 작업 목록 행이나 지난 작업을 눌러 상세로 들어가 보세요','Use the left menu · tap a row in the job list or a past job to drill in');
- $('foot').textContent=t('이 화면은 시안입니다. 작업 목록 14건 중 7건과 현재 코일의 라인 흐름 값, 오늘 완료 코일 2건의 소요시간은 실제 값이고, 그래프 곡선과 상세 수치는 샘플입니다. 속도 m/min·길이 m는 실데이터로 확인했습니다.','This is a design preview. 7 of the 14 jobs, the current coil’s line-flow values and the durations of today’s two finished coils are real; curves and detail figures are samples. Speed m/min and length m verified on real data.');
+ $('foot').textContent=t('이 화면은 시안입니다. 작업 목록·시간·규격·중량은 실제 ERP 값이고, 정지·판정·그래프 곡선은 샘플입니다. 속도 m/min·길이 m는 실데이터로 확인했습니다.','Design preview. Job lists, times, specs and weights are real ERP values; stops, results and curves are samples. Speed m/min and length m are verified on real data.');
  $('nav').innerHTML='<div class="logo">'+t('슬리터2','Slitter 2')+'<small>'+t('현장 화면','Floor screen')+'</small></div>'+
  '<button type="button" data-p="list" class="on">'+t('작업 목록','Job list')+'<small>'+t('오늘 14건','14 today')+'</small></button>'+
  '<button type="button" data-p="now"><span><span class="dot"></span>'+t('현재 작업','Current job')+'</span><small>0.48×4 · 41%</small></button>'+
@@ -202,7 +220,7 @@ function renderList(){
   return '<tr class="go'+(j.st==='run'?' cur':'')+'" data-i="'+x.i+'"><td>'+(x.i+1)+'</td><td>'+pl+'</td><td>'+CO+'</td><td>'+j.coil+(j.s?'<span class="smp">'+SMP+'</span>':'')+'</td><td>'+j.spec+'</td><td>'+j.kg.toLocaleString()+' kg</td><td>'+j.cut+'</td><td>'+tm+'</td><td class="chev">'+(j.st==='wait'?'':'›')+'</td></tr>'}).join('')+'</table></div>';
  $('pgList').innerHTML=h;
  document.querySelectorAll('#jchips button').forEach(function(b){b.onclick=function(){jf=b.dataset.f;renderList()}});
- document.querySelectorAll('#pgList tr.go').forEach(function(r){r.onclick=function(){var j=JOBS[+r.dataset.i];if(j.st==='run')go('now');else if(j.st==='done')openDetail(j.coil==='2632001021'?0:(j.coil==='2612102121'?1:3))}});
+ document.querySelectorAll('#pgList tr.go').forEach(function(r){r.onclick=function(){var j=JOBS[+r.dataset.i];if(j.st==='run')go('now');else if(j.st==='done'){var ix=pi(j.coil,'10-08');openDetail(ix>=0&&PAST[ix].dur?ix:pi('2632001021','10-08'))}}});
 }
 
 /* ---------- 현재 작업 ---------- */
@@ -274,26 +292,81 @@ function chart(){
  ch=new Chart($('cv'),{type:'line',data:{labels:xs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{title:{display:true,text:t('코일 길이 (m)','Coil length (m)'),color:tick,font:{size:14}},ticks:{maxTicksLimit:8,color:tick,font:{size:14}},grid:{display:false}},y:{min:m.min,max:m.max,title:{display:true,text:m.u,color:tick,font:{size:14}},ticks:{color:tick,font:{size:14},maxTicksLimit:4},grid:{color:grid}}}}});
 }
 
-/* ---------- 지난 작업 ---------- */
-var PAST=[
- {d:'10/08',coil:'2632001021',spec:'0.48×4',thk:0.48,w:1219,kg:10860,dur:92,avg:90,cuts:[[97,12],[48,1]],start:'11:54',prevEnd:'11:49',len:1469,tmax:14,stops:[[4,39]],dev:null,j:'wn',real:1,rank:41,rows:2272},
- {d:'10/08',coil:'2612102121',spec:'0.48×4',thk:0.48,w:1219,kg:10780,dur:76,avg:90,cuts:[[97,12],[48,1]],start:'13:27',prevEnd:'13:26',len:2363,tmax:11,stops:[],dev:null,j:'ok',real:1,rank:9},
- {d:'10/07',sample:1,coil:'SMP-0731',spec:'0.75×4',thk:0.75,w:1219,kg:10480,dur:125,avg:107,cuts:[[100,11],[80,1],[35,1]],start:'09:10',prevEnd:'08:52',len:1180,tmax:31,stops:[[24,26],[41,42]],dev:[27,31,[8,2,2,26]],j:'wn',rank:79},
- {d:'10/07',sample:1,coil:'SMP-0732',spec:'1.15×1200',thk:1.15,w:1200,kg:11150,dur:108,avg:112,cuts:[[600,2]],start:'13:05',prevEnd:'12:41',len:960,tmax:16,stops:[],dev:null,sc:[20,150,170],j:'ok',rank:30},
- {d:'10/06',sample:1,coil:'SMP-0627',spec:'0.40×4',thk:0.40,w:1219,kg:10790,dur:98,avg:96,cuts:[[97,12],[48,1]],start:'08:40',prevEnd:'08:22',len:1760,tmax:13,stops:[[33,33]],dev:null,j:'ok',rank:52},
- {d:'10/06',sample:1,coil:'SMP-0628',spec:'1.15×4',thk:1.15,w:1219,kg:10581,dur:131,avg:112,cuts:[[57,20],[35,2]],start:'10:45',prevEnd:'10:30',len:1010,tmax:27,stops:[[15,17]],dev:[44,50,[2,3,4,18]],j:'wn',rank:76},
- {d:'10/02',sample:1,coil:'SMP-0201',spec:'0.48×4',thk:0.48,w:1219,kg:10986,dur:88,avg:90,cuts:[[97,12],[48,1]],start:'09:00',prevEnd:'08:41',len:1480,tmax:12,stops:[],dev:null,j:'ok',rank:35},
- {d:'10/02',sample:1,coil:'SMP-0202',spec:'0.75×4',thk:0.75,w:1219,kg:10300,dur:104,avg:107,cuts:[[100,11],[80,1],[35,1]],start:'11:20',prevEnd:'10:55',len:1170,tmax:15,stops:[],dev:null,j:'ok',rank:44}
-];
-var pf='all';
+/* ---------- 지난 작업 (날짜별 전체) ---------- */
+var CUN={'대한강재':'Daehan Steel','유창':'Yuchang','정현철강':'Jeonghyeon Steel','미래이엔아이':'Mirae ENI','미래이엔제이':'Mirae ENJ','태경스틸':'Taekyung Steel','삼봉스틸':'Sambong Steel','대한에스엔디':'Daehan SND','강진밴드산업':'Gangjin Band','대광기업':'Daekwang','기보스틸':'Kibo Steel'};
+function cuN(p){return LANG==='en'?(CUN[p.cu]||p.cu):p.cu}
+function tmin(s){if(!s)return null;var a=s.split(':');return +a[0]*60+ +a[1]}
+function hsh(s){var h=7,i;for(i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))%9973;return h}
+var WAITS={'10-08':20,'10-07':1,'10-01':4,'09-30':1,'09-29':2,'09-23':2,'09-22':1,'09-18':1,'09-17':1,'09-16':3,'09-01':4,'08-31':4,'08-28':3};
+var PAST=[];
+(function(){
+ var raw="10-08|대한강재|2632500611|0.48x4|10700|97=12,48=1|14:44|15:09\n10-08|대한강재|2612102121|0.48x4|10780|97=12,48=1|13:27|14:43\n10-08|대한강재|2632001021|0.48x4|10860|97=12,48=1|11:54|13:26\n10-08|대한강재|2632500121|0.48x4|10810|97=12,48=1|10:50|11:30\n10-07|대한강재|J9R831Q|0.63x4|11230|100=9,150=1,165=1|15:24|15:54\n10-07|대한강재|J9R831P|0.63x4|11110|100=9,150=1,165=1|14:35|15:24\n10-07|대한강재|2631903221|0.75x4|10940|203=5,200=1|13:49|14:33\n10-07|정현철강|800411|0.77x4|10710|110=7,99=4,49=1|11:49|13:18\n10-07|정현철강|801511|0.77x4|11010|192=5,253=1|10:36|11:24\n10-07|미래이엔아이|T162204279901|0.77x4|11100|237=3,143=1,153=1,203=1|08:24|10:05\n10-06|태경스틸|T162202108301|1.15x4|10510|115.5=6,108=1,92=1,81=1,80=1,54=3|16:58|17:14\n10-06|태경스틸|T162202179601|0.95x4|10750|116=3,98=2,79=5,75=2,63=2|16:10|16:25\n10-06|정현철강|T261110001001|0.75x4|9470|162=4,182=2,202.5=1|15:21|15:39\n10-06|정현철강|T261110000502|0.75x4|10480|162=5,135=3|14:18|15:04\n10-06|대한강재|T262205128702|0.40x4|10460|75=16|10:21|10:21\n10-06|대한강재|T262205133002|0.40x4|10570|75=16|10:21|10:21\n10-06|대한강재|T262205128701|0.40x4|10710|75=16|10:21|10:21\n10-06|대한강재|T262205133001|0.40x4|10950|75=16|09:45|10:19\n10-02|대한강재|T262205133002|0.40x4|10570|75=16|16:59|17:19\n10-02|유창|H3E262039121|0.75x4|9775|160=6,122=1,132=1|15:58|16:24\n10-02|유창|H3E262039131|0.75x4|9765|160=6,122=1,132=1|15:36|15:57\n10-02|유창|H3E262050861|0.75x4|9725|160=6,122=1,132=1|15:24|15:34\n10-02|유창|H3D263035161|0.75x4|9825|160=6,122=1,132=1|14:43|15:09\n10-02|유창|H3E262050871|0.75x4|9770|160=6,122=1,132=1|14:23|14:42\n10-02|유창|59A2012A|0.95x1200|8790|135=7,126=2|11:51|13:17\n10-02|유창|5CA1621A|0.48x1210|11660|100=12|10:37|10:53\n10-02|대한강재|T262205133001|0.40x4|10950|75=16|10:21|10:22\n10-02|유창|5CA1803A|0.48x1210|11690|100=12|09:47|10:15\n10-02|대한강재|T262205128701|0.40x4|10710|75=16|09:09|09:45\n10-02|유창|5CA1607A|0.48x1210|11680|100=12|09:09|09:34\n10-02|대한강재|T262205128702|0.40x4|10460|75=16|08:48|09:09\n10-02|유창|5CA1767A|0.48x1210|11580|100=12|08:38|09:05\n10-01|대한강재|T262205557601|0.40x4|10960|77=15,60=1||18:07\n10-01|유창|H3D262054511|1.15x4|9785|57=20,34=2|09:25|09:37\n09-30|유창|H3D262047171|1.15x4|9800|57=20,34=2|16:47|17:13\n09-30|유창|H3E262038351|1.15x4|9790|57=20,34=2|15:26|16:47\n09-30|유창|H3E262050912|1.15x4|9730|57=20,34=2|14:57|15:19\n09-28|대한강재|T262205557101|0.40x4|10910|75=16|16:41|17:16\n09-28|대한강재|T262205129001|0.40x4|10940|75=16|15:54|16:18\n09-28|대한강재|T262205557602|0.40x4|10980|75=16|15:03|15:54\n09-28|대한강재|T262205557303|0.40x4|9490|75=16|14:23|15:02\n09-28|대한강재|T262204961902|0.40x4|10720|75=16|13:58|14:23\n09-28|대한강재|T262205128502|0.40x4|10810|75=16|13:04|13:45\n09-28|유창|5AA3911B|0.48x1210|9210|88=13,53=1|10:24|11:05\n09-28|유창|59A5217B|0.48x1210|8530|262=4,77=2|09:02|09:42\n09-22|정현철강|T261109609601|0.75x4|10600|162=5,217=1,187=1|17:04|17:16\n09-22|정현철강|T261109620901|0.75x4|10510|162=5,217=1,187=1|16:46|17:03\n09-22|정현철강|T261110000401|0.75x4|10620|162=5,217=1,187=1|16:30|16:45\n09-22|정현철강|T261110035202|0.75x4|10690|162=5,217=1,187=1|16:11|16:29\n09-22|유창|H3D263031792|0.75x4|10055|185=5,143=2|15:45|15:45\n09-22|유창|H3D263031572|0.75x4|10055|185=5,143=2|10:51|11:14\n09-22|유창|H3D263033890|0.75x4|10055|185=5,143=2|10:17|10:51\n09-22|유창|H3D262030921|1.9x4|9810|242=5|08:20|09:22\n09-22|유창|H3D262065752|1.9x4|9435|242=5|09:22|09:22\n09-21|대한강재|T262203861701|0.40x4|10730|75=16|13:35|13:59\n09-21|대한강재|T262205128202|0.40x4|10590|75=16|11:55|13:31\n09-21|대한강재|T262205128501|0.40x4|10720|75=16|11:11|11:48\n09-21|대한강재|T262204961901|0.40x4|10770|75=16|11:10|11:10\n09-21|대한강재|T262205128401|0.40x4|10690|75=16|10:36|11:09\n09-18|정현철강|T262206025802|0.75x4|10650|57.9=21|16:23|16:58\n09-18|정현철강|T261110035201|0.75x4|10650|162=4,213=2,140=1|14:52|15:14\n09-18|정현철강|T261110114402|0.75x4|10660|152=4,162=2,140=2|14:12|14:32\n09-18|정현철강|805011|0.75x4|10800|162=4,182=2,202.5=1|10:58|11:36\n09-18|정현철강|805021|0.75x4|10860|162=4,182=2,202.5=1|10:25|10:58\n09-18|강진밴드산업|CPG2682A|1.55x4|9240|92=5,132=1,354.5=1|08:37|10:04\n09-17|대한강재|2632501021|0.45x4|10700|160=3,203=3,64=1,60=1|14:26|15:46\n09-17|삼봉스틸|2631002421|0.77x4|10800|138=2,158=5,150=1|11:20|11:44\n09-17|삼봉스틸|2631003011|0.77x4|10780|138=2,158=5,150=1|10:34|11:19\n09-17|대한강재|2632501421|0.48x4|10740|97=12,48=1|09:17|09:53\n09-16|대한강재|2612102221|0.48x4|10760|97=12,48=1|16:18|16:52\n09-16|대한강재|2632501411|0.48x4|10730|97=12,48=1|15:54|16:17\n09-16|대한강재|2612804421|0.48x4|10920|97=12,48=1|15:10|15:34\n09-16|대한강재|25D2801111|0.48x4|10690|97=12,48=1|14:17|14:53\n09-16|미래이엔제이|T252217879502|0.45x4|10660|100=12||13:40\n09-16|미래이엔아이|62A0419B|0.35x4|5800|91=10,76=4|09:51|11:32\n09-16|유창|H3D262031622|1.15x4|10790|57=20,34=2|09:07|09:31\n09-16|유창|H3D262054502|1.15x4|9875|57=20,34=2|08:30|09:07\n09-16|대한강재|2612102111|0.48x4|10790|97=12,48=1|08:36|09:00\n09-14|유창|H3E262048002|1.15x4|9940|57=20,34=2|17:02|17:27\n09-14|유창|H3E262031621|1.15x4|10870|57=20,34=2|16:50|17:01\n09-14|대한강재|T262205128201|0.40x4|10870|75=16||16:23\n09-14|대한강재|T262205557401|0.40x4|10960|75=15,91=1|13:34|14:19\n09-14|대한강재|T262205128601|0.40x4|10920|75=15,91=1|12:57|13:33\n09-14|대한강재|T262203861702|0.40x4|10910|75=15,91=1|10:45|11:44\n09-14|대한강재|T262205557201|0.40x4|10950|75=15,91=1|09:59|10:41\n09-14|대한강재|T262205557202|0.40x4|10970|75=15,91=1|09:21|09:56\n09-10|삼봉스틸|303811|0.77x4|10720|150=3,165=3,178=1,90=1|15:21|15:38\n09-10|삼봉스틸|303821|0.77x4|10730|200=4,178=1,90=1,143=1|14:53|15:21\n09-10|대한에스엔디|T162204536901|1.45x4|10900|165=6,82=2,57=1|13:04|14:10\n09-10|대한강재|T162205116502|1.15x4|9770|57=20,35=2|11:58|11:58\n09-10|대한강재|T162204532002|1.15x4|9800|57=20,35=2|11:33|11:51\n09-10|대한강재|T162205197902|1.15x4|9960|57=20,35=2|10:15|10:45\n09-10|대한강재|T162203953402|1.15x4|9760|57=20,35=2|09:57|10:15\n09-10|대한강재|T162205121002|1.15x4|9780|57=20,35=2|09:07|09:56\n09-09|대한강재|ACG2609040044|0.75x4|10620|153=7,143=1|11:22|13:12\n09-09|미래이엔제이|T262201582001|0.75x4|10700|164=4,250=1,153=1,150=1|10:50|11:19\n09-09|대한강재|ACG2609040047|0.75x4|11280|165=6,225=1|10:00|10:26\n09-09|대한강재|ACG2609040052|0.75x4|11220|165=6,225=1|09:38|10:00\n09-09|대한강재|ACG2609040053|0.75x4|11300|165=6,225=1|08:51|09:37\n09-08|대광기업|5AA6308B|0.48x1210|10970|160=5,90=3,81=1,50=1|16:01|16:43\n09-08|대광기업|5AA6308A|0.48x1210|11330|178=1,160=4,90=2,50=4|13:57|15:30\n09-08|기보스틸|SPCC|1.6x4|9500|62=2,67=3,71=3,162=1,234=1,268=1||13:27\n09-08|삼봉스틸|804911|0.77x4|10800|165=5,143=2,104=1|10:48|11:24\n09-08|삼봉스틸|800611|0.77x4|10800|150=7,165=1|09:57|10:47\n09-08|정현철강|800621|0.75x4|10840|162=5,135=3|09:23|09:56\n09-08|미래이엔아이|T251122507102|0.75x4|8110|162=4,182=2,202.5=1|09:05|09:17\n09-04|미래이엔아이|T251122506801|0.95x4|10680|67=1,75=2,71=4,91=2,77=2,122=1,51=1,55=2,48=2|11:30|16:54\n09-04|대한에스엔디|T162204282702|0.60x4|10710|216=5,116=1|14:26|14:41\n09-03|정현철강|T262205954901|1.55x4|10350|234=5,44=1|16:23|17:25\n09-03|강진밴드산업|CPG6141B|1.95x4|9650|274=4|15:13|16:22\n09-03|정현철강|T262205981501|0.75x4|10670|200=6|13:51|14:52\n09-03|미래이엔제이|2631101731|0.5x1237|7050|137=9|11:25|13:16\n09-03|삼봉스틸|801521|0.77x4|10350|165=4,142.5=3,127=1|09:45|10:06\n09-03|삼봉스틸|804921|0.77x4|10760|165=4,142.5=3,127=1|08:51|09:43\n09-02|정현철강|2631401321|0.77x4|10880|162=5,135=3|16:47|17:03\n09-02|정현철강|2631401311|0.77x4|10860|162=5,135=3|16:28|16:46\n09-02|대한강재|2641000111|0.45x4|10940|110=11|11:36|11:59\n09-02|대한강재|2641101021|0.45x4|10940|110=11|10:44|11:35\n09-02|대한강재|162205648803|0.40x4|9260|75=16|09:15|10:05\n09-02|대한강재|162205708302|0.40x4|7240|75=16|08:49|09:14\n09-01|대한강재|H3D262054722|0.40x4|6170|75=16|16:15|17:20\n09-01|정현철강|2631306311|0.77x4|10860|224=4,162=1,157=1|15:29|16:08\n09-01|정현철강|2631306421|0.77x4|10640|152=4,170=2,140=1,125=1|14:57|15:27\n09-01|대한강재|2472606521|0.75x4|10830|200=2,178=3,150=1,128=1|14:17|14:42\n09-01|대한강재|2472601521|0.75x4|10870|200=6|14:03|14:03\n09-01|대한강재|25D3004111|0.48x4|10870|97=12,48=1|11:32|11:58\n09-01|대한강재|2612102321|0.48x4|10830|97=12,48=1|11:02|11:31\n09-01|대한강재|2632501611|0.48x4|10760|97=12,48=1|10:34|11:01\n09-01|대한강재|2632000921|0.48x4|10860|97=12,48=1|09:46|10:22\n09-01|대한강재|2632501311|0.48x4|10790|97=12,48=1|09:27|09:45\n08-31|대한강재|2612102311|0.48x4|10840|97=12,48=1|16:49|18:37\n08-31|대한강재|2632501311|0.48x4|10790|97=12,48=1|15:31|18:37\n08-31|대한강재|2632501321|0.48x4|10780|97=12,48=1|16:00|16:47\n08-31|유창|5AA3897A|0.48x1210|9800|112=8,200=1,100=1|14:18|14:47\n08-31|유창|5AA3910A|0.48x1210|9800|112=8,200=1,100=1|13:47|14:17\n08-31|유창|5AA3903A|0.48x1210|9740|112=8,200=1,100=1|13:08|13:28\n08-31|유창|5AA3915A|0.48x1210|9790|112=8,200=1,100=1|11:34|11:54\n08-31|유창|5AA3775A|0.48x1210|9170|112=8,200=1,100=1|10:47|11:27\n08-31|대한강재|CRD1518C|0.75x4|9150|165=6,225=1|10:05|10:17\n08-31|대한강재|CRD1910B|0.75x4|9000|165=6,225=1|09:37|09:55\n08-31|대한강재|2612102211|0.48x4|10800|97=12,48=1|08:23|09:13\n08-28|정현철강|EPH2425C01|0.50x4|4550|110=7,99=3,49=3||19:21\n08-28|대한강재|J8H8329|0.76x4|11050|131=5,156=2,248=1|16:06|17:11\n08-28|대한강재|J8H8325|0.76x4|11180|166=2,176=2,200=2,132=1|16:06|16:06\n08-28|대한에스엔디|EPE2643T01|1.45x4|8610|165=7,57=1|14:39|15:02\n08-28|대한에스엔디|FE3AKB|1.45x4|9510|165=7,57=1|14:04|14:39\n08-28|대한에스엔디|T162204565202|1.15x4|9910|86=7,124.5=4,109=1||14:01\n08-28|대한강재|CRD1519B|0.75x4|9110|180=6,130=1|11:11|11:26\n08-28|대한강재|CRE1700C|0.75x4|9180|180=6,130=1|10:37|11:10\n08-28|대한강재|CRE2314C|0.75x4|9220|180=6,130=1|10:22|10:36\n08-27|정현철강|2631306411|0.77x4|10640|162=5,135=3|13:51|14:14\n08-27|대한강재|H3D263027862|0.40x4|13130|75=16||13:23\n08-27|대한강재|H3D263026811|0.40x4|13140|75=16|10:09|11:12".split('\n'),grp={},keys={};
+ raw.forEach(function(ln){
+  var a=ln.split('|');if(a.length<8)return;
+  var sm=a[3].split('x'),thk=parseFloat(sm[0]),wt=+sm[1],cuts=[],sumW=0;
+  a[5].split(',').forEach(function(c){var m=c.split('=');if(m.length===2&&+m[0]>0){cuts.push([+m[0],+m[1]]);sumW+=+m[0]*+m[1]}});
+  var w=wt>100?wt:Math.max(1219,Math.round(sumW)),s=tmin(a[6]),e=tmin(a[7]),du=(s!==null&&e!==null&&e-s>=5)?e-s:null;
+  PAST.push({key:a[0],d:a[0].replace('-','/'),cu:a[1],coil:a[2],spec:sm[0]+'×'+sm[1],thk:thk,w:w,kg:+a[4],dur:du,cuts:cuts.length?cuts:[[w,1]],start:a[6]||'',end:a[7]||'',s:s===null?(e===null?0:e):s,real:1});
+ });
+ PAST.sort(function(x,y){return x.key<y.key?1:(x.key>y.key?-1:x.s-y.s)});
+ PAST.forEach(function(p){if(p.dur){(grp[p.spec]=grp[p.spec]||[]).push(p.dur)}});
+ var ord={},prevEnd={};
+ PAST.forEach(function(p){
+  var g=grp[p.spec]||[],h=hsh(p.coil),pe=prevEnd[p.key];
+  p.avg=g.length>=3?Math.round(avg(g)):p.dur;p.cmp=g.length>=3;
+  p.tot=g.length;p.rank=p.dur?g.filter(function(v){return v<p.dur}).length+1:0;
+  ord[p.key]=(ord[p.key]||0)+1;p.ord=ord[p.key];
+  p.prevEnd=(pe&&tmin(pe)<=tmin(p.start))?pe:(p.start?clk(p.start,-6):'');
+  if(p.end)prevEnd[p.key]=p.end;
+  p.len=Math.round(p.kg/(p.thk/1000*p.w/1000*7850));
+  p.j=(h%7===0)?'wn':'ok';p.stops=(h%5===0)?[[18+h%12,20+h%12]]:[];
+  p.dev=p.j==='wn'?[27,31,[8,2,2,26]]:null;p.tmax=p.j==='wn'?24+h%8:8+h%18;
+  if(p.coil==='2632001021'){p.len=1469;p.stops=[[4,39]];p.j='wn';p.dev=null;p.tmax=14}
+  if(p.coil==='2612102121'){p.len=2363;p.stops=[];p.j='ok';p.dev=null;p.tmax=11}
+ });
+})();
+function pi(coil,key){for(var i=0;i<PAST.length;i++)if(PAST[i].coil===coil&&PAST[i].key===key)return i;return -1}
+var pdKey='10-08',pf='all',curList=[];
+var WDK=['일','월','화','수','목','금','토'],WDE=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+function dkeys(){var k=[];PAST.forEach(function(p){if(k.indexOf(p.key)<0)k.push(p.key)});return k}
+function wdn(key){var m=key.split('-'),w=new Date(2026,+m[0]-1,+m[1]).getDay();return t(WDK[w],WDE[w])}
+function dlab(key){return key.replace('-','/')+' '+wdn(key)}
+function cutS(c){var a=c.slice(0,2).map(function(x){return x[0]+'×'+x[1]}).join(' + ');return c.length>2?a+' +'+(c.length-2):a}
 function renderPast(){
- var rows=PAST.map(function(p,i){return {p:p,i:i}}).filter(function(x){return pf==='all'||(pf==='wn'?x.p.j==='wn':x.p.spec===pf)});
- var h='<div class="ph"><h2>'+t('지난 작업','Past jobs')+'</h2><span class="sub">'+t('행을 누르면 완전 상세 기록으로 이동합니다 · 최근 8건 (평균 대비 = 같은 규격 평균과의 차이, 샘플)','Tap a row for the full record · latest 8 (vs. avg = difference from the same-spec average, sample)')+'</span></div>'+
- '<div class="chips" id="pchips">'+[['all',t('전체','All')],['0.48×4','0.48×4'],['0.75×4','0.75×4'],['1.15×4','1.15×4'],['wn',t('주의만','Watch only')]].map(function(c){return '<button type="button" data-f="'+c[0]+'" class="'+(pf===c[0]?'on':'')+'">'+c[1]+'</button>'}).join('')+'</div>'+
- '<div class="tw"><table><tr><th>'+t('날짜','Date')+'</th><th>'+t('업체','Customer')+'</th><th>'+t('코일','Coil')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('중량','Weight')+'</th><th>'+t('소요','Duration')+'</th><th>'+t('평균 대비','vs. avg')+'</th><th>'+t('정지','Stops')+'</th><th>'+t('편차 최대','Max spread')+'</th><th>'+t('판정','Result')+'</th><th></th></tr>'+
- rows.map(function(x){var p=x.p,df=p.dur-p.avg;
-  return '<tr class="go" data-i="'+x.i+'"><td>'+p.d+'</td><td>'+(p.sample?SC:CO)+'</td><td>'+p.coil+(p.sample?'<span class="smp">'+SMP+'</span>':'')+'</td><td>'+p.spec+'</td><td>'+p.kg.toLocaleString()+' kg</td><td>'+dur(p.dur)+'</td><td style="color:'+(df>10?'var(--wn)':'inherit')+'">'+sg(df)+t('분',' min')+'</td><td>'+(p.stops.length?p.stops.length+t('회','×'):t('없음','None'))+'</td><td>'+p.tmax+'</td><td>'+(p.j==='ok'?pill('ok',t('정상','OK')):pill('wn',t('주의','Watch')))+'</td><td class="chev">›</td></tr>'}).join('')+'</table></div>';
+ var keys=dkeys(),day=[],i;
+ PAST.forEach(function(p,ix){if(p.key===pdKey)day.push({p:p,i:ix})});
+ var specs=[];day.forEach(function(x){if(specs.indexOf(x.p.spec)<0)specs.push(x.p.spec)});
+ if(pf!=='all'&&pf!=='wn'&&specs.indexOf(pf)<0)pf='all';
+ var rows=day.filter(function(x){return pf==='all'||(pf==='wn'?x.p.j==='wn':x.p.spec===pf)});
+ curList=rows.filter(function(x){return x.p.dur}).map(function(x){return x.i});
+ var ki=keys.indexOf(pdKey),h='<div class="ph"><h2>'+t('지난 작업','Past jobs')+'</h2><span class="sub">'+t('날짜를 고르면 그날의 작업을 모두 볼 수 있습니다 · 행을 누르면 완전 상세 기록','Pick a date to see every job of that day · tap a row for the full record')+'</span></div>';
+ h+='<div class="dbar"><button type="button" id="dprev" aria-label="'+t('이전 작업일','Previous workday')+'"'+(ki>=keys.length-1&&ki>=0?' disabled':'')+'>‹</button>'+
+  '<input type="date" id="pdate" value="2026-'+pdKey+'" min="2026-08-01" max="2026-10-08" aria-label="'+t('날짜 선택','Pick a date')+'">'+
+  '<button type="button" id="dnext" aria-label="'+t('다음 작업일','Next workday')+'"'+(pdKey==='10-08'?' disabled':'')+'>›</button>'+
+  '<button type="button" id="dtoday" class="'+(pdKey==='10-08'?'on':'')+'">'+t('오늘','Today')+'</button>'+
+  '<div class="dstrip" id="dstrip">'+keys.map(function(k){var n=0;PAST.forEach(function(p){if(p.key===k)n++});return '<button type="button" data-k="'+k+'" class="'+(k===pdKey?'on':'')+'">'+k.replace('-','/')+' '+wdn(k)+'<small>'+n+t('건','')+'</small></button>'}).join('')+'</div></div>';
+ if(!day.length){
+  var older=null,newer=null;keys.forEach(function(k){if(k<pdKey&&!older)older=k;if(k>pdKey)newer=k});
+  h+='<div class="empty"><b>'+pdKey.replace('-','/')+' ('+wdn(pdKey)+')'+t('에는 슬리터2 작업 기록이 없습니다',' has no Slitter 2 jobs')+'</b><span>'+t('가까운 작업일로 이동할 수 있습니다','Jump to the nearest workday')+'</span><div class="chips">'+(older?'<button type="button" data-k="'+older+'">‹ '+dlab(older)+'</button>':'')+(newer?'<button type="button" data-k="'+newer+'">'+dlab(newer)+' ›</button>':'')+'</div></div>';
+ }else{
+  var kg=0,dsum=0,ss=[],ee=[];day.forEach(function(x){kg+=x.p.kg;if(x.p.dur)dsum+=x.p.dur;if(x.p.start)ss.push(x.p.start);if(x.p.end)ee.push(x.p.end)});
+  ss.sort();ee.sort();var wn=WAITS[pdKey]||0,wc=day.filter(function(x){return x.p.j==='wn'&&x.p.dur}).length;
+  h+='<div class="kp s4">'+[[t('작업','Jobs'),day.length+t('건',''),t('완료 ','Completed ')+day.length+(wn?t(' · 대기 ',' · queued ')+wn:'')],[t('총 중량','Total weight'),kg.toLocaleString()+' kg',t('코일 ','Coils ')+day.length+t('개',''),],[t('작업 시간대','Time window'),(ss[0]||'—')+' ~ '+(ee[ee.length-1]||'—'),t('첫 시작 ~ 마지막 종료','First start ~ last end')],[t('소요 합계','Total duration'),dur(dsum),t('주의 ','Watch ')+wc+t('건','')+t(' (샘플)',' (sample)')]].map(function(c){return '<div class="k"><span>'+c[0]+'</span><b>'+c[1]+'</b><small>'+c[2]+'</small></div>'}).join('')+'</div>';
+  h+='<div class="chips" id="pchips">'+[['all',t('전체','All')]].concat(specs.map(function(s){return [s,s]})).concat([['wn',t('주의만','Watch only')]]).map(function(c){return '<button type="button" data-f="'+c[0]+'" class="'+(pf===c[0]?'on':'')+'">'+c[1]+'</button>'}).join('')+'</div>';
+  h+='<div class="tw"><table class="pt"><tr><th>'+t('시작~종료','Start~End')+'</th><th>'+t('업체','Customer')+'</th><th>'+t('코일','Coil')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('중량(kg)','Weight (kg)')+'</th><th>'+t('절단 구성','Cuts')+'</th><th>'+t('소요','Time')+'</th><th>'+t('평균 대비','vs. avg')+'</th><th>'+t('정지','Stops')+'<span class="smp">'+SMP+'</span></th><th>'+t('판정','Result')+'<span class="smp">'+SMP+'</span></th><th></th></tr>'+
+  (rows.length?rows.map(function(x){var p=x.p,df=p.dur-p.avg,ok=!!p.dur;
+   return '<tr'+(ok?' class="go" data-i="'+x.i+'"':' class="dim"')+'><td>'+(p.start||'—')+'~'+(p.end||'—')+'</td><td>'+cuN(p)+'</td><td class="cn">'+p.coil+'</td><td>'+p.spec+'</td><td>'+p.kg.toLocaleString()+'</td><td class="cu">'+cutS(p.cuts)+'</td>'+
+   (ok?'<td>'+dur(p.dur)+'</td><td style="color:'+(df>10?'var(--wn)':'inherit')+'">'+(p.cmp?sg(df)+t('분',' min'):'—')+'</td><td>'+(p.stops.length?p.stops.length+t('회','×'):t('없음','None'))+'</td><td>'+(p.j==='ok'?pill('ok',t('정상','OK')):pill('wn',t('주의','Watch')))+'</td><td class="chev">›</td>':'<td colspan="4" style="color:var(--mu)">'+t('시간 기록 없음','No time record')+'</td><td></td>')+'</tr>'}).join(''):'<tr><td colspan="11" style="text-align:center;color:var(--mu);height:90px">'+t('조건에 맞는 작업이 없습니다','No jobs match this filter')+'</td></tr>')+'</table></div>';
+  h+='<div class="note2">'+t('작업 시간·규격·중량·절단 구성은 실제 ERP 기록입니다. 정지·판정은 샘플이며, PLC 기록을 연동하면 실제 값으로 바뀝니다.'+(wn?' 이 날 대기(미작업) '+wn+'건은 표시하지 않았습니다.':''),'Times, specs, weights and cuts are real ERP records. Stops and results are samples until PLC records are hooked up.'+(wn?' '+wn+' queued (not worked) jobs of this day are hidden.':''))+'</div>';
+ }
  $('pgPast').innerHTML=h;
+ function setK(k){pdKey=k;pf='all';renderPast()}
+ var dp=$('pdate');dp.onchange=function(){if(dp.value)setK(dp.value.slice(5))};
+ $('dprev').onclick=function(){var k=dkeys(),older=null;k.forEach(function(x){if(x<pdKey&&!older)older=x});if(older)setK(older)};
+ $('dnext').onclick=function(){var k=dkeys(),newer=null;k.slice().reverse().forEach(function(x){if(x>pdKey&&!newer)newer=x});if(newer)setK(newer)};
+ $('dtoday').onclick=function(){setK('10-08')};
+ document.querySelectorAll('#pgPast [data-k]').forEach(function(b){b.onclick=function(){setK(b.dataset.k)}});
+ var on=document.querySelector('#dstrip .on'),st=$('dstrip');if(on&&st)st.scrollLeft=Math.max(0,on.offsetLeft-st.clientWidth/2+on.offsetWidth/2);
  document.querySelectorAll('#pchips button').forEach(function(b){b.onclick=function(){pf=b.dataset.f;renderPast()}});
  document.querySelectorAll('#pgPast tr.go').forEach(function(r){r.onclick=function(){openDetail(+r.dataset.i)}});
 }
@@ -326,7 +399,7 @@ function openDetail(i){
  var wait=(function(){var a=p.prevEnd.split(':'),b=p.start.split(':');return (+b[0]*60+ +b[1])-(+a[0]*60+ +a[1])})();
  var endClk=clk(p.start,p.dur),cutTxt=p.cuts.map(function(c){return c[0]+'mm×'+c[1]}).join(' + ');
  var pStat=p.j==='ok'?pill('ok','● '+t('정상','OK')):pill('wn','▲ '+t('주의','Watch'));
- h+='<div class="ph"><button type="button" class="bk" id="back">‹ '+t('지난 작업','Past jobs')+'</button><h2 style="font-size:26px">'+(p.sample?SC:CO)+' · '+p.spec+' · '+p.kg.toLocaleString()+' kg</h2><span class="sub">'+t('코일 ','Coil ')+p.coil+' · '+p.d+' '+p.start+'~'+endClk+'</span><div class="sp">'+pStat+'<button type="button" class="bk" id="pv" aria-label="'+t('이전 작업','Previous job')+'">‹</button><button type="button" class="bk" id="nx" aria-label="'+t('다음 작업','Next job')+'">›</button></div></div>';
+ h+='<div class="ph"><button type="button" class="bk" id="back">‹ '+t('지난 작업','Past jobs')+'</button><h2 style="font-size:26px">'+cuN(p)+' · '+p.spec+' · '+p.kg.toLocaleString()+' kg</h2><span class="sub">'+t('코일 ','Coil ')+p.coil+' · '+p.d+' '+p.start+'~'+endClk+'</span><div class="sp">'+pStat+'<button type="button" class="bk" id="pv" aria-label="'+t('이전 작업','Previous job')+'">‹</button><button type="button" class="bk" id="nx" aria-label="'+t('다음 작업','Next job')+'">›</button></div></div>';
  h+='<div class="scroll" id="dsc"><div class="jump">'+[['s1',t('요약','Summary')],['s2',t('작업 정보','Job info')],['s3',t('시간 구성','Time')],['s4',t('그래프','Charts')],['s5',t('신호 통계','Stats')],['s6',t('정지·이탈','Stops')],['s7',t('구간별','Sections')],['s8',t('이벤트','Events')],['s9',t('같은 규격 비교','Compare')]].map(function(c){return '<button type="button" data-j="'+c[0]+'">'+c[1]+'</button>'}).join('')+'</div>';
  h+=p.real?'<div class="ban">'+t('소요시간·시작/종료는 실제 값이고, 곡선과 구간 값은 샘플입니다.','Duration and start/end times are real; curves and section values are samples.')+'</div>':'<div class="ban">'+t('이 코일의 상세 값은 샘플입니다. 실제 연동 후 PLC 기록으로 바뀝니다.','All detail values for this coil are samples. They will be replaced by PLC records after the data hookup.')+'</div>';
  /* 1 요약 */
@@ -335,26 +408,26 @@ function openDetail(i){
   [t('가동률','Utilization'),Math.round(runMin/p.dur*100)+'%',t('가동 ','Running ')+dur(runMin)+t(' / 정지 ',' / stopped ')+dur(stopMin)],
   [t('총 길이','Total length'),p.len.toLocaleString()+' m',t('실측 평균 ','Avg ')+fx(p.len/(p.dur-stopMin),1)+' m/'+t('분','min')],
   [t('평균 속도 · 최고','Avg · max speed'),avgSpd+' · '+maxSpd,t('PLC 값, 정지 제외 · 설정 ','PLC value, excl. stops · set ')+setSpd],
-  [t('정지','Stops'),p.stops.length?p.stops.length+t('회 · ','× · ')+stopMin+t('분',' min'):t('없음','None'),t('RUN 신호 기준','Based on RUN signal')],
+  [t('정지','Stops'),p.stops.length?p.stops.length+t('회 · ','× · ')+stopMin+t('분',' min'):t('없음','None'),t('속도 0 기준','Based on speed = 0')],
   [t('텐션 평균 1~4','Tension avg 1–4'),tavg.join(' / '),t('구역별 평균','Per-zone average')],
   [t('텐션 편차 최대','Max tension spread'),String(p.tmax),t('구역 간 최대−최소','Zone max − min')],
   [t('범위 이탈','Out of range'),devMin?devMin+t('분',' min'):t('없음','None'),t('유지율 ','In range ')+Math.round((1-devMin/p.dur)*100)+'%'],
   [t('작업 전 대기','Wait before job'),mn(wait),t('이전 작업 종료 ','Prev. job ended ')+p.prevEnd],
   [t('세팅(속도 올림)','Setup (ramp-up)'),mn(setMin),t('시작 후 속도 도달까지','Until target speed')],
-  [t('같은 규격 순위','Rank, same spec'),p.rank+' / 83',t('소요 짧은 순 (1위가 가장 빠름)','Shortest first (1 = fastest)')],
+  [t('같은 규격 순위','Rank, same spec'),p.rank+' / '+p.tot,t('소요 짧은 순 (1위가 가장 빠름)','Shortest first (1 = fastest)')],
   [t('PLC 기록','PLC records'),(p.rows?p.rows.toLocaleString():Math.round(p.dur*60/2.4).toLocaleString())+t('행',' rows'),t('약 2.4초 간격','About every 2.4 s')+(p.rows?'':t(' (추정)',' (est.)'))]
  ];
  h+='<div class="sec" id="s1"><h3>'+t('한눈에 보기','At a glance')+'</h3><div class="kg">'+K.map(function(c){return '<div class="k"><span>'+c[0]+'</span><b'+(String(c[1]).length>14?' style="font-size:21px;line-height:1.9;white-space:nowrap"':'')+'>'+c[1]+'</b><small>'+c[2]+'</small></div>'}).join('')+'</div></div>';
  /* 2 작업 정보 */
  var I=[
-  [t('업체','Customer'),p.sample?SC:CO],[t('코일 번호','Coil no.'),p.coil],
+  [t('업체','Customer'),cuN(p)],[t('코일 번호','Coil no.'),p.coil],
   [t('규격 (두께×폭)','Spec (thk × width)'),p.spec+' (XC)'],[t('코일 폭','Coil width'),p.w.toLocaleString()+' mm'],
   [t('원중량 / 사용중량','Gross / used weight'),p.kg.toLocaleString()+' / '+p.kg.toLocaleString()+' kg'],[t('라인','Line'),t('슬리터2','Slitter 2')],
   [t('절단 구성','Slit plan'),cutTxt],[t('슬릿 조수','Strips'),bands+t('조',' strips')],
   [t('절단 폭 합계','Total slit width'),sumW.toLocaleString()+' mm'],[t('버려지는 폭 (스크랩)','Edge scrap width'),scrap+' mm'],
   [t('폭 수율','Width yield'),fx(yld,1)+'%'],[t('조당 평균 중량','Avg weight per strip'),Math.round(p.kg/bands).toLocaleString()+' kg'],
   [t('시작','Start'),p.d+' '+p.start],[t('종료','End'),p.d+' '+endClk],
-  [t('작업 전 대기','Wait before job'),mn(wait)],[t('작업 순서','Order of the day'),p.real?t('오늘 ','Today #')+(i===0?2:3)+t('번째',''):t('해당 일자 기록','From that day')]
+  [t('작업 전 대기','Wait before job'),mn(wait)],[t('작업 순서','Order of the day'),t(p.ord+'번째','#'+p.ord+' of the day')]
  ];
  h+='<div class="sec" id="s2"><h3>'+t('작업 정보','Job info')+' <span>'+t('그린ERP 작업지시서 기준','From Green ERP work order')+'</span></h3><div class="info">'+I.map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join('')+'</div></div>';
  /* 3 시간 구성 */
@@ -392,7 +465,7 @@ function openDetail(i){
  /* 8 이벤트 */
  var ev=[[0,'start',t('작업 시작 · 속도 올림 시작','Job started · speed ramp-up begins')],[3,'ok',t('목표 속도 도달 (설정 ','Target speed reached (set ')+setSpd+t(')',')')]];
  if(p.sc)ev.push([p.sc[0],'chg',t('라인 속도 설정 ','Line speed setpoint ')+p.sc[1]+' → '+p.sc[2]]);
- p.stops.forEach(function(s){ev.push([s[0],'stop',t('라인 정지 ','Line stopped ')+mn((s[1]-s[0]+1)*per)+' (RUN 0)']);ev.push([s[1]+1,'ok',t('재가동 · 속도 회복','Restarted · speed recovered')])});
+ p.stops.forEach(function(s){ev.push([s[0],'stop',t('라인 정지 ','Line stopped ')+mn((s[1]-s[0]+1)*per)+' ('+t('속도 0','speed 0')+')']);ev.push([s[1]+1,'ok',t('재가동 · 속도 회복','Restarted · speed recovered')])});
  if(p.dev){ev.push([p.dev[0],'dev',t('텐션 정상 범위 밖 · 최대 편차 ','Tension out of range · max spread ')+p.tmax]);ev.push([p.dev[1]+1,'ok',t('정상 범위로 복귀','Back in range')])}
  ev.push([Math.round(n*0.5),'ok',t('절반 지점 통과 · 언코일러 현재경 ','Halfway · uncoiler diameter ')+Math.round(g.unc[Math.round(n*0.5)])+' mm']);
  ev.push([n,'start',t('작업 종료 · 총 ','Job ended · total ')+p.len.toLocaleString()+' m']);
@@ -402,16 +475,17 @@ function openDetail(i){
  /* 9 비교 */
  var cmp=[[t('소요 시간','Duration'),dur(p.dur),dur(p.avg),dur(p.avg-25)+'~'+dur(p.avg+40),sg(df)+t('분',' min')],[t('가동률','Utilization'),Math.round(runMin/p.dur*100)+'%','94%','82~100%',sg(Math.round(runMin/p.dur*100)-94)+'%p'],[t('평균 속도','Avg speed'),avgSpd,'168','150~172',sg(avgSpd-168)],[t('텐션1 평균','Tension 1 avg'),tavg[0],'192','184~201',sg(tavg[0]-192)],[t('텐션2 평균','Tension 2 avg'),tavg[1],'191','183~200',sg(tavg[1]-191)],[t('텐션3 평균','Tension 3 avg'),tavg[2],'190','182~199',sg(tavg[2]-190)],[t('텐션4 평균','Tension 4 avg'),tavg[3],'196','187~206',sg(tavg[3]-196)],[t('텐션 편차 최대','Max tension spread'),p.tmax,'15','8~24',sg(p.tmax-15)],[t('정지 횟수','Stops'),p.stops.length,'0.4','0~2',sg(fx(p.stops.length-0.4,1))],[t('범위 이탈 시간','Out-of-range time'),devMin+t('분',' min'),t('3분','3 min'),t('0~14분','0–14 min'),sg(devMin-3)+t('분',' min')]];
  var recent=[['10/06',100,'0.48×4',14,0,'ok'],['10/02',88,'0.48×4',12,0,'ok'],['09/30',95,'0.48×4',17,1,'ok'],['09/29',112,'0.48×4',26,2,'wn'],['09/22',90,'0.48×4',13,0,'ok']];
- var pos=Math.max(3,Math.min(97,(p.rank/83)*100));
+ var pos=Math.max(3,Math.min(97,(p.rank/p.tot)*100));
  h+='<div class="sec" id="s9"><h3>'+t('같은 규격 비교','Same-spec comparison')+' <span>'+p.spec+t(' 완료 83건 기준 (샘플)',' · based on 83 finished jobs (sample)')+'</span></h3>'+
-  '<div class="note" style="font-size:16px">'+t('소요 시간 순위 ','Duration rank ')+'<b>'+p.rank+' / 83</b>'+t(' (왼쪽이 빠름)',' (left = faster)')+'</div><div class="dist"><s style="left:'+pos+'%"></s></div><div class="gl" style="margin-bottom:10px"><span>'+t('가장 빠름','Fastest')+'</span><span>'+t('평균','Average')+'</span><span>'+t('가장 느림','Slowest')+'</span></div>'+
+  '<div class="note" style="font-size:16px">'+t('소요 시간 순위 ','Duration rank ')+'<b>'+p.rank+' / '+p.tot+'</b>'+t(' (왼쪽이 빠름)',' (left = faster)')+'</div><div class="dist"><s style="left:'+pos+'%"></s></div><div class="gl" style="margin-bottom:10px"><span>'+t('가장 빠름','Fastest')+'</span><span>'+t('평균','Average')+'</span><span>'+t('가장 느림','Slowest')+'</span></div>'+
   '<table class="sm"><tr><th>'+t('지표','Metric')+'</th><th>'+t('이번 작업','This job')+'</th><th>'+t('같은 규격 평균','Same-spec avg')+'</th><th>'+t('최소~최대','Min–max')+'</th><th>'+t('차이','Diff')+'</th></tr>'+cmp.map(function(r){return '<tr><td>'+r.join('</td><td>')+'</td></tr>'}).join('')+'</table>'+
   '<p class="twoh" style="margin-top:14px">'+t('같은 규격 최근 5건','Last 5 jobs of the same spec')+' <span class="note">'+t('(샘플)','(sample)')+'</span></p><table class="sm"><tr><th>'+t('날짜','Date')+'</th><th>'+t('소요','Duration')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('편차 최대','Max spread')+'</th><th>'+t('정지','Stops')+'</th><th>'+t('판정','Result')+'</th></tr>'+recent.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+dur(r[1])+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+(r[4]?r[4]+t('회','×'):t('없음','None'))+'</td><td>'+(r[5]==='ok'?pill('ok',t('정상','OK')):pill('wn',t('주의','Watch')))+'</td></tr>'}).join('')+'</table></div>';
  h+='<div class="sec"><h3>'+t('현장 메모','Floor notes')+' <span>'+t('읽기 전용','Read-only')+'</span></h3><div style="font-size:18px;color:var(--sb)">'+(p.j==='wn'?t('정지 후 재가동 직후 텐션4가 올라감. 정지 분석 화면에서 원인 확인 필요.','Tension 4 rose right after restart. Check the cause in the stop analysis screen.'):t('특이사항 없음.','Nothing to note.'))+'</div></div>';
  h+='</div>';
  $('pgDetail').innerHTML=h;
  $('back').onclick=function(){go('past')};
- $('pv').onclick=function(){openDetail((i+PAST.length-1)%PAST.length)};$('nx').onclick=function(){openDetail((i+1)%PAST.length)};
+ var ci=curList.indexOf(i);if(ci<0){curList=[i];ci=0}
+ $('pv').onclick=function(){openDetail(curList[(ci+curList.length-1)%curList.length])};$('nx').onclick=function(){openDetail(curList[(ci+1)%curList.length])};
  document.querySelectorAll('.jump button').forEach(function(b){b.onclick=function(){var el=$(b.dataset.j),sc=$('dsc');sc.scrollTo({top:el.offsetTop-52,behavior:'smooth'})}});
  showOnly('pgDetail','past');
  dcs.forEach(function(c){c.destroy()});dcs=[];
@@ -444,7 +518,7 @@ renderShell();
 document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){go(b.dataset.p)}});
 window.addEventListener('resize',fit);fit();
 renderList();
-if(location.hash==='#now')go('now');else if(location.hash==='#past')go('past');else if(location.hash==='#detail')openDetail(2);
+if(location.hash==='#now')go('now');else if(location.hash==='#past')go('past');else if(location.hash==='#detail')openDetail(pi('2632001021','10-08'));
 </script>
 
 </body>
