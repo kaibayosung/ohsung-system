@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Slitter 2 Floor Screen (English)</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+/* 레이아웃: 가로 태블릿 1280×800 흰색 화면 — 왼쪽 메뉴(작업 목록·현재 작업·지난 작업) + 본문, 지난 작업은 목록에서 상세 페이지로 이동 */
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{background:#ffffff;color:#0f1e33;font-family:Pretendard,'Noto Sans KR',system-ui,sans-serif;padding-inline:16px;padding-block:14px 30px;margin:0}
+.page{max-width:1320px;margin:0 auto}
+.head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.head h1{font-size:18px;margin:0}
+.head span{font-size:13px;color:#5c6478}
+#fit{width:100%;position:relative}
+#stage{width:1280px;height:800px;transform-origin:0 0;position:absolute;left:0;top:0;
+  --bg:#ffffff;--pn:#f4f6fb;--ln:#e1e6ef;--tx:#0f1e33;--sb:#5c6478;--mu:#8592a8;--ac:#2a5bd7;--acbg:#e6edfc;
+  --ok:#0a7a3d;--ok2:#dff3e7;--wn:#8a5a00;--wn2:#fdf0cf;--bd:#b3261e;--bd2:#fbe3e3;
+  --t1:#1f6fd1;--t2:#d9622b;--t3:#7b5fd6;--t4:#d6407f;
+  background:var(--bg);color:var(--tx);border:2px solid var(--ln);border-radius:26px;padding:14px;display:grid;grid-template-columns:150px 1fr;gap:14px;font-size:19px;overflow:hidden}
+#stage button{font:inherit;color:var(--tx);background:#fff;border:2px solid var(--ln);border-radius:14px;cursor:pointer}
+#stage button:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+#nav{display:flex;flex-direction:column;gap:10px;background:var(--pn);border-radius:20px;padding:12px}
+#nav .logo{font-size:26px;font-weight:900;padding:6px 6px 10px}
+#nav .logo small{display:block;font-size:14px;font-weight:500;color:var(--sb)}
+#nav button{height:72px;text-align:left;padding:0 10px;font-size:17px;white-space:nowrap;font-weight:700;display:flex;flex-direction:column;justify-content:center;border-radius:16px}
+#nav button small{font-size:14px;font-weight:500;color:var(--sb)}
+#nav button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+#nav button.on small{color:#dbe5ff}
+#nav .foot{margin-top:auto;font-size:14px;color:var(--sb);line-height:1.4;padding:6px}
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ok);margin-right:5px;animation:pl 1.6s ease-in-out infinite}
+@keyframes pl{50%{opacity:.35}}
+.flow{stroke-dasharray:10 8;animation:mv 0.9s linear infinite}
+@keyframes mv{to{stroke-dashoffset:-18}}
+@media (prefers-reduced-motion:reduce){.flow,.dot{animation:none}}
+main{min-width:0;min-height:0;position:relative}
+section{height:100%;display:flex;flex-direction:column;gap:12px;min-height:0}
+section[hidden]{display:none}
+.ph{display:flex;align-items:center;gap:14px;min-height:46px}
+.ph h2{margin:0;font-size:30px;font-weight:900;white-space:nowrap}
+.ph .sub{font-size:17px;color:var(--sb)}
+.ph .sp{margin-left:auto;display:flex;gap:10px;align-items:center}
+.kp{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.k{background:var(--pn);border-radius:16px;padding:10px 16px}
+.k span{font-size:16px;color:var(--sb)}
+.k b{display:block;font-size:36px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums}
+.k small{font-size:14px;color:var(--sb)}
+.chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chips button{padding:0 18px;height:48px;font-size:19px;font-weight:700}
+.chips button.on{background:var(--tx);border-color:var(--tx);color:#fff}
+.tw{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;border:2px solid var(--ln);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:19px}
+th{position:sticky;top:0;background:var(--pn);text-align:left;font-size:15px;color:var(--sb);font-weight:700;padding:9px 9px;border-bottom:2px solid var(--ln);z-index:1;white-space:nowrap}
+td{padding:0 9px;height:54px;border-bottom:1px solid var(--ln);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.go{cursor:pointer}
+tr.go:hover td{background:var(--acbg)}
+tr.cur td{background:#eef3ff}
+.pill{display:inline-block;font-size:16px;font-weight:700;padding:3px 12px;border-radius:99px;white-space:nowrap}
+.p-ok{background:var(--ok2);color:var(--ok)}.p-wn{background:var(--wn2);color:var(--wn)}.p-bd{background:var(--bd2);color:var(--bd)}
+.p-run{background:var(--acbg);color:var(--ac)}.p-id{background:var(--ln);color:var(--sb)}
+.smp{font-size:12px;color:var(--mu);border:1px solid var(--ln);border-radius:6px;padding:0 5px;margin-left:6px;font-weight:500}
+.chev{color:var(--mu);font-size:22px;text-align:right}
+.card{background:var(--pn);border-radius:18px;padding:12px 16px;min-width:0}
+.arow{display:grid;grid-template-columns:1fr 330px;gap:12px;height:106px;flex:none}
+.job{background:var(--pn);border-radius:18px;padding:10px 18px;display:flex;flex-direction:column;justify-content:center;gap:6px;min-width:0}
+.job .t{display:flex;align-items:baseline;gap:12px;white-space:nowrap}
+.job .t b{font-size:26px}
+.job .t span{font-size:16px;color:var(--sb)}
+.bar{height:20px;border-radius:10px;background:var(--ln);overflow:hidden}
+.bar i{display:block;height:100%;width:41%;background:var(--ac);border-radius:10px}
+.prow{display:flex;gap:20px;align-items:baseline;font-size:16px;color:var(--sb);white-space:nowrap}
+.prow b{font-size:24px;color:var(--tx)}
+.sig{border-radius:18px;padding:10px 20px;display:flex;flex-direction:column;justify-content:center}
+.sig b{font-size:32px;line-height:1.15}
+.sig span{font-size:17px;font-weight:500}
+.grow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;height:206px;flex:none}
+.g{background:var(--pn);border:3px solid var(--pn);border-radius:18px;padding:8px 10px 8px;display:flex;flex-direction:column;align-items:center;min-width:0}
+.g .n{font-size:17px;color:var(--sb);display:flex;align-items:center;gap:7px;align-self:flex-start;white-space:nowrap}
+.g .n i{display:inline-block;width:14px;height:14px;border-radius:4px}
+.g svg{width:100%;height:72px;margin-top:0}
+.g .v{font-size:44px;font-weight:900;line-height:1;margin-top:2px;font-variant-numeric:tabular-nums}
+.g .r{font-size:14px;color:var(--sb);margin-top:2px;white-space:nowrap}
+.g .s{font-size:18px;font-weight:700;margin-top:2px;white-space:nowrap}
+.cht{flex:1;min-height:0;display:flex;flex-direction:column}
+.tabs{display:flex;gap:8px;align-items:center}
+.tabs button{padding:0 18px;height:44px;font-size:18px;font-weight:700;white-space:nowrap}
+.tabs button.on{background:var(--ac);border-color:var(--ac);color:#fff}
+.lg{margin-left:auto;display:flex;gap:14px;font-size:15px;color:var(--sb);white-space:nowrap}
+.lg span{display:flex;align-items:center;gap:6px}
+.cbox{position:relative;flex:1;min-height:0;margin-top:4px}
+.bk{height:48px;padding:0 18px;font-size:19px;font-weight:700;white-space:nowrap}
+.scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px;padding-right:4px}
+.jump{position:sticky;top:0;z-index:5;background:#fff;display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 6px;flex:none}
+.jump button{height:40px;padding:0 14px;font-size:16px;font-weight:700;border-radius:10px;white-space:nowrap}
+.sec{background:#fff;border:2px solid var(--ln);border-radius:18px;padding:14px 18px;flex:none}
+.sec h3{margin:0 0 10px;font-size:22px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.sec h3 span{font-size:15px;font-weight:400;color:var(--sb)}
+.kg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.kg .k{padding:8px 14px}
+.kg .k b{font-size:28px}
+.gantt{display:flex;height:34px;border-radius:8px;overflow:hidden;border:1px solid var(--ln)}
+.gantt i{display:block;height:100%}
+.gl{display:flex;justify-content:space-between;font-size:15px;color:var(--sb);margin-top:4px}
+.gleg{display:flex;gap:18px;margin-top:8px;font-size:15px;color:var(--sb);flex-wrap:wrap}
+.gleg span{display:flex;align-items:center;gap:6px}
+.gleg i{display:inline-block;width:16px;height:12px;border-radius:3px}
+.sm td{height:42px;font-size:16px}
+.sm th{position:static;font-size:14px}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+.info div{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--ln);font-size:17px}
+.info span{color:var(--sb)}
+.info b{text-align:right;font-variant-numeric:tabular-nums}
+.cb{position:relative;height:200px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.twoh{font-size:16px;font-weight:700;margin:0 0 4px}
+.note{font-size:14px;color:var(--sb)}
+.ban{background:var(--wn2);color:var(--wn);border-radius:12px;padding:8px 14px;font-size:16px;font-weight:500;flex:none}
+.dist{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#dfe6f3,#bfd0f0,#dfe6f3);margin:10px 0 4px}
+.dist s{position:absolute;top:-6px;width:6px;height:28px;border-radius:3px;background:var(--ac);transform:translateX(-3px)}
+.nt{font-size:13px;color:#5c6478;margin-top:10px;max-width:1280px}
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="head"><h1 id="h1"></h1><span id="h1s"></span></div>
+  <div id="fit">
+    <div id="stage">
+      <nav id="nav"></nav>
+      <main>
+        <section id="pgList"></section>
+        <section id="pgNow" hidden></section>
+        <section id="pgPast" hidden></section>
+        <section id="pgDetail" hidden></section>
+      </main>
+    </div>
+  </div>
+  <div class="nt" id="foot"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+var LANG='en';
+function t(ko,en){return LANG==='en'?en:ko}
+var $=function(id){return document.getElementById(id)};
+var C={t:['#1f6fd1','#d9622b','#7b5fd6','#d6407f'],ok:'#0a7a3d',wn:'#8a5a00',bd:'#b3261e',ac:'#2a5bd7',sb:'#5c6478',ln:'#e1e6ef'};
+var DASH=[[],[8,4],[2,4],[12,4,2,4]];
+function pill(k,x){return '<span class="pill p-'+k+'">'+x+'</span>'}
+function cl(k){return C[k]}
+function stOf(v,lo,hi){var mid=(lo+hi)/2,b=(hi-lo)/2,r=Math.abs(v-mid)/b,d=v>mid?t('높음','High'):t('낮음','Low');
+ if(r<0.7)return{k:'ok',t:t('적정','OK'),s:'●',r:r};if(r<1)return{k:'wn',t:t('약간 ','Slightly ')+(LANG==='en'?d.toLowerCase():d),s:'▲',r:r};return{k:'bd',t:d,s:'■',r:r}}
+function hm(s){var h=Math.floor(s/60)%24,m=Math.round(s%60);if(m===60){h++;m=0}return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')}
+function clk(start,min){var a=start.split(':');return hm(+a[0]*60+ +a[1]+min)}
+function dur(m){m=Math.round(m);if(LANG==='en')return m<60?m+' min':Math.floor(m/60)+'h '+(m%60)+'m';return m<60?m+'분':Math.floor(m/60)+'시간 '+(m%60)+'분'}
+function mn(m){return LANG==='en'?Math.round(m)+' min':Math.round(m)+'분'}
+function sg(x){return (x>0?'+':'')+x}
+function avg(a){return a.reduce(function(s,v){return s+v},0)/a.length}
+function sd(a){var m=avg(a);return Math.sqrt(avg(a.map(function(v){return (v-m)*(v-m)})))}
+function fx(v,d){return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toFixed(d)}
+
+/* ---------- 껍데기 ---------- */
+function renderShell(){
+ $('h1').textContent=t('슬리터2 현장 화면 · 가로 태블릿','Slitter 2 Floor Screen · Landscape Tablet');
+ $('h1s').textContent=t('왼쪽 메뉴로 이동합니다 · 작업 목록 행이나 지난 작업을 눌러 상세로 들어가 보세요','Use the left menu · tap a row in the job list or a past job to drill in');
+ $('foot').textContent=t('이 화면은 시안입니다. 작업 목록 14건 중 7건과 현재 코일의 라인 흐름 값, 오늘 완료 코일 2건의 소요시간은 실제 값이고, 그래프 곡선과 상세 수치는 샘플입니다. 속도 m/min·길이 m는 실데이터로 확인했습니다.','This is a design preview. 7 of the 14 jobs, the current coil’s line-flow values and the durations of today’s two finished coils are real; curves and detail figures are samples. Speed m/min and length m verified on real data.');
+ $('nav').innerHTML='<div class="logo">'+t('슬리터2','Slitter 2')+'<small>'+t('현장 화면','Floor screen')+'</small></div>'+
+ '<button type="button" data-p="list" class="on">'+t('작업 목록','Job list')+'<small>'+t('오늘 14건','14 today')+'</small></button>'+
+ '<button type="button" data-p="now"><span><span class="dot"></span>'+t('현재 작업','Current job')+'</span><small>0.48×4 · 41%</small></button>'+
+ '<button type="button" data-p="past">'+t('지난 작업','Past jobs')+'<small>'+t('상세 기록','Full records')+'</small></button>'+
+ '<div class="foot">'+t('15:20 현재<br>PLC 연결 정상','As of 15:20<br>PLC connected')+'</div>';
+}
+var CO=t('대한강재','Daehan Steel'),SC=t('샘플 거래처','Sample customer'),SMP=t('샘플','Sample');
+
+/* ---------- 작업 목록 ---------- */
+var JOBS=[
+ {st:'done',coil:'2631900101',spec:'0.48×4',kg:10810,cut:'97×12, 48×1',tm:t('10:20~11:49 · 89분','10:20–11:49 · 89 min'),s:1},
+ {st:'done',coil:'2632001021',spec:'0.48×4',kg:10860,cut:'97×12, 48×1',tm:t('11:54~13:26 · 92분','11:54–13:26 · 92 min')},
+ {st:'done',coil:'2612102121',spec:'0.48×4',kg:10780,cut:'97×12, 48×1',tm:t('13:27~14:43 · 76분','13:27–14:43 · 76 min')},
+ {st:'run',coil:'2632500611',spec:'0.48×4',kg:10700,cut:'97×12, 48×1',tm:t('14:44~ · 종료 16:14 예상','14:44– · ends ~16:14')},
+ {st:'wait',coil:'CRG1004A',spec:'1.15×4',kg:12030,cut:'57×20, 35×2',tm:t('16:20 시작 예상','starts ~16:20')},
+ {st:'wait',coil:'CRG0963B',spec:'1.15×4',kg:11900,cut:'57×20, 35×2',tm:t('17:55 시작 예상','starts ~17:55'),late:1},
+ {st:'wait',coil:'CRH0993A',spec:'1.15×4',kg:11350,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1},
+ {st:'wait',coil:'CRF0151A',spec:'1.15×4',kg:11360,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1},
+ {st:'wait',coil:'CRG1120C',spec:'1.15×4',kg:11800,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
+ {st:'wait',coil:'CRH0110B',spec:'1.15×4',kg:11640,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
+ {st:'wait',coil:'CRF0207A',spec:'1.15×4',kg:11510,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
+ {st:'wait',coil:'CRG1301A',spec:'1.15×4',kg:11270,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
+ {st:'wait',coil:'CRH0402D',spec:'1.15×4',kg:11890,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
+ {st:'wait',coil:'CRF0509B',spec:'1.15×4',kg:11250,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1}
+];
+var jf='all';
+function renderList(){
+ var rows=JOBS.map(function(j,i){return {j:j,i:i}}).filter(function(x){return jf==='all'||x.j.st===jf});
+ var h='<div class="ph"><h2>'+t('작업 목록','Job list')+'</h2><span class="sub">2026-10-08 · '+t('슬리터2 · 그린ERP 작업지시서','Slitter 2 · Green ERP work orders')+'</span></div>'+
+ '<div class="kp"><div class="k"><span>'+t('오늘 작업','Today')+'</span><b>'+t('14건','14')+'</b><small>156.6 t</small></div><div class="k"><span>'+t('진행 중','In progress')+'</span><b style="color:var(--ac)">'+t('1건','1')+'</b><small>10.7 t</small></div><div class="k"><span>'+t('완료','Done')+'</span><b>'+t('3건','3')+'</b><small>32.5 t</small></div><div class="k"><span>'+t('대기','Waiting')+'</span><b>'+t('10건','10')+'</b><small>113.5 t</small></div><div class="k" style="background:var(--wn2)"><span style="color:var(--wn)">'+t('17:40 마감 전망','Outlook at 17:40')+'</span><b style="color:var(--wn)">'+t('2건 완료','2 done')+'</b><small style="color:var(--wn)">'+t('대기 9건은 내일로','9 waiting go to tomorrow')+'</small></div></div>'+
+ '<div class="chips" id="jchips">'+[['all',t('전체 14','All 14')],['run',t('진행 중 1','In progress 1')],['done',t('완료 3','Done 3')],['wait',t('대기 10','Waiting 10')]].map(function(c){return '<button type="button" data-f="'+c[0]+'" class="'+(jf===c[0]?'on':'')+'">'+c[1]+'</button>'}).join('')+'</div>'+
+ '<div class="tw"><table><tr><th>'+t('순서','#')+'</th><th>'+t('상태','Status')+'</th><th>'+t('업체','Customer')+'</th><th>'+t('코일','Coil')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('중량','Weight')+'</th><th>'+t('절단','Slit plan')+'</th><th>'+t('시간','Time')+'</th><th></th></tr>'+
+ rows.map(function(x){var j=x.j,pl=j.st==='done'?pill('ok',t('완료','Done')):(j.st==='run'?pill('run',t('진행 중 41%','Running 41%')):pill('id',t('대기','Waiting')));
+  var tm=j.late?'<span style="color:var(--wn);font-weight:700">'+j.tm+'</span>':j.tm;
+  return '<tr class="go'+(j.st==='run'?' cur':'')+'" data-i="'+x.i+'"><td>'+(x.i+1)+'</td><td>'+pl+'</td><td>'+CO+'</td><td>'+j.coil+(j.s?'<span class="smp">'+SMP+'</span>':'')+'</td><td>'+j.spec+'</td><td>'+j.kg.toLocaleString()+' kg</td><td>'+j.cut+'</td><td>'+tm+'</td><td class="chev">'+(j.st==='wait'?'':'›')+'</td></tr>'}).join('')+'</table></div>';
+ $('pgList').innerHTML=h;
+ document.querySelectorAll('#jchips button').forEach(function(b){b.onclick=function(){jf=b.dataset.f;renderList()}});
+ document.querySelectorAll('#pgList tr.go').forEach(function(r){r.onclick=function(){var j=JOBS[+r.dataset.i];if(j.st==='run')go('now');else if(j.st==='done')openDetail(j.coil==='2632001021'?0:(j.coil==='2612102121'?1:3))}});
+}
+
+/* ---------- 현재 작업 ---------- */
+var N=49,cur=20,xs=[],Z=[197,196,195,204],dev=false,mode='ten',ch=null;
+for(var q=0;q<=N;q++)xs.push(Math.round(q*1470/N));
+function wob(i,k){return i===cur?0:((i*(3+k)+k*2)%7-3)*0.8}
+var DS=[1.3,0.6,0.5,1.9];
+function dv(i,k){return dev&&i>=10?(i-10)*DS[k]:0}
+var M={
+ ten:{min:150,max:250,lo:function(p){return 182-p*6},hi:function(p){return 214-p*6},act:function(i,k){return Z[k]+(cur-i)*0.25+wob(i,k)+dv(i,k)},n:4,u:t('텐션','Tension')},
+ spd:{min:0,max:200,lo:function(p){return p<0.04?20+p*2500:158},hi:function(p){return p<0.04?60+p*2900:178},act:function(i){var p=i/N;return (p<0.04?30+p*2600:170+wob(i,1)*0.8)+(dev&&i>=10?-(i-10)*2.4:0)},n:1,u:t('속도','Speed')},
+ dia:{min:400,max:1700,lo:function(p){return 1620-p*1080-18},hi:function(p){return 1620-p*1080+18},act:function(i){var p=i/N;return 1620-p*1080+(i===cur?0:wob(i,2)*2)},n:1,u:t('직경 mm','Dia. mm')}
+};
+function pol(cx,cy,r,a){return [cx+r*Math.cos(a),cy-r*Math.sin(a)]}
+function arc(cx,cy,r,a0,a1){var p0=pol(cx,cy,r,a0),p1=pol(cx,cy,r,a1);return 'M'+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A'+r+' '+r+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1)}
+function gauge(v,min,max,lo,hi,col){
+ var an=function(x){return Math.PI-Math.max(0,Math.min(1,(x-min)/(max-min)))*Math.PI},cx=100,cy=98,r=78,nd=pol(cx,cy,r-6,an(v));
+ return '<svg viewBox="0 0 200 106" aria-hidden="true"><path d="'+arc(cx,cy,r,Math.PI,0)+'" fill="none" stroke="#e1e6ef" stroke-width="16"/><path d="'+arc(cx,cy,r,an(lo),an(hi))+'" fill="none" stroke="#9bd9b6" stroke-width="16"/><line x1="'+cx+'" y1="'+cy+'" x2="'+nd[0].toFixed(1)+'" y2="'+nd[1].toFixed(1)+'" stroke="'+col+'" stroke-width="5" stroke-linecap="round"/><circle cx="'+cx+'" cy="'+cy+'" r="7" fill="'+col+'"/></svg>';
+}
+function gcard(name,dot,val,lo,hi,min,max,note){
+ var st=stOf(val,lo,hi),col=cl(st.k);
+ return {st:st,html:'<div class="g" style="border-color:'+(st.k==='ok'?'var(--pn)':col)+'"><div class="n">'+(dot?'<i style="background:'+dot+'"></i>':'')+name+'</div>'+gauge(val,min,max,lo,hi,col)+'<div class="v">'+Math.round(val)+'</div><div class="r">'+note+'</div><div class="s" style="color:'+col+'">'+st.s+' '+st.t+'</div></div>'};
+}
+function coil(cx,cy,rMax,rCur,rCore,fill){return '<circle cx="'+cx+'" cy="'+cy+'" r="'+rMax+'" fill="none" stroke="#c4cddd" stroke-width="2" stroke-dasharray="5 5"/><circle cx="'+cx+'" cy="'+cy+'" r="'+rCur+'" fill="'+fill+'"/><circle cx="'+cx+'" cy="'+cy+'" r="'+rCore+'" fill="#fff" stroke="#c4cddd" stroke-width="2"/>'}
+function flowSvg(){
+ var d1=57/100*58,d2=96/100*58,y=100;
+ var path='M165 '+y+' H300 Q370 '+(y+d1)+' 440 '+y+' H650 Q720 '+(y+d2)+' 790 '+y+' H885';
+ var s='<svg viewBox="0 0 1050 196" style="width:100%;height:100%" role="img" aria-label="'+t('언코일러에서 리코일러까지 스트립이 흐르는 라인 그림','Line diagram: strip flowing from uncoiler to recoiler')+'">';
+ s+=coil(90,92,62,47,20,'#aebbd6');
+ s+='<path d="'+path+'" fill="none" stroke="#2a5bd7" stroke-width="6" class="flow"/>';
+ s+='<rect x="195" y="70" width="70" height="60" rx="12" fill="#fff" stroke="#c4cddd" stroke-width="2"/><circle cx="215" cy="88" r="8" fill="#8592a8"/><circle cx="245" cy="88" r="8" fill="#8592a8"/><circle cx="230" cy="114" r="8" fill="#8592a8"/>';
+ [520,570].forEach(function(x){s+='<circle cx="'+x+'" cy="72" r="17" fill="#fff" stroke="#d9622b" stroke-width="4"/><circle cx="'+x+'" cy="128" r="17" fill="#fff" stroke="#d9622b" stroke-width="4"/>'});
+ s+=coil(960,92,62,28,20,'#aebbd6');
+ var L=[[90,t('언코일러','Uncoiler'),t('현재경 1218 / 1604','Dia 1218 / 1604')],[230,t('3롤','3-roll'),t('속도 1272','Speed 1272')],[370,t('루프 1','Loop 1'),'57'],[545,t('슬리터','Slitter'),t('속도 1366 · 나이프 2980','Speed 1366 · Knife 2980')],[720,t('루프 2','Loop 2'),'96'],[960,t('리코일러','Recoiler'),t('현재경 719','Dia 719')]];
+ L.forEach(function(a){s+='<text x="'+a[0]+'" y="174" text-anchor="middle" font-size="17" font-weight="700" fill="#0f1e33" font-family="inherit">'+a[1]+'</text><text x="'+a[0]+'" y="192" text-anchor="middle" font-size="15" fill="#5c6478" font-family="inherit">'+a[2]+'</text>'});
+ return s+'</svg>';
+}
+function renderNow(){
+ var h='<div class="arow"><div class="job"><div class="t"><b>'+CO+' · 0.48×4 · 10,700 kg</b><span>'+t('코일 2632500611 · 시작 14:44','Coil 2632500611 · started 14:44')+'</span></div><div class="bar"><i></i></div><div class="prow"><b>41%</b><span>600 / 1,470 m</span><span>'+t('경과','Elapsed')+' <b style="font-size:19px">'+mn(36)+'</b></span><span>'+t('남은','Left')+' <b style="font-size:19px">'+mn(54)+'</b></span><span>'+t('종료','Ends')+' <b style="font-size:19px">16:14</b></span></div></div><div class="sig" id="sig"></div></div>'+
+ '<div class="card" style="height:196px;flex:none;padding:6px 10px">'+flowSvg()+'</div><div class="grow" id="grow"></div>'+
+ '<div class="card cht"><div class="tabs" id="tabs"><button type="button" data-m="ten" class="on">'+t('텐션 1~4','Tension 1–4')+'</button><button type="button" data-m="spd">'+t('라인 속도','Line speed')+'</button><button type="button" data-m="dia">'+t('코일 직경','Coil dia.')+'</button><div class="lg" id="lg"></div><button type="button" id="bDev">'+t('이탈 시연','Alert demo')+'</button></div><div class="cbox"><canvas id="cv" role="img" aria-label="'+t('선택한 신호의 실제 값, 예측선, 정상 범위 그래프','Actual, forecast and normal range of the selected signal')+'"></canvas></div></div>';
+ $('pgNow').innerHTML=h;
+ document.querySelectorAll('#tabs button[data-m]').forEach(function(b){b.onclick=function(){document.querySelectorAll('#tabs button[data-m]').forEach(function(x){x.className=''});b.className='on';mode=b.dataset.m;chart()}});
+ $('bDev').onclick=function(){dev=!dev;this.textContent=dev?t('정상 복귀','Back to normal'):t('이탈 시연','Alert demo');updNow()};
+ updNow();
+}
+function updNow(){
+ var p=cur/N,m=M.ten,h='',worst={r:-1},k;
+ for(k=0;k<4;k++){var g=gcard(t('텐션','Tension ')+(k+1),C.t[k],m.act(cur,k),m.lo(p),m.hi(p),150,250,t('정상 ','Normal ')+Math.round(m.lo(p))+'~'+Math.round(m.hi(p)));h+=g.html;if(g.st.r>worst.r)worst={r:g.st.r,k:g.st.k,n:t('텐션','Tension ')+(k+1),t:g.st.t}}
+ var ts=gcard(t('라인 속도','Line speed'),null,M.spd.act(cur),158,178,0,200,t('설정 170 · 정상 158~178','Set 170 · normal 158~178'));h+=ts.html;if(ts.st.r>worst.r)worst={r:ts.st.r,k:ts.st.k,n:t('라인 속도','Line speed'),t:ts.st.t};
+ $('grow').innerHTML=h;
+ var sgn=$('sig'),bg=worst.k==='ok'?'#dff3e7':(worst.k==='wn'?'#fdf0cf':'#fbe3e3');sgn.style.background=bg;sgn.style.color=cl(worst.k);
+ sgn.innerHTML=worst.k==='ok'?'<b>● '+t('정상','Normal')+'</b><span>'+t('지금 설정 그대로 진행하세요','Keep the current settings')+'</span>':(worst.k==='wn'?'<b>▲ '+t('주의','Watch')+'</b><span>'+worst.n+' '+worst.t+' · '+t('지켜보세요','keep an eye on it')+'</span>':'<b>■ '+t('확인 필요','Check now')+'</b><span>'+worst.n+' '+worst.t+' · '+t('설정 확인','check settings')+'</span>');
+ chart();
+}
+function chart(){
+ var m=M[mode],lo=[],hi=[],pr=[],ds=[],i,k,lg='',tick='#5c6478',grid='rgba(92,100,120,.16)';
+ for(i=0;i<=N;i++){lo.push(m.lo(i/N));hi.push(m.hi(i/N))}
+ var last=0;for(k=0;k<m.n;k++)last+=m.act(cur,k);last/=m.n;
+ for(i=0;i<=N;i++){var mid=(lo[i]+hi[i])/2;pr.push(i<cur?null:(i===cur?last:(dev?mid+(last-(lo[cur]+hi[cur])/2)*0.95:mid)))}
+ ds.push({data:lo,borderWidth:0,pointRadius:0,fill:false});
+ ds.push({data:hi,borderWidth:0,pointRadius:0,backgroundColor:'rgba(61,170,110,.18)',fill:'-1'});
+ ds.push({data:pr,borderColor:'#0f1e33',borderDash:[8,6],borderWidth:2.5,pointRadius:0,tension:0.2});
+ for(k=0;k<m.n;k++){var a=[];for(i=0;i<=N;i++)a.push(i<=cur?m.act(i,k):null);ds.push({data:a,borderColor:mode==='ten'?C.t[k]:C.ac,borderDash:mode==='ten'?DASH[k]:[],borderWidth:3.2,pointRadius:0,tension:0.2})}
+ if(mode==='ten'){for(k=0;k<4;k++)lg+='<span><i style="display:inline-block;width:24px;height:0;border-top:3px '+(k===0?'solid':(k===1?'dashed':(k===2?'dotted':'dashed')))+' '+C.t[k]+'"></i>'+(k+1)+'</span>'}
+ lg+='<span><i style="display:inline-block;width:24px;height:0;border-top:3px dashed #0f1e33"></i>'+t('예측','Forecast')+'</span><span><i style="display:inline-block;width:18px;height:12px;background:rgba(61,170,110,.3)"></i>'+t('정상 범위','Normal range')+'</span>';
+ $('lg').innerHTML=lg;
+ if(ch)ch.destroy();
+ ch=new Chart($('cv'),{type:'line',data:{labels:xs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{title:{display:true,text:t('코일 길이 (m)','Coil length (m)'),color:tick,font:{size:14}},ticks:{maxTicksLimit:8,color:tick,font:{size:14}},grid:{display:false}},y:{min:m.min,max:m.max,title:{display:true,text:m.u,color:tick,font:{size:14}},ticks:{color:tick,font:{size:14},maxTicksLimit:4},grid:{color:grid}}}}});
+}
+
+/* ---------- 지난 작업 ---------- */
+var PAST=[
+ {d:'10/08',coil:'2632001021',spec:'0.48×4',thk:0.48,w:1219,kg:10860,dur:92,avg:90,cuts:[[97,12],[48,1]],start:'11:54',prevEnd:'11:49',len:1469,tmax:14,stops:[[4,39]],dev:null,j:'wn',real:1,rank:41,rows:2272},
+ {d:'10/08',coil:'2612102121',spec:'0.48×4',thk:0.48,w:1219,kg:10780,dur:76,avg:90,cuts:[[97,12],[48,1]],start:'13:27',prevEnd:'13:26',len:2363,tmax:11,stops:[],dev:null,j:'ok',real:1,rank:9},
+ {d:'10/07',sample:1,coil:'SMP-0731',spec:'0.75×4',thk:0.75,w:1219,kg:10480,dur:125,avg:107,cuts:[[100,11],[80,1],[35,1]],start:'09:10',prevEnd:'08:52',len:1180,tmax:31,stops:[[24,26],[41,42]],dev:[27,31,[8,2,2,26]],j:'wn',rank:79},
+ {d:'10/07',sample:1,coil:'SMP-0732',spec:'1.15×1200',thk:1.15,w:1200,kg:11150,dur:108,avg:112,cuts:[[600,2]],start:'13:05',prevEnd:'12:41',len:960,tmax:16,stops:[],dev:null,sc:[20,150,170],j:'ok',rank:30},
+ {d:'10/06',sample:1,coil:'SMP-0627',spec:'0.40×4',thk:0.40,w:1219,kg:10790,dur:98,avg:96,cuts:[[97,12],[48,1]],start:'08:40',prevEnd:'08:22',len:1760,tmax:13,stops:[[33,33]],dev:null,j:'ok',rank:52},
+ {d:'10/06',sample:1,coil:'SMP-0628',spec:'1.15×4',thk:1.15,w:1219,kg:10581,dur:131,avg:112,cuts:[[57,20],[35,2]],start:'10:45',prevEnd:'10:30',len:1010,tmax:27,stops:[[15,17]],dev:[44,50,[2,3,4,18]],j:'wn',rank:76},
+ {d:'10/02',sample:1,coil:'SMP-0201',spec:'0.48×4',thk:0.48,w:1219,kg:10986,dur:88,avg:90,cuts:[[97,12],[48,1]],start:'09:00',prevEnd:'08:41',len:1480,tmax:12,stops:[],dev:null,j:'ok',rank:35},
+ {d:'10/02',sample:1,coil:'SMP-0202',spec:'0.75×4',thk:0.75,w:1219,kg:10300,dur:104,avg:107,cuts:[[100,11],[80,1],[35,1]],start:'11:20',prevEnd:'10:55',len:1170,tmax:15,stops:[],dev:null,j:'ok',rank:44}
+];
+var pf='all';
+function renderPast(){
+ var rows=PAST.map(function(p,i){return {p:p,i:i}}).filter(function(x){return pf==='all'||(pf==='wn'?x.p.j==='wn':x.p.spec===pf)});
+ var h='<div class="ph"><h2>'+t('지난 작업','Past jobs')+'</h2><span class="sub">'+t('행을 누르면 완전 상세 기록으로 이동합니다 · 최근 8건 (평균 대비 = 같은 규격 평균과의 차이, 샘플)','Tap a row for the full record · latest 8 (vs. avg = difference from the same-spec average, sample)')+'</span></div>'+
+ '<div class="chips" id="pchips">'+[['all',t('전체','All')],['0.48×4','0.48×4'],['0.75×4','0.75×4'],['1.15×4','1.15×4'],['wn',t('주의만','Watch only')]].map(function(c){return '<button type="button" data-f="'+c[0]+'" class="'+(pf===c[0]?'on':'')+'">'+c[1]+'</button>'}).join('')+'</div>'+
+ '<div class="tw"><table><tr><th>'+t('날짜','Date')+'</th><th>'+t('업체','Customer')+'</th><th>'+t('코일','Coil')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('중량','Weight')+'</th><th>'+t('소요','Duration')+'</th><th>'+t('평균 대비','vs. avg')+'</th><th>'+t('정지','Stops')+'</th><th>'+t('편차 최대','Max spread')+'</th><th>'+t('판정','Result')+'</th><th></th></tr>'+
+ rows.map(function(x){var p=x.p,df=p.dur-p.avg;
+  return '<tr class="go" data-i="'+x.i+'"><td>'+p.d+'</td><td>'+(p.sample?SC:CO)+'</td><td>'+p.coil+(p.sample?'<span class="smp">'+SMP+'</span>':'')+'</td><td>'+p.spec+'</td><td>'+p.kg.toLocaleString()+' kg</td><td>'+dur(p.dur)+'</td><td style="color:'+(df>10?'var(--wn)':'inherit')+'">'+sg(df)+t('분',' min')+'</td><td>'+(p.stops.length?p.stops.length+t('회','×'):t('없음','None'))+'</td><td>'+p.tmax+'</td><td>'+(p.j==='ok'?pill('ok',t('정상','OK')):pill('wn',t('주의','Watch')))+'</td><td class="chev">›</td></tr>'}).join('')+'</table></div>';
+ $('pgPast').innerHTML=h;
+ document.querySelectorAll('#pchips button').forEach(function(b){b.onclick=function(){pf=b.dataset.f;renderPast()}});
+ document.querySelectorAll('#pgPast tr.go').forEach(function(r){r.onclick=function(){openDetail(+r.dataset.i)}});
+}
+
+/* ---------- 지난 작업 상세 ---------- */
+var dcs=[];
+function gen(p){
+ var n=60,Zs=[197,196,195,204],o={spd:[],t:[[],[],[],[]],unc:[],rec:[],len:[],st:[],l1:[],l2:[],cur:[],r3:[],sl:[],rc:[],un:[]},i,k;
+ for(i=0;i<=n;i++){
+  var pr=i/n,stp=p.stops.some(function(s){return i>=s[0]&&i<=s[1]}),dv=p.dev&&i>=p.dev[0]&&i<=p.dev[1];
+  var base=i<3?[40,100,150][i]:(p.sc?(i<p.sc[0]?p.sc[1]:p.sc[2]):170),w=((i*5)%7-3)*0.8,sp=stp?0:base+w,f=sp/170;
+  o.spd.push(sp);
+  for(k=0;k<4;k++)o.t[k].push(Zs[k]-pr*8+((i*(3+k)+k*2)%7-3)*0.8+(stp?-10:0)+(dv?p.dev[2][k]:0));
+  o.unc.push(1604-pr*1000);o.rec.push(520+pr*1000);o.len.push(Math.round(pr*p.len));
+  o.st.push(i<3?'set':(stp?'stop':(dv&&(Math.abs(p.dev[2][3])>=18)?'dev':'run')));
+  o.l1.push(stp?40+((i*3)%5):57+((i*7)%5-2)*1.2);o.l2.push(stp?88+((i*3)%4):96+((i*5)%5-2)*0.8);
+  o.cur.push(stp?3:9+((i*3)%5-2)*0.4+(dv?2:0));
+  o.un.push(-570*f);o.r3.push(1272*f+((i*3)%5-2));o.sl.push(1366*f+((i*7)%5-2));o.rc.push(1543*f+((i*5)%5-2));
+ }
+ return o;
+}
+function statRow(label,arr,lo,hi,unit){var m=avg(arr),inr=arr.filter(function(v){return v>=lo&&v<=hi}).length/arr.length*100;
+ return '<tr><td>'+label+'</td><td>'+fx(m,1)+'</td><td>'+fx(Math.min.apply(null,arr),1)+'</td><td>'+fx(Math.max.apply(null,arr),1)+'</td><td>'+fx(sd(arr),1)+'</td><td>'+Math.round(inr)+'%</td></tr>'}
+function openDetail(i){
+ var p=PAST[i],g=gen(p),n=60,k,h='',per=p.dur/n;
+ var stopsN=p.stops.reduce(function(a,s){return a+(s[1]-s[0]+1)},0),stopMin=Math.round(stopsN*per),devN=g.st.filter(function(s){return s==='dev'}).length,devMin=Math.round(devN*per),setMin=Math.round(3*per),runMin=Math.round(p.dur-stopMin-devMin-setMin);
+ var run=g.spd.filter(function(v){return v>0}),avgSpd=Math.round(avg(run)),maxSpd=Math.round(Math.max.apply(null,g.spd)),setSpd=p.sc?p.sc[2]:170;
+ var tavg=[0,1,2,3].map(function(k){return Math.round(avg(g.t[k]))});
+ var df=p.dur-p.avg,sumW=p.cuts.reduce(function(a,c){return a+c[0]*c[1]},0),bands=p.cuts.reduce(function(a,c){return a+c[1]},0),scrap=p.w-sumW,yld=(sumW/p.w*100);
+ var wait=(function(){var a=p.prevEnd.split(':'),b=p.start.split(':');return (+b[0]*60+ +b[1])-(+a[0]*60+ +a[1])})();
+ var endClk=clk(p.start,p.dur),cutTxt=p.cuts.map(function(c){return c[0]+'mm×'+c[1]}).join(' + ');
+ var pStat=p.j==='ok'?pill('ok','● '+t('정상','OK')):pill('wn','▲ '+t('주의','Watch'));
+ h+='<div class="ph"><button type="button" class="bk" id="back">‹ '+t('지난 작업','Past jobs')+'</button><h2 style="font-size:26px">'+(p.sample?SC:CO)+' · '+p.spec+' · '+p.kg.toLocaleString()+' kg</h2><span class="sub">'+t('코일 ','Coil ')+p.coil+' · '+p.d+' '+p.start+'~'+endClk+'</span><div class="sp">'+pStat+'<button type="button" class="bk" id="pv" aria-label="'+t('이전 작업','Previous job')+'">‹</button><button type="button" class="bk" id="nx" aria-label="'+t('다음 작업','Next job')+'">›</button></div></div>';
+ h+='<div class="scroll" id="dsc"><div class="jump">'+[['s1',t('요약','Summary')],['s2',t('작업 정보','Job info')],['s3',t('시간 구성','Time')],['s4',t('그래프','Charts')],['s5',t('신호 통계','Stats')],['s6',t('정지·이탈','Stops')],['s7',t('구간별','Sections')],['s8',t('이벤트','Events')],['s9',t('같은 규격 비교','Compare')]].map(function(c){return '<button type="button" data-j="'+c[0]+'">'+c[1]+'</button>'}).join('')+'</div>';
+ h+=p.real?'<div class="ban">'+t('소요시간·시작/종료는 실제 값이고, 곡선과 구간 값은 샘플입니다.','Duration and start/end times are real; curves and section values are samples.')+'</div>':'<div class="ban">'+t('이 코일의 상세 값은 샘플입니다. 실제 연동 후 PLC 기록으로 바뀝니다.','All detail values for this coil are samples. They will be replaced by PLC records after the data hookup.')+'</div>';
+ /* 1 요약 */
+ var K=[
+  [t('소요 시간','Duration'),dur(p.dur),t('같은 규격 평균 ','Same-spec avg ')+dur(p.avg)+' ('+sg(df)+t('분',' min')+')'],
+  [t('가동률','Utilization'),Math.round(runMin/p.dur*100)+'%',t('가동 ','Running ')+dur(runMin)+t(' / 정지 ',' / stopped ')+dur(stopMin)],
+  [t('총 길이','Total length'),p.len.toLocaleString()+' m',t('실측 평균 ','Avg ')+fx(p.len/(p.dur-stopMin),1)+' m/'+t('분','min')],
+  [t('평균 속도 · 최고','Avg · max speed'),avgSpd+' · '+maxSpd,t('PLC 값, 정지 제외 · 설정 ','PLC value, excl. stops · set ')+setSpd],
+  [t('정지','Stops'),p.stops.length?p.stops.length+t('회 · ','× · ')+stopMin+t('분',' min'):t('없음','None'),t('RUN 신호 기준','Based on RUN signal')],
+  [t('텐션 평균 1~4','Tension avg 1–4'),tavg.join(' / '),t('구역별 평균','Per-zone average')],
+  [t('텐션 편차 최대','Max tension spread'),String(p.tmax),t('구역 간 최대−최소','Zone max − min')],
+  [t('범위 이탈','Out of range'),devMin?devMin+t('분',' min'):t('없음','None'),t('유지율 ','In range ')+Math.round((1-devMin/p.dur)*100)+'%'],
+  [t('작업 전 대기','Wait before job'),mn(wait),t('이전 작업 종료 ','Prev. job ended ')+p.prevEnd],
+  [t('세팅(속도 올림)','Setup (ramp-up)'),mn(setMin),t('시작 후 속도 도달까지','Until target speed')],
+  [t('같은 규격 순위','Rank, same spec'),p.rank+' / 83',t('소요 짧은 순 (1위가 가장 빠름)','Shortest first (1 = fastest)')],
+  [t('PLC 기록','PLC records'),(p.rows?p.rows.toLocaleString():Math.round(p.dur*60/2.4).toLocaleString())+t('행',' rows'),t('약 2.4초 간격','About every 2.4 s')+(p.rows?'':t(' (추정)',' (est.)'))]
+ ];
+ h+='<div class="sec" id="s1"><h3>'+t('한눈에 보기','At a glance')+'</h3><div class="kg">'+K.map(function(c){return '<div class="k"><span>'+c[0]+'</span><b'+(String(c[1]).length>14?' style="font-size:21px;line-height:1.9;white-space:nowrap"':'')+'>'+c[1]+'</b><small>'+c[2]+'</small></div>'}).join('')+'</div></div>';
+ /* 2 작업 정보 */
+ var I=[
+  [t('업체','Customer'),p.sample?SC:CO],[t('코일 번호','Coil no.'),p.coil],
+  [t('규격 (두께×폭)','Spec (thk × width)'),p.spec+' (XC)'],[t('코일 폭','Coil width'),p.w.toLocaleString()+' mm'],
+  [t('원중량 / 사용중량','Gross / used weight'),p.kg.toLocaleString()+' / '+p.kg.toLocaleString()+' kg'],[t('라인','Line'),t('슬리터2','Slitter 2')],
+  [t('절단 구성','Slit plan'),cutTxt],[t('슬릿 조수','Strips'),bands+t('조',' strips')],
+  [t('절단 폭 합계','Total slit width'),sumW.toLocaleString()+' mm'],[t('버려지는 폭 (스크랩)','Edge scrap width'),scrap+' mm'],
+  [t('폭 수율','Width yield'),fx(yld,1)+'%'],[t('조당 평균 중량','Avg weight per strip'),Math.round(p.kg/bands).toLocaleString()+' kg'],
+  [t('시작','Start'),p.d+' '+p.start],[t('종료','End'),p.d+' '+endClk],
+  [t('작업 전 대기','Wait before job'),mn(wait)],[t('작업 순서','Order of the day'),p.real?t('오늘 ','Today #')+(i===0?2:3)+t('번째',''):t('해당 일자 기록','From that day')]
+ ];
+ h+='<div class="sec" id="s2"><h3>'+t('작업 정보','Job info')+' <span>'+t('그린ERP 작업지시서 기준','From Green ERP work order')+'</span></h3><div class="info">'+I.map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'}).join('')+'</div></div>';
+ /* 3 시간 구성 */
+ var runs=[],cs=g.st[0],sx=0,i2;for(i2=1;i2<=n+1;i2++){if(i2===n+1||g.st[i2]!==cs){runs.push([cs,sx,i2-1]);cs=g.st[i2];sx=i2}}
+ var colr={run:'#7ccf9e',stop:'#c4cddd',dev:'#e8827b',set:'#9db8f0'};
+ var pc=function(v){return fx(v/p.dur*100,0)+'%'};
+ h+='<div class="sec" id="s3"><h3>'+t('시간 구성','Time breakdown')+' <span>'+t('시간 순서로 본 세팅 · 가동 · 정지 · 이탈','Setup · running · stopped · out of range, in time order')+'</span></h3><div class="gantt">'+runs.map(function(r){return '<i style="width:'+((r[2]-r[1]+1)/(n+1)*100)+'%;background:'+colr[r[0]]+'"></i>'}).join('')+'</div><div class="gl"><span>'+p.start+'</span><span>'+clk(p.start,p.dur/2)+'</span><span>'+endClk+'</span></div><div class="gleg"><span><i style="background:#9db8f0"></i>'+t('세팅 ','Setup ')+mn(setMin)+' ('+pc(setMin)+')</span><span><i style="background:#7ccf9e"></i>'+t('가동 ','Running ')+mn(runMin)+' ('+pc(runMin)+')</span><span><i style="background:#c4cddd"></i>'+t('정지 ','Stopped ')+mn(stopMin)+' ('+pc(stopMin)+')</span><span><i style="background:#e8827b"></i>'+t('범위 이탈 ','Out of range ')+mn(devMin)+' ('+pc(devMin)+')</span>'+(p.sc?'<span>▼ '+t('속도 설정 변경 ','Speed setpoint changed ')+clk(p.start,p.sc[0]*per)+'</span>':'')+'</div></div>';
+ /* 4 그래프 */
+ h+='<div class="sec" id="s4"><h3>'+t('그래프','Charts')+' <span>'+t('가로축은 코일 길이(m) · 초록 띠는 같은 규격 과거 정상 범위','X axis = coil length (m) · green band = past normal range for this spec')+'</span></h3>'+
+  '<p class="twoh">'+t('텐션 1~4','Tension 1–4')+'</p><div class="cb" style="height:210px"><canvas id="d1" role="img" aria-label="'+t('텐션 1부터 4까지 전체 구간 그래프','Tension 1–4 over the whole run')+'"></canvas></div>'+
+  '<div class="two" style="margin-top:12px"><div><p class="twoh">'+t('라인 속도 (정지 시 0)','Line speed (0 when stopped)')+'</p><div class="cb" style="height:160px"><canvas id="d2" role="img" aria-label="'+t('라인 속도 전체 구간 그래프','Line speed over the whole run')+'"></canvas></div></div>'+
+  '<div><p class="twoh">'+t('언코일러 · 리코일러 직경 (mm)','Uncoiler · recoiler diameter (mm)')+'</p><div class="cb" style="height:160px"><canvas id="d3" role="img" aria-label="'+t('언코일러와 리코일러 직경 변화','Uncoiler and recoiler diameter')+'"></canvas></div></div></div>'+
+  '<div class="two" style="margin-top:12px"><div><p class="twoh">'+t('루프 1 · 루프 2','Loop 1 · Loop 2')+'</p><div class="cb" style="height:160px"><canvas id="d4" role="img" aria-label="'+t('루프 값 변화','Loop values')+'"></canvas></div></div>'+
+  '<div><p class="twoh">'+t('구간별 속도 (언코일러 · 3롤 · 슬리터 · 리코일러)','Section speeds (uncoiler · 3-roll · slitter · recoiler)')+'</p><div class="cb" style="height:160px"><canvas id="d5" role="img" aria-label="'+t('각 구간 속도 변화','Speeds of each section')+'"></canvas></div></div></div>'+
+  '<div style="margin-top:12px"><p class="twoh">'+t('언코일러 전류','Uncoiler current')+'</p><div class="cb" style="height:120px"><canvas id="d6" role="img" aria-label="'+t('언코일러 전류 변화','Uncoiler current')+'"></canvas></div></div></div>';
+ /* 5 통계 */
+ h+='<div class="sec" id="s5"><h3>'+t('신호별 통계','Signal statistics')+' <span>'+t('정상 범위 내 비율은 같은 규격 과거 범위 기준','In-range share is against the past range for this spec')+'</span></h3><table class="sm"><tr><th>'+t('신호','Signal')+'</th><th>'+t('평균','Mean')+'</th><th>'+t('최소','Min')+'</th><th>'+t('최대','Max')+'</th><th>'+t('표준편차','Std dev')+'</th><th>'+t('정상 범위 내','In range')+'</th></tr>'+
+  [0,1,2,3].map(function(k){return statRow(t('텐션','Tension ')+(k+1),g.t[k],165,215,'')}).join('')+
+  statRow(t('라인 속도 (가동 중)','Line speed (running)'),run,158,178,'')+statRow(t('루프 1','Loop 1'),g.l1,45,70,'')+statRow(t('루프 2','Loop 2'),g.l2,85,100,'')+statRow(t('언코일러 전류','Uncoiler current'),g.cur,6,12,'')+'</table></div>';
+ /* 6 정지·이탈 */
+ var stopRows='';
+ p.stops.forEach(function(s,ix){var a=s[0],b=s[1],tb=avg([0,1,2,3].map(function(k){return g.t[k][Math.max(0,a-1)]})),ta=avg([0,1,2,3].map(function(k){return g.t[k][Math.min(n,b+2)]}));
+  stopRows+='<tr><td>'+(ix+1)+'</td><td>'+clk(p.start,a*per)+'~'+clk(p.start,(b+1)*per)+'</td><td>'+g.len[a].toLocaleString()+' m</td><td>'+mn((b-a+1)*per)+'</td><td>'+Math.round(g.spd[Math.max(0,a-1)])+'</td><td>'+Math.round(tb)+' → '+Math.round(ta)+' ('+sg(Math.round(ta-tb))+')</td><td>'+mn(2*per)+'</td><td>'+t('미입력','Not entered')+'</td></tr>'});
+ var devRows='';
+ if(p.dev){var a=p.dev[0],b=p.dev[1],mx=Math.max.apply(null,[0,1,2,3].map(function(k){return Math.max.apply(null,g.t[k].slice(a,b+1))}));
+  devRows='<tr><td>1</td><td>'+clk(p.start,a*per)+'~'+clk(p.start,(b+1)*per)+'</td><td>'+g.len[a].toLocaleString()+'~'+g.len[b].toLocaleString()+' m</td><td>'+mn((b-a+1)*per)+'</td><td>'+t('텐션','Tension ')+(p.dev[2][3]>=p.dev[2][0]?4:1)+'</td><td>'+Math.round(mx)+'</td><td>'+p.tmax+'</td></tr>'}
+ h+='<div class="sec" id="s6"><h3>'+t('정지 · 이탈 상세','Stops and out-of-range detail')+'</h3>'+
+  '<p class="twoh">'+t('정지','Stops')+'</p>'+(p.stops.length?'<table class="sm"><tr><th>#</th><th>'+t('시각','Time')+'</th><th>'+t('길이 위치','Position')+'</th><th>'+t('지속','Length')+'</th><th>'+t('직전 속도','Speed before')+'</th><th>'+t('텐션 평균 변화','Tension avg change')+'</th><th>'+t('안정까지','To settle')+'</th><th>'+t('원인','Cause')+'</th></tr>'+stopRows+'</table>':'<div class="note" style="font-size:17px">'+t('정지 없음. 작업 내내 RUN 신호가 유지되었습니다.','No stops. The RUN signal stayed on for the whole job.')+'</div>')+
+  '<p class="twoh" style="margin-top:14px">'+t('정상 범위 이탈','Out-of-range spans')+'</p>'+(p.dev?'<table class="sm"><tr><th>#</th><th>'+t('시각','Time')+'</th><th>'+t('길이 위치','Position')+'</th><th>'+t('지속','Length')+'</th><th>'+t('신호','Signal')+'</th><th>'+t('최고값','Peak')+'</th><th>'+t('구역 편차','Spread')+'</th></tr>'+devRows+'</table>':'<div class="note" style="font-size:17px">'+t('범위 이탈 없음.','No out-of-range spans.')+'</div>')+'</div>';
+ /* 7 구간별 */
+ var rows='',b2,bs=6;
+ for(b2=0;b2<10;b2++){var a0=b2*bs,a1=Math.min(n,a0+bs-1),sl=function(arr){return arr.slice(a0,a1+1)},tv=[0,1,2,3].map(function(k){return avg(sl(g.t[k]))}),mid=197-((a0+a1)/2/n)*8,bad=tv.some(function(v){return Math.abs(v-mid)>16}),spread=Math.round(Math.max.apply(null,tv)-Math.min.apply(null,tv)),stp2=sl(g.st).indexOf('stop')>=0;
+  rows+='<tr><td>'+g.len[a0].toLocaleString()+'~'+g.len[a1].toLocaleString()+'</td><td>'+clk(p.start,a0*per)+'</td>'+tv.map(function(v){return '<td style="color:'+(Math.abs(v-mid)>16?'var(--bd)':'inherit')+';font-weight:'+(Math.abs(v-mid)>16?'700':'400')+'">'+Math.round(v)+'</td>'}).join('')+'<td>'+spread+'</td><td>'+Math.round(avg(sl(g.spd)))+'</td><td>'+Math.round(Math.max.apply(null,sl(g.spd)))+'</td><td>'+Math.round(avg(sl(g.l1)))+' / '+Math.round(avg(sl(g.l2)))+'</td><td>'+Math.round(avg(sl(g.unc)))+'</td><td>'+(bad?pill('bd',t('이탈','Out')):(stp2?pill('id',t('정지 포함','Has stop')):pill('ok',t('정상','OK'))))+'</td></tr>'}
+ h+='<div class="sec" id="s7"><h3>'+t('구간별 기록','Section records')+' <span>'+t('길이를 10구간으로 나눈 평균','Averages over 10 length sections')+'</span></h3><table class="sm"><tr><th>'+t('길이 (m)','Length (m)')+'</th><th>'+t('시각','Time')+'</th><th>'+t('텐션1','T1')+'</th><th>'+t('텐션2','T2')+'</th><th>'+t('텐션3','T3')+'</th><th>'+t('텐션4','T4')+'</th><th>'+t('편차','Spread')+'</th><th>'+t('속도 평균','Speed avg')+'</th><th>'+t('최대','Max')+'</th><th>'+t('루프1/2','Loop 1/2')+'</th><th>'+t('언코일러경','Unc. dia')+'</th><th>'+t('판정','Result')+'</th></tr>'+rows+'</table></div>';
+ /* 8 이벤트 */
+ var ev=[[0,'start',t('작업 시작 · 속도 올림 시작','Job started · speed ramp-up begins')],[3,'ok',t('목표 속도 도달 (설정 ','Target speed reached (set ')+setSpd+t(')',')')]];
+ if(p.sc)ev.push([p.sc[0],'chg',t('라인 속도 설정 ','Line speed setpoint ')+p.sc[1]+' → '+p.sc[2]]);
+ p.stops.forEach(function(s){ev.push([s[0],'stop',t('라인 정지 ','Line stopped ')+mn((s[1]-s[0]+1)*per)+' (RUN 0)']);ev.push([s[1]+1,'ok',t('재가동 · 속도 회복','Restarted · speed recovered')])});
+ if(p.dev){ev.push([p.dev[0],'dev',t('텐션 정상 범위 밖 · 최대 편차 ','Tension out of range · max spread ')+p.tmax]);ev.push([p.dev[1]+1,'ok',t('정상 범위로 복귀','Back in range')])}
+ ev.push([Math.round(n*0.5),'ok',t('절반 지점 통과 · 언코일러 현재경 ','Halfway · uncoiler diameter ')+Math.round(g.unc[Math.round(n*0.5)])+' mm']);
+ ev.push([n,'start',t('작업 종료 · 총 ','Job ended · total ')+p.len.toLocaleString()+' m']);
+ ev.sort(function(a,b){return a[0]-b[0]});
+ var evk={start:['id',t('시작/종료','Start/End')],ok:['ok',t('정보','Info')],chg:['run',t('설정 변경','Setting')],stop:['id',t('정지','Stop')],dev:['bd',t('이탈','Out of range')]};
+ h+='<div class="sec" id="s8"><h3>'+t('이벤트 기록','Event log')+' <span>'+t('자동 기록 · 시간 순서','Auto-logged · chronological')+'</span></h3><table class="sm"><tr><th>'+t('시각','Time')+'</th><th>'+t('구분','Type')+'</th><th>'+t('내용','Detail')+'</th><th>'+t('길이 위치','Position')+'</th></tr>'+ev.map(function(e){return '<tr><td>'+clk(p.start,e[0]/n*p.dur)+'</td><td>'+pill(evk[e[1]][0],evk[e[1]][1])+'</td><td>'+e[2]+'</td><td>'+g.len[Math.min(n,e[0])].toLocaleString()+' m</td></tr>'}).join('')+'</table></div>';
+ /* 9 비교 */
+ var cmp=[[t('소요 시간','Duration'),dur(p.dur),dur(p.avg),dur(p.avg-25)+'~'+dur(p.avg+40),sg(df)+t('분',' min')],[t('가동률','Utilization'),Math.round(runMin/p.dur*100)+'%','94%','82~100%',sg(Math.round(runMin/p.dur*100)-94)+'%p'],[t('평균 속도','Avg speed'),avgSpd,'168','150~172',sg(avgSpd-168)],[t('텐션1 평균','Tension 1 avg'),tavg[0],'192','184~201',sg(tavg[0]-192)],[t('텐션2 평균','Tension 2 avg'),tavg[1],'191','183~200',sg(tavg[1]-191)],[t('텐션3 평균','Tension 3 avg'),tavg[2],'190','182~199',sg(tavg[2]-190)],[t('텐션4 평균','Tension 4 avg'),tavg[3],'196','187~206',sg(tavg[3]-196)],[t('텐션 편차 최대','Max tension spread'),p.tmax,'15','8~24',sg(p.tmax-15)],[t('정지 횟수','Stops'),p.stops.length,'0.4','0~2',sg(fx(p.stops.length-0.4,1))],[t('범위 이탈 시간','Out-of-range time'),devMin+t('분',' min'),t('3분','3 min'),t('0~14분','0–14 min'),sg(devMin-3)+t('분',' min')]];
+ var recent=[['10/06',100,'0.48×4',14,0,'ok'],['10/02',88,'0.48×4',12,0,'ok'],['09/30',95,'0.48×4',17,1,'ok'],['09/29',112,'0.48×4',26,2,'wn'],['09/22',90,'0.48×4',13,0,'ok']];
+ var pos=Math.max(3,Math.min(97,(p.rank/83)*100));
+ h+='<div class="sec" id="s9"><h3>'+t('같은 규격 비교','Same-spec comparison')+' <span>'+p.spec+t(' 완료 83건 기준 (샘플)',' · based on 83 finished jobs (sample)')+'</span></h3>'+
+  '<div class="note" style="font-size:16px">'+t('소요 시간 순위 ','Duration rank ')+'<b>'+p.rank+' / 83</b>'+t(' (왼쪽이 빠름)',' (left = faster)')+'</div><div class="dist"><s style="left:'+pos+'%"></s></div><div class="gl" style="margin-bottom:10px"><span>'+t('가장 빠름','Fastest')+'</span><span>'+t('평균','Average')+'</span><span>'+t('가장 느림','Slowest')+'</span></div>'+
+  '<table class="sm"><tr><th>'+t('지표','Metric')+'</th><th>'+t('이번 작업','This job')+'</th><th>'+t('같은 규격 평균','Same-spec avg')+'</th><th>'+t('최소~최대','Min–max')+'</th><th>'+t('차이','Diff')+'</th></tr>'+cmp.map(function(r){return '<tr><td>'+r.join('</td><td>')+'</td></tr>'}).join('')+'</table>'+
+  '<p class="twoh" style="margin-top:14px">'+t('같은 규격 최근 5건','Last 5 jobs of the same spec')+' <span class="note">'+t('(샘플)','(sample)')+'</span></p><table class="sm"><tr><th>'+t('날짜','Date')+'</th><th>'+t('소요','Duration')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('편차 최대','Max spread')+'</th><th>'+t('정지','Stops')+'</th><th>'+t('판정','Result')+'</th></tr>'+recent.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+dur(r[1])+'</td><td>'+r[2]+'</td><td>'+r[3]+'</td><td>'+(r[4]?r[4]+t('회','×'):t('없음','None'))+'</td><td>'+(r[5]==='ok'?pill('ok',t('정상','OK')):pill('wn',t('주의','Watch')))+'</td></tr>'}).join('')+'</table></div>';
+ h+='<div class="sec"><h3>'+t('현장 메모','Floor notes')+' <span>'+t('읽기 전용','Read-only')+'</span></h3><div style="font-size:18px;color:var(--sb)">'+(p.j==='wn'?t('정지 후 재가동 직후 텐션4가 올라감. 정지 분석 화면에서 원인 확인 필요.','Tension 4 rose right after restart. Check the cause in the stop analysis screen.'):t('특이사항 없음.','Nothing to note.'))+'</div></div>';
+ h+='</div>';
+ $('pgDetail').innerHTML=h;
+ $('back').onclick=function(){go('past')};
+ $('pv').onclick=function(){openDetail((i+PAST.length-1)%PAST.length)};$('nx').onclick=function(){openDetail((i+1)%PAST.length)};
+ document.querySelectorAll('.jump button').forEach(function(b){b.onclick=function(){var el=$(b.dataset.j),sc=$('dsc');sc.scrollTo({top:el.offsetTop-52,behavior:'smooth'})}});
+ showOnly('pgDetail','past');
+ dcs.forEach(function(c){c.destroy()});dcs=[];
+ var tick='#5c6478',grid='rgba(92,100,120,.16)',sc=function(yl,min,max){return {x:{title:{display:true,text:t('코일 길이 (m)','Coil length (m)'),color:tick,font:{size:12}},ticks:{maxTicksLimit:7,color:tick,font:{size:12}},grid:{display:false}},y:{min:min,max:max,title:{display:true,text:yl,color:tick,font:{size:12}},ticks:{color:tick,font:{size:12},maxTicksLimit:4},grid:{color:grid}}}};
+ var base={responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}}};
+ var lo=g.len.map(function(l,x){return 182-x/n*8}),hi=g.len.map(function(l,x){return 214-x/n*8});
+ var d1=[{data:lo,borderWidth:0,pointRadius:0,fill:false},{data:hi,borderWidth:0,pointRadius:0,backgroundColor:'rgba(61,170,110,.18)',fill:'-1'}];
+ for(k=0;k<4;k++)d1.push({data:g.t[k],borderColor:C.t[k],borderDash:DASH[k],borderWidth:2.2,pointRadius:0,tension:0.2});
+ var mk=function(id,sets,yl,min,max){dcs.push(new Chart($(id),{type:'line',data:{labels:g.len,datasets:sets},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false}},scales:sc(yl,min,max)}}))};
+ mk('d1',d1,t('텐션','Tension'),150,250);
+ mk('d2',[{data:g.spd,borderColor:C.ac,borderWidth:2.2,pointRadius:0,tension:0.1}],t('속도','Speed'),0,200);
+ mk('d3',[{data:g.unc,borderColor:'#5c6478',borderWidth:2.2,pointRadius:0},{data:g.rec,borderColor:'#d9622b',borderDash:[8,4],borderWidth:2.2,pointRadius:0}],'mm',400,1700);
+ mk('d4',[{data:g.l1,borderColor:'#1f6fd1',borderWidth:2.2,pointRadius:0},{data:g.l2,borderColor:'#d6407f',borderDash:[8,4],borderWidth:2.2,pointRadius:0}],t('루프 값','Loop value'),0,110);
+ mk('d5',[{data:g.un.map(function(v){return Math.abs(v)}),borderColor:'#5c6478',borderWidth:2,pointRadius:0},{data:g.r3,borderColor:'#1f6fd1',borderDash:[8,4],borderWidth:2,pointRadius:0},{data:g.sl,borderColor:'#d9622b',borderDash:[2,4],borderWidth:2,pointRadius:0},{data:g.rc,borderColor:'#7b5fd6',borderDash:[12,4,2,4],borderWidth:2,pointRadius:0}],t('PLC 값','PLC value'),0,1800);
+ mk('d6',[{data:g.cur,borderColor:'#0a7a3d',borderWidth:2.2,pointRadius:0}],'A',0,16);
+}
+
+/* ---------- 이동 ---------- */
+function showOnly(id,nav){
+ ['pgList','pgNow','pgPast','pgDetail'].forEach(function(s){$(s).hidden=(s!==id)});
+ document.querySelectorAll('#nav button').forEach(function(b){b.className=b.dataset.p===nav?'on':''});
+}
+function go(p){
+ if(p==='list'){renderList();showOnly('pgList','list')}
+ else if(p==='now'){showOnly('pgNow','now');renderNow()}
+ else{renderPast();showOnly('pgPast','past')}
+}
+function fit(){var f=$('fit'),s=Math.min(1.2,f.clientWidth/1280);$('stage').style.transform='scale('+s+')';f.style.height=(800*s)+'px'}
+renderShell();
+document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){go(b.dataset.p)}});
+window.addEventListener('resize',fit);fit();
+renderList();
+if(location.hash==='#now')go('now');else if(location.hash==='#past')go('past');else if(location.hash==='#detail')openDetail(2);
+</script>
+
+</body>
+</html>
