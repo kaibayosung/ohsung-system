@@ -65,6 +65,7 @@ section[hidden]{display:none}
 tr.dim td{color:var(--sb);background:#fafbfd}
 table.pt{font-size:17px}table.pt th{font-size:14px;padding:9px 6px}table.pt td{padding:0 6px;height:52px}td.cn{font-size:15px}td.cu{font-size:16px;color:var(--sb);max-width:150px;overflow:hidden;text-overflow:ellipsis}table.pt .smp{font-size:11px;margin-left:3px}
 .note2{font-size:14px;color:var(--sb)}
+td.cn2{font-size:17px}
 .chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .chips button{padding:0 18px;height:48px;font-size:19px;font-weight:700}
 #stage .chips button.on{background:var(--tx);border-color:var(--tx);color:#fff}
@@ -178,61 +179,125 @@ function avg(a){return a.reduce(function(s,v){return s+v},0)/a.length}
 function sd(a){var m=avg(a);return Math.sqrt(avg(a.map(function(v){return (v-m)*(v-m)})))}
 function fx(v,d){return (Math.round(v*Math.pow(10,d))/Math.pow(10,d)).toFixed(d)}
 
-/* ---------- 껍데기 ---------- */
+var CO=t('대한강재','Daehan Steel'),SC=t('샘플 거래처','Sample customer'),SMP=t('샘플','Sample');
+
+/* ---------- 실시간 데이터 (ERP 작업지시서 + PLC) ---------- */
+var FN='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
+function getJson(q){return fetch(FN+'?'+q).then(function(r){return r.json()}).catch(function(){return null})}
+function sqlq(s){return getJson('sql='+encodeURIComponent(s))}
+function kstNow(){return Date.now()+9*3600000}
+function kstDate(){return new Date(kstNow()).toISOString().slice(0,10)}
+function kstClk(ms){return new Date(ms).toISOString().slice(11,16)}
+function tk(iso){return iso?String(iso).slice(11,16):''}
+function parseRule(pr){var cuts=[];String(pr||'').split(',').forEach(function(c){var m=c.trim().match(/^(\d+(?:\.\d+)?)=(\d+)/);if(m&&+m[1]>0)cuts.push([+m[1],+m[2]])});return cuts}
+function specOf(sp){var m=String(sp||'').replace('XC','').split('X');return {thk:parseFloat(m[0]),wd:+m[1],label:m[0]+'×'+m[1]}}
+function totLen(kg,sp,cuts){var s=specOf(sp),sum=0;cuts.forEach(function(c){sum+=c[0]*c[1]});var w=s.wd>100?s.wd:Math.max(1219,Math.round(sum));return Math.round(kg/(s.thk/1000*w/1000*7850))}
+var SNAP="J9R831P|대한강재|0.63X4XC|11110|100=9, 150=1, 165=1|준비||2026-10-08T09:05:01.000Z\nJ9R831Q|대한강재|0.63X4XC|11230|100=9, 150=1, 165=1|준비||2026-10-08T09:05:01.000Z\n2631903211|대한강재|0.75X4XC|10920|1219=1(다시감음)|준비||2026-10-08T09:05:02.000Z\n2632500311|대한강재|0.48X4XC|10780|97=12, 48=1|준비||2026-10-08T10:05:02.000Z\n2632500121|대한강재|0.48X4XC|10810|97=12, 48=1|완료|2026-10-08T10:50:34.000Z|2026-10-08T11:30:25.000Z\nCRG1000A|대한강재|1.15X4XC|12030|57=20, 35=2|준비||2026-10-08T13:05:12.000Z\nCRH0993A|대한강재|1.15X4XC|11350|57=20, 35=2|준비||2026-10-08T13:10:38.000Z\nCRF0151A|대한강재|1.15X4XC|11360|57=20, 35=2|준비||2026-10-08T13:10:38.000Z\nCRG0963B|대한강재|1.15X4XC|11900|57=20, 35=2|준비||2026-10-08T13:10:38.000Z\nCRG1004A|대한강재|1.15X4XC|12030|57=20, 35=2|준비||2026-10-08T13:10:39.000Z\n2632001021|대한강재|0.48X4XC|10860|97=12, 48=1|완료|2026-10-08T11:54:37.000Z|2026-10-08T13:26:49.000Z\n2612102121|대한강재|0.48X4XC|10780|97=12, 48=1|완료|2026-10-08T13:27:47.000Z|2026-10-08T14:43:15.000Z\nH3D262032011|유창|1.15X4XC|9665|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:01:07.000Z\nH3D262059942|유창|1.15X4XC|9740|57=19(시화)별도밴딩, 131=1(화성)별도밴딩|준비||2026-10-08T15:01:08.000Z\nH3D262059931|유창|1.15X4XC|9770|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:07:06.000Z\nH3D262032012|유창|1.15X4XC|9050|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:07:06.000Z\nH3D262058901|유창|1.15X4XC|9680|57=19(시화)별도밴딩, 131=1(화성)별도밴딩|준비||2026-10-08T15:07:06.000Z\n2632500611|대한강재|0.48X4XC|10700|97=12, 48=1|완료|2026-10-08T14:44:16.000Z|2026-10-08T15:09:54.000Z\nH3D262059911|유창|1.15X4XC|9770|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:10:45.000Z\nH3D263008502|유창|1.15X4XC|9905|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:10:45.000Z\nH3D263007531|유창|1.15X4XC|9795|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:10:45.000Z\nH3D262059901|유창|1.15X4XC|9710|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:21:06.000Z\nH3D262059952|유창|1.15X4XC|9930|57=19(시화)별도, 131=1(화성)별도|준비||2026-10-08T15:21:07.000Z\n2632500321|대한강재|0.48X4XC|10780|97=12, 48=1|진행중|2026-10-08T15:47:42.000Z|2026-10-08T15:47:42.000Z";
+var SNAP_PLC={ID:0,TIMESTAMP:'2026-10-08T15:54:12.000Z',COIL_ID:'2632500321',UNCOILER_OUTDIA:1603,UNCOILER_ACTUAL_DIA:1603,RECOILER_ACTUAL_DIA:508,'3ROLL_SPEED':2,NO1_LOOP_VALUE:0,NO2_LOOP_VALUE:99,SLITTER_SPEED:0,SLITTER_KNIFE_DRAW:2980,RECOILER_SPEED:0,LINE_SPEED_SET_VALUE:0,LINE_SPEED_VALUE:0,LENGTH:3,TENSION1:0,TENSION2:0,TENSION3:0,TENSION4:0};
+function rowsFromSnap(){return SNAP.split('\n').map(function(l){var a=l.split('|');return {product_name:a[0],company_name:a[1],specification:a[2],original_weight:+a[3],process_rule:a[4],status:a[5],started_at:a[6]||null,update_time:a[7]||null}})}
+var LV={live:false,loaded:false,tried:false,rows:rowsFromSnap(),plc:SNAP_PLC,ser:[],date:'2026-10-08'};
+var JOBS=[],CUR=null,ESTEND=0;
+function statusKey(s){return s==='완료'?'done':(s==='진행중'?'run':'wait')}
+function buildJobs(){
+ var seen={},arr=[];
+ LV.rows.forEach(function(r){if(r.status!=='준비'){seen[r.product_name]=1}});
+ LV.rows.forEach(function(r){
+  if(r.status==='준비'&&seen[r.product_name])return;
+  var cuts=parseRule(r.process_rule),sp=specOf(r.specification),st=statusKey(r.status),s0=r.started_at?Date.parse(r.started_at):null,e0=r.update_time?Date.parse(r.update_time):null;
+  arr.push({st:st,coil:r.product_name,cu:String(r.company_name||'').replace('(주)',''),sp:r.specification,spec:sp.label,kg:+r.original_weight,cuts:cuts,cut:cuts.length?cuts.slice(0,3).map(function(c){return c[0]+'×'+c[1]}).join(', ')+(cuts.length>3?' +'+(cuts.length-3):''):'—',s0:s0,e0:e0,start:s0?tk(r.started_at):'',end:(st==='done'&&e0)?tk(r.update_time):'',L:totLen(+r.original_weight,r.specification,cuts),thk:sp.thk,u:e0||0});
+ });
+ var ord={done:0,run:1,wait:2};
+ arr.sort(function(a,b){return ord[a.st]-ord[b.st]||(a.st==='wait'?a.u-b.u:(a.s0||0)-(b.s0||0))});
+ JOBS=arr;CUR=null;arr.forEach(function(j){if(j.st==='run')CUR=j});
+ /* 대기 작업 시작 예상: 같은 규격의 지난 평균 소요 시간 + 교체 8분 */
+ var now=kstNow(),t0=now,lastDone=0;
+ arr.forEach(function(j){if(j.st==='done'&&j.e0>lastDone)lastDone=j.e0});
+ if(CUR){var est=curEst();t0=Math.max(now,now+est.left*60000)}else{t0=Math.max(now,lastDone)}
+ ESTEND=t0;
+ var DAYEND=Date.parse(kstDate()+'T17:40:00Z');
+ arr.forEach(function(j){if(j.st!=='wait')return;var g=PAST.filter(function(p){return p.dur&&p.spec===j.spec}).map(function(p){return p.dur}),d=g.length>=3?avg(g):Math.round(j.kg/1000*5.5);j.estS=t0+8*60000;j.estD=d;t0=j.estS+d*60000;j.estE=t0;j.late=j.estE>DAYEND});
+}
+function curEst(){
+ var j=CUR;if(!j)return null;var p=LV.plc||{},len=+p.LENGTH||0,L=j.L||1,pct=Math.max(0,Math.min(100,Math.round(len/L*100))),el=j.s0?Math.max(0,Math.round((kstNow()-j.s0)/60000)):0;
+ var v=+p.LINE_SPEED_VALUE||0,sp=v>30?v:((+p.LINE_SPEED_SET_VALUE>30)?+p.LINE_SPEED_SET_VALUE:160),left=Math.max(0,Math.round((L-len)/sp));
+ return {len:len,L:L,pct:pct,el:el,left:left,end:kstClk(kstNow()+left*60000),stopped:v<5};
+}
+async function loadLive(){
+ var d=kstDate(),r=await getJson('slitter_work_date='+d);LV.tried=true;
+ if(!r||!r.ok||!r.rows){if(!LV.loaded){LV.live=false;buildJobs()}return false}
+ LV.live=true;LV.loaded=true;LV.date=d;LV.rows=r.rows;
+ var cur=null;r.rows.forEach(function(x){if(x.status==='진행중')cur=x});
+ buildJobs();
+ if(cur){
+  var id=String(cur.product_name).replace(/'/g,'');
+  var pr=await sqlq("SELECT * FROM plc_data WHERE COIL_ID='"+id+"' ORDER BY ID DESC LIMIT 1");
+  if(pr&&pr.rows&&pr.rows[0])LV.plc=pr.rows[0];else LV.plc=null;
+  var sr=await sqlq("SELECT FLOOR(LENGTH/30) b,MAX(LENGTH) l,ROUND(AVG(NULLIF(TENSION1,0))) t1,ROUND(AVG(NULLIF(TENSION2,0))) t2,ROUND(AVG(NULLIF(TENSION3,0))) t3,ROUND(AVG(NULLIF(TENSION4,0))) t4,ROUND(AVG(NULLIF(LINE_SPEED_VALUE,0))) s,MAX(UNCOILER_ACTUAL_DIA) u FROM plc_data WHERE COIL_ID='"+id+"' GROUP BY b ORDER BY b");
+  LV.ser=(sr&&sr.rows)?sr.rows:[];
+  buildJobs();
+ }else{LV.plc=null;LV.ser=[]}
+ return true;
+}
+function plcAge(){var p=LV.plc;if(!p||!p.TIMESTAMP)return null;return Math.round((kstNow()-Date.parse(p.TIMESTAMP))/60000)}
+function renderNav(){
+ var e=CUR?curEst():null,age=plcAge();
+ var b=$('nav').querySelectorAll('button');
+ b[0].innerHTML=t('작업 목록','Job list')+'<small>'+t('오늘 '+JOBS.length+'건',JOBS.length+' today')+'</small>';
+ b[1].innerHTML='<span><span class="dot"></span>'+t('현재 작업','Current job')+'</span><small>'+(CUR?CUR.spec+' · '+e.pct+'%':t('진행 중 없음','None running'))+'</small>';
+ $('navFoot').innerHTML=(!LV.tried?t('연결 중…','Connecting…'):LV.live?kstClk(kstNow())+t(' 현재',' now')+'<br>'+(age===null?t('PLC 기록 없음','No PLC rows'):(age>10?t('PLC 기록 '+age+'분 전','PLC '+age+' min ago'):t('PLC 연결 정상','PLC connected'))):t('샘플 표시 중<br>실시간 연결 안 됨','Showing sample<br>not live'));
+}
 function renderShell(){
  $('h1').textContent=t('슬리터2 현장 화면 · 가로 태블릿','Slitter 2 Floor Screen · Landscape Tablet');
  $('h1s').textContent=t('왼쪽 메뉴로 이동합니다 · 작업 목록 행이나 지난 작업을 눌러 상세로 들어가 보세요','Use the left menu · tap a row in the job list or a past job to drill in');
- $('foot').textContent=t('이 화면은 시안입니다. 작업 목록·시간·규격·중량은 실제 ERP 값이고, 정지·판정·그래프 곡선은 샘플입니다. 속도 m/min·길이 m는 실데이터로 확인했습니다.','Design preview. Job lists, times, specs and weights are real ERP values; stops, results and curves are samples. Speed m/min and length m are verified on real data.');
  $('nav').innerHTML='<div class="logo">'+t('슬리터2','Slitter 2')+'<small>'+t('현장 화면','Floor screen')+'</small></div>'+
- '<button type="button" data-p="list" class="on">'+t('작업 목록','Job list')+'<small>'+t('오늘 14건','14 today')+'</small></button>'+
- '<button type="button" data-p="now"><span><span class="dot"></span>'+t('현재 작업','Current job')+'</span><small>0.48×4 · 41%</small></button>'+
- '<button type="button" data-p="past">'+t('지난 작업','Past jobs')+'<small>'+t('상세 기록','Full records')+'</small></button>'+
- '<div class="foot">'+t('15:20 현재<br>PLC 연결 정상','As of 15:20<br>PLC connected')+'</div>';
+ '<button type="button" data-p="list" class="on"></button><button type="button" data-p="now"></button>'+
+ '<button type="button" data-p="past">'+t('지난 작업','Past jobs')+'<small>'+t('상세 기록','Full records')+'</small></button><div class="foot" id="navFoot"></div>';
+ renderNav();
 }
-var CO=t('대한강재','Daehan Steel'),SC=t('샘플 거래처','Sample customer'),SMP=t('샘플','Sample');
+function setFoot(){
+ if(!LV.tried){$('foot').textContent='';return}
+ $('foot').textContent=LV.live?t('작업 목록·현재 작업·텐션·속도는 ERP와 PLC 실시간 값입니다(10초마다 갱신). 정상 범위, 지난 작업의 정지·판정·그래프 곡선은 샘플입니다.','Job list, current job, tension and speed are live ERP and PLC values (refreshed every 10 s). Normal ranges and the stops, results and curves of past jobs are samples.'):t('실시간 데이터를 불러오지 못해 샘플을 표시하고 있습니다. 화면 구성만 확인할 수 있습니다.','Could not load live data, so sample data is shown. Only the layout is meaningful.');
+}
 
 /* ---------- 작업 목록 ---------- */
-var JOBS=[
- {st:'done',coil:'2631900101',spec:'0.48×4',kg:10810,cut:'97×12, 48×1',tm:t('10:20~11:49 · 89분','10:20–11:49 · 89 min'),s:1},
- {st:'done',coil:'2632001021',spec:'0.48×4',kg:10860,cut:'97×12, 48×1',tm:t('11:54~13:26 · 92분','11:54–13:26 · 92 min')},
- {st:'done',coil:'2612102121',spec:'0.48×4',kg:10780,cut:'97×12, 48×1',tm:t('13:27~14:43 · 76분','13:27–14:43 · 76 min')},
- {st:'run',coil:'2632500611',spec:'0.48×4',kg:10700,cut:'97×12, 48×1',tm:t('14:44~ · 종료 16:14 예상','14:44– · ends ~16:14')},
- {st:'wait',coil:'CRG1004A',spec:'1.15×4',kg:12030,cut:'57×20, 35×2',tm:t('16:20 시작 예상','starts ~16:20')},
- {st:'wait',coil:'CRG0963B',spec:'1.15×4',kg:11900,cut:'57×20, 35×2',tm:t('17:55 시작 예상','starts ~17:55'),late:1},
- {st:'wait',coil:'CRH0993A',spec:'1.15×4',kg:11350,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1},
- {st:'wait',coil:'CRF0151A',spec:'1.15×4',kg:11360,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1},
- {st:'wait',coil:'CRG1120C',spec:'1.15×4',kg:11800,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
- {st:'wait',coil:'CRH0110B',spec:'1.15×4',kg:11640,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
- {st:'wait',coil:'CRF0207A',spec:'1.15×4',kg:11510,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
- {st:'wait',coil:'CRG1301A',spec:'1.15×4',kg:11270,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
- {st:'wait',coil:'CRH0402D',spec:'1.15×4',kg:11890,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1},
- {st:'wait',coil:'CRF0509B',spec:'1.15×4',kg:11250,cut:'57×20, 35×2',tm:t('내일 이월 가능','may roll to tomorrow'),late:1,s:1}
-];
 var jf='all';
 function renderList(){
+ var cnt={all:JOBS.length,run:0,done:0,wait:0},kg={all:0,run:0,done:0,wait:0};
+ JOBS.forEach(function(j){cnt[j.st]++;kg[j.st]+=j.kg;kg.all+=j.kg});
+ var fit=0,fitKg=0;JOBS.forEach(function(j){if(j.st==='wait'&&!j.late){fit++;fitKg+=j.kg}});
+ var tn=function(x){return fx(x/1000,1)+' t'};
  var rows=JOBS.map(function(j,i){return {j:j,i:i}}).filter(function(x){return jf==='all'||x.j.st===jf});
- var h='<div class="ph"><h2>'+t('작업 목록','Job list')+'</h2><span class="sub">2026-10-08 · '+t('슬리터2 · 그린ERP 작업지시서','Slitter 2 · Green ERP work orders')+'</span></div>'+
- '<div class="kp"><div class="k"><span>'+t('오늘 작업','Today')+'</span><b>'+t('14건','14')+'</b><small>156.6 t</small></div><div class="k"><span>'+t('진행 중','In progress')+'</span><b style="color:var(--ac)">'+t('1건','1')+'</b><small>10.7 t</small></div><div class="k"><span>'+t('완료','Done')+'</span><b>'+t('3건','3')+'</b><small>32.5 t</small></div><div class="k"><span>'+t('대기','Waiting')+'</span><b>'+t('10건','10')+'</b><small>113.5 t</small></div><div class="k" style="background:var(--wn2)"><span style="color:var(--wn)">'+t('17:40 마감 전망','Outlook at 17:40')+'</span><b style="color:var(--wn)">'+t('2건 완료','2 done')+'</b><small style="color:var(--wn)">'+t('대기 9건은 내일로','9 waiting go to tomorrow')+'</small></div></div>'+
- '<div class="chips" id="jchips">'+[['all',t('전체 14','All 14')],['run',t('진행 중 1','In progress 1')],['done',t('완료 3','Done 3')],['wait',t('대기 10','Waiting 10')]].map(function(c){return '<button type="button" data-f="'+c[0]+'" class="'+(jf===c[0]?'on':'')+'">'+c[1]+'</button>'}).join('')+'</div>'+
- '<div class="tw"><table><tr><th>'+t('순서','#')+'</th><th>'+t('상태','Status')+'</th><th>'+t('업체','Customer')+'</th><th>'+t('코일','Coil')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('중량','Weight')+'</th><th>'+t('절단','Slit plan')+'</th><th>'+t('시간','Time')+'</th><th></th></tr>'+
- rows.map(function(x){var j=x.j,pl=j.st==='done'?pill('ok',t('완료','Done')):(j.st==='run'?pill('run',t('진행 중 41%','Running 41%')):pill('id',t('대기','Waiting')));
-  var tm=j.late?'<span style="color:var(--wn);font-weight:700">'+j.tm+'</span>':j.tm;
-  return '<tr class="go'+(j.st==='run'?' cur':'')+'" data-i="'+x.i+'"><td>'+(x.i+1)+'</td><td>'+pl+'</td><td>'+CO+'</td><td>'+j.coil+(j.s?'<span class="smp">'+SMP+'</span>':'')+'</td><td>'+j.spec+'</td><td>'+j.kg.toLocaleString()+' kg</td><td>'+j.cut+'</td><td>'+tm+'</td><td class="chev">'+(j.st==='wait'?'':'›')+'</td></tr>'}).join('')+'</table></div>';
+ var e=CUR?curEst():null;
+ var h='<div class="ph"><h2>'+t('작업 목록','Job list')+'</h2><span class="sub">'+LV.date+' · '+t('슬리터2 · 그린ERP 작업지시서','Slitter 2 · Green ERP work orders')+((LV.tried&&!LV.live)?' · <b style="color:var(--wn)">'+t('샘플','sample')+'</b>':'')+'</span></div>'+
+ '<div class="kp"><div class="k"><span>'+t('오늘 작업','Today')+'</span><b>'+t(cnt.all+'건',''+cnt.all)+'</b><small>'+tn(kg.all)+'</small></div><div class="k"><span>'+t('진행 중','In progress')+'</span><b style="color:var(--ac)">'+t(cnt.run+'건',''+cnt.run)+'</b><small>'+tn(kg.run)+'</small></div><div class="k"><span>'+t('완료','Done')+'</span><b>'+t(cnt.done+'건',''+cnt.done)+'</b><small>'+tn(kg.done)+'</small></div><div class="k"><span>'+t('대기','Waiting')+'</span><b>'+t(cnt.wait+'건',''+cnt.wait)+'</b><small>'+tn(kg.wait)+'</small></div><div class="k" style="background:var(--wn2)"><span style="color:var(--wn)">'+t('17:40 마감 전망','Outlook at 17:40')+'</span><b style="color:var(--wn)">'+t('추가 '+fit+'건','+'+fit+' more')+'</b><small style="color:var(--wn)">'+(cnt.wait-fit>0?t('대기 '+(cnt.wait-fit)+'건은 내일로',(cnt.wait-fit)+' waiting go to tomorrow'):t('대기 작업 모두 가능','All waiting jobs fit'))+'</small></div></div>'+
+ '<div class="chips" id="jchips">'+[['all',t('전체 ','All ')+cnt.all],['run',t('진행 중 ','In progress ')+cnt.run],['done',t('완료 ','Done ')+cnt.done],['wait',t('대기 ','Waiting ')+cnt.wait]].map(function(c){return '<button type="button" data-f="'+c[0]+'" class="'+(jf===c[0]?'on':'')+'">'+c[1]+'</button>'}).join('')+'</div>'+
+ '<div class="tw"><table class="pt"><tr><th>'+t('순서','#')+'</th><th>'+t('상태','Status')+'</th><th>'+t('업체','Customer')+'</th><th>'+t('코일','Coil')+'</th><th>'+t('규격','Spec')+'</th><th>'+t('중량','Weight')+'</th><th>'+t('절단','Slit plan')+'</th><th>'+t('시간','Time')+'</th><th></th></tr>'+
+ (rows.length?rows.map(function(x){var j=x.j,pl=j.st==='done'?pill('ok',t('완료','Done')):(j.st==='run'?pill('run',t('진행 중 ','Running ')+(e?e.pct+'%':'')):pill('id',t('대기','Waiting'))),tm;
+  if(j.st==='done')tm=j.start+'~'+j.end+(j.s0&&j.e0&&j.e0-j.s0>=300000?' · '+dur((j.e0-j.s0)/60000):'');
+  else if(j.st==='run')tm=j.start+t('~ · 종료 ',' – · ends ~')+e.end+t(' 예상','');
+  else tm=j.estS?(j.late?t('내일 이월 가능','may roll to tomorrow'):kstClk(j.estS)+t(' 시작 예상',' start est.')):'—';
+  if(j.late)tm='<span style="color:var(--wn);font-weight:700">'+tm+'</span>';
+  return '<tr class="go'+(j.st==='run'?' cur':'')+'" data-i="'+x.i+'"><td>'+(x.i+1)+'</td><td>'+pl+'</td><td>'+cuN({cu:j.cu})+'</td><td class="cn2">'+j.coil+'</td><td>'+j.spec+'</td><td>'+j.kg.toLocaleString()+' kg</td><td>'+j.cut+'</td><td>'+tm+'</td><td class="chev">'+(j.st==='wait'?'':'›')+'</td></tr>'}).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--mu);height:90px">'+t('조건에 맞는 작업이 없습니다','No jobs match this filter')+'</td></tr>')+'</table></div>';
  $('pgList').innerHTML=h;
  document.querySelectorAll('#jchips button').forEach(function(b){b.onclick=function(){jf=b.dataset.f;renderList()}});
- document.querySelectorAll('#pgList tr.go').forEach(function(r){r.onclick=function(){var j=JOBS[+r.dataset.i];if(j.st==='run')go('now');else if(j.st==='done'){var ix=pi(j.coil,'10-08');openDetail(ix>=0&&PAST[ix].dur?ix:pi('2632001021','10-08'))}}});
+ document.querySelectorAll('#pgList tr.go').forEach(function(r){r.onclick=function(){var j=JOBS[+r.dataset.i];if(j.st==='run')go('now');else if(j.st==='done'){var ix=pi(j.coil,kstDateKey());if(ix>=0&&PAST[ix].dur)openDetail(ix)}}});
 }
+function kstDateKey(){return LV.date.slice(5)}
 
 /* ---------- 현재 작업 ---------- */
-var N=49,cur=20,xs=[],Z=[197,196,195,204],dev=false,mode='ten',ch=null;
-for(var q=0;q<=N;q++)xs.push(Math.round(q*1470/N));
-function wob(i,k){return i===cur?0:((i*(3+k)+k*2)%7-3)*0.8}
-var DS=[1.3,0.6,0.5,1.9];
-function dv(i,k){return dev&&i>=10?(i-10)*DS[k]:0}
+var N=49,xs=[],dev=false,mode='ten',ch=null,cur=0,CL=1470;
+function setAxis(){CL=CUR?CUR.L:1470;xs=[];for(var q=0;q<=N;q++)xs.push(Math.round(q*CL/N));var e=CUR?curEst():null;cur=e?Math.max(0,Math.min(N,Math.round(e.len/CL*N))):0}
+function serAt(key,i){
+ if(!LV.ser||!LV.ser.length)return null;var e=curEst();if(!e||xs[i]>e.len+CL/N/2)return null;
+ var b=Math.floor(xs[i]/30),r=null,k;for(k=0;k<LV.ser.length;k++){if(+LV.ser[k].b===b){r=LV.ser[k];break}}
+ if(!r)for(k=LV.ser.length-1;k>=0;k--){if(+LV.ser[k].b<=b){r=LV.ser[k];break}}
+ return r&&r[key]!=null?+r[key]:null;
+}
+function pv(k){var p=LV.plc||{};return +p[k]||0}
 var M={
- ten:{min:150,max:250,lo:function(p){return 182-p*6},hi:function(p){return 214-p*6},act:function(i,k){return Z[k]+(cur-i)*0.25+wob(i,k)+dv(i,k)},n:4,u:t('텐션','Tension')},
- spd:{min:0,max:200,lo:function(p){return p<0.04?20+p*2500:158},hi:function(p){return p<0.04?60+p*2900:178},act:function(i){var p=i/N;return (p<0.04?30+p*2600:170+wob(i,1)*0.8)+(dev&&i>=10?-(i-10)*2.4:0)},n:1,u:t('속도','Speed')},
- dia:{min:400,max:1700,lo:function(p){return 1620-p*1080-18},hi:function(p){return 1620-p*1080+18},act:function(i){var p=i/N;return 1620-p*1080+(i===cur?0:wob(i,2)*2)},n:1,u:t('직경 mm','Dia. mm')}
+ ten:{min:150,max:250,lo:function(p){return 182-p*6},hi:function(p){return 214-p*6},act:function(i,k){return serAt('t'+(k+1),i)},n:4,u:t('텐션','Tension')},
+ spd:{min:0,max:200,lo:function(p){return p<0.04?20+p*2500:158},hi:function(p){return p<0.04?60+p*2900:178},act:function(i){return serAt('s',i)},n:1,u:t('속도','Speed')},
+ dia:{min:400,max:1700,lo:function(p){return 1620-p*1080-18},hi:function(p){return 1620-p*1080+18},act:function(i){return serAt('u',i)},n:1,u:t('직경 mm','Dia. mm')}
 };
 function pol(cx,cy,r,a){return [cx+r*Math.cos(a),cy-r*Math.sin(a)]}
 function arc(cx,cy,r,a0,a1){var p0=pol(cx,cy,r,a0),p1=pol(cx,cy,r,a1);return 'M'+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A'+r+' '+r+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1)}
@@ -240,53 +305,62 @@ function gauge(v,min,max,lo,hi,col){
  var an=function(x){return Math.PI-Math.max(0,Math.min(1,(x-min)/(max-min)))*Math.PI},cx=100,cy=98,r=78,nd=pol(cx,cy,r-6,an(v));
  return '<svg viewBox="0 0 200 106" aria-hidden="true"><path d="'+arc(cx,cy,r,Math.PI,0)+'" fill="none" stroke="#e1e6ef" stroke-width="16"/><path d="'+arc(cx,cy,r,an(lo),an(hi))+'" fill="none" stroke="#9bd9b6" stroke-width="16"/><line x1="'+cx+'" y1="'+cy+'" x2="'+nd[0].toFixed(1)+'" y2="'+nd[1].toFixed(1)+'" stroke="'+col+'" stroke-width="5" stroke-linecap="round"/><circle cx="'+cx+'" cy="'+cy+'" r="7" fill="'+col+'"/></svg>';
 }
-function gcard(name,dot,val,lo,hi,min,max,note){
- var st=stOf(val,lo,hi),col=cl(st.k);
- return {st:st,html:'<div class="g" style="border-color:'+(st.k==='ok'?'var(--pn)':col)+'"><div class="n">'+(dot?'<i style="background:'+dot+'"></i>':'')+name+'</div>'+gauge(val,min,max,lo,hi,col)+'<div class="v">'+Math.round(val)+'</div><div class="r">'+note+'</div><div class="s" style="color:'+col+'">'+st.s+' '+st.t+'</div></div>'};
+function gcard(name,dot,val,lo,hi,min,max,note,stopped){
+ var st=stopped?{k:'id',t:t('정지 중','Stopped'),s:'○',r:-1}:stOf(val,lo,hi),col=stopped?'#7d8ba1':cl(st.k);
+ return {st:st,html:'<div class="g" style="border-color:'+(st.k==='ok'||stopped?'var(--pn)':col)+'"><div class="n">'+(dot?'<i style="background:'+dot+'"></i>':'')+name+'</div>'+gauge(val,min,max,lo,hi,col)+'<div class="v">'+Math.round(val)+'</div><div class="r">'+note+'</div><div class="s" style="color:'+col+'">'+st.s+' '+st.t+'</div></div>'};
 }
 function coil(cx,cy,rMax,rCur,rCore,fill){return '<circle cx="'+cx+'" cy="'+cy+'" r="'+rMax+'" fill="none" stroke="#c4cddd" stroke-width="2" stroke-dasharray="5 5"/><circle cx="'+cx+'" cy="'+cy+'" r="'+rCur+'" fill="'+fill+'"/><circle cx="'+cx+'" cy="'+cy+'" r="'+rCore+'" fill="#fff" stroke="#c4cddd" stroke-width="2"/>'}
 function flowSvg(){
- var d1=57/100*58,d2=96/100*58,y=100;
+ var l1=pv('NO1_LOOP_VALUE'),l2=pv('NO2_LOOP_VALUE'),ua=pv('UNCOILER_ACTUAL_DIA'),uo=pv('UNCOILER_OUTDIA'),ra=pv('RECOILER_ACTUAL_DIA');
+ var d1=l1/100*58,d2=l2/100*58,y=100,cap=function(d){return 20+42*Math.max(0,Math.min(1,(d-400)/1300))};
  var path='M165 '+y+' H300 Q370 '+(y+d1)+' 440 '+y+' H650 Q720 '+(y+d2)+' 790 '+y+' H885';
  var s='<svg viewBox="0 0 1050 196" style="width:100%;height:100%" role="img" aria-label="'+t('언코일러에서 리코일러까지 스트립이 흐르는 라인 그림','Line diagram: strip flowing from uncoiler to recoiler')+'">';
- s+=coil(90,92,62,47,20,'#aebbd6');
- s+='<path d="'+path+'" fill="none" stroke="#2a5bd7" stroke-width="6" class="flow"/>';
+ s+=coil(90,92,62,cap(ua),20,'#aebbd6');
+ s+='<path d="'+path+'" fill="none" stroke="#2a5bd7" stroke-width="6"'+(pv('LINE_SPEED_VALUE')>5?' class="flow"':' stroke-dasharray="10 8" opacity=".5"')+'/>';
  s+='<rect x="195" y="70" width="70" height="60" rx="12" fill="#fff" stroke="#c4cddd" stroke-width="2"/><circle cx="215" cy="88" r="8" fill="#8592a8"/><circle cx="245" cy="88" r="8" fill="#8592a8"/><circle cx="230" cy="114" r="8" fill="#8592a8"/>';
  [520,570].forEach(function(x){s+='<circle cx="'+x+'" cy="72" r="17" fill="#fff" stroke="#d9622b" stroke-width="4"/><circle cx="'+x+'" cy="128" r="17" fill="#fff" stroke="#d9622b" stroke-width="4"/>'});
- s+=coil(960,92,62,28,20,'#aebbd6');
- var L=[[90,t('언코일러','Uncoiler'),t('현재경 1218 / 1604','Dia 1218 / 1604')],[230,t('3롤','3-roll'),t('속도 1272','Speed 1272')],[370,t('루프 1','Loop 1'),'57'],[545,t('슬리터','Slitter'),t('속도 1366 · 나이프 2980','Speed 1366 · Knife 2980')],[720,t('루프 2','Loop 2'),'96'],[960,t('리코일러','Recoiler'),t('현재경 719','Dia 719')]];
+ s+=coil(960,92,62,cap(ra),20,'#aebbd6');
+ var L=[[90,t('언코일러','Uncoiler'),t('현재경 ','Dia ')+ua+' / '+uo],[230,t('3롤','3-roll'),t('속도 ','Speed ')+pv('3ROLL_SPEED')],[370,t('루프 1','Loop 1'),''+l1],[545,t('슬리터','Slitter'),t('속도 ','Speed ')+pv('SLITTER_SPEED')+t(' · 나이프 ',' · Knife ')+pv('SLITTER_KNIFE_DRAW')],[720,t('루프 2','Loop 2'),''+l2],[960,t('리코일러','Recoiler'),t('현재경 ','Dia ')+ra]];
  L.forEach(function(a){s+='<text x="'+a[0]+'" y="174" text-anchor="middle" font-size="17" font-weight="700" fill="#0f1e33" font-family="inherit">'+a[1]+'</text><text x="'+a[0]+'" y="192" text-anchor="middle" font-size="15" fill="#5c6478" font-family="inherit">'+a[2]+'</text>'});
  return s+'</svg>';
 }
 function renderNow(){
- var h='<div class="arow"><div class="job"><div class="t"><b>'+CO+' · 0.48×4 · 10,700 kg</b><span>'+t('코일 2632500611 · 시작 14:44','Coil 2632500611 · started 14:44')+'</span></div><div class="bar"><i></i></div><div class="prow"><b>41%</b><span>600 / 1,470 m</span><span>'+t('경과','Elapsed')+' <b style="font-size:19px">'+mn(36)+'</b></span><span>'+t('남은','Left')+' <b style="font-size:19px">'+mn(54)+'</b></span><span>'+t('종료','Ends')+' <b style="font-size:19px">16:14</b></span></div></div><div class="sig" id="sig"></div></div>'+
+ setAxis();
+ if(!CUR){
+  var nx=JOBS.filter(function(j){return j.st==='wait'})[0];
+  $('pgNow').innerHTML='<div class="ph"><h2>'+t('현재 작업','Current job')+'</h2></div><div class="empty"><b>'+t('지금 진행 중인 작업이 없습니다','No job is running now')+'</b><span>'+(nx?t('다음 대기 작업: ','Next in queue: ')+cuN({cu:nx.cu})+' · '+nx.spec+' · '+nx.coil:t('대기 중인 작업도 없습니다','The queue is empty'))+'</span></div>';
+  return;
+ }
+ var e=curEst(),p=LV.plc||{};
+ var h='<div class="arow"><div class="job"><div class="t"><b>'+cuN({cu:CUR.cu})+' · '+CUR.spec+' · '+CUR.kg.toLocaleString()+' kg</b><span>'+t('코일 ','Coil ')+CUR.coil+t(' · 시작 ',' · started ')+CUR.start+'</span></div><div class="bar"><i style="width:'+e.pct+'%"></i></div><div class="prow"><b>'+e.pct+'%</b><span>'+e.len.toLocaleString()+' / '+e.L.toLocaleString()+' m</span><span>'+t('경과','Elapsed')+' <b style="font-size:19px">'+mn(e.el)+'</b></span><span>'+t('남은','Left')+' <b style="font-size:19px">'+mn(e.left)+'</b></span><span>'+t('종료','Ends')+' <b style="font-size:19px">'+e.end+'</b></span></div></div><div class="sig" id="sig"></div></div>'+
  '<div class="card" style="height:196px;flex:none;padding:6px 10px">'+flowSvg()+'</div><div class="grow" id="grow"></div>'+
- '<div class="card cht"><div class="tabs" id="tabs"><button type="button" data-m="ten" class="on">'+t('텐션 1~4','Tension 1–4')+'</button><button type="button" data-m="spd">'+t('라인 속도','Line speed')+'</button><button type="button" data-m="dia">'+t('코일 직경','Coil dia.')+'</button><div class="lg" id="lg"></div><button type="button" id="bDev">'+t('이탈 시연','Alert demo')+'</button></div><div class="cbox"><canvas id="cv" role="img" aria-label="'+t('선택한 신호의 실제 값, 예측선, 정상 범위 그래프','Actual, forecast and normal range of the selected signal')+'"></canvas></div></div>';
+ '<div class="card cht"><div class="tabs" id="tabs"><button type="button" data-m="ten" class="'+(mode==='ten'?'on':'')+'">'+t('텐션 1~4','Tension 1–4')+'</button><button type="button" data-m="spd" class="'+(mode==='spd'?'on':'')+'">'+t('라인 속도','Line speed')+'</button><button type="button" data-m="dia" class="'+(mode==='dia'?'on':'')+'">'+t('코일 직경','Coil dia.')+'</button><div class="lg" id="lg"></div></div><div class="cbox"><canvas id="cv" role="img" aria-label="'+t('선택한 신호의 실제 값, 예측선, 정상 범위 그래프','Actual, forecast and normal range of the selected signal')+'"></canvas></div></div>';
  $('pgNow').innerHTML=h;
  document.querySelectorAll('#tabs button[data-m]').forEach(function(b){b.onclick=function(){document.querySelectorAll('#tabs button[data-m]').forEach(function(x){x.className=''});b.className='on';mode=b.dataset.m;chart()}});
- $('bDev').onclick=function(){dev=!dev;this.textContent=dev?t('정상 복귀','Back to normal'):t('이탈 시연','Alert demo');updNow()};
  updNow();
 }
 function updNow(){
- var p=cur/N,m=M.ten,h='',worst={r:-1},k;
- for(k=0;k<4;k++){var g=gcard(t('텐션','Tension ')+(k+1),C.t[k],m.act(cur,k),m.lo(p),m.hi(p),150,250,t('정상 ','Normal ')+Math.round(m.lo(p))+'~'+Math.round(m.hi(p)));h+=g.html;if(g.st.r>worst.r)worst={r:g.st.r,k:g.st.k,n:t('텐션','Tension ')+(k+1),t:g.st.t}}
- var ts=gcard(t('라인 속도','Line speed'),null,M.spd.act(cur),158,178,0,200,t('설정 170 · 정상 158~178','Set 170 · normal 158~178'));h+=ts.html;if(ts.st.r>worst.r)worst={r:ts.st.r,k:ts.st.k,n:t('라인 속도','Line speed'),t:ts.st.t};
+ var e=curEst(),pr=e.len/e.L,m=M.ten,h='',worst={r:-2},k,stp=e.stopped,T=[pv('TENSION1'),pv('TENSION2'),pv('TENSION3'),pv('TENSION4')];
+ for(k=0;k<4;k++){var g=gcard(t('텐션','Tension ')+(k+1),C.t[k],T[k],m.lo(pr),m.hi(pr),150,250,t('정상 ','Normal ')+Math.round(m.lo(pr))+'~'+Math.round(m.hi(pr)),stp);h+=g.html;if(g.st.r>worst.r)worst={r:g.st.r,k:g.st.k,n:t('텐션','Tension ')+(k+1),t:g.st.t}}
+ var v=pv('LINE_SPEED_VALUE'),set=pv('LINE_SPEED_SET_VALUE'),slo=set>0?Math.round(set*0.93):158,shi=set>0?Math.round(set*1.05):178;
+ var ts=gcard(t('라인 속도','Line speed'),null,v,slo,shi,0,200,t('설정 ','Set ')+set+t(' · 정상 ',' · normal ')+slo+'~'+shi,stp);h+=ts.html;if(ts.st.r>worst.r)worst={r:ts.st.r,k:ts.st.k,n:t('라인 속도','Line speed'),t:ts.st.t};
  $('grow').innerHTML=h;
- var sgn=$('sig'),bg=worst.k==='ok'?'#dff3e7':(worst.k==='wn'?'#fdf0cf':'#fbe3e3');sgn.style.background=bg;sgn.style.color=cl(worst.k);
- sgn.innerHTML=worst.k==='ok'?'<b>● '+t('정상','Normal')+'</b><span>'+t('지금 설정 그대로 진행하세요','Keep the current settings')+'</span>':(worst.k==='wn'?'<b>▲ '+t('주의','Watch')+'</b><span>'+worst.n+' '+worst.t+' · '+t('지켜보세요','keep an eye on it')+'</span>':'<b>■ '+t('확인 필요','Check now')+'</b><span>'+worst.n+' '+worst.t+' · '+t('설정 확인','check settings')+'</span>');
+ var sgn=$('sig'),bg=stp?'#eceff5':(worst.k==='ok'?'#dff3e7':(worst.k==='wn'?'#fdf0cf':'#fbe3e3')),col=stp?'#5c6478':cl(worst.k);sgn.style.background=bg;sgn.style.color=col;
+ sgn.innerHTML=stp?'<b>○ '+t('정지 중','Stopped')+'</b><span>'+t('라인 속도 0 · 가동하면 텐션 판정이 시작됩니다','Line speed 0 · judging starts when the line runs')+'</span>':(worst.k==='ok'?'<b>● '+t('정상','Normal')+'</b><span>'+t('지금 설정 그대로 진행하세요','Keep the current settings')+'</span>':(worst.k==='wn'?'<b>▲ '+t('주의','Watch')+'</b><span>'+worst.n+' '+worst.t+' · '+t('지켜보세요','keep an eye on it')+'</span>':'<b>■ '+t('확인 필요','Check now')+'</b><span>'+worst.n+' '+worst.t+' · '+t('설정 확인','check settings')+'</span>'));
  chart();
 }
 function chart(){
- var m=M[mode],lo=[],hi=[],pr=[],ds=[],i,k,lg='',tick='#5c6478',grid='rgba(92,100,120,.16)';
+ var m=M[mode],lo=[],hi=[],pr=[],ds=[],i,k,lg='',tick='#5c6478',grid='rgba(92,100,120,.16)',e=curEst(),stp=e.stopped;
  for(i=0;i<=N;i++){lo.push(m.lo(i/N));hi.push(m.hi(i/N))}
- var last=0;for(k=0;k<m.n;k++)last+=m.act(cur,k);last/=m.n;
- for(i=0;i<=N;i++){var mid=(lo[i]+hi[i])/2;pr.push(i<cur?null:(i===cur?last:(dev?mid+(last-(lo[cur]+hi[cur])/2)*0.95:mid)))}
+ var last=null;
+ if(!stp){last=0;if(mode==='ten'){last=(pv('TENSION1')+pv('TENSION2')+pv('TENSION3')+pv('TENSION4'))/4}else if(mode==='spd'){last=pv('LINE_SPEED_VALUE')}else{last=pv('UNCOILER_ACTUAL_DIA')}}
+ for(i=0;i<=N;i++){var mid=(lo[i]+hi[i])/2;pr.push(i<cur?null:(i===cur?(last===null?mid:last):mid))}
  ds.push({data:lo,borderWidth:0,pointRadius:0,fill:false});
  ds.push({data:hi,borderWidth:0,pointRadius:0,backgroundColor:'rgba(61,170,110,.18)',fill:'-1'});
  ds.push({data:pr,borderColor:'#0f1e33',borderDash:[8,6],borderWidth:2.5,pointRadius:0,tension:0.2});
- for(k=0;k<m.n;k++){var a=[];for(i=0;i<=N;i++)a.push(i<=cur?m.act(i,k):null);ds.push({data:a,borderColor:mode==='ten'?C.t[k]:C.ac,borderDash:mode==='ten'?DASH[k]:[],borderWidth:3.2,pointRadius:0,tension:0.2})}
+ for(k=0;k<m.n;k++){var a=[];for(i=0;i<=N;i++)a.push(i<=cur?m.act(i,k):null);ds.push({data:a,borderColor:mode==='ten'?C.t[k]:C.ac,borderDash:mode==='ten'?DASH[k]:[],borderWidth:3.2,pointRadius:0,tension:0.2,spanGaps:true})}
  if(mode==='ten'){for(k=0;k<4;k++)lg+='<span><i style="display:inline-block;width:24px;height:0;border-top:3px '+(k===0?'solid':(k===1?'dashed':(k===2?'dotted':'dashed')))+' '+C.t[k]+'"></i>'+(k+1)+'</span>'}
- lg+='<span><i style="display:inline-block;width:24px;height:0;border-top:3px dashed #0f1e33"></i>'+t('예측','Forecast')+'</span><span><i style="display:inline-block;width:18px;height:12px;background:rgba(61,170,110,.3)"></i>'+t('정상 범위','Normal range')+'</span>';
+ lg+='<span><i style="display:inline-block;width:24px;height:0;border-top:3px dashed #0f1e33"></i>'+t('예측','Forecast')+'</span><span><i style="display:inline-block;width:18px;height:12px;background:rgba(61,170,110,.3)"></i>'+t('정상 범위(샘플)','Normal range (sample)')+'</span>';
  $('lg').innerHTML=lg;
  if(ch)ch.destroy();
  ch=new Chart($('cv'),{type:'line',data:{labels:xs,datasets:ds},options:{responsive:true,maintainAspectRatio:false,animation:false,plugins:{legend:{display:false},tooltip:{enabled:false}},scales:{x:{title:{display:true,text:t('코일 길이 (m)','Coil length (m)'),color:tick,font:{size:14}},ticks:{maxTicksLimit:8,color:tick,font:{size:14}},grid:{display:false}},y:{min:m.min,max:m.max,title:{display:true,text:m.u,color:tick,font:{size:14}},ticks:{color:tick,font:{size:14},maxTicksLimit:4},grid:{color:grid}}}}});
@@ -514,11 +588,15 @@ function go(p){
  else{renderPast();showOnly('pgPast','past')}
 }
 function fit(){var f=$('fit'),s=Math.min(1.2,f.clientWidth/1280);$('stage').style.transform='scale('+s+')';f.style.height=(800*s)+'px'}
-renderShell();
+buildJobs();renderShell();setFoot();
 document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){go(b.dataset.p)}});
 window.addEventListener('resize',fit);fit();
+function curPage(){var s=['pgList','pgNow','pgPast','pgDetail'],i;for(i=0;i<s.length;i++)if(!$(s[i]).hidden)return s[i];return ''}
+function refresh(){var pg=curPage();renderNav();if(pg==='pgList')renderList();else if(pg==='pgNow'){var wasCur=!!CUR;renderNow()}}
 renderList();
 if(location.hash==='#now')go('now');else if(location.hash==='#past')go('past');else if(location.hash==='#detail')openDetail(pi('2632001021','10-08'));
+loadLive().then(function(){setFoot();refresh()});
+setInterval(function(){loadLive().then(function(){setFoot();refresh()})},10000);
 </script>
 
 </body>
