@@ -26,6 +26,7 @@ import { LevelingStrokeMonitorScreen } from './test/levelingStrokeMonitorScreen'
 import { LevelingLineNmsScreen } from './test/levelingLineNmsScreen';
 import { LevelingSummaryBoardScreen } from './test/levelingSummaryBoardScreen';
 import { DashboardSyncMonitorScreen } from './test/dashboardSyncMonitorScreen';
+import { DashboardReconcileScreen } from './test/dashboardReconcileScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // "생산현장 도구"처럼 항목이 많은 카테고리는 group으로 한 번 더 묶어서 보여줍니다(선택 사항).
@@ -82,6 +83,7 @@ const PROJECTS = [
 
   // ── 3. 시스템 연동 (1개, 8/31) ──────────────────────────────────
   { key: 'dashboard-sync-monitor', label: '대시보드 자동연동 모니터링', icon: '🔗', category: '시스템 연동', desc: '그린ERP 작업지시서를 슬리팅 대시보드(servehttp.com)에 자동 등록하는 dashboard-instant-sync(RPA 대체)가 정상 동작 중인지, 오늘 몇 건이 자동 등록됐는지 실시간으로 보여줍니다. 실데이터로 동작합니다.', badge: '실데이터 연동' },
+  { key: 'dashboard-reconcile', label: 'ERP 대조', icon: '🧾', category: '시스템 연동', desc: '그린ERP 작업지시서와 슬리팅 대시보드 행을 날짜별로 비교해 내용이 다르거나, 중복이 의심되거나, 한쪽에만 있는 행만 보여줍니다. 읽기 전용이며 실데이터로 동작합니다.', badge: '실데이터 연동' },
 
   // ── 4. 고객사 시연 (2개, 최신 8/9) ──────────────────────────────
   { key: 'customer-chatbot', label: '(주)대한강재 챗봇 (작업 현황·미수금·출고 여부)', icon: '💬', category: '고객사 시연', desc: '진행중/완료 건수, 미출고, 미수금, 코일별 상태 등을 자유롭게 물어보면 Claude가 실데이터를 근거로 자연어로 답합니다. 실제 /portal과 별개, 대한강재로 범위 고정.', badge: '실데이터 연동' },
@@ -335,6 +337,7 @@ function LabPage() {
           {view === 'coil-ai-helper' && <CoilAiHelperScreen />}
           {view === 'coil-ai-helper-work' && <CoilAiHelperWorkScreen />}
           {view === 'dashboard-sync-monitor' && <DashboardSyncMonitorScreen />}
+          {view === 'dashboard-reconcile' && <DashboardReconcileScreen />}
         </div>
       )}
     </div>
