@@ -16,19 +16,33 @@
 // v6  같은 작업번호에서 품명이 정정되면 기존 대시보드 행을 UPDATE(내용 변경 감지).
 // v7  LEVELLING "나머지" 확정으로 새 번호가 발급되면 기존 미완료 행을 이어받아 UPDATE.
 // v8  내용 변경 감지 범위를 품명 → (품명/규격/길이/중량/가공규칙) 서명(content_sig)으로 확대.
-//     (2026-10-06 대한강재 J9S8308 가공규칙만 정정된 경우 대시보드 미반영 사례)
-// v9  [버그 수정, 2026-10-06] v8 배포 직후 오늘 건 일부가 대시보드에 중복 등록됨. 원인: MariaDB의
-//     UPDATE는 "값이 실제로 바뀐 행 수"를 affectedRows로 돌려주므로, 내용이 이미 같아 변화가 없는
-//     행은 정상인데도 affectedRows=0 → "행이 삭제됨"으로 오판해 새로 POST. 수정: UPDATE 전에 SELECT로
-//     행 존재 여부를 먼저 확인하고, 존재하면 affectedRows와 관계없이 갱신 완료로 보고 재등록하지 않는다.
-//     재등록(recreate)은 SELECT로 행이 없다고 확인된 경우에만 한다.
-// v10 [배포 버전 16, 2026-10-08]
-//     (a) LEVELLING 이어받기·이월(rollover) 경로의 affectedRows=0 오판 제거 — 행 존재 여부는 SELECT 결과로만 판단.
-//     (b) content_sig에 단가(unitPrice)·금액(amount) 추가 — 단가만 정정돼도 대시보드에 반영.
-//         ※ 배포 직후 오늘 건은 서명 형식이 바뀌어 1회 "변경"으로 잡혀 같은 값으로 UPDATE 됨(중복 등록 아님).
-//     (c) 단가가 아직 미러에 없는 경우(null) 기존 대시보드 단가를 null로 덮어쓰지 않도록 COALESCE 사용.
-//     (d) DB 접속 정보를 환경변수(LEVELER_DB_HOST/PORT/USER/PASS/NAME)로 읽도록 변경.
-// v11 [배포 버전 17, 2026-10-08] 비밀번호 평문 폴백 제거 — LEVELER_DB_PASS 시크릿이 없으면 명확한 오류를 낸다.
+// v9  [버그 수정] UPDATE의 affectedRows=0(값 변화 없음)을 "행 없음"으로 오판해 중복 POST하던 문제 —
+//     행 존재 여부는 SELECT로만 판단.
+// v10 [배포 버전 16] 이어받기·이월 경로의 affectedRows 오판 제거, 단가·금액 서명 포함(COALESCE),
+//     DB 접속 정보 환경변수화.
+// v11 [배포 버전 17] 비밀번호 평문 폴백 제거.
+// v12 [2026-10-12] 같은 코일이 대시보드에 두 줄로 생기는 문제의 근본 수정.
+//     확인된 중복 경로:
+//      (A) 이월 + 재발행: 전날 미완료 행이 아침에 오늘로 이월된 뒤, 사무실이 같은 코일로 오늘 날짜
+//          새 작업지시서를 다시 발행 → (작업지시일, 번호, 라인) 키가 새것이라 새 행 POST.
+//          (10/12 아침 25쌍)
+//      (B) 같은 작업지시서에서 라인만 변경(SLITING ↔ SLITING2): 키에 work_type이 들어 있어 새 키로
+//          보이고 새 행 POST, 옛 라인 행은 그대로 남음. (9/28, 10/1, 10/7, 10/8, 10/12 반복)
+//      (C) 다음 날 재발행(이월 전/이월 대상 아님): 전날 행 + 새 행.
+//      (D) 동시 실행·응답 유실: POST는 성공했는데 로그 기록 전에 실패/타임아웃 → 다음 사이클 재POST.
+//     수정:
+//      1) 이어받기(adopt, 슬리팅 계열만): 새 작업지시서의 코일(회사+품명+규격)과 같은 코일의 열린 행
+//         (대시보드에 존재, 완료 아님)이 최근 14일 로그에 있고, 그 행의 원래 작업지시서가 "과거 날짜"이거나
+//         "오늘 ERP 목록에 더 이상 없는 키"(라인 변경·삭제 재발행)이면 새 행을 만들지 않고 그 행을
+//         UPDATE(라인·날짜·내용)해서 새 키에 연결. 옛 로그는 retired_at으로 은퇴 → 이월·변경감지·되돌리기에서 제외.
+//         SLITING ↔ LEVELLING처럼 공정이 다른 경우(같은 코일을 슬리팅 후 레벨링)는 별개 작업이라 건드리지 않음.
+//      2) 선점(claim) 후 POST: 로그 행을 먼저 INSERT(유니크 키)해서 잡은 실행만 POST. POST 실패 시 선점 해제,
+//         응답 유실(id 없음)은 다음 사이클에 대시보드에서 찾아 연결.
+//      3) 이월 가드: 오늘 같은 코일의 새 작업지시서가 이미 연결돼 있으면 옛 행은 이월하지 않고 은퇴.
+//      4) 정리(heal): 오늘 보드에 같은 코일(슬리팅 계열)의 열린 행이 2개 이상이면, 오늘 ERP에 살아 있는
+//         키의 행을 남기고, 나머지 중 '준비'·미시작이고 원래 날짜가 과거인 행은 원래 작업지시일로 되돌림
+//         (삭제하지 않음 — 되돌릴 수 있음). 그 밖의 경우는 경고만 남김.
+//     ※ 대시보드 행을 DELETE하는 코드는 없다(삭제는 사람이 확인 후 직접).
 
 import forge from "npm:node-forge@1.3.1";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -44,6 +58,9 @@ const LEVELER_DB_PORT = parseInt(Deno.env.get("LEVELER_DB_PORT") || "33306", 10)
 const LEVELER_DB_USER = Deno.env.get("LEVELER_DB_USER") || "ohsung";
 const LEVELER_DB_PASS = Deno.env.get("LEVELER_DB_PASS") || "";
 const LEVELER_DB_NAME = Deno.env.get("LEVELER_DB_NAME") || "ohsung";
+
+const ADOPT_WINDOW_DAYS = 14; // v12: 이어받기 후보를 찾는 기간
+const CLAIM_STALE_MS = 3 * 60 * 1000; // v12: 이 시간 넘게 id가 비어 있는 선점은 복구 대상
 
 function parseSetCookie(headers: Headers): string {
   const raw = headers.get("set-cookie");
@@ -147,7 +164,6 @@ function numOrNull(v: any): number | null {
 }
 
 // v8/v10: 대시보드에 반영한 "내용"의 서명. 이 값이 그린ERP 현재 내용과 달라지면 대시보드 행을 갱신한다.
-// v10: 단가·금액 추가.
 function contentSig(p: {
   productName: any; specification: any; length: any; originalWeight: any; usedWeight: any; processRule: any;
   unitPrice?: any; amount?: any;
@@ -183,6 +199,12 @@ function todayKST(): string {
   return kst.toISOString().slice(0, 10);
 }
 
+function dateMinus(date: string, days: number): string {
+  const d = new Date(date + "T00:00:00Z");
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
 function dedupKey(mjunp: string, workType: string): string {
   return `${mjunp}|${workType}`;
 }
@@ -191,16 +213,62 @@ function erpStatusKey(mdate: string, mjunp: string, workType: string): string {
   return `${mdate}|${mjunp}|${workType}`;
 }
 
-// 주어진 id들의 (존재하는 행의) status 맵. 맵에 id가 없으면 = 대시보드에 그 행이 없다는 뜻.
-async function fetchBoardStatusByIds(mysql: MysqlClient, ids: number[]): Promise<Map<number, string>> {
-  const statusById = new Map<number, string>();
-  if (ids.length === 0) return statusById;
-  const placeholders = ids.map(() => "?").join(",");
-  const selRes = await mysql.execute(`SELECT id, status FROM erp_data WHERE id IN (${placeholders})`, ids);
-  for (const r of (selRes.rows || []) as any[]) {
-    statusById.set(Number(r.id), String(r.status));
+// v12: 공정 계열 — SLITING과 SLITING2는 같은 공정의 라인 차이(서로 옮겨질 수 있음), LEVELLING은 별개 공정.
+function family(workType: any): string {
+  const w = String(workType ?? "").toUpperCase();
+  if (w.startsWith("SLITING")) return "SL";
+  if (w === "LEVELLING") return "LV";
+  return w;
+}
+
+// v12: 코일 번호처럼 보이는 품명만 같은 코일 판정에 쓴다("CR", "칼라", "SPCC", "FHD" 같은 일반 품명 제외).
+function isCoilLike(productName: any): boolean {
+  const p = String(productName ?? "").trim();
+  return p.length >= 6 && /\d/.test(p);
+}
+
+function coilKey(company: any, product: any): string {
+  return `${String(company ?? "").trim()}|${String(product ?? "").trim().toUpperCase()}`;
+}
+
+function normSpec(s: any): string {
+  return String(s ?? "").toUpperCase().replace(/\s+/g, "");
+}
+
+function dateStr(v: any): string {
+  if (v instanceof Date) return v.toISOString().slice(0, 10);
+  return String(v ?? "").slice(0, 10);
+}
+
+type BoardRow = { status: string; started: boolean; workDate: string; workType: string; spec: string };
+
+// 주어진 id들의 (존재하는 행의) 상태. 맵에 id가 없으면 = 대시보드에 그 행이 없다는 뜻.
+async function fetchBoardRows(mysql: MysqlClient, ids: number[]): Promise<Map<number, BoardRow>> {
+  const m = new Map<number, BoardRow>();
+  const uniq = [...new Set(ids.filter((x) => Number.isFinite(x)))];
+  if (uniq.length === 0) return m;
+  const placeholders = uniq.map(() => "?").join(",");
+  const res = await mysql.execute(
+    `SELECT id, status, started_at, work_date, work_type, specification FROM erp_data WHERE id IN (${placeholders})`,
+    uniq,
+  );
+  for (const r of (res.rows || []) as any[]) {
+    m.set(Number(r.id), {
+      status: String(r.status ?? ""),
+      started: r.started_at !== null && r.started_at !== undefined && String(r.started_at) !== "",
+      workDate: dateStr(r.work_date),
+      workType: String(r.work_type ?? ""),
+      spec: String(r.specification ?? ""),
+    });
   }
-  return statusById;
+  return m;
+}
+
+async function fetchBoardStatusByIds(mysql: MysqlClient, ids: number[]): Promise<Map<number, string>> {
+  const rows = await fetchBoardRows(mysql, ids);
+  const m = new Map<number, string>();
+  for (const [id, r] of rows) m.set(id, r.status);
+  return m;
 }
 
 function connectMysql(): Promise<MysqlClient> {
@@ -213,6 +281,24 @@ function connectMysql(): Promise<MysqlClient> {
     db: LEVELER_DB_NAME,
     timeout: 10000,
   });
+}
+
+async function fetchDetail(cookie: string, h: any, date: string) {
+  const [d1, d2] = await Promise.all([
+    postAction(cookie, {
+      submitType: "selectDetail1", sort_field: "", sort_asc: "", mid: "1001",
+      selectMdate: String(h.mdate ?? date), selectMjunp: String(h.mjunp ?? ""),
+    }),
+    postAction(cookie, {
+      submitType: "selectDetail2", sort_field: "", sort_asc: "", mid: "1001",
+      selectMdate: String(h.mdate ?? date), selectMjunp: String(h.mjunp ?? ""),
+    }),
+  ]);
+  const item = (d1.data || [])[0] || {};
+  const sizeRows = (d2.data || []) as any[];
+  const processRule = sizeRows.map((r) => r.sdesc).filter(Boolean).join(", ");
+  const lengthParsed = parseLengthField(item.smeter);
+  return { item, processRule, lengthParsed };
 }
 
 Deno.serve(async (req) => {
@@ -228,7 +314,7 @@ Deno.serve(async (req) => {
 
   const timings: Record<string, number> = {};
   const t0 = performance.now();
-  const result: Record<string, any> = { date, commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
+  const result: Record<string, any> = { version: "v12", date, commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
 
   try {
     const { cookie, ms: loginMs } = await greenpLogin();
@@ -252,6 +338,64 @@ Deno.serve(async (req) => {
     timings.listMs = Math.round(performance.now() - listT0);
     const allHeaders = ((listJson.data || []) as any[]).slice(0, limit);
     result.headerCount = allHeaders.length;
+    // 오늘 그린ERP에 살아 있는 작업지시서 키 (작업지시일|번호|라인)
+    const todayErpKeys = new Set(allHeaders.map((h) => erpStatusKey(String(h.mdate ?? date), String(h.mjunp), String(h.mgubun ?? ""))));
+
+    // v12: 선점만 하고 id가 비어 있는 로그(응답 유실·실행 중단) 복구 — 대시보드에서 찾아 연결하거나, 못 찾으면 선점 해제.
+    const claimRecovery: Record<string, any> = { checked: 0, attached: 0, released: 0, errors: [] as any[] };
+    if (commit && !seedOnly) {
+      try {
+        const staleBefore = new Date(Date.now() - CLAIM_STALE_MS).toISOString();
+        const { data: claims, error: claimErr } = await supabase
+          .from("dashboard_sync_log")
+          .select("id, mjunp, mdate, work_type, company_name, product_name")
+          .eq("seeded", false)
+          .is("dashboard_erp_id", null)
+          .is("retired_at", null)
+          .gte("mdate", dateMinus(date, 3))
+          .lt("synced_at", staleBefore);
+        if (claimErr) throw new Error(claimErr.message);
+        claimRecovery.checked = (claims || []).length;
+        if (claims && claims.length > 0) {
+          let mysql: MysqlClient | null = null;
+          try {
+            mysql = await connectMysql();
+            for (const c of claims) {
+              let attachId: number | null = null;
+              if (c.product_name) {
+                const r = await mysql.execute(
+                  `SELECT id FROM erp_data WHERE work_date = ? AND company_name = ? AND product_name = ? AND work_type = ? ORDER BY id DESC LIMIT 5`,
+                  [c.mdate, c.company_name, c.product_name, c.work_type],
+                );
+                const ids = ((r.rows || []) as any[]).map((x) => Number(x.id));
+                if (ids.length > 0) {
+                  const { data: used } = await supabase.from("dashboard_sync_log").select("dashboard_erp_id").in("dashboard_erp_id", ids);
+                  const usedSet = new Set((used || []).map((u: any) => Number(u.dashboard_erp_id)));
+                  attachId = ids.find((x) => !usedSet.has(x)) ?? null;
+                }
+              }
+              if (attachId) {
+                const { error } = await supabase.from("dashboard_sync_log").update({ dashboard_erp_id: attachId }).eq("id", c.id);
+                if (error) claimRecovery.errors.push({ id: c.id, error: error.message });
+                else claimRecovery.attached++;
+              } else {
+                // 대시보드에 행이 없음 = POST가 실제로 안 됨 → 선점 해제해서 다음 사이클에 다시 등록되게 함.
+                const { error } = await supabase.from("dashboard_sync_log").delete().eq("id", c.id).is("dashboard_erp_id", null);
+                if (error) claimRecovery.errors.push({ id: c.id, error: error.message });
+                else claimRecovery.released++;
+              }
+            }
+          } finally {
+            if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
+          }
+        }
+        claimRecovery.ok = true;
+      } catch (e) {
+        claimRecovery.ok = false;
+        claimRecovery.error = String((e as Error)?.message || e);
+      }
+    }
+    result.claimRecovery = claimRecovery;
 
     const { data: alreadySyncedRows, error: syncLogErr } = await supabase
       .from("dashboard_sync_log")
@@ -288,7 +432,6 @@ Deno.serve(async (req) => {
 
     const priceKey = (joborderNo: string, workType: string) => `${joborderNo}|${workType}`;
     const priceMap = new Map<string, { unit_price: number | null; amount: number | null }>();
-    // 내용 변경 감지 대상인 "이미 동기화된" 건도 가격을 다시 채워 넣어야 하므로 allHeaders 전체를 조회.
     if (allHeaders.length > 0) {
       const mjunpList = [...new Set(allHeaders.map((h) => String(h.mjunp)))];
       const { data: detailRows, error: detailErr } = await supabase
@@ -312,7 +455,7 @@ Deno.serve(async (req) => {
     // v7: LEVELLING "나머지" 확정 이어받기 — 같은 회사명+코일ID(품명)+규격으로, 최근 3일 이내 아직
     // "완료"되지 않은 기존 동기화 건이 정확히 하나 있는 LEVELLING 신규 작업지시서는 새 행을 만들지 않고
     // 그 기존 행을 갱신한다. 후보가 0건이거나 2건 이상(모호)이면 평소대로 신규 등록.
-    // v10: 대시보드에서 이미 지워진 행(SELECT 결과에 없음)은 후보에서 제외, affectedRows 판정 제거.
+    // v12: 은퇴한 로그는 후보에서 제외.
     const levelingMergeT0 = performance.now();
     const levelingMerge: Record<string, any> = { checked: 0, matched: 0, merged: 0, ambiguous: 0, errors: [] as any[] };
     const mergedHeaderKeys = new Set<string>();
@@ -321,18 +464,14 @@ Deno.serve(async (req) => {
       levelingMerge.checked = levelingNewHeaders.length;
 
       if (levelingNewHeaders.length > 0) {
-        const windowFrom = (() => {
-          const d = new Date(date + "T00:00:00Z");
-          d.setUTCDate(d.getUTCDate() - 3);
-          return d.toISOString().slice(0, 10);
-        })();
         const { data: recentLog, error: recentErr } = await supabase
           .from("dashboard_sync_log")
           .select("id, mjunp, mdate, work_type, dashboard_erp_id, company_name, product_name")
           .eq("work_type", "LEVELLING")
           .eq("seeded", false)
+          .is("retired_at", null)
           .not("dashboard_erp_id", "is", null)
-          .gte("mdate", windowFrom)
+          .gte("mdate", dateMinus(date, 3))
           .lte("mdate", date);
         if (recentErr) throw new Error("leveling merge 후보 조회 실패: " + recentErr.message);
 
@@ -348,31 +487,10 @@ Deno.serve(async (req) => {
           let mysql: MysqlClient | null = null;
           try {
             mysql = await connectMysql();
-            const candIds = (recentLog || []).map((r: any) => Number(r.dashboard_erp_id));
-            const placeholders = candIds.map(() => "?").join(",");
-            const stateRes = await mysql.execute(`SELECT id, status, specification FROM erp_data WHERE id IN (${placeholders})`, candIds);
-            const statusById = new Map<number, string>();
-            const specById = new Map<number, string>();
-            for (const r of (stateRes.rows || []) as any[]) {
-              statusById.set(Number(r.id), String(r.status));
-              specById.set(Number(r.id), String(r.specification ?? ""));
-            }
+            const board = await fetchBoardRows(mysql, (recentLog || []).map((r: any) => Number(r.dashboard_erp_id)));
 
             for (const h of levelingNewHeaders) {
-              const [d1, d2] = await Promise.all([
-                postAction(cookie, {
-                  submitType: "selectDetail1", sort_field: "", sort_asc: "", mid: "1001",
-                  selectMdate: String(h.mdate ?? date), selectMjunp: String(h.mjunp ?? ""),
-                }),
-                postAction(cookie, {
-                  submitType: "selectDetail2", sort_field: "", sort_asc: "", mid: "1001",
-                  selectMdate: String(h.mdate ?? date), selectMjunp: String(h.mjunp ?? ""),
-                }),
-              ]);
-              const item = (d1.data || [])[0] || {};
-              const sizeRows = (d2.data || []) as any[];
-              const processRule = sizeRows.map((r) => r.sdesc).filter(Boolean).join(", ");
-              const lengthParsed = parseLengthField(item.smeter);
+              const { item, processRule, lengthParsed } = await fetchDetail(cookie, h, date);
               const productName = (item.spum ?? "").toString().trim();
               const companyName = String(h.mcomp ?? "").trim();
               const specification = (item.sspec ?? "").toString().trim();
@@ -381,17 +499,17 @@ Deno.serve(async (req) => {
               const key = `${companyName}|${productName}`;
               const sameCoil = (candidatesByKey.get(key) || []).filter((c) => String(c.mjunp) !== String(h.mjunp));
               const openCandidates = sameCoil.filter((c) => {
-                const erpId = Number(c.dashboard_erp_id);
-                if (!statusById.has(erpId)) return false; // v10: 대시보드에 행이 없음(삭제됨) — 이어받을 대상 아님
-                if (statusById.get(erpId) === "완료") return false;
-                if (specification && specById.get(erpId) && specById.get(erpId) !== specification) return false;
+                const b = board.get(Number(c.dashboard_erp_id));
+                if (!b) return false; // 대시보드에 행이 없음(삭제됨)
+                if (b.status === "완료") return false;
+                if (specification && b.spec && b.spec !== specification) return false;
                 return true;
               });
 
-              if (openCandidates.length === 0) continue; // 후보 없음 — 평소대로 신규 처리
+              if (openCandidates.length === 0) continue;
               if (openCandidates.length > 1) {
                 levelingMerge.ambiguous++;
-                continue; // 모호함 — 안전하게 건드리지 않음
+                continue;
               }
 
               const target = openCandidates[0];
@@ -418,10 +536,9 @@ Deno.serve(async (req) => {
                 company_name: companyName, product_name: productName, dashboard_erp_id: target.dashboard_erp_id,
               });
 
-              if (!commit) continue; // dry-run — 후보만 보고, 실제 반영은 하지 않음
+              if (!commit) continue;
 
               try {
-                // v10: 존재는 위 SELECT로 이미 확인됨 → affectedRows(=값이 바뀐 행 수)로 성공 여부를 판단하지 않는다.
                 await mysql.execute(
                   `UPDATE erp_data SET company_name=?, product_name=?, specification=?, length=?, original_weight=?, used_weight=?, unit_price=COALESCE(?, unit_price), amount=COALESCE(?, amount), process_rule=?, work_date=? WHERE id=?`,
                   [
@@ -464,33 +581,10 @@ Deno.serve(async (req) => {
 
     const detailT0 = performance.now();
     const payloads = await mapWithConcurrency(newHeadersToInsert, 3, async (h) => {
-      const [d1, d2] = await Promise.all([
-        postAction(cookie, {
-          submitType: "selectDetail1",
-          sort_field: "",
-          sort_asc: "",
-          mid: "1001",
-          selectMdate: String(h.mdate ?? date),
-          selectMjunp: String(h.mjunp ?? ""),
-        }),
-        postAction(cookie, {
-          submitType: "selectDetail2",
-          sort_field: "",
-          sort_asc: "",
-          mid: "1001",
-          selectMdate: String(h.mdate ?? date),
-          selectMjunp: String(h.mjunp ?? ""),
-        }),
-      ]);
-      const item = (d1.data || [])[0] || {};
-      const sizeRows = (d2.data || []) as any[];
-      const processRule = sizeRows.map((r) => r.sdesc).filter(Boolean).join(", ");
-      const lengthParsed = parseLengthField(item.smeter);
-
+      const { item, processRule, lengthParsed } = await fetchDetail(cookie, h, date);
       const matched = priceMap.get(priceKey(String(h.mjunp), String(h.mgubun)));
-
       return {
-        _source: { mjunp: String(h.mjunp), mdate: h.mdate, workType: String(h.mgubun ?? "") },
+        _source: { mjunp: String(h.mjunp), mdate: String(h.mdate ?? date), workType: String(h.mgubun ?? "") },
         payload: {
           workDate: h.mdate,
           companyName: h.mcomp,
@@ -511,43 +605,189 @@ Deno.serve(async (req) => {
     result.payloads = payloads;
     result.priceMatchedCount = payloads.filter((p: any) => p._priceMatched).length;
 
+    // v12 (1) 이어받기(adopt) — 슬리팅 계열 새 작업지시서가 같은 코일의 열린 기존 행을 이어받는다.
+    const adoptT0 = performance.now();
+    const adopt: Record<string, any> = { checked: 0, adopted: 0, parkedExtra: 0, warnings: [] as any[], errors: [] as any[], candidates: [] as any[] };
+    const adoptedSources = new Set<string>();
+    try {
+      const slPayloads = payloads.filter((p: any) =>
+        family(p._source.workType) === "SL" && isCoilLike(p.payload.productName) && String(p.payload.companyName ?? "").trim() !== ""
+      );
+      adopt.checked = slPayloads.length;
+      if (slPayloads.length > 0) {
+        const names = [...new Set(slPayloads.map((p: any) => String(p.payload.productName).trim()))];
+        const { data: logs, error: logErr } = await supabase
+          .from("dashboard_sync_log")
+          .select("id, mjunp, mdate, board_date, work_type, dashboard_erp_id, company_name, product_name")
+          .eq("seeded", false)
+          .is("retired_at", null)
+          .not("dashboard_erp_id", "is", null)
+          .gte("mdate", dateMinus(date, ADOPT_WINDOW_DAYS))
+          .lte("mdate", date)
+          .in("product_name", names);
+        if (logErr) throw new Error("adopt 후보 조회 실패: " + logErr.message);
+
+        const byCoil = new Map<string, any[]>();
+        for (const l of logs || []) {
+          if (family(l.work_type) !== "SL") continue;
+          const k = coilKey(l.company_name, l.product_name);
+          const arr = byCoil.get(k) || [];
+          arr.push(l);
+          byCoil.set(k, arr);
+        }
+
+        if ((logs || []).length > 0) {
+          let mysql: MysqlClient | null = null;
+          try {
+            mysql = await connectMysql();
+            const board = await fetchBoardRows(mysql, (logs || []).map((l: any) => Number(l.dashboard_erp_id)));
+            for (const p of slPayloads) {
+              const src = p._source;
+              const cands = (byCoil.get(coilKey(p.payload.companyName, p.payload.productName)) || []).filter((c) => {
+                if (String(c.mdate) === src.mdate && String(c.mjunp) === src.mjunp && String(c.work_type) === src.workType) return false;
+                // 원래 작업지시서가 과거 날짜이거나, 오늘 ERP 목록에 더 이상 없는 키(라인 변경·삭제 후 재발행)일 때만
+                const stale = String(c.mdate) < date || !todayErpKeys.has(erpStatusKey(String(c.mdate), String(c.mjunp), String(c.work_type)));
+                if (!stale) return false;
+                const b = board.get(Number(c.dashboard_erp_id));
+                if (!b) return false; // 대시보드에서 이미 지워진 행
+                if (b.status === "완료") return false;
+                if (p.payload.specification && b.spec && normSpec(b.spec) !== normSpec(p.payload.specification)) return false;
+                return true;
+              });
+              if (cands.length === 0) continue;
+              cands.sort((a, b) => Number(b.dashboard_erp_id) - Number(a.dashboard_erp_id));
+              const target = cands[0];
+              const extras = cands.slice(1);
+              adoptedSources.add(erpStatusKey(src.mdate, src.mjunp, src.workType));
+              adopt.candidates.push({
+                to: `${src.mdate}#${src.mjunp} ${src.workType}`,
+                product_name: p.payload.productName,
+                adopt_erp_id: target.dashboard_erp_id,
+                from: `${target.mdate}#${target.mjunp} ${target.work_type}`,
+                extras: extras.map((x) => ({ erp_id: x.dashboard_erp_id, from: `${x.mdate}#${x.mjunp} ${x.work_type}` })),
+              });
+              if (!commit) continue;
+
+              try {
+                // 1) 새 키로 로그를 먼저 선점(유니크 키) — 이미 다른 실행이 잡았으면 건너뜀
+                const { data: ins, error: insErr } = await supabase.from("dashboard_sync_log").insert({
+                  mjunp: src.mjunp,
+                  mdate: src.mdate,
+                  board_date: date,
+                  work_type: src.workType,
+                  dashboard_erp_id: target.dashboard_erp_id,
+                  company_name: p.payload.companyName,
+                  product_name: p.payload.productName,
+                  content_sig: contentSig(p.payload),
+                  seeded: false,
+                }).select("id").single();
+                if (insErr) {
+                  if ((insErr as any).code === "23505") continue;
+                  throw new Error("adopt 로그 선점 실패: " + insErr.message);
+                }
+                // 2) 기존 행을 새 작업지시서 내용·라인·날짜로 갱신 (존재는 위 SELECT로 확인됨)
+                await mysql.execute(
+                  `UPDATE erp_data SET work_type=?, work_date=?, company_name=?, product_name=?, specification=?, length=?, original_weight=?, used_weight=?, unit_price=COALESCE(?, unit_price), amount=COALESCE(?, amount), process_rule=? WHERE id=?`,
+                  [
+                    src.workType, date, p.payload.companyName, p.payload.productName, p.payload.specification, p.payload.length,
+                    p.payload.originalWeight, p.payload.usedWeight, p.payload.unitPrice, p.payload.amount, p.payload.processRule,
+                    target.dashboard_erp_id,
+                  ],
+                );
+                // 3) 옛 로그 은퇴
+                const nowIso = new Date().toISOString();
+                await supabase.from("dashboard_sync_log").update({
+                  retired_at: nowIso, retired_reason: "adopted_by_new_joborder", superseded_by: ins.id, board_date: date,
+                }).eq("id", target.id);
+                adopt.adopted++;
+                // 4) 같은 코일의 다른 열린 행(이미 생긴 중복): '준비'·미시작이고 원래 날짜가 과거면 원래 날짜로 되돌림
+                for (const x of extras) {
+                  const b = board.get(Number(x.dashboard_erp_id))!;
+                  if (b.status === "준비" && !b.started && String(x.mdate) < date) {
+                    await mysql.execute(`UPDATE erp_data SET work_date = ? WHERE id = ?`, [x.mdate, x.dashboard_erp_id]);
+                    await supabase.from("dashboard_sync_log").update({
+                      retired_at: nowIso, retired_reason: "duplicate_parked", superseded_by: ins.id, board_date: x.mdate,
+                    }).eq("id", x.id);
+                    adopt.parkedExtra++;
+                  } else {
+                    adopt.warnings.push({ product_name: p.payload.productName, erp_id: x.dashboard_erp_id, status: b.status, note: "같은 코일의 열린 행이 더 있음(시작됨 또는 오늘 날짜) — 사람이 확인" });
+                  }
+                }
+              } catch (e) {
+                adopt.errors.push({ mjunp: src.mjunp, work_type: src.workType, error: String((e as Error)?.message || e) });
+                adoptedSources.delete(erpStatusKey(src.mdate, src.mjunp, src.workType)); // 실패하면 아래 일반 등록으로
+                // 단, 선점 로그가 남아 있으면 일반 등록도 건너뛰게 된다(중복 방지 우선) — 다음 사이클 복구 대상
+              }
+            }
+          } finally {
+            if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
+          }
+        }
+      }
+      adopt.ok = true;
+    } catch (e) {
+      adopt.ok = false;
+      adopt.error = String((e as Error)?.message || e);
+    }
+    timings.adoptMs = Math.round(performance.now() - adoptT0);
+    result.adopt = adopt;
+
+    // v12 (2) 일반 등록 — 선점(claim) 후 POST
     if (commit) {
       const commitT0 = performance.now();
       const postResults: any[] = [];
-      const syncLogInserts: any[] = [];
       for (const p of payloads) {
-        const res = await fetch(`${DASHBOARD_BASE}/api/erp`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(p.payload),
-        });
-        let body: any = null;
-        try { body = await res.json(); } catch (_e) { /* ignore */ }
-        postResults.push({ source: p._source, status: res.status, body });
-        if (res.status >= 200 && res.status < 300) {
-          syncLogInserts.push({
-            mjunp: p._source.mjunp,
-            mdate: p._source.mdate,
-            board_date: p._source.mdate,
-            work_type: p._source.workType,
-            dashboard_erp_id: body?.id ?? null,
-            company_name: p.payload.companyName,
-            product_name: p.payload.productName,
-            content_sig: contentSig(p.payload),
-            seeded: false,
-          });
+        const src = p._source;
+        if (adoptedSources.has(erpStatusKey(src.mdate, src.mjunp, src.workType))) continue;
+        // 이어받기 단계에서 선점이 이미 생겼을 수 있으므로 선점 INSERT가 곧 중복 검사
+        const { data: claim, error: claimErr } = await supabase.from("dashboard_sync_log").insert({
+          mjunp: src.mjunp,
+          mdate: src.mdate,
+          board_date: src.mdate,
+          work_type: src.workType,
+          dashboard_erp_id: null,
+          company_name: p.payload.companyName,
+          product_name: p.payload.productName,
+          seeded: false,
+        }).select("id").single();
+        if (claimErr) {
+          postResults.push({ source: src, skipped: (claimErr as any).code === "23505" ? "already_claimed" : "claim_failed", error: claimErr.message });
+          continue;
         }
-      }
-      if (syncLogInserts.length > 0) {
-        const { error } = await supabase.from("dashboard_sync_log").upsert(syncLogInserts, { onConflict: "mjunp,mdate,work_type" });
-        if (error) throw new Error("dashboard_sync_log 기록 실패(등록 자체는 성공): " + error.message);
+        let res: Response | null = null;
+        let body: any = null;
+        try {
+          res = await fetch(`${DASHBOARD_BASE}/api/erp`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(p.payload),
+          });
+          try { body = await res.json(); } catch (_e) { /* ignore */ }
+        } catch (e) {
+          // 네트워크 오류 — 실제로 들어갔는지 모르므로 선점은 남겨 두고 다음 사이클 복구(claimRecovery)에 맡김
+          postResults.push({ source: src, status: 0, error: String((e as Error)?.message || e) });
+          continue;
+        }
+        postResults.push({ source: src, status: res.status, body });
+        if (res.status >= 200 && res.status < 300) {
+          if (body?.id) {
+            const { error } = await supabase.from("dashboard_sync_log").update({
+              dashboard_erp_id: body.id, content_sig: contentSig(p.payload),
+            }).eq("id", claim.id);
+            if (error) postResults.push({ source: src, stage: "log_update", error: error.message });
+          }
+          // id가 응답에 없으면 선점을 남겨 두고 복구 단계에서 대시보드에서 찾아 연결
+        } else {
+          // 대시보드가 거절 — 행이 생기지 않았으므로 선점 해제(다음 사이클 재시도)
+          await supabase.from("dashboard_sync_log").delete().eq("id", claim.id).is("dashboard_erp_id", null);
+        }
       }
       timings.commitMs = Math.round(performance.now() - commitT0);
       result.commitResults = postResults;
     }
 
-    // v6/v8/v9/v10: 내용 변경 감지(content-drift) — 오늘 이미 동기화된 건의 그린ERP 현재 내용 서명을
-    // 로그의 content_sig와 비교해 다르면 기존 행을 갱신한다.
+    // v6/v8/v9/v10: 내용 변경 감지 — 오늘 이미 동기화된 건의 그린ERP 현재 내용 서명을 비교해 다르면 갱신.
+    // v12: 은퇴한 로그 제외.
     const contentSyncT0 = performance.now();
     const contentSync: Record<string, any> = { checked: 0, changed: 0, updated: 0, recreated: 0, errors: [] as any[] };
     try {
@@ -556,6 +796,7 @@ Deno.serve(async (req) => {
         .select("id, mjunp, mdate, work_type, dashboard_erp_id, company_name, product_name, content_sig")
         .eq("mdate", date)
         .eq("seeded", false)
+        .is("retired_at", null)
         .not("dashboard_erp_id", "is", null);
       if (syncedErr) throw new Error("content-sync 대상 조회 실패: " + syncedErr.message);
 
@@ -569,34 +810,11 @@ Deno.serve(async (req) => {
 
       const contentCandidates = await mapWithConcurrency(existingHeaders, 3, async (h) => {
         const logRow = syncedMap.get(dedupKey(String(h.mjunp), String(h.mgubun ?? "")));
-        const [d1, d2] = await Promise.all([
-          postAction(cookie, {
-            submitType: "selectDetail1",
-            sort_field: "",
-            sort_asc: "",
-            mid: "1001",
-            selectMdate: String(h.mdate ?? date),
-            selectMjunp: String(h.mjunp ?? ""),
-          }),
-          postAction(cookie, {
-            submitType: "selectDetail2",
-            sort_field: "",
-            sort_asc: "",
-            mid: "1001",
-            selectMdate: String(h.mdate ?? date),
-            selectMjunp: String(h.mjunp ?? ""),
-          }),
-        ]);
-        const item = (d1.data || [])[0] || {};
-        const sizeRows = (d2.data || []) as any[];
-        const processRule = sizeRows.map((r) => r.sdesc).filter(Boolean).join(", ");
-        const lengthParsed = parseLengthField(item.smeter);
+        const { item, processRule, lengthParsed } = await fetchDetail(cookie, h, date);
         const currentProductName = (item.spum ?? "").toString().trim() || null;
-
-        if (!currentProductName) return null; // 상세 조회 실패 등 — 건드리지 않음
+        if (!currentProductName) return null;
 
         const matched = priceMap.get(priceKey(String(h.mjunp), String(h.mgubun)));
-
         const payload = {
           workDate: h.mdate,
           companyName: h.mcomp,
@@ -611,8 +829,7 @@ Deno.serve(async (req) => {
           processRule: processRule || null,
         };
         const sig = contentSig(payload);
-        if (logRow.content_sig && logRow.content_sig === sig) return null; // 변동 없음
-
+        if (logRow.content_sig && logRow.content_sig === sig) return null;
         return { logRow, payload, sig };
       });
 
@@ -637,11 +854,9 @@ Deno.serve(async (req) => {
           mysql = await connectMysql();
           for (const c of changed) {
             try {
-              // v9: 행 존재 여부를 먼저 SELECT로 확인 — affectedRows=0은 "행 없음"이 아니라 "변화 없음"일 수 있음.
               const existRes = await mysql.execute(`SELECT id FROM erp_data WHERE id = ?`, [c.logRow.dashboard_erp_id]);
               const rowExists = ((existRes.rows || []) as any[]).length > 0;
               if (rowExists) {
-                // v10: 단가/금액은 값이 있을 때만 덮어씀(미러에 아직 없으면 기존 값 유지).
                 await mysql.execute(
                   `UPDATE erp_data SET company_name=?, product_name=?, specification=?, length=?, original_weight=?, used_weight=?, unit_price=COALESCE(?, unit_price), amount=COALESCE(?, amount), process_rule=? WHERE id=?`,
                   [
@@ -664,7 +879,6 @@ Deno.serve(async (req) => {
                 if (updErr) contentSync.errors.push({ mjunp: c.logRow.mjunp, stage: "log_update", error: updErr.message });
                 else contentSync.updated++;
               } else {
-                // 기존 erp_data 행이 이미 지워진 경우(SELECT로 확인됨)에만 새로 등록하고 dashboard_erp_id를 새 id로 갱신.
                 const postRes = await fetch(`${DASHBOARD_BASE}/api/erp`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -705,18 +919,18 @@ Deno.serve(async (req) => {
     timings.contentSyncMs = Math.round(performance.now() - contentSyncT0);
     result.contentSync = contentSync;
 
-    // v4/v5/v10: 미완료 작업 이월(rollover) — 그린ERP 기준으로 아직 완료되지 않은 것 중에서도,
-    // 대시보드 자체에 이미 "완료"로 표시된 건(현장이 직접 끝낸 것)은 제외하고서만 이월한다.
-    // v10: 대시보드에 행이 없는 건(missingOnBoard)은 SELECT 결과로 판단해 건너뛴다(affectedRows 미사용).
+    // v4/v5/v10: 미완료 작업 이월(rollover). v12: 은퇴 로그 제외 + 오늘 같은 코일의 새 작업지시서가 이미
+    // 연결돼 있으면 옛 행은 이월하지 않고 은퇴(이월 가드).
     const rolloverT0 = performance.now();
     const rollover: Record<string, any> = {
-      checked: 0, stillOpen: 0, alreadyDoneOnBoard: 0, missingOnBoard: 0, updated: 0, skippedNoErpRow: 0, errors: [] as any[],
+      checked: 0, stillOpen: 0, alreadyDoneOnBoard: 0, missingOnBoard: 0, supersededToday: 0, updated: 0, skippedNoErpRow: 0, errors: [] as any[],
     };
     try {
       const { data: candidates, error: candErr } = await supabase
         .from("dashboard_sync_log")
         .select("id, mjunp, mdate, board_date, work_type, dashboard_erp_id, company_name, product_name")
         .eq("seeded", false)
+        .is("retired_at", null)
         .not("dashboard_erp_id", "is", null)
         .lt("board_date", date);
       if (candErr) throw new Error("rollover 후보 조회 실패: " + candErr.message);
@@ -736,7 +950,20 @@ Deno.serve(async (req) => {
           statusMap.set(erpStatusKey(String(r.joborder_date), String(r.joborder_no), String(r.work_type)), String(r.status_code));
         }
 
+        // 이월 가드용: 오늘 작업지시서로 이미 연결된 코일(슬리팅 계열)
+        const { data: todayLogs } = await supabase
+          .from("dashboard_sync_log")
+          .select("id, company_name, product_name, work_type")
+          .eq("mdate", date)
+          .eq("seeded", false)
+          .is("retired_at", null);
+        const todayCoil = new Map<string, number>();
+        for (const t of todayLogs || []) {
+          if (family(t.work_type) === "SL" && isCoilLike(t.product_name)) todayCoil.set(coilKey(t.company_name, t.product_name), t.id);
+        }
+
         const erpOpen: any[] = [];
+        const superseded: any[] = [];
         for (const c of candidates) {
           const key = erpStatusKey(String(c.mdate), String(c.mjunp), String(c.work_type));
           const statusCode = statusMap.get(key);
@@ -744,15 +971,19 @@ Deno.serve(async (req) => {
             rollover.skippedNoErpRow++;
             continue;
           }
-          if (statusCode === "3") {
-            continue; // 그린ERP 작업완료 — 더 이상 신경 안 씀
+          if (statusCode === "3") continue; // 그린ERP 작업완료
+          if (family(c.work_type) === "SL" && isCoilLike(c.product_name) && todayCoil.has(coilKey(c.company_name, c.product_name))) {
+            superseded.push({ ...c, supersededBy: todayCoil.get(coilKey(c.company_name, c.product_name)) });
+            continue;
           }
           erpOpen.push(c);
         }
         rollover.stillOpen = erpOpen.length;
+        rollover.supersededToday = superseded.length;
+        if (superseded.length > 0) {
+          result.rolloverSuperseded = superseded.map((c) => ({ mjunp: c.mjunp, mdate: c.mdate, work_type: c.work_type, product_name: c.product_name, dashboard_erp_id: c.dashboard_erp_id }));
+        }
 
-        // v5: 그린ERP가 미완료라고 해도, 대시보드 자체(erp_data.status)에 이미 "완료"로 표시된 건은
-        // 이월하지 않는다 — 둘 다 "아직 아니다"라고 할 때만 이월(AND 조건).
         if (erpOpen.length > 0) {
           let mysql: MysqlClient | null = null;
           try {
@@ -762,13 +993,9 @@ Deno.serve(async (req) => {
             const missingOnBoard: any[] = [];
             for (const c of erpOpen) {
               const erpId = Number(c.dashboard_erp_id);
-              if (!boardStatus.has(erpId)) {
-                missingOnBoard.push(c); // 대시보드에서 삭제된 행 — 이월 불가
-              } else if (boardStatus.get(erpId) === "완료") {
-                alreadyDoneOnBoard.push(c);
-              } else {
-                toRoll.push(c);
-              }
+              if (!boardStatus.has(erpId)) missingOnBoard.push(c);
+              else if (boardStatus.get(erpId) === "완료") alreadyDoneOnBoard.push(c);
+              else toRoll.push(c);
             }
             rollover.alreadyDoneOnBoard = alreadyDoneOnBoard.length;
             rollover.missingOnBoard = missingOnBoard.length;
@@ -792,7 +1019,6 @@ Deno.serve(async (req) => {
                   rollover.errors.push({ id: c.id, mjunp: c.mjunp, error: String((e as Error)?.message || e) });
                 }
               }
-              // 날짜를 옮기지 않고, 오늘 다시 반복해서 체크하지 않도록 board_date만 갱신.
               for (const c of [...alreadyDoneOnBoard, ...missingOnBoard]) {
                 const { error: updErr } = await supabase
                   .from("dashboard_sync_log")
@@ -800,6 +1026,34 @@ Deno.serve(async (req) => {
                   .eq("id", c.id);
                 if (updErr) rollover.errors.push({ id: c.id, mjunp: c.mjunp, stage: "board_date_update", error: updErr.message });
               }
+            }
+          } finally {
+            if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
+          }
+        }
+        if (commit && superseded.length > 0) {
+          // 옛 행이 이미 오늘 보드에 올라와 있으면('준비'·미시작) 원래 작업지시일로 되돌린 뒤 은퇴
+          let mysql: MysqlClient | null = null;
+          try {
+            mysql = await connectMysql();
+            const board = await fetchBoardRows(mysql, superseded.map((c) => Number(c.dashboard_erp_id)));
+            for (const c of superseded) {
+              const b = board.get(Number(c.dashboard_erp_id));
+              let parkedTo: string | null = null;
+              if (b && b.workDate === date && b.status === "준비" && !b.started && String(c.mdate) < date) {
+                await mysql.execute(`UPDATE erp_data SET work_date = ? WHERE id = ?`, [c.mdate, c.dashboard_erp_id]);
+                parkedTo = String(c.mdate);
+              } else if (b && b.workDate === date && b.status !== "완료") {
+                rollover.errors.push({ id: c.id, mjunp: c.mjunp, stage: "superseded_on_board", note: "오늘 보드에 남아 있으나 자동 정리 불가(시작됨 등)", dashboard_erp_id: c.dashboard_erp_id });
+              }
+              const { error: updErr } = await supabase
+                .from("dashboard_sync_log")
+                .update({
+                  retired_at: new Date().toISOString(), retired_reason: "superseded_before_rollover", superseded_by: c.supersededBy,
+                  ...(parkedTo ? { board_date: parkedTo } : {}),
+                })
+                .eq("id", c.id);
+              if (updErr) rollover.errors.push({ id: c.id, mjunp: c.mjunp, stage: "retire_superseded", error: updErr.message });
             }
           } finally {
             if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
@@ -815,8 +1069,7 @@ Deno.serve(async (req) => {
     timings.rolloverMs = Math.round(performance.now() - rolloverT0);
     result.rollover = rollover;
 
-    // v5: 되돌리기(reconcile) — 이미 오늘 날짜로 이월해놓았는데 대시보드 자체에서 보니 "완료"인 건은
-    // 원래 날짜로 되돌린다.
+    // v5: 되돌리기(reconcile) — 오늘로 이월했는데 대시보드에서 "완료"인 건은 원래 날짜로. v12: 은퇴 로그 제외.
     const reconcileT0 = performance.now();
     const reconcile: Record<string, any> = { checked: 0, reverted: 0, errors: [] as any[] };
     try {
@@ -824,6 +1077,7 @@ Deno.serve(async (req) => {
         .from("dashboard_sync_log")
         .select("id, mjunp, mdate, board_date, work_type, dashboard_erp_id")
         .eq("seeded", false)
+        .is("retired_at", null)
         .not("dashboard_erp_id", "is", null)
         .eq("board_date", date)
         .neq("mdate", date);
@@ -837,7 +1091,7 @@ Deno.serve(async (req) => {
           const boardStatus = await fetchBoardStatusByIds(mysql, rolledToday.map((c: any) => Number(c.dashboard_erp_id)));
           for (const c of rolledToday) {
             if (boardStatus.get(Number(c.dashboard_erp_id)) !== "완료") continue;
-            if (!commit) { reconcile.reverted++; continue; } // dry-run 미리보기
+            if (!commit) { reconcile.reverted++; continue; }
             try {
               await mysql.execute(`UPDATE erp_data SET work_date = ? WHERE id = ?`, [c.mdate, c.dashboard_erp_id]);
               const { error: updErr } = await supabase
@@ -862,6 +1116,89 @@ Deno.serve(async (req) => {
     timings.reconcileMs = Math.round(performance.now() - reconcileT0);
     result.reconcile = reconcile;
 
+    // v12 (4) 정리(heal) — 오늘 보드에 같은 코일(슬리팅 계열)의 열린 행이 2개 이상이면 하나만 남긴다.
+    const healT0 = performance.now();
+    const heal: Record<string, any> = { groups: 0, parked: 0, warnings: [] as any[], errors: [] as any[], actions: [] as any[] };
+    try {
+      const { data: boardLogs, error: blErr } = await supabase
+        .from("dashboard_sync_log")
+        .select("id, mjunp, mdate, board_date, work_type, dashboard_erp_id, company_name, product_name")
+        .eq("seeded", false)
+        .is("retired_at", null)
+        .not("dashboard_erp_id", "is", null)
+        .eq("board_date", date);
+      if (blErr) throw new Error("heal 대상 조회 실패: " + blErr.message);
+
+      const groups = new Map<string, any[]>();
+      for (const l of boardLogs || []) {
+        if (family(l.work_type) !== "SL" || !isCoilLike(l.product_name)) continue;
+        const k = coilKey(l.company_name, l.product_name);
+        const arr = groups.get(k) || [];
+        arr.push(l);
+        groups.set(k, arr);
+      }
+      const multi = [...groups.values()].filter((g) => new Set(g.map((x) => Number(x.dashboard_erp_id))).size > 1);
+      heal.groups = multi.length;
+
+      if (multi.length > 0) {
+        let mysql: MysqlClient | null = null;
+        try {
+          mysql = await connectMysql();
+          const board = await fetchBoardRows(mysql, multi.flat().map((x) => Number(x.dashboard_erp_id)));
+          for (const g of multi) {
+            // 같은 대시보드 행을 가리키는 로그는 하나로 본다
+            // 오늘 보드에 실제로 올라와 있는 행(상태 무관). 오늘 키 행이 이미 '완료'여도 옛 '준비' 중복은 정리 대상.
+            const seen = new Set<number>();
+            const onBoard = g.filter((x) => {
+              const id = Number(x.dashboard_erp_id);
+              if (seen.has(id)) return false;
+              seen.add(id);
+              const b = board.get(id);
+              return !!b && b.workDate === date;
+            });
+            if (onBoard.length < 2) continue;
+            const live = onBoard.filter((x) => String(x.mdate) === date && todayErpKeys.has(erpStatusKey(String(x.mdate), String(x.mjunp), String(x.work_type))));
+            if (live.length > 1) {
+              heal.warnings.push({ product_name: g[0].product_name, note: "오늘 ERP에 같은 코일 작업지시서가 2개 이상 살아 있음 — 사무실 확인 필요", erp_ids: live.map((x) => x.dashboard_erp_id) });
+              continue;
+            }
+            const keep = live[0] ?? onBoard.slice().sort((a, b) => Number(b.dashboard_erp_id) - Number(a.dashboard_erp_id))[0];
+            const open = onBoard.filter((x) => board.get(Number(x.dashboard_erp_id))!.status !== "완료");
+            for (const o of open) {
+              if (o === keep) continue;
+              const b = board.get(Number(o.dashboard_erp_id))!;
+              const canPark = b.status === "준비" && !b.started && String(o.mdate) < date;
+              const action = { product_name: o.product_name, keep_erp_id: keep.dashboard_erp_id, other_erp_id: o.dashboard_erp_id, other_from: `${o.mdate}#${o.mjunp} ${o.work_type}`, parkTo: canPark ? o.mdate : null };
+              heal.actions.push(action);
+              if (!canPark) {
+                heal.warnings.push({ ...action, status: b.status, started: b.started, note: "자동 정리 불가(시작됨·오늘 날짜 등) — 사람이 확인" });
+                continue;
+              }
+              if (!commit) continue;
+              try {
+                await mysql.execute(`UPDATE erp_data SET work_date = ? WHERE id = ?`, [o.mdate, o.dashboard_erp_id]);
+                const { error: updErr } = await supabase.from("dashboard_sync_log").update({
+                  retired_at: new Date().toISOString(), retired_reason: "duplicate_parked", superseded_by: keep.id, board_date: o.mdate,
+                }).eq("id", o.id);
+                if (updErr) heal.errors.push({ id: o.id, error: updErr.message });
+                else heal.parked++;
+              } catch (e) {
+                heal.errors.push({ id: o.id, error: String((e as Error)?.message || e) });
+              }
+            }
+          }
+        } finally {
+          if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
+        }
+      }
+      heal.ok = true;
+    } catch (e) {
+      heal.ok = false;
+      heal.error = String((e as Error)?.message || e);
+    }
+    timings.healMs = Math.round(performance.now() - healT0);
+    result.heal = heal;
+
     timings.totalMs = Math.round(performance.now() - t0);
     result.timings = timings;
     result.ok = true;
@@ -879,6 +1216,13 @@ Deno.serve(async (req) => {
       reconcile_reverted: reconcile.reverted ?? null,
       ok: true,
       timings,
+      details: {
+        version: "v12",
+        adopt: { checked: adopt.checked, adopted: adopt.adopted, parkedExtra: adopt.parkedExtra, warnings: adopt.warnings.length, errors: adopt.errors.length },
+        heal: { groups: heal.groups, parked: heal.parked, warnings: heal.warnings, errors: heal.errors.length },
+        claimRecovery: { attached: claimRecovery.attached ?? 0, released: claimRecovery.released ?? 0 },
+        rolloverSuperseded: rollover.supersededToday ?? 0,
+      },
     });
 
     return new Response(JSON.stringify(result, null, 1), { headers: { "Content-Type": "application/json" } });
@@ -897,16 +1241,19 @@ Deno.serve(async (req) => {
         error: result.error,
         timings,
       });
-    } catch (_logErr) { /* 로그 실패는 무시 — 원래 오류를 그대로 반환 */ }
+    } catch (_logErr) { /* 로그 실패는 무시 */ }
 
     return new Response(JSON.stringify(result, null, 1), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 });
 
 // 알려진 한계:
-// 1) (v10에서 해결) 단가/금액은 content_sig에 포함됨. 단, 미러(greenp_joborder_detail)에 단가가 아직 없으면 null로 간주.
-// 2) dashboard_sync_log는 "우리가 보낸 것"만 추적함 — 대시보드에서 사람이 직접 지우거나 수정해도 이 로그는 그대로.
-// 3) 내용 변경 감지는 "오늘(date) 이미 동기화된 건"만 대상. 매 사이클 상세 조회(selectDetail1/2)를 다시 호출.
+// 1) 단가/금액은 content_sig에 포함. 미러(greenp_joborder_detail)에 단가가 아직 없으면 null로 간주(기존 값 유지).
+// 2) dashboard_sync_log는 "우리가 보낸 것"만 추적 — 대시보드에서 사람이 직접 추가한 행은 중복 정리 대상이 아님.
+// 3) 내용 변경 감지는 "오늘(date) 동기화된 건"만 대상.
 // 4) 비고(메모)는 대시보드 /api/erp payload에 필드가 없어 동기화되지 않음.
-// 5) 미완료 이월은 greenp_joborders(3일 롤링 미러) 기준 + 대시보드 자체 상태(AND). 이월 대상은 dashboard_sync_log에 dashboard_erp_id가 남아있는 건만.
-// 6) LEVELLING "나머지 확정 이어받기"는 회사명+코일ID+규격 일치 + 미완료라는 휴리스틱이며, 후보가 2건 이상이면 모호함으로 보고 건드리지 않음(최근 3일).
+// 5) 이월은 greenp_joborders(3일 롤링 미러) 기준 + 대시보드 자체 상태(AND).
+// 6) LEVELLING "나머지 확정 이어받기"는 회사명+코일ID+규격 + 미완료 휴리스틱(최근 3일, 후보 2건 이상이면 건드리지 않음).
+// 7) v12 이어받기·정리는 슬리팅 계열(SLITING/SLITING2)과 코일 번호 형태의 품명(6자 이상, 숫자 포함)에만 적용.
+//    같은 날 ERP에 같은 코일 작업지시서가 2개 이상 살아 있으면 자동으로 합치지 않고 경고만 남김.
+//    정리는 행을 지우지 않고 원래 작업지시일로 되돌림 — 영구 삭제는 사람이 확인 후 직접.
