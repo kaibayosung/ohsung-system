@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI 모델 가격 비교</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #eef1f6; --card: #ffffff; --border: #e3e8f0; --text: #0f1e33;
+    --sub: #7d8ba1; --accent: #185fa5; --accent2: #c46b06;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; min-height:100%; background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Pretendard,system-ui,sans-serif; }
+  body { display:flex; justify-content:center; padding:20px 16px; }
+  #app { width:100%; max-width:900px; }
+  .card { background:var(--card); border:1px solid var(--border); border-radius:18px; padding:20px; box-shadow:0 1px 2px rgba(10,21,36,0.06); margin-bottom:16px; }
+  h1 { font-size:18px; font-weight:800; color:var(--text); margin:0 0 4px; }
+  .sub { font-size:12.5px; color:var(--sub); margin:0 0 16px; line-height:1.5; }
+  .chart-wrap { position:relative; height:360px; }
+  .chart-wrap.tall { height:420px; }
+  .note { font-size:11.5px; color:var(--sub); margin-top:10px; line-height:1.5; }
+  .highlight { color:var(--accent); font-weight:700; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="card">
+    <h1>월 ₩80,000 예산으로 하루 처리 가능한 챗봇 질문 수</h1>
+    <p class="sub">질문 1건당 토큰 소비(입력 약 9,200 + 출력 약 800, 실사용 패턴 기준)로 환산. <span class="highlight">Groq gpt-oss-20b</span>가 현재 적용 중인 모델입니다.</p>
+    <div class="chart-wrap tall"><canvas id="capacityChart"></canvas></div>
+    <div class="note">환율 1,354원/$ 기준 (2026-09 XE). 예산 안에서 하루 몇 건까지 여유 있게 쓸 수 있는지 보여주는 그래프라, 막대가 길수록 저렴합니다.</div>
+  </div>
+
+  <div class="card">
+    <h1>모델별 원가 (백만 토큰당, 로그 스케일)</h1>
+    <p class="sub">입력/출력 단가 자체를 비교. 값 차이가 400배 가까이 나서 로그 스케일로 표시했습니다.</p>
+    <div class="chart-wrap"><canvas id="priceChart"></canvas></div>
+  </div>
+
+</div>
+
+<script>
+const data = [
+  { label: "Groq gpt-oss-20b\n(현재)", input: 0.075, output: 0.30, perDay: 2118 },
+  { label: "DeepInfra\nLlama 3.3 70B", input: 0.10, output: 0.32, perDay: 1675 },
+  { label: "DeepSeek\n(오프피크)", input: 0.15, output: 0.60, perDay: 1059 },
+  { label: "ChatGPT\nGPT-5.6 Luna", input: 0.20, output: 1.20, perDay: 703 },
+  { label: "DeepSeek\n(피크)", input: 0.30, output: 1.20, perDay: 530 },
+  { label: "Groq Llama 3.3 70B\n(기업전용)", input: 0.59, output: 0.79, perDay: 325 },
+  { label: "Gemini 3.8 Flash", input: 0.75, output: 3.75, perDay: 199 },
+  { label: "Groq qwen3.8-27b\n(이전 사용)", input: 0.80, output: 4.00, perDay: 187 },
+  { label: "ChatGPT\nGPT-5.6 Terra", input: 2.00, output: 12.00, perDay: 70 },
+  { label: "ChatGPT\nGPT-5.6 Sol\n(플래그십)", input: 5.00, output: 30.00, perDay: 28 },
+];
+
+const colors = data.map(d => d.label.startsWith('Groq gpt-oss') ? '#185fa5' : '#9fb3cc');
+const colorsPrice = data.map(d => d.label.startsWith('Groq gpt-oss') ? '#185fa5' : '#c46b06');
+
+new Chart(document.getElementById('capacityChart'), {
+  type: 'bar',
+  data: {
+    labels: data.map(d => d.label),
+    datasets: [{
+      label: '하루 가능 건수',
+      data: data.map(d => d.perDay),
+      backgroundColor: colors,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (ctx) => `하루 약 ${ctx.raw.toLocaleString()}건` } },
+    },
+    scales: {
+      x: { title: { display: true, text: '하루 처리 가능 건수' }, grid: { color: '#e3e8f0' } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    }
+  }
+});
+
+new Chart(document.getElementById('priceChart'), {
+  type: 'bar',
+  data: {
+    labels: data.map(d => d.label),
+    datasets: [
+      { label: '입력 $/M', data: data.map(d => d.input), backgroundColor: '#185fa5', borderRadius: 4 },
+      { label: '출력 $/M', data: data.map(d => d.output), backgroundColor: '#c46b06', borderRadius: 4 },
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 12 } } },
+      tooltip: { callbacks: { label: (ctx) => `${ctx.dataset.label}: $${ctx.raw}` } },
+    },
+    scales: {
+      y: {
+        type: 'logarithmic',
+        title: { display: true, text: '$ / 백만 토큰 (로그)' },
+        grid: { color: '#e3e8f0' },
+      },
+      x: { ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 }, grid: { display: false } },
+    }
+  }
+});
+</script>
+</body>
+</html>

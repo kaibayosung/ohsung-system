@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Leveling — Operator Guide (English)</title>
+<link href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.44.0/iconfont/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  html,body{margin:0;padding:0;background:#dfe2e6;}
+  *{box-sizing:border-box;font-family:'Pretendard',sans-serif}
+  .wrap{display:flex;justify-content:center;padding:20px 10px}
+  .frame{width:100%;max-width:640px;background:#eef0f3;border-radius:14px;padding:18px 20px}
+  .row{background:#fff;border:1px solid #e2e5ea;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .lbl{font-size:13px;color:#8b94a6}
+  .val{font-size:15px;font-weight:700;color:#27344d}
+  .boxbtn{border-radius:10px;border:1.5px solid #dfe3ea;background:#fff;font-size:14px;font-weight:700;color:#27344d;cursor:pointer;padding:9px 4px;text-align:center}
+  .boxbtn.sel{border-color:#27344d;background:#eef1f6}
+  .boxbtn.done{background:#EAF3DE;border-color:#c0dd97;color:#27500A}
+  .primary{width:100%;color:#fff;font-size:16px;font-weight:700;border:none;border-radius:10px;padding:13px;cursor:pointer}
+  .pcard{background:#fff;border:1.5px solid #e3e8f0;border-radius:14px;padding:14px 16px;margin-bottom:9px}
+  .card{background:#fff;border:1.5px solid #e3e8f0;border-radius:12px;padding:12px 15px;margin-bottom:9px}
+  .bullet{position:relative;height:20px;background:#f3f5f8;border-radius:6px;margin:9px 0 5px}
+  .bullet .band{position:absolute;top:0;bottom:0;background:#dff0c8;border-radius:6px}
+  .bullet .bandfix{position:absolute;top:0;bottom:0;background:#fbe2d3;border-radius:6px}
+  .bullet .mark{position:absolute;top:-3px;bottom:-3px;width:3px;background:#27344d;border-radius:2px}
+  .pill{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px}
+  .tabbtn{flex:1;text-align:center;padding:9px;font-size:13.5px;font-weight:700;color:#8b94a6;background:#fff;border:1.5px solid #e2e5ea;cursor:pointer}
+  .tabbtn.active{background:#27344d;border-color:#27344d;color:#fff}
+  .tabbtn:first-child{border-radius:10px 0 0 10px}
+  .tabbtn:last-child{border-radius:0 10px 10px 0;border-left:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="frame">
+
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+    <div style="width:30px;height:30px;border-radius:50%;border:3px solid #1f3864;display:flex;align-items:center;justify-content:center;flex-shrink:0"><div style="width:9px;height:9px;border-radius:50%;background:#e0b23a"></div></div>
+    <span style="font-size:13px;font-weight:700;color:#1f3864">Ohsung Steel</span>
+    <span style="font-size:13px;font-weight:700;color:#27344d">LEVELLING</span>
+  </div>
+
+  <div style="position:relative;margin-bottom:10px" id="coilSelWrap">
+    <div id="coilSelector" class="row" style="cursor:pointer">
+      <span class="val" style="font-size:19px" id="coilLabel"></span>
+      <i class="ti ti-chevron-down" style="font-size:19px;color:#8b94a6"></i>
+    </div>
+    <div id="coilDropdown" style="display:none;position:absolute;left:0;right:0;top:54px;background:#fff;border:1px solid #e2e5ea;border-radius:10px;z-index:5;overflow:hidden">
+      <div style="padding:9px 15px;font-size:12.5px;color:#8b94a6;border-bottom:1px solid #eef0f3">Select coil</div>
+      <div id="coilOptList"></div>
+    </div>
+  </div>
+
+  <div id="app"></div>
+</div>
+</div>
+
+<script>
+(function(){
+  var COILS = {
+    c1: { label:'3,752 kg (EPH2425C02)', company:'Shinjin Steel', spec:'0.50X962XC', id:'EPH2425C02', targets:[150,200,200,308], slowlen:50.0, cutlen:856.0 },
+    c2: { label:'8,120 kg (25O3000121)', company:'Mirae ENI', spec:'1.2X1000XA', id:'25O3000121', targets:[680], slowlen:65.0, cutlen:1200.0 },
+    c3: { label:'5,460 kg (EPD2910B02)', company:'Dongyang Steel', spec:'0.9X1219XB', id:'EPD2910B02', targets:[460,190], slowlen:55.0, cutlen:1500.0 }
+  };
+  var VARIANTS = [
+    { tension:58.5, tset:60.0, tmin:55, tmax:62, speed:15.0, smin:14, smax:16, avgSpeed:14.6, cycle:19.5, avgCycle:20.1, verdict:'ok' },
+    { tension:75.0, tset:78.0, tmin:60, tmax:68, speed:14.0, smin:14, smax:16, avgSpeed:15.0, cycle:21.0, avgCycle:19.8, verdict:'fix', suggestSpeed:16.0 },
+    { tension:62.0, tset:63.0, tmin:58, tmax:66, speed:15.2, smin:14, smax:16, avgSpeed:15.0, cycle:19.0, avgCycle:19.5, verdict:'ok' },
+    { tension:55.0, tset:56.0, tmin:50, tmax:60, speed:14.8, smin:13, smax:16, avgSpeed:14.5, cycle:20.0, avgCycle:20.2, verdict:'ok' }
+  ];
+
+  var state = { coilKey:'c1', view:'select', boxes:[], curIdx:0, activeTab:'guide' };
+
+  function initBoxes(key){
+    state.boxes = COILS[key].targets.map(function(t,i){ return { n:i+1, target:t, status:'pending' }; });
+    state.curIdx = 0; state.view = 'select'; state.activeTab='guide';
+  }
+  initBoxes('c1');
+  function firstPending(){ for(var i=0;i<state.boxes.length;i++){ if(state.boxes[i].status==='pending') return i; } return -1; }
+  function bandPos(min,max,lo,hi,val){ var l=(min-lo)/(hi-lo)*100, w=(max-min)/(hi-lo)*100, m=(val-lo)/(hi-lo)*100; return {l:l,w:w,m:m}; }
+
+  function renderCoilLabel(){ document.getElementById('coilLabel').textContent = COILS[state.coilKey].label; }
+  function renderCoilOptions(){
+    var el = document.getElementById('coilOptList'); el.innerHTML='';
+    Object.keys(COILS).forEach(function(k){
+      var d = document.createElement('div');
+      d.textContent = COILS[k].label;
+      d.style.cssText = 'padding:11px 15px;font-size:15px;font-weight:700;cursor:pointer;color:'+(k===state.coilKey?'#1f3864':'#27344d')+';background:'+(k===state.coilKey?'#eef3fb':'#fff');
+      d.addEventListener('click', function(){
+        state.coilKey = k; initBoxes(k);
+        document.getElementById('coilDropdown').style.display='none';
+        renderCoilLabel(); renderApp();
+      });
+      el.appendChild(d);
+    });
+  }
+
+  function renderApp(){
+    var c = COILS[state.coilKey];
+    var app = document.getElementById('app');
+    document.getElementById('coilSelWrap').style.display = (state.view==='select') ? 'block' : 'none';
+
+    if(state.view === 'done'){
+      app.innerHTML =
+        '<div class="row" style="flex-direction:column;align-items:center;padding:26px 16px;gap:9px">'+
+        '<div style="width:52px;height:52px;border-radius:50%;background:#639922;display:flex;align-items:center;justify-content:center"><i class="ti ti-check" style="font-size:28px;color:#fff"></i></div>'+
+        '<div style="font-size:19px;font-weight:700;color:#173404">Coil work finished</div>'+
+        '<div style="font-size:13.5px;color:#5c6478">'+c.id+' · Box '+state.boxes.length+'/'+state.boxes.length+' done</div>'+
+        '<button class="primary" style="background:#27344d;margin-top:6px;width:auto;padding:11px 24px" id="nextCoilBtn">Select next coil</button></div>';
+      document.getElementById('nextCoilBtn').addEventListener('click', function(){
+        var keys = Object.keys(COILS); var idx = keys.indexOf(state.coilKey);
+        var nextKey = keys[(idx+1) % keys.length];
+        state.coilKey = nextKey; initBoxes(nextKey);
+        renderCoilLabel(); renderApp();
+      });
+      return;
+    }
+
+    if(state.view === 'select'){
+      var html = '';
+      html += '<div class="row"><span class="lbl">Company</span><span class="val">'+c.company+'</span></div>';
+      html += '<div class="row"><span class="lbl">Spec</span><span class="val">'+c.spec+'</span></div>';
+      html += '<div class="row"><span class="lbl">Coil ID</span><span class="val">'+c.id+'</span></div>';
+      html += '<div class="row" style="flex-direction:column;align-items:stretch">';
+      html += '<span class="lbl" style="margin-bottom:9px">Select box number</span>';
+      html += '<div style="display:grid;grid-template-columns:repeat('+Math.min(state.boxes.length,4)+',1fr);gap:8px" id="boxGrid">';
+      state.boxes.forEach(function(b,i){
+        var cls = 'boxbtn' + (b.status==='done' ? ' done' : (i===state.curIdx ? ' sel' : ''));
+        html += '<button class="'+cls+'" data-i="'+i+'" '+(b.status==='done'?'disabled':'')+'>';
+        html += (b.status==='done' ? '<i class="ti ti-check" style="font-size:15px"></i>' : b.n);
+        html += '<div style="font-size:10.5px;font-weight:400;color:#8b94a6;margin-top:2px">'+b.target+' sheets</div></button>';
+      });
+      html += '</div></div>';
+      html += '<button class="primary" style="background:#8b94a6" id="confirmBtn">Confirm</button>';
+      app.innerHTML = html;
+      document.querySelectorAll('#boxGrid .boxbtn:not([disabled])').forEach(function(btn){
+        btn.addEventListener('click', function(){ state.curIdx = parseInt(btn.getAttribute('data-i'),10); renderApp(); });
+      });
+      document.getElementById('confirmBtn').addEventListener('click', function(){
+        if(state.boxes[state.curIdx].status !== 'done'){ state.view='working'; state.activeTab='guide'; renderApp(); }
+      });
+      return;
+    }
+
+    // working view
+    var box = state.boxes[state.curIdx];
+    var v = VARIANTS[state.curIdx % VARIANTS.length];
+    var tb = bandPos(v.tmin, v.tmax, v.tmin-15, v.tmax+15, v.tension);
+    var sb = bandPos(v.smin, v.smax, v.smin-5, v.smax+5, v.speed);
+
+    var html = '';
+    html += '<div class="row"><span class="val" style="font-size:17px">'+c.id+' · Box '+box.n+'</span><span style="font-size:12px;color:#796cbf;font-weight:700;cursor:pointer" id="backBtn">Change box</span></div>';
+    html += '<div style="display:flex;margin-bottom:12px">';
+    html += '<button class="tabbtn'+(state.activeTab==='guide'?' active':'')+'" id="tabGuideBtn">Setting guide</button>';
+    html += '<button class="tabbtn'+(state.activeTab==='status'?' active':'')+'" id="tabStatusBtn">Progress status</button>';
+    html += '</div>';
+
+    if(state.activeTab === 'guide'){
+      html += '<div class="pcard">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:700;color:#27344d"><i class="ti ti-droplet" style="color:#796cbf;margin-right:5px"></i>Tension output</span>';
+      html += v.verdict==='ok' ? '<span class="pill" style="background:#EAF3DE;color:#27500A"><i class="ti ti-check" style="font-size:11px"></i>On target</span>' : '<span class="pill" style="background:#FAECE7;color:#712B13"><i class="ti ti-alert-triangle" style="font-size:11px"></i>Needs adjustment</span>';
+      html += '</div>';
+      html += '<div style="display:flex;align-items:baseline;gap:9px;margin-top:7px"><span style="font-size:27px;font-weight:700;color:#27344d">'+v.tension+'%</span><span style="font-size:11.5px;color:#8b94a6">T.Set '+v.tset+' · rec. '+v.tmin+'–'+v.tmax+'%</span></div>';
+      html += '<div class="bullet"><div class="'+(v.verdict==='ok'?'band':'bandfix')+'" style="left:'+tb.l+'%;width:'+tb.w+'%"></div><div class="mark" style="left:'+tb.m+'%"></div></div>';
+      if(v.verdict==='ok'){ html += '<div style="font-size:12px;color:#5c6478"><i class="ti ti-player-play" style="margin-right:5px;color:#8b94a6"></i>Keep current settings</div>'; }
+      else { html += '<div style="display:flex;align-items:center;gap:7px;background:#FAECE7;border-radius:8px;padding:7px 9px;font-size:12px;color:#712B13"><i class="ti ti-arrow-down" style="font-size:13px"></i>Lower tension to '+v.tmax+'% or below</div>'; }
+      html += '</div>';
+
+      html += '<div class="pcard">';
+      html += '<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:700;color:#27344d"><i class="ti ti-gauge" style="color:#796cbf;margin-right:5px"></i>Speed setting</span>';
+      html += v.verdict==='ok' ? '<span class="pill" style="background:#EAF3DE;color:#27500A"><i class="ti ti-check" style="font-size:11px"></i>On target</span>' : '<span class="pill" style="background:#FAECE7;color:#712B13"><i class="ti ti-alert-triangle" style="font-size:11px"></i>Needs adjustment</span>';
+      html += '</div>';
+      html += '<div style="display:flex;align-items:baseline;gap:9px;margin-top:7px"><span style="font-size:27px;font-weight:700;color:#27344d">'+v.speed+'<span style="font-size:13px;font-weight:400;color:#8b94a6"> m/min</span></span><span style="font-size:11.5px;color:#8b94a6">rec. '+v.smin+'–'+v.smax+'</span></div>';
+      html += '<div class="bullet"><div class="'+(v.verdict==='ok'?'band':'bandfix')+'" style="left:'+sb.l+'%;width:'+sb.w+'%"></div><div class="mark" style="left:'+sb.m+'%"></div></div>';
+      if(v.verdict==='ok'){ html += '<div style="font-size:12px;color:#5c6478"><i class="ti ti-player-play" style="margin-right:5px;color:#8b94a6"></i>Keep current settings</div>'; }
+      else { html += '<div style="display:flex;align-items:center;gap:7px;background:#FAECE7;border-radius:8px;padding:7px 9px;font-size:12px;color:#712B13"><i class="ti ti-arrow-up" style="font-size:13px"></i>Raise speed to '+v.suggestSpeed+' m/min</div>'; }
+      html += '</div>';
+
+      html += '<div class="pcard"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:700;color:#27344d"><i class="ti ti-arrow-autofit-width" style="color:#796cbf;margin-right:5px"></i>Slow-zone length setting</span><span class="pill" style="background:#EAF3DE;color:#27500A"><i class="ti ti-check" style="font-size:11px"></i>On target</span></div>';
+      html += '<div style="display:flex;align-items:baseline;gap:9px;margin-top:7px"><span style="font-size:27px;font-weight:700;color:#27344d">'+c.slowlen.toFixed(1)+'<span style="font-size:13px;font-weight:400;color:#8b94a6"> mm</span></span></div></div>';
+
+      html += '<div class="pcard" style="margin-bottom:4px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:13.5px;font-weight:700;color:#27344d"><i class="ti ti-ruler" style="color:#796cbf;margin-right:5px"></i>Cut length setting</span><span class="pill" style="background:#f3f0fb;color:#3C3489"><i class="ti ti-file-check" style="font-size:11px"></i>Verified</span></div>';
+      html += '<div style="display:flex;align-items:baseline;gap:9px;margin-top:7px"><span style="font-size:27px;font-weight:700;color:#27344d">'+c.cutlen.toFixed(1)+'<span style="font-size:13px;font-weight:400;color:#8b94a6"> mm</span></span><span style="font-size:11.5px;color:#8b94a6">Matches ERP spec</span></div></div>';
+    } else {
+      var speedDelta = Math.round((v.speed-v.avgSpeed)/v.avgSpeed*100);
+      var cycleDelta = Math.round((v.cycle-v.avgCycle)/v.avgCycle*100);
+      var speedFast = speedDelta >= 0;
+      var cycleFast = cycleDelta <= 0;
+      html += '<div class="card"><div style="display:flex;justify-content:space-between;font-size:11.5px;color:#8b94a6;margin-bottom:6px"><span>Sheets in this box</span><span>Coil overall progress</span></div>';
+      html += '<div style="font-size:30px;font-weight:700;color:#27344d;margin-bottom:6px">0<span style="font-size:15px;color:#8b94a6">/'+box.target+' sheets</span></div>';
+      html += '<div style="height:12px;background:#f3f5f8;border-radius:999px;overflow:hidden"><div style="height:100%;width:0%;background:#534AB7"></div></div></div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">';
+      html += '<div class="card" style="margin-bottom:0"><div style="font-size:11px;color:#8b94a6">Current speed</div><div style="font-size:21px;font-weight:700;color:#27344d">'+v.speed+'<span style="font-size:11px;color:#8b94a6"> m/min</span></div><div style="font-size:10.5px;color:#8b94a6">Usual avg '+v.avgSpeed+'</div>';
+      html += '<span class="pill" style="margin-top:5px;background:'+(speedFast?'#EAF3DE':'#FAECE7')+';color:'+(speedFast?'#27500A':'#712B13')+'"><i class="ti ti-trending-'+(speedFast?'up':'down')+'" style="font-size:11px"></i>'+Math.abs(speedDelta)+'% '+(speedFast?'faster':'slower')+' than usual</span></div>';
+      html += '<div class="card" style="margin-bottom:0"><div style="font-size:11px;color:#8b94a6">Time per sheet</div><div style="font-size:21px;font-weight:700;color:#27344d">'+v.cycle+'<span style="font-size:11px;color:#8b94a6">s</span></div><div style="font-size:10.5px;color:#8b94a6">Usual avg '+v.avgCycle+'</div>';
+      html += '<span class="pill" style="margin-top:5px;background:'+(cycleFast?'#EAF3DE':'#FAECE7')+';color:'+(cycleFast?'#27500A':'#712B13')+'"><i class="ti ti-trending-'+(cycleFast?'down':'up')+'" style="font-size:11px"></i>'+Math.abs(cycleDelta)+'% '+(cycleFast?'faster':'slower')+' than usual</span></div>';
+      html += '</div>';
+      if(v.verdict!=='ok'){
+        html += '<div style="background:#FAECE7;border:1.5px solid #f0997b;border-radius:10px;padding:10px 13px;margin-top:9px;font-size:12px;color:#712B13;display:flex;gap:8px;align-items:center"><i class="ti ti-alert-triangle" style="font-size:15px"></i>This box is running slower than usual — check the Setting guide tab</div>';
+      }
+    }
+
+    html += '<button class="primary" style="background:#27344d;margin-top:10px" id="doneBtn">Finish this box</button>';
+    app.innerHTML = html;
+
+    document.getElementById('backBtn').addEventListener('click', function(){ state.view='select'; renderApp(); });
+    document.getElementById('tabGuideBtn').addEventListener('click', function(){ state.activeTab='guide'; renderApp(); });
+    document.getElementById('tabStatusBtn').addEventListener('click', function(){ state.activeTab='status'; renderApp(); });
+    document.getElementById('doneBtn').addEventListener('click', function(){
+      state.boxes[state.curIdx].status = 'done';
+      var next = firstPending();
+      if(next === -1){ state.view = 'done'; } else { state.curIdx = next; state.view = 'select'; }
+      renderApp();
+    });
+  }
+
+  document.getElementById('coilSelector').addEventListener('click', function(){
+    var dd = document.getElementById('coilDropdown');
+    dd.style.display = (dd.style.display === 'none') ? 'block' : 'none';
+  });
+
+  renderCoilLabel(); renderCoilOptions(); renderApp();
+})();
+</script>
+</body>
+</html>

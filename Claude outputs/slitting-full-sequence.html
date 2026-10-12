@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>슬리팅 전체 순서도 &amp; 분할도</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --loss-fill: #c3c2b7;
+    --critical: #d03b3b;
+    --violet: #4a3aa7;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --grid: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --loss-fill: #3a3a37;
+      --critical: #e66767;
+      --violet: #9085e9;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--page); color: var(--ink-1);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 28px 16px 48px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  h2 { font-size: 14px; margin: 26px 0 10px; color: var(--ink-1); }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 0 0 8px; line-height: 1.5; }
+  .stat { font-size: 12.5px; color: var(--ink-2); margin-bottom: 18px; }
+  .stat b { color: var(--ink-1); }
+
+  /* sequence flow */
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 8px; }
+  .chip {
+    background: var(--surface-1); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 9px; font-size: 11.5px; font-weight: 600; text-align: center; line-height: 1.35;
+  }
+  .chip .n { font-size: 10px; color: var(--ink-muted); font-weight: 500; }
+  .chip.urgent { border-color: var(--critical); }
+  .chip.warn { border-color: var(--critical); }
+  .chip.gauge { border-color: var(--violet); }
+  .arrow { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--ink-muted); padding: 0 2px; }
+  .arrow .k { font-weight: 700; color: var(--ink-2); }
+  .arrow .line { width: 16px; height: 1px; background: var(--grid); margin: 1px 0; }
+
+  .ruler { position: relative; height: 22px; margin: 16px 0 6px; }
+  .ruler .tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid); }
+  .ruler .tick span { position: absolute; top: 0; left: 4px; font-size: 10px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px 14px; margin-bottom: 12px; }
+  .card.warn { border-color: var(--critical); }
+  .card.gauge { border-color: var(--violet); }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; gap: 8px; flex-wrap: wrap; }
+  .card-head .title { font-size: 13px; font-weight: 700; }
+  .card-head .title .ord { display:inline-block; width:20px; height:20px; border-radius:50%; background:var(--ink-1); color:var(--surface-1); font-size:11px; text-align:center; line-height:20px; margin-right:6px; }
+  .badge { display: inline-block; font-size: 10.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--critical); color: #fff; margin-left: 6px; }
+  .badge.gauge { background: var(--violet); }
+  .card-head .meta { font-size: 11.5px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .card-head .meta b { color: var(--ink-1); }
+  .card-head .meta .flag { color: var(--critical); font-weight: 700; }
+  .card-head .meta .move { color: var(--ink-muted); }
+
+  .bar { display: flex; gap: 2px; height: 32px; width: 100%; border-radius: 4px; overflow: hidden; }
+  .seg { display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #fff; border-radius: 4px; white-space: nowrap; overflow: hidden; }
+  .seg.loss { background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.35) 0 4px, transparent 4px 8px); background-color: var(--loss-fill); color: var(--ink-1); }
+  .seg.loss.critical { background-color: var(--critical); color: #fff; }
+  .recipe { margin-top: 7px; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
+  .recipe b { color: var(--ink-1); }
+
+  .legend { margin-top: 24px; font-size: 12px; color: var(--ink-2); line-height: 1.7; }
+  .legend .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>슬리팅 전체 작업 순서도 &amp; 분할도</h1>
+  <p class="sub">14개 작업(표1·표2·표3 전체)을 나이프 이동이 가장 적은 순서로 계산했습니다. 당일급(표1-1)은 우선순위상 맨 앞에 고정하고, 나머지는 나이프 위치 겹침이 가장 많은 순서로 배치했습니다.</p>
+  <p class="stat">0.750mm 13건 기준 나이프 이동 총 <b>57회</b> (전체 나이프 수 대비 최소) · 0.400mm(표3-2)는 두께 자체가 달라 코일까지 교체해야 하므로 맨 마지막에 별도 배치</p>
+
+  <h2>순서도 (화살표 아래 숫자 = 이전 작업에서 새로 움직여야 하는 나이프 개수)</h2>
+  <div class="flow">
+    <div class="chip urgent">① 표1-1<br><span class="n">당일급</span></div>
+    <div class="arrow"><span class="k">3</span><div class="line"></div></div>
+    <div class="chip">② 표1-2</div>
+    <div class="arrow"><span class="k">6</span><div class="line"></div></div>
+    <div class="chip">③ 표2-5</div>
+    <div class="arrow"><span class="k">3</span><div class="line"></div></div>
+    <div class="chip">④ 표1-5</div>
+    <div class="arrow"><span class="k">6</span><div class="line"></div></div>
+    <div class="chip">⑤ 표3-1</div>
+    <div class="arrow"><span class="k">7</span><div class="line"></div></div>
+    <div class="chip">⑥ 표2-6</div>
+    <div class="arrow"><span class="k">5</span><div class="line"></div></div>
+    <div class="chip">⑦ 표2-3</div>
+    <div class="arrow"><span class="k">5</span><div class="line"></div></div>
+    <div class="chip">⑧ 표2-4</div>
+    <div class="arrow"><span class="k">6</span><div class="line"></div></div>
+    <div class="chip">⑨ 표2-1</div>
+    <div class="arrow"><span class="k">7</span><div class="line"></div></div>
+    <div class="chip">⑩ 표1-4</div>
+    <div class="arrow"><span class="k">4</span><div class="line"></div></div>
+    <div class="chip">⑪ 표2-2</div>
+    <div class="arrow"><span class="k">3</span><div class="line"></div></div>
+    <div class="chip">⑫ 표1-6</div>
+    <div class="arrow"><span class="k">2</span><div class="line"></div></div>
+    <div class="chip warn">⑬ 표1-3<br><span class="n">재확인필요</span></div>
+    <div class="arrow"><span class="k">두께교체</span><div class="line"></div></div>
+    <div class="chip gauge">⑭ 표3-2<br><span class="n">0.400mm</span></div>
+  </div>
+
+  <h2>순번별 분할도</h2>
+  <div class="ruler" id="ruler"></div>
+
+  <!-- 1: B1 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">1</span>표1-1 <span class="badge">당일 급</span></div>
+      <div class="meta">1216mm · 로스 3mm · 수량1 · <span class="move">시작 작업</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:178 0 0; background:#2a78d6;" title="178mm">178</div>
+      <div class="seg" style="flex:218 0 0; background:#eb6834;" title="218mm">218</div>
+      <div class="seg" style="flex:188 0 0; background:#1baf7a;" title="188mm">188</div>
+      <div class="seg" style="flex:133 0 0; background:#eda100;" title="133mm">133</div>
+      <div class="seg" style="flex:133 0 0; background:#eda100;" title="133mm">133</div>
+      <div class="seg" style="flex:228 0 0; background:#e87ba4;" title="228mm">228</div>
+      <div class="seg" style="flex:138 0 0; background:#008300;" title="138mm">138</div>
+      <div class="seg loss" style="flex:3 0 0;" title="로스 3mm"></div>
+    </div>
+    <div class="recipe"><b>178×1,218×1,188×1,133×2,228×1,138×1</b></div>
+  </div>
+
+  <!-- 2: B2 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">2</span>표1-2</div>
+      <div class="meta">1210mm · 로스 9mm · 수량2 · <span class="move">이동 나이프 3개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:130 0 0; background:#eb6834;" title="130mm">130</div>
+      <div class="seg loss" style="flex:9 0 0;" title="로스 9mm"></div>
+    </div>
+    <div class="recipe"><b>180×6,130×1</b></div>
+  </div>
+
+  <!-- 3: C5 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">3</span>표2-5</div>
+      <div class="meta">1215mm · 로스 4mm · 수량2 · <span class="move">이동 나이프 6개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:150 0 0; background:#2a78d6;" title="150mm">150</div>
+      <div class="seg" style="flex:165 0 0; background:#eb6834;" title="165mm">165</div>
+      <div class="seg loss" style="flex:4 0 0;" title="로스 4mm"></div>
+    </div>
+    <div class="recipe"><b>150×7,165×1</b></div>
+  </div>
+
+  <!-- 4: B5 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">4</span>표1-5</div>
+      <div class="meta">1214mm · 로스 5mm · 수량1 · <span class="move">이동 나이프 3개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:298 0 0; background:#2a78d6;" title="298mm">298</div>
+      <div class="seg" style="flex:298 0 0; background:#2a78d6;" title="298mm">298</div>
+      <div class="seg" style="flex:298 0 0; background:#2a78d6;" title="298mm">298</div>
+      <div class="seg" style="flex:160 0 0; background:#eb6834;" title="160mm">160</div>
+      <div class="seg" style="flex:160 0 0; background:#eb6834;" title="160mm">160</div>
+      <div class="seg loss" style="flex:5 0 0;" title="로스 5mm"></div>
+    </div>
+    <div class="recipe"><b>298×3,160×2</b></div>
+  </div>
+
+  <!-- 5: A1 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">5</span>표3-1</div>
+      <div class="meta">1215mm · 로스 4mm · 수량1 · <span class="move">이동 나이프 6개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:170 0 0; background:#2a78d6;" title="170mm">170</div>
+      <div class="seg" style="flex:170 0 0; background:#2a78d6;" title="170mm">170</div>
+      <div class="seg" style="flex:170 0 0; background:#2a78d6;" title="170mm">170</div>
+      <div class="seg" style="flex:170 0 0; background:#2a78d6;" title="170mm">170</div>
+      <div class="seg" style="flex:170 0 0; background:#2a78d6;" title="170mm">170</div>
+      <div class="seg" style="flex:170 0 0; background:#2a78d6;" title="170mm">170</div>
+      <div class="seg" style="flex:195 0 0; background:#eb6834;" title="195mm">195</div>
+      <div class="seg loss" style="flex:4 0 0;" title="로스 4mm"></div>
+    </div>
+    <div class="recipe"><b>170×6,195×1</b></div>
+  </div>
+
+  <!-- 6: C6 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">6</span>표2-6</div>
+      <div class="meta">1213mm · 로스 6mm · 수량1 · <span class="move">이동 나이프 7개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:155 0 0; background:#2a78d6;" title="155mm">155</div>
+      <div class="seg" style="flex:128 0 0; background:#eb6834;" title="128mm">128</div>
+      <div class="seg loss" style="flex:6 0 0;" title="로스 6mm"></div>
+    </div>
+    <div class="recipe"><b>155×7,128×1</b></div>
+  </div>
+
+  <!-- 7: C3 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">7</span>표2-3</div>
+      <div class="meta">1215mm · 로스 4mm · 수량1 · <span class="move">이동 나이프 5개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:205 0 0; background:#2a78d6;" title="205mm">205</div>
+      <div class="seg" style="flex:205 0 0; background:#2a78d6;" title="205mm">205</div>
+      <div class="seg" style="flex:205 0 0; background:#2a78d6;" title="205mm">205</div>
+      <div class="seg" style="flex:205 0 0; background:#2a78d6;" title="205mm">205</div>
+      <div class="seg" style="flex:205 0 0; background:#2a78d6;" title="205mm">205</div>
+      <div class="seg" style="flex:190 0 0; background:#eb6834;" title="190mm">190</div>
+      <div class="seg loss" style="flex:4 0 0;" title="로스 4mm"></div>
+    </div>
+    <div class="recipe"><b>205×5,190×1</b></div>
+  </div>
+
+  <!-- 8: C4 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">8</span>표2-4</div>
+      <div class="meta">1215mm · 로스 4mm · 수량1 · <span class="move">이동 나이프 5개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:220 0 0; background:#2a78d6;" title="220mm">220</div>
+      <div class="seg" style="flex:220 0 0; background:#2a78d6;" title="220mm">220</div>
+      <div class="seg" style="flex:220 0 0; background:#2a78d6;" title="220mm">220</div>
+      <div class="seg" style="flex:220 0 0; background:#2a78d6;" title="220mm">220</div>
+      <div class="seg" style="flex:165 0 0; background:#eb6834;" title="165mm">165</div>
+      <div class="seg" style="flex:170 0 0; background:#1baf7a;" title="170mm">170</div>
+      <div class="seg loss" style="flex:4 0 0;" title="로스 4mm"></div>
+    </div>
+    <div class="recipe"><b>220×4,165×1,170×1</b></div>
+  </div>
+
+  <!-- 9: C1 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">9</span>표2-1</div>
+      <div class="meta">1215mm · 로스 4mm · 수량1 · <span class="move">이동 나이프 6개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:146 0 0; background:#2a78d6;" title="146mm">146</div>
+      <div class="seg" style="flex:146 0 0; background:#2a78d6;" title="146mm">146</div>
+      <div class="seg" style="flex:146 0 0; background:#2a78d6;" title="146mm">146</div>
+      <div class="seg" style="flex:146 0 0; background:#2a78d6;" title="146mm">146</div>
+      <div class="seg" style="flex:131 0 0; background:#eb6834;" title="131mm">131</div>
+      <div class="seg" style="flex:131 0 0; background:#eb6834;" title="131mm">131</div>
+      <div class="seg" style="flex:131 0 0; background:#eb6834;" title="131mm">131</div>
+      <div class="seg" style="flex:238 0 0; background:#1baf7a;" title="238mm">238</div>
+      <div class="seg loss" style="flex:4 0 0;" title="로스 4mm"></div>
+    </div>
+    <div class="recipe"><b>146×4,131×3,238×1</b></div>
+  </div>
+
+  <!-- 10: B4 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">10</span>표1-4</div>
+      <div class="meta">1216mm · 로스 3mm · 수량3 · <span class="move">이동 나이프 7개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:240 0 0; background:#eb6834;" title="240mm">240</div>
+      <div class="seg loss" style="flex:3 0 0;" title="로스 3mm"></div>
+    </div>
+    <div class="recipe"><b>122×8,240×1</b></div>
+  </div>
+
+  <!-- 11: C2 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">11</span>표2-2</div>
+      <div class="meta">1210mm · 로스 9mm · 수량1 · <span class="move">이동 나이프 4개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:250 0 0; background:#2a78d6;" title="250mm">250</div>
+      <div class="seg" style="flex:250 0 0; background:#2a78d6;" title="250mm">250</div>
+      <div class="seg" style="flex:250 0 0; background:#2a78d6;" title="250mm">250</div>
+      <div class="seg" style="flex:250 0 0; background:#2a78d6;" title="250mm">250</div>
+      <div class="seg" style="flex:210 0 0; background:#eb6834;" title="210mm">210</div>
+      <div class="seg loss" style="flex:9 0 0;" title="로스 9mm"></div>
+    </div>
+    <div class="recipe"><b>250×4,210×1</b></div>
+  </div>
+
+  <!-- 12: B6 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title"><span class="ord">12</span>표1-6</div>
+      <div class="meta">1212mm · 로스 7mm · 수량1 · <span class="move">이동 나이프 3개</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:220 0 0; background:#eb6834;" title="220mm">220</div>
+      <div class="seg loss" style="flex:7 0 0;" title="로스 7mm"></div>
+    </div>
+    <div class="recipe"><b>248×4,220×1</b></div>
+  </div>
+
+  <!-- 13: B3 -->
+  <div class="card warn">
+    <div class="card-head">
+      <div class="title"><span class="ord">13</span>표1-3</div>
+      <div class="meta">720mm · 로스 <span class="flag">499mm ⚠</span> · 수량3 · <span class="move">이동 나이프 2개(불완전 데이터)</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:165 0 0; background:#2a78d6;" title="165mm">165</div>
+      <div class="seg" style="flex:165 0 0; background:#2a78d6;" title="165mm">165</div>
+      <div class="seg" style="flex:165 0 0; background:#2a78d6;" title="165mm">165</div>
+      <div class="seg" style="flex:225 0 0; background:#eb6834;" title="225mm">225</div>
+      <div class="seg loss critical" style="flex:499 0 0;" title="로스 499mm — 비정상">⚠ 원본확인</div>
+    </div>
+    <div class="recipe"><b>165×3,225×1</b> — 합계 부족, 원본 재확인 전까지 정확한 나이프 위치 확정 불가</div>
+  </div>
+
+  <!-- 14: A2 -->
+  <div class="card gauge">
+    <div class="card-head">
+      <div class="title"><span class="ord">14</span>표3-2 <span class="badge gauge">0.400mm</span></div>
+      <div class="meta">1215mm · 로스 4mm · 수량1 · <span class="move">두께가 달라 코일·나이프 전체 교체</span></div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm">77</div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm"></div>
+      <div class="seg" style="flex:77 0 0; background:#2a78d6; font-size:8px;" title="77mm">77</div>
+      <div class="seg" style="flex:60 0 0; background:#eb6834; font-size:8px;" title="60mm">60</div>
+      <div class="seg loss" style="flex:4 0 0;" title="로스 4mm"></div>
+    </div>
+    <div class="recipe"><b>77×15,60×1</b> — 나이프 15개짜리 가장 세밀한 작업이라, 두께 교체 김에 마지막에 배치</div>
+  </div>
+
+  <div class="legend">
+    <span class="sw" style="background:repeating-linear-gradient(45deg, rgba(255,255,255,.35) 0 3px, #c3c2b7 3px 6px);"></span>빗금 = 로스(자투리) · <span class="sw" style="background:#d03b3b;"></span>빨강 = 비정상 로스(재확인 필요) · <span class="sw" style="background:#4a3aa7;"></span>보라 테두리 = 두께가 달라 코일 자체를 바꿔야 하는 작업 · "이동 나이프"는 직전 작업과 비교해 새로 세팅해야 하는 나이프 개수(허용오차 ±3mm)입니다.
+  </div>
+</div>
+
+<script>
+  const ruler = document.getElementById('ruler');
+  const totalMm = 1219;
+  for (let mm = 0; mm <= totalMm; mm += 200) {
+    const pct = (mm / totalMm) * 100;
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.left = pct + '%';
+    tick.innerHTML = '<span>' + mm + '</span>';
+    ruler.appendChild(tick);
+  }
+</script>
+</body>
+</html>

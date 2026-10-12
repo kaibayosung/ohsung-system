@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>1219mm 슬리팅 분할도</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --ink-1: #0b0b0b;
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --grid: #e1e0d9;
+    --border: rgba(11,11,11,0.10);
+    --loss-fill: #c3c2b7;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --ink-1: #ffffff;
+      --ink-2: #c3c2b7;
+      --ink-muted: #898781;
+      --grid: #2c2c2a;
+      --border: rgba(255,255,255,0.10);
+      --loss-fill: #3a3a37;
+      --critical: #e66767;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink-1);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 28px 16px 48px;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .sub { color: var(--ink-2); font-size: 13px; margin: 0 0 22px; line-height: 1.5; }
+
+  .ruler { position: relative; height: 22px; margin: 0 0 6px; }
+  .ruler .tick {
+    position: absolute; top: 0; bottom: 0; width: 1px; background: var(--grid);
+  }
+  .ruler .tick span {
+    position: absolute; top: 0; left: 4px; font-size: 10px; color: var(--ink-muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px 16px;
+    margin-bottom: 14px;
+  }
+  .card.warn { border-color: var(--critical); }
+
+  .card-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    margin-bottom: 10px; gap: 8px; flex-wrap: wrap;
+  }
+  .card-head .title { font-size: 13.5px; font-weight: 600; }
+  .badge {
+    display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 7px;
+    border-radius: 999px; background: var(--critical); color: #fff; margin-left: 6px;
+  }
+  .card-head .meta { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .card-head .meta b { color: var(--ink-1); }
+  .card-head .meta .flag { color: var(--critical); font-weight: 700; }
+
+  .bar {
+    display: flex; gap: 2px; height: 40px; width: 100%;
+    border-radius: 4px; overflow: hidden;
+  }
+  .seg {
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff; border-radius: 4px;
+    white-space: nowrap; overflow: hidden;
+  }
+  .seg.loss {
+    background-image: repeating-linear-gradient(45deg,
+      rgba(255,255,255,0.35) 0 4px, transparent 4px 8px);
+    background-color: var(--loss-fill);
+    color: var(--ink-1);
+  }
+  .seg.loss.critical {
+    background-color: var(--critical);
+    color: #fff;
+  }
+  .recipe {
+    margin-top: 8px; font-size: 12px; color: var(--ink-2); line-height: 1.5;
+  }
+  .recipe b { color: var(--ink-1); }
+
+  .legend {
+    margin-top: 24px; font-size: 12px; color: var(--ink-2); line-height: 1.6;
+  }
+  .legend .sw {
+    display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+    margin-right: 5px; vertical-align: -1px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>1219mm 코일 슬리팅 분할도</h1>
+  <p class="sub">10/2(금) 출고예정 표1, 순번 1~6 — 1219mm 원코일을 실제 비율대로 나눠서 표시했습니다. 빗금 구간은 로스(자투리)이며, 빨간색은 로스가 비정상적으로 커서 원본 재확인이 필요한 줄입니다.</p>
+
+  <div class="ruler" id="ruler"></div>
+
+  <!-- Row 1 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title">순번 1 <span class="badge">당일 급</span></div>
+      <div class="meta">사용폭 <b>1216mm</b> · 로스 <b>3mm</b> · 수량 1</div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:178 0 0; background:#2a78d6;" title="178mm">178</div>
+      <div class="seg" style="flex:218 0 0; background:#eb6834;" title="218mm">218</div>
+      <div class="seg" style="flex:188 0 0; background:#1baf7a;" title="188mm">188</div>
+      <div class="seg" style="flex:133 0 0; background:#eda100;" title="133mm">133</div>
+      <div class="seg" style="flex:133 0 0; background:#eda100;" title="133mm">133</div>
+      <div class="seg" style="flex:228 0 0; background:#e87ba4;" title="228mm">228</div>
+      <div class="seg" style="flex:138 0 0; background:#008300;" title="138mm">138</div>
+      <div class="seg loss" style="flex:3 0 0;" title="로스 3mm"></div>
+    </div>
+    <div class="recipe"><b>178×1, 218×1, 188×1, 133×2, 228×1, 138×1</b></div>
+  </div>
+
+  <!-- Row 2 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title">순번 2</div>
+      <div class="meta">사용폭 <b>1210mm</b> · 로스 <b>9mm</b> · 수량 2</div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:180 0 0; background:#2a78d6;" title="180mm">180</div>
+      <div class="seg" style="flex:130 0 0; background:#eb6834;" title="130mm">130</div>
+      <div class="seg loss" style="flex:9 0 0;" title="로스 9mm"></div>
+    </div>
+    <div class="recipe"><b>180×6, 130×1</b></div>
+  </div>
+
+  <!-- Row 3 -->
+  <div class="card warn">
+    <div class="card-head">
+      <div class="title">순번 3</div>
+      <div class="meta">사용폭 <b>720mm</b> · 로스 <span class="flag">499mm ⚠</span> · 수량 3</div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:165 0 0; background:#2a78d6;" title="165mm">165</div>
+      <div class="seg" style="flex:165 0 0; background:#2a78d6;" title="165mm">165</div>
+      <div class="seg" style="flex:165 0 0; background:#2a78d6;" title="165mm">165</div>
+      <div class="seg" style="flex:225 0 0; background:#eb6834;" title="225mm">225</div>
+      <div class="seg loss critical" style="flex:499 0 0;" title="로스 499mm — 비정상">⚠ 확인필요</div>
+    </div>
+    <div class="recipe"><b>165×3, 225×1</b> — 합계가 1219mm에 한참 못 미쳐 원본에 누락된 사이즈가 있는지 재확인 필요</div>
+  </div>
+
+  <!-- Row 4 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title">순번 4</div>
+      <div class="meta">사용폭 <b>1216mm</b> · 로스 <b>3mm</b> · 수량 3</div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:122 0 0; background:#2a78d6;" title="122mm">122</div>
+      <div class="seg" style="flex:240 0 0; background:#eb6834;" title="240mm">240</div>
+      <div class="seg loss" style="flex:3 0 0;" title="로스 3mm"></div>
+    </div>
+    <div class="recipe"><b>122×8, 240×1</b></div>
+  </div>
+
+  <!-- Row 5 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title">순번 5</div>
+      <div class="meta">사용폭 <b>1214mm</b> · 로스 <b>5mm</b> · 수량 1</div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:298 0 0; background:#2a78d6;" title="298mm">298</div>
+      <div class="seg" style="flex:298 0 0; background:#2a78d6;" title="298mm">298</div>
+      <div class="seg" style="flex:298 0 0; background:#2a78d6;" title="298mm">298</div>
+      <div class="seg" style="flex:160 0 0; background:#eb6834;" title="160mm">160</div>
+      <div class="seg" style="flex:160 0 0; background:#eb6834;" title="160mm">160</div>
+      <div class="seg loss" style="flex:5 0 0;" title="로스 5mm"></div>
+    </div>
+    <div class="recipe"><b>298×3, 160×2</b></div>
+  </div>
+
+  <!-- Row 6 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="title">순번 6</div>
+      <div class="meta">사용폭 <b>1212mm</b> · 로스 <b>7mm</b> · 수량 1</div>
+    </div>
+    <div class="bar">
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:248 0 0; background:#2a78d6;" title="248mm">248</div>
+      <div class="seg" style="flex:220 0 0; background:#eb6834;" title="220mm">220</div>
+      <div class="seg loss" style="flex:7 0 0;" title="로스 7mm"></div>
+    </div>
+    <div class="recipe"><b>248×4, 220×1</b></div>
+  </div>
+
+  <div class="legend">
+    <span class="sw" style="background:repeating-linear-gradient(45deg, rgba(255,255,255,.35) 0 3px, #c3c2b7 3px 6px);"></span>빗금 구간 = 로스(자투리) · <span class="sw" style="background:#d03b3b;"></span>빨강 = 비정상적으로 큰 로스(재확인 필요) · 색상은 각 줄마다 독립적으로 배정되며 같은 색이라도 다른 줄과는 무관합니다.
+  </div>
+</div>
+
+<script>
+  // ruler: 0 ~ 1219mm scale guide, ticks every 100mm within the bar's content box
+  const ruler = document.getElementById('ruler');
+  const totalMm = 1219;
+  for (let mm = 0; mm <= totalMm; mm += 200) {
+    const pct = (mm / totalMm) * 100;
+    const tick = document.createElement('div');
+    tick.className = 'tick';
+    tick.style.left = pct + '%';
+    tick.innerHTML = '<span>' + mm + '</span>';
+    ruler.appendChild(tick);
+  }
+</script>
+</body>
+</html>
