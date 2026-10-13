@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>슬리터 개선 전후 성과 비교</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; min-height:100%; background:#eef1f6; font-family:"Pretendard",system-ui,sans-serif; font-weight:700; color:#0f1e33; }
+  body { display:flex; justify-content:center; padding:16px; }
+  #app { width:100%; max-width:960px; padding-bottom:32px; }
+  .header-title { font-size:22px; font-weight:900; margin:0 0 4px; }
+  .header-sub { font-size:13.5px; color:#7d8ba1; margin:0 0 16px; line-height:1.55; }
+  .card { background:#fff; border:1px solid #e3e8f0; border-radius:16px; padding:18px; box-shadow:0 1px 2px rgba(10,21,36,.05); margin-bottom:14px; }
+  .panel-title { font-size:14px; font-weight:900; margin:0 0 12px; }
+  .seg { display:inline-flex; background:#eef1f6; border-radius:12px; padding:4px; gap:4px; margin-bottom:14px; }
+  .seg button { font-family:inherit; font-weight:800; font-size:14px; border:0; background:transparent; color:#5c6478; padding:9px 16px; border-radius:9px; cursor:pointer; }
+  .seg button.on { background:#fff; color:#0f1e33; box-shadow:0 1px 2px rgba(10,21,36,.12); }
+  .periods { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:680px){ .periods { grid-template-columns:1fr; } }
+  .pbox { border:1.5px solid #e3e8f0; border-radius:14px; padding:12px 14px; }
+  .pbox.a { border-color:#cfd6e2; } .pbox.b { border-color:#bfe3d9; background:#f6fbf9; }
+  .plabel { font-size:12.5px; font-weight:900; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+  .dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+  .dates { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+  .date-input { font-family:inherit; font-weight:800; font-size:14.5px; color:#0f1e33; background:#fff; border:1.5px solid #e3e8f0; border-radius:10px; padding:8px 9px; }
+  .presets { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+  .quick-btn { font-family:inherit; font-weight:800; font-size:13px; color:#185fa5; background:#e6f1fb; border:1.5px solid #cfe2f7; border-radius:10px; padding:8px 12px; cursor:pointer; }
+  .run-btn { font-family:inherit; font-weight:900; font-size:14px; color:#fff; background:#796cbf; border:0; border-radius:10px; padding:10px 18px; cursor:pointer; margin-left:auto; }
+  .status-msg { font-size:14px; color:#7d8ba1; padding:26px 4px; text-align:center; }
+  .verdict { display:flex; gap:14px; align-items:flex-start; }
+  .verdict .big { font-size:20px; font-weight:900; line-height:1.4; }
+  .verdict p { margin:6px 0 0; font-size:13px; color:#5c6478; line-height:1.6; }
+  table.kpi { width:100%; border-collapse:collapse; font-size:13.5px; }
+  table.kpi th { text-align:left; color:#7d8ba1; font-weight:800; font-size:12px; padding:8px 8px; border-bottom:1px solid #e3e8f0; white-space:nowrap; }
+  table.kpi td { padding:11px 8px; border-bottom:1px solid #eef1f6; vertical-align:middle; }
+  table.kpi td.num { text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  table.kpi td .n { font-size:11px; color:#9aa3b5; font-weight:700; }
+  table.kpi td:first-child { min-width:150px; }
+  table.kpi { min-width:600px; }
+  .kname { font-weight:900; } .kdesc { font-size:11.5px; color:#9aa3b5; font-weight:700; margin-top:2px; }
+  .pill { display:inline-block; font-size:12px; font-weight:900; border-radius:999px; padding:4px 10px; white-space:nowrap; }
+  .p-good { background:#e3f3ef; color:#1f7a68; } .p-bad { background:#fbe9e7; color:#b03a2e; } .p-same { background:#eef1f6; color:#5c6478; } .p-few { background:#fff4e0; color:#9a6a12; }
+  .table-wrap { overflow-x:auto; }
+  .chart-svg { width:100%; height:auto; display:block; }
+  .legend { display:flex; gap:14px; flex-wrap:wrap; font-size:12px; color:#5c6478; margin:0 0 8px; }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:5px; vertical-align:-1px; }
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.list th { text-align:left; color:#7d8ba1; font-weight:800; padding:7px 6px; border-bottom:1px solid #e3e8f0; white-space:nowrap; }
+  table.list td { padding:8px 6px; border-bottom:1px solid #eef1f6; white-space:nowrap; }
+  table.list td.num { text-align:right; font-variant-numeric:tabular-nums; }
+  .tag { font-size:11.5px; font-weight:900; padding:2px 8px; border-radius:999px; }
+  .t-same { background:#e6f1fb; color:#185fa5; } .t-diff { background:#fff1dd; color:#9a5b0c; } .t-long { background:#eef1f6; color:#5c6478; }
+  .foot { font-size:11.5px; color:#7d8ba1; line-height:1.7; padding:4px 2px 0; }
+  .foot b { color:#0f1e33; }
+  .warn { font-size:12.5px; color:#9a6a12; background:#fff8ea; border:1px solid #f3e1b8; border-radius:10px; padding:9px 12px; margin-top:10px; line-height:1.55; }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1 class="header-title">슬리터 개선 전후 성과 비교</h1>
+  <p class="header-sub">개선 전(A)과 개선 후(B) 기간을 고르면, 같은 기준으로 교체 시간·가동률·첫 가동 시각·생산량을 비교합니다. 슬리터2는 PLC(가동/정지)와 작업 기록을, 슬리터1은 작업 완료 기록을 씁니다.</p>
+
+  <div class="card">
+    <div class="seg" id="lineSeg">
+      <button data-line="S2" class="on">슬리터2</button>
+      <button data-line="S1">슬리터1</button>
+    </div>
+    <div class="periods">
+      <div class="pbox a"><div class="plabel"><span class="dot" style="background:#8a93a1"></span>A · 개선 전</div>
+        <div class="dates"><input type="date" class="date-input" id="aS"> ~ <input type="date" class="date-input" id="aE"></div></div>
+      <div class="pbox b"><div class="plabel"><span class="dot" style="background:#2f9e8a"></span>B · 개선 후</div>
+        <div class="dates"><input type="date" class="date-input" id="bS"> ~ <input type="date" class="date-input" id="bE"></div></div>
+    </div>
+    <div class="presets">
+      <button class="quick-btn" data-preset="roles">역할 정리(10/13) 전후</button>
+      <button class="quick-btn" data-preset="w1">최근 7일 vs 이전 7일</button>
+      <button class="quick-btn" data-preset="w2">최근 14일 vs 이전 14일</button>
+      <button class="run-btn" id="runBtn">비교하기</button>
+    </div>
+  </div>
+
+  <div id="out"><div class="status-msg">불러오는 중…</div></div>
+</div>
+
+<script>
+const API = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const KEY = "sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs";
+const C = { a:'#8a93a1', b:'#2f9e8a', same:'#2b67b5', diff:'#e08a1e', red:'#c0392b', ink:'#0f1e33', muted:'#7d8ba1', line:'#e3e8f0' };
+const LUNCH = [12*60, 13*60];
+const TARGET = { same:15, diff:30, first:'08:45' };
+
+// ---- 시간 유틸 (서버 값은 KST 벽시계 그대로 → 추가 변환 없음) ----
+function todayKST(){ return new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
+function addDays(d,n){ const x=new Date(d+'T00:00:00Z'); x.setUTCDate(x.getUTCDate()+n); return x.toISOString().slice(0,10); }
+function toMin(hm){ const p=hm.split(':'); return +p[0]*60 + +p[1]; }
+function hm(m){ m=Math.round(m); return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function isoParts(s){ s=String(s).replace('T',' ').replace('Z',''); return { d:s.slice(0,10), m:toMin(s.slice(11,16)), sec:+s.slice(17,19)||0 }; }
+function lunchOverlap(a,b){ return Math.max(0, Math.min(b,LUNCH[1]) - Math.max(a,LUNCH[0])); }
+function median(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), k=s.length>>1; return s.length%2? s[k] : (s[k-1]+s[k])/2; }
+function f1(x){ return x==null? '-' : (Math.round(x*10)/10).toString(); }
+
+// ---- 가공규칙: "폭=줄수" 조합 ----
+function parseRule(r){
+  const re=/(\d+(?:\.\d+)?)\s*=\s*(\d+|나머지\s*\d*줄?)/g; let m, pairs=[], strips=0;
+  while((m=re.exec(r||''))){ const n=(m[2].match(/\d+/)||['1'])[0]; strips+=+n; pairs.push(m[1]+'='+n); }
+  pairs.sort(); return { key:pairs.join(','), strips };
+}
+
+// ---- 데이터 ----
+async function getJson(params){
+  const qs=new URLSearchParams(params).toString();
+  const res=await fetch(`${API}?${qs}`,{ headers:{ apikey:KEY, Authorization:`Bearer ${KEY}` } });
+  if(!res.ok) throw new Error('API '+res.status);
+  return res.json();
+}
+let CACHE = { from:null, plc:null, erp:null };
+async function loadData(from){
+  if(CACHE.from && CACHE.from<=from) return CACHE;
+  const [p,e] = await Promise.all([
+    getJson({ sql:`SELECT DATE_FORMAT(TIMESTAMP,'%Y-%m-%d %H:%i') m, ROUND(AVG(LINE_SPEED_VALUE)) v, MAX(LENGTH) lx, MIN(LENGTH) ln, MAX(COIL_ID) c FROM plc_data WHERE TIMESTAMP >= '${from}' GROUP BY m ORDER BY m` }),
+    getJson({ sql:`SELECT id,work_type,product_name,company_name,specification,original_weight,process_rule,started_at,update_time,status FROM erp_data WHERE update_time >= '${from}' ORDER BY update_time` })
+  ]);
+  CACHE = { from, plc:p.rows||[], erp:e.rows||[] };
+  return CACHE;
+}
+
+// ---- 작업 기록 정리 ----
+function erpJobs(rows, wt){
+  return rows.filter(r=>r.work_type===wt && r.status==='완료' && r.started_at && r.update_time).map(r=>{
+    const s=isoParts(r.started_at), e=isoParts(r.update_time), pr=parseRule(r.process_rule);
+    return { id:r.id, prod:r.product_name, cu:r.company_name, spec:r.specification, kg:+r.original_weight||0, rule:r.process_rule||'', rkey:pr.key, strips:pr.strips,
+      d:e.d, sd:s.d, sm:s.m, em:e.m, esec:e.sec, durSec:((e.d===s.d)? (e.m-s.m)*60+(e.sec-s.sec) : 99999) };
+  }).sort((x,y)=> (x.d+String(x.em).padStart(5,'0')).localeCompare(y.d+String(y.em).padStart(5,'0')));
+}
+
+// ---- 슬리터2: PLC 분 단위 → 코일 → 교체 ----
+function s2Analyze(plc, jobs){
+  const byDay={};
+  for(const r of plc){ const d=r.m.slice(0,10); (byDay[d]=byDay[d]||[]).push({ m:toMin(r.m.slice(11,16)), v:+r.v||0, lx:+r.lx||0, ln:+r.ln||0, c:r.c||'' }); }
+  const jobsByProd={}, jobsByDay={};
+  for(const j of jobs){ (jobsByProd[j.prod]=jobsByProd[j.prod]||[]).push(j); (jobsByDay[j.d]=jobsByDay[j.d]||[]).push(j); }
+  const days={};
+  for(const d of Object.keys(byDay).sort()){
+    const rows=byDay[d]; const segs=[]; let cur=null;
+    for(const r of rows){
+      if(r.v>=30){ if(cur && r.m===cur.e+1){ cur.e=r.m; cur.n++; cur.l1=Math.max(cur.l1,r.lx); if(r.c&&!/^0+$/.test(r.c)) cur.c=r.c; }
+        else { cur={ s:r.m, e:r.m, n:1, l0:r.ln, l1:r.lx, c:(r.c&&!/^0+$/.test(r.c))?r.c:'' }; segs.push(cur); } }
+    }
+    if(!segs.length) continue;
+    for(const s of segs){
+      let job=null;
+      if(s.c && jobsByProd[s.c]){ job=jobsByProd[s.c].reduce((a,b)=> Math.abs((b.sd===d?b.sm:9999)-s.s) < Math.abs((a.sd===d?a.sm:9999)-s.s) ? b : a); }
+      else { const c=(jobsByDay[d]||[]).filter(j=> j.sd===d && j.sm-15<=s.s && s.s<=j.em+2); if(c.length) job=c.reduce((a,b)=> Math.abs(b.sm-s.s)<Math.abs(a.sm-s.s)?b:a); }
+      s.job=job;
+    }
+    const coils=[];
+    for(const s of segs){
+      const last=coils[coils.length-1];
+      if(last && ((s.job && last.job===s.job) || (!s.job && s.l0>60))){ last.e=s.e; last.run+=s.n; }
+      else coils.push({ s:s.s, e:s.e, run:s.n, job:s.job, c:s.c });
+    }
+    const first=rows[0].m, lastM=rows[rows.length-1].m;
+    const span=(lastM-first+1) - lunchOverlap(first,lastM+1);
+    const changes=[];
+    for(let i=1;i<coils.length;i++){
+      const a=coils[i-1], b=coils[i];
+      const gap=(b.s-(a.e+1)) - lunchOverlap(a.e+1,b.s);
+      let kind='unk';
+      if(a.job && b.job) kind = (a.job.rkey===b.job.rkey)? 'same' : 'diff';
+      changes.push({ d, at:b.s, from:a.e+1, gap, kind:gap>90?'long':kind, strips:b.job?b.job.strips:null,
+        prev:a.job?a.job.prod:(a.c||'번호없음'), next:b.job?b.job.prod:(b.c||'번호없음'), lunch:lunchOverlap(a.e+1,b.s)>0 });
+    }
+    days[d]={ d, run:coils.reduce((t,c)=>t+c.run,0), span, firstRun:coils[0].s, power:first, coils, changes,
+      startGap:coils[0].s-first };
+  }
+  return days;
+}
+
+// ---- 슬리터1/공통: 완료→완료 주기 ----
+function cycles(jobs){
+  const out=[];
+  for(let i=1;i<jobs.length;i++){
+    const a=jobs[i-1], b=jobs[i];
+    if(a.d!==b.d) continue;
+    if(b.em===9*60+5 && b.esec<=5) continue;   // 09:05:0x 자동 완료
+    let g=(b.em+b.esec/60)-(a.em+a.esec/60); g-=lunchOverlap(a.em,b.em);
+    if(g<1) continue;
+    out.push({ d:b.d, at:b.em, gap:g, kind:g>90?'long':(a.rkey===b.rkey?'same':'diff'), prev:a.prod, next:b.prod, strips:b.strips });
+  }
+  return out;
+}
+function buttonTimely(jobs){
+  // 시작 버튼이 앞 작업 완료 후 5분 안에 눌렸나
+  let ok=0,n=0;
+  for(let i=1;i<jobs.length;i++){ const a=jobs[i-1], b=jobs[i]; if(a.d!==b.d || b.sd!==b.d) continue; if(b.durSec<60) continue;
+    n++; if(b.sm - a.em <= 5) ok++; }
+  return n? { pct:ok/n*100, n } : { pct:null, n:0 };
+}
+
+function inRange(d,s,e){ return d>=s && d<=e; }
+
+function summarize(line, data, s, e){
+  const wt = line==='S2'?'SLITING2':'SLITING';
+  const jobsAll = erpJobs(data.erp, wt);
+  const jobs = jobsAll.filter(j=>inRange(j.d,s,e));
+  const perDayJobs={}; for(const j of jobs){ (perDayJobs[j.d]=perDayJobs[j.d]||{})[j.prod+'|'+j.kg]=j; }
+  const dayKeys=Object.keys(perDayJobs);
+  const coilsDay = median(dayKeys.map(d=>Object.keys(perDayJobs[d]).length));
+  const tonsDay = median(dayKeys.map(d=>Object.values(perDayJobs[d]).reduce((t,j)=>t+j.kg,0)/1000));
+  const btn = buttonTimely(jobs);
+  const res = { line, s, e, nDays:dayKeys.length, coilsDay, tonsDay, btn };
+  if(line==='S2'){
+    const days = s2Analyze(data.plc.filter(r=>inRange(r.m.slice(0,10),s,e)), jobsAll);
+    const D=Object.values(days);
+    const ch=D.flatMap(x=>x.changes);
+    res.days=D; res.changes=ch;
+    res.util = D.length? D.reduce((t,x)=>t+x.run,0)/D.reduce((t,x)=>t+x.span,0)*100 : null;
+    res.same = ch.filter(c=>c.kind==='same').map(c=>c.gap);
+    res.diff = ch.filter(c=>c.kind==='diff').map(c=>c.gap);
+    res.long = ch.filter(c=>c.kind==='long');
+    res.first = D.map(x=>x.firstRun);
+    res.startGap = D.map(x=>x.startGap);
+    res.plcDays = D.length;
+  } else {
+    const cy = cycles(jobsAll).filter(c=>inRange(c.d,s,e));
+    res.changes=cy;
+    res.same = cy.filter(c=>c.kind==='same').map(c=>c.gap);
+    res.diff = cy.filter(c=>c.kind==='diff').map(c=>c.gap);
+    res.long = cy.filter(c=>c.kind==='long');
+    const fd={}; for(const j of jobs){ if(!(j.d in fd) || j.em<fd[j.d]) fd[j.d]=j.em; }
+    res.first = Object.values(fd);
+  }
+  return res;
+}
+
+// ---- 화면 ----
+const state = { line:'S2', aS:'2026-09-01', aE:'2026-10-12', bS:'2026-10-13', bE:todayKST() };
+function setInputs(){ for(const k of ['aS','aE','bS','bE']) document.getElementById(k).value=state[k]; }
+function preset(p){
+  const t=todayKST();
+  if(p==='roles'){ state.aS='2026-09-01'; state.aE='2026-10-12'; state.bS='2026-10-13'; state.bE=t; }
+  if(p==='w1'){ state.bE=t; state.bS=addDays(t,-6); state.aE=addDays(t,-7); state.aS=addDays(t,-13); }
+  if(p==='w2'){ state.bE=t; state.bS=addDays(t,-13); state.aE=addDays(t,-14); state.aS=addDays(t,-27); }
+  setInputs(); run();
+}
+
+function judge(a,b,nB,lowerBetter,minN=5){
+  if(a==null||b==null) return { cls:'p-few', txt:'자료 없음' };
+  if(nB!=null && nB<minN) return { cls:'p-few', txt:`표본 부족 (${nB})` };
+  const ch=(b-a)/Math.abs(a||1)*100*(lowerBetter?-1:1);
+  if(ch>=10) return { cls:'p-good', txt:'개선' };
+  if(ch<=-10) return { cls:'p-bad', txt:'악화' };
+  return { cls:'p-same', txt:'변화 작음' };
+}
+function deltaTxt(a,b,unit,lowerBetter){
+  if(a==null||b==null) return '';
+  const d=b-a; const sign=d>0?'+':''; const good=lowerBetter? d<0 : d>0;
+  return `<span style="color:${Math.abs(d)<1e-9?C.muted:(good?'#1f7a68':'#b03a2e')}">${sign}${f1(d)}${unit}</span>`;
+}
+
+function kpiRow(name, desc, av, bv, unit, nA, nB, lowerBetter, fmt){
+  const F = fmt || (x=>x==null?'-':f1(x)+unit);
+  const j = judge(av,bv,nB,lowerBetter);
+  return `<tr><td><div class="kname">${name}</div><div class="kdesc">${desc}</div></td>
+    <td class="num">${F(av)}${nA!=null?` <span class="n">n=${nA}</span>`:''}</td>
+    <td class="num"><b>${F(bv)}</b>${nB!=null?` <span class="n">n=${nB}</span>`:''}</td>
+    <td class="num">${fmt? (av!=null&&bv!=null? deltaTxt(av,bv,'분',lowerBetter):'') : deltaTxt(av,bv,unit,lowerBetter)}</td>
+    <td><span class="pill ${j.cls}">${j.txt}</span></td></tr>`;
+}
+
+function trendChart(A,B){
+  const all=[...A.changes.map(c=>({...c,g:'a'})),...B.changes.map(c=>({...c,g:'b'}))].filter(c=>c.kind==='same'||c.kind==='diff');
+  const days=[...new Set(all.map(c=>c.d))].sort();
+  if(!days.length) return '<div class="status-msg">비교할 교체가 없습니다</div>';
+  const W=900,H=260,L=40,R=12,T=14,Bm=34, maxY=Math.min(90, Math.max(60, ...all.map(c=>c.gap)));
+  const x=i=> L + (days.length===1? (W-L-R)/2 : i*(W-L-R)/(days.length-1));
+  const y=v=> T + (H-T-Bm)*(1-v/maxY);
+  let s=`<svg class="chart-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="일별 교체 시간">`;
+  for(let v=0; v<=maxY; v+=15){ s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${C.line}"/><text x="${L-6}" y="${y(v)+4}" font-size="11" fill="${C.muted}" text-anchor="end">${v}</text>`; }
+  for(const [k,v] of [['same',TARGET.same],['diff',TARGET.diff]]){ s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="${C[k]}" stroke-dasharray="5 4" stroke-width="1.2" opacity=".7"/><text x="${L+4}" y="${y(v)-4}" font-size="10.5" fill="${C[k]}">목표 ${v}분</text>`; }
+  const bi=days.findIndex(d=>d>=B.s); if(bi>0){ const bx=(x(bi-1)+x(bi))/2; s+=`<rect x="${bx}" y="${T}" width="${W-R-bx}" height="${H-T-Bm}" fill="#2f9e8a" opacity=".06"/><line x1="${bx}" x2="${bx}" y1="${T}" y2="${H-Bm}" stroke="#2f9e8a" stroke-width="1.5"/><text x="${bx-5}" y="${T+12}" font-size="11" fill="#1f7a68" text-anchor="end">B 시작 →</text>`; }
+  const step=Math.max(1,Math.ceil(days.length/12));
+  days.forEach((d,i)=>{ if(i%step===0||i===days.length-1) s+=`<text x="${x(i)}" y="${H-Bm+16}" font-size="10.5" fill="${C.muted}" text-anchor="middle">${d.slice(5).replace('-','/')}</text>`; });
+  for(const k of ['diff','same']){
+    days.forEach((d,i)=>{ const v=all.filter(c=>c.d===d&&c.kind===k).map(c=>c.gap); v.forEach(g=>{ s+=`<circle cx="${x(i)}" cy="${y(Math.min(g,maxY))}" r="2.6" fill="${C[k]}" opacity=".28"/>`; });
+      const m=median(v); if(m!=null) s+=`<circle cx="${x(i)}" cy="${y(Math.min(m,maxY))}" r="5" fill="${C[k]}" stroke="#fff" stroke-width="1.5"><title>${d} ${k==='same'?'같은 규칙':'규칙 변경'} 중앙값 ${f1(m)}분 (${v.length}회)</title></circle>`; });
+  }
+  s+='</svg>';
+  return s;
+}
+
+function changeList(R, baseSame, baseDiff){
+  const rows=[...R.changes].sort((a,b)=> (b.d+String(b.at).padStart(4,'0')).localeCompare(a.d+String(a.at).padStart(4,'0'))).slice(0,40);
+  if(!rows.length) return '<div class="status-msg">B 기간에 교체가 없습니다</div>';
+  return `<div class="table-wrap"><table class="list"><tr><th>날짜</th><th>시각</th><th>앞 코일 → 다음 코일</th><th>종류</th><th class="num">줄</th><th class="num">교체</th><th class="num">A 기준</th></tr>`+
+    rows.map(c=>{ const base=c.kind==='same'?baseSame:c.kind==='diff'?baseDiff:null; const dd=base!=null? c.gap-base : null;
+      const tag=c.kind==='same'?'<span class="tag t-same">같은 규칙</span>':c.kind==='diff'?'<span class="tag t-diff">규칙 변경</span>':c.kind==='long'?'<span class="tag t-long">90분 초과</span>':'<span class="tag t-long">확인 불가</span>';
+      return `<tr><td>${c.d.slice(5).replace('-','/')}</td><td>${hm(c.at)}</td><td>${c.prev} → ${c.next}</td><td>${tag}</td><td class="num">${c.strips??'-'}</td><td class="num"><b>${f1(c.gap)}분</b></td><td class="num">${dd==null?'-':`<span style="color:${dd<=0?'#1f7a68':'#b03a2e'}">${dd>0?'+':''}${f1(dd)}</span>`}</td></tr>`; }).join('')+`</table></div>`;
+}
+
+function render(A,B){
+  const S2 = A.line==='S2';
+  const mA={ same:median(A.same), diff:median(A.diff), first:median(A.first) }, mB={ same:median(B.same), diff:median(B.diff), first:median(B.first) };
+  const rows=[];
+  if(S2) rows.push(kpiRow('가동률','PLC 기록 시간 중 실제 가동(점심 제외)',A.util,B.util,'%',A.plcDays,B.plcDays,false));
+  rows.push(kpiRow(S2?'같은 규칙 교체':'같은 규칙 코일 주기', S2?'칼 배열 그대로, 정지→다음 가동 (중앙값)':'완료→다음 완료 (중앙값)', mA.same,mB.same,'분',A.same.length,B.same.length,true));
+  rows.push(kpiRow(S2?'규칙 변경 교체':'규칙 변경 코일 주기', S2?'칼·스페이서 교체 포함 (중앙값)':'완료→다음 완료 (중앙값)', mA.diff,mB.diff,'분',A.diff.length,B.diff.length,true));
+  rows.push(kpiRow(S2?'첫 코일 가동 시각':'첫 작업 완료 시각','하루 중앙값',mA.first,mB.first,'',A.first.length,B.first.length,true,x=>x==null?'-':hm(x)));
+  if(S2) rows.push(kpiRow('전원→첫 가동','아침 준비 시간 (중앙값)',median(A.startGap),median(B.startGap),'분',A.startGap.length,B.startGap.length,true));
+  rows.push(kpiRow('하루 코일 수','완료 기준 (중앙값)',A.coilsDay,B.coilsDay,'개',A.nDays,B.nDays,false));
+  rows.push(kpiRow('하루 처리량','완료 중량 (중앙값)',A.tonsDay,B.tonsDay,'톤',A.nDays,B.nDays,false));
+  rows.push(kpiRow('90분 넘는 정지','하루 평균 횟수',A.nDays?A.long.length/A.nDays:null,B.nDays?B.long.length/B.nDays:null,'회',A.long.length,B.long.length,true));
+  rows.push(kpiRow('시작 버튼 제때','앞 작업 완료 5분 안에 시작 기록',A.btn.pct,B.btn.pct,'%',A.btn.n,B.btn.n,false));
+
+  const vs=[];
+  const js=judge(mA.same,mB.same,B.same.length,true), jd=judge(mA.diff,mB.diff,B.diff.length,true);
+  if(mB.same!=null) vs.push(`같은 규칙 교체 ${f1(mA.same)}→<b>${f1(mB.same)}분</b> (${js.txt})`);
+  if(mB.diff!=null) vs.push(`규칙 변경 교체 ${f1(mA.diff)}→<b>${f1(mB.diff)}분</b> (${jd.txt})`);
+  const few = (B.same.length+B.diff.length) < 10;
+  const head = few? 'B 기간 표본이 적어 아직 판단하기 이릅니다' :
+    (js.cls==='p-good'||jd.cls==='p-good') && !(js.cls==='p-bad'||jd.cls==='p-bad') ? '교체 시간이 줄었습니다' :
+    (js.cls==='p-bad'||jd.cls==='p-bad') ? '교체 시간이 늘어난 항목이 있습니다' : '뚜렷한 변화는 아직 없습니다';
+
+  document.getElementById('out').innerHTML = `
+  <div class="card"><div class="verdict"><div><div class="big">${head}</div>
+    <p>${vs.join(' · ')||'비교할 교체가 없습니다'}<br>A ${A.s}~${A.e} (${A.nDays}일) · B ${B.s}~${B.e} (${B.nDays}일) · ${S2?'슬리터2':'슬리터1'}</p></div></div>
+    ${B.e>=todayKST()?'<div class="warn">B 기간에 <b>오늘(진행 중인 하루)</b>이 들어 있어 가동률·하루 코일 수·처리량은 낮게 나옵니다. 교체 시간은 끝난 교체만 계산합니다.</div>':''}
+    ${few?'<div class="warn">B 기간의 교체가 10회 미만입니다. 하루 이틀 결과는 작업 구성(같은 규격이 몰린 날 등)에 크게 흔들리므로, <b>최소 1~2주</b> 쌓인 뒤 판단하세요.</div>':''}
+  </div>
+  <div class="card"><div class="panel-title">지표 비교</div><div class="table-wrap"><table class="kpi">
+    <tr><th>지표</th><th style="text-align:right">A 개선 전</th><th style="text-align:right">B 개선 후</th><th style="text-align:right">차이</th><th>판정</th></tr>
+    ${rows.join('')}</table></div>
+    <div class="foot">판정: B가 A보다 10% 이상 좋으면 <b>개선</b>, 10% 이상 나쁘면 <b>악화</b>, 그 사이면 변화 작음. B 표본 5개 미만은 표본 부족.</div></div>
+  <div class="card"><div class="panel-title">일별 교체 시간 (큰 점 = 그날 중앙값, 작은 점 = 각 교체)</div>
+    <div class="legend"><span><i style="background:${C.same}"></i>같은 규칙</span><span><i style="background:${C.diff}"></i>규칙 변경</span><span>점선 = 목표 (같은 규칙 ${TARGET.same}분 · 규칙 변경 ${TARGET.diff}분)</span></div>
+    ${trendChart(A,B)}</div>
+  <div class="card"><div class="panel-title">B 기간 교체 목록 (최근 40건)</div>${changeList(B,mA.same,mA.diff)}
+    <div class="foot">"A 기준" = A 기간 같은 종류 교체 중앙값과의 차이. 초록은 더 빠름, 빨강은 더 느림.</div></div>
+  <div class="card foot">
+    <b>계산 방법</b><br>
+    ${S2? '• 슬리터2: PLC 분 평균 속도 30 m/분 이상 = 가동. 코일번호(COIL_ID)나 작업 시간대로 작업기록과 연결해 코일 단위로 묶고, 앞 코일 마지막 가동 ~ 다음 코일 첫 가동을 교체 시간으로 봄. 12:00~13:00 제외. 90분 초과는 별도.<br>' :
+      '• 슬리터1: PLC가 없어 앞 작업 완료 → 다음 작업 완료(교체+가동)를 코일 주기로 봄. 09:05:0x 자동 완료와 1분 안 동시 완료는 제외. 12:00~13:00 제외.<br>'}
+    • 같은 규칙 = 가공규칙의 "폭=줄수" 조합이 앞 코일과 같음. 규칙이 바뀌면 칼·스페이서 교체가 들어감.<br>
+    • 작업 구성(줄 수·두께·코일 길이)이 두 기간에 다르면 차이가 생길 수 있습니다. 같은 종류끼리 나눠 비교하는 이유입니다.
+  </div>`;
+}
+
+async function run(){
+  for(const k of ['aS','aE','bS','bE']) state[k]=document.getElementById(k).value;
+  const out=document.getElementById('out'); out.innerHTML='<div class="status-msg">불러오는 중…</div>';
+  try{
+    const from=[state.aS,state.bS].sort()[0];
+    const data=await loadData(from);
+    const A=summarize(state.line,data,state.aS,state.aE), B=summarize(state.line,data,state.bS,state.bE);
+    render(A,B);
+  }catch(err){ out.innerHTML=`<div class="status-msg">데이터를 불러오지 못했습니다 (${err.message})</div>`; }
+}
+
+document.getElementById('lineSeg').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b) return;
+  state.line=b.dataset.line; document.querySelectorAll('#lineSeg button').forEach(x=>x.classList.toggle('on',x===b)); run(); });
+document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>preset(b.dataset.preset)));
+document.getElementById('runBtn').addEventListener('click',run);
+setInputs(); run();
+</script>
+</body>
+</html>

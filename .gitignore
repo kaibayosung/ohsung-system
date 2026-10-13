@@ -25,3 +25,6 @@ dist-ssr
 
 # Real API keys/secrets for the OCR monitor local launcher scripts — never commit
 ocr_monitor_secrets.local.bat
+
+# 현장 분석용 영상(대용량) — 커밋 제외
+videos/
