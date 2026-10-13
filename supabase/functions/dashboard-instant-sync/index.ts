@@ -43,6 +43,12 @@
 //         키의 행을 남기고, 나머지 중 '준비'·미시작이고 원래 날짜가 과거인 행은 원래 작업지시일로 되돌림
 //         (삭제하지 않음 — 되돌릴 수 있음). 그 밖의 경우는 경고만 남김.
 //     ※ 대시보드 행을 DELETE하는 코드는 없다(삭제는 사람이 확인 후 직접).
+// v13 [2026-10-13] 늦게 등록된 작업지시서 누락 수정.
+//     원인: 그린ERP 목록을 "오늘 하루"로만 조회 → 마지막 싱크(17:00) 뒤에 등록된 작업지시서는
+//           다음 날에도 날짜가 달라 영원히 빠짐 (10/12 17:10 등록된 #51~#56 6건).
+//     수정: 최근 CATCHUP_DAYS(3)일을 조회하고, 중복 판단 키를 (작업지시일, 번호, 라인)으로 통일.
+//           이미 올린 건은 로그로 걸러지고 새 건만 원래 작업지시일로 등록(선점 유니크 키는 그대로).
+//           단가 매칭·내용 변경감지 키에도 작업지시일 포함(날짜마다 번호가 1부터 다시 매겨지므로).
 
 import forge from "npm:node-forge@1.3.1";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -60,6 +66,10 @@ const LEVELER_DB_PASS = Deno.env.get("LEVELER_DB_PASS") || "";
 const LEVELER_DB_NAME = Deno.env.get("LEVELER_DB_NAME") || "ohsung";
 
 const ADOPT_WINDOW_DAYS = 14; // v12: 이어받기 후보를 찾는 기간
+// v13: 늦게 등록된 작업지시서 따라잡기 — 그린ERP 목록을 오늘만이 아니라 최근 N일로 조회.
+//      (예: 17:00 마지막 싱크 뒤 17:10에 등록된 작업지시서가 다음 날에도 영원히 빠지던 문제)
+//      이미 올린 건은 (작업지시일, 번호, 라인) 키로 걸러지므로 새로 등록된 건만 올라간다.
+const CATCHUP_DAYS = 3;
 const CLAIM_STALE_MS = 3 * 60 * 1000; // v12: 이 시간 넘게 id가 비어 있는 선점은 복구 대상
 
 function parseSetCookie(headers: Headers): string {
@@ -205,8 +215,16 @@ function dateMinus(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function dedupKey(mjunp: string, workType: string): string {
-  return `${mjunp}|${workType}`;
+// v13: 그린ERP 헤더의 작업지시일을 YYYY-MM-DD로 맞춤 (로그 mdate(date 타입)와 비교하기 위해)
+function hDate(h: any, fallback: string): string {
+  const raw = String(h?.mdate ?? fallback).trim();
+  if (/^\d{8}$/.test(raw)) return `${raw.slice(0, 4)}-${raw.slice(4, 6)}-${raw.slice(6, 8)}`;
+  return raw.slice(0, 10);
+}
+
+function dedupKey(mdate: string, mjunp: string, workType: string): string {
+  // v13: 여러 날짜를 함께 다루므로 작업지시일까지 키에 포함 (번호는 날짜마다 1부터 다시 매겨짐)
+  return `${mdate}|${mjunp}|${workType}`;
 }
 
 function erpStatusKey(mdate: string, mjunp: string, workType: string): string {
@@ -314,7 +332,7 @@ Deno.serve(async (req) => {
 
   const timings: Record<string, number> = {};
   const t0 = performance.now();
-  const result: Record<string, any> = { version: "v12", date, commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
+  const result: Record<string, any> = { version: "v13", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
 
   try {
     const { cookie, ms: loginMs } = await greenpLogin();
@@ -329,7 +347,7 @@ Deno.serve(async (req) => {
       uid: "5",
       sh_value: "",
       sh_value2: "",
-      sh_date_fr: date,
+      sh_date_fr: dateMinus(date, CATCHUP_DAYS),
       sh_date_to: date,
       gubunChk1: "y",
       gubunChk2: "y",
@@ -339,7 +357,7 @@ Deno.serve(async (req) => {
     const allHeaders = ((listJson.data || []) as any[]).slice(0, limit);
     result.headerCount = allHeaders.length;
     // 오늘 그린ERP에 살아 있는 작업지시서 키 (작업지시일|번호|라인)
-    const todayErpKeys = new Set(allHeaders.map((h) => erpStatusKey(String(h.mdate ?? date), String(h.mjunp), String(h.mgubun ?? ""))));
+    const todayErpKeys = new Set(allHeaders.map((h) => erpStatusKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? ""))));
 
     // v12: 선점만 하고 id가 비어 있는 로그(응답 유실·실행 중단) 복구 — 대시보드에서 찾아 연결하거나, 못 찾으면 선점 해제.
     const claimRecovery: Record<string, any> = { checked: 0, attached: 0, released: 0, errors: [] as any[] };
@@ -399,22 +417,24 @@ Deno.serve(async (req) => {
 
     const { data: alreadySyncedRows, error: syncLogErr } = await supabase
       .from("dashboard_sync_log")
-      .select("mjunp, work_type")
-      .eq("mdate", date);
+      .select("mjunp, mdate, work_type")
+      .gte("mdate", dateMinus(date, CATCHUP_DAYS))
+      .lte("mdate", date);
     if (syncLogErr) throw new Error("dashboard_sync_log 조회 실패: " + syncLogErr.message);
     const alreadySynced = new Set(
-      (alreadySyncedRows || []).map((r: any) => dedupKey(String(r.mjunp), String(r.work_type ?? "")))
+      (alreadySyncedRows || []).map((r: any) => dedupKey(String(r.mdate), String(r.mjunp), String(r.work_type ?? "")))
     );
 
-    const newHeaders = allHeaders.filter((h) => !alreadySynced.has(dedupKey(String(h.mjunp), String(h.mgubun ?? ""))));
+    const newHeaders = allHeaders.filter((h) => !alreadySynced.has(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? ""))));
+    result.lateHeaders = newHeaders.filter((h) => hDate(h, date) < date).map((h) => `${h.mdate}#${h.mjunp} ${h.mgubun}`);
     result.skippedAlreadySynced = allHeaders.length - newHeaders.length;
     result.newCount = newHeaders.length;
 
     if (seedOnly) {
       const seedRows = newHeaders.map((h) => ({
         mjunp: String(h.mjunp),
-        mdate: date,
-        board_date: date,
+        mdate: hDate(h, date),
+        board_date: hDate(h, date),
         work_type: String(h.mgubun ?? ""),
         company_name: h.mcomp ?? null,
         seeded: true,
@@ -430,20 +450,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify(result, null, 1), { headers: { "Content-Type": "application/json" } });
     }
 
-    const priceKey = (joborderNo: string, workType: string) => `${joborderNo}|${workType}`;
+    const priceKey = (joborderDate: string, joborderNo: string, workType: string) => `${joborderDate}|${joborderNo}|${workType}`;
     const priceMap = new Map<string, { unit_price: number | null; amount: number | null }>();
     if (allHeaders.length > 0) {
       const mjunpList = [...new Set(allHeaders.map((h) => String(h.mjunp)))];
       const { data: detailRows, error: detailErr } = await supabase
         .from("greenp_joborder_detail")
-        .select("joborder_no, work_type, unit_price, amount")
-        .eq("joborder_date", date)
+        .select("joborder_date, joborder_no, work_type, unit_price, amount")
+        .gte("joborder_date", dateMinus(date, CATCHUP_DAYS))
+        .lte("joborder_date", date)
         .in("joborder_no", mjunpList);
       if (detailErr) {
         result.priceLookupError = detailErr.message;
       } else {
         for (const r of detailRows || []) {
-          priceMap.set(priceKey(String(r.joborder_no), String(r.work_type)), {
+          priceMap.set(priceKey(String(r.joborder_date), String(r.joborder_no), String(r.work_type)), {
             unit_price: r.unit_price ?? null,
             amount: r.amount ?? null,
           });
@@ -514,7 +535,7 @@ Deno.serve(async (req) => {
 
               const target = openCandidates[0];
               levelingMerge.matched++;
-              const matched = priceMap.get(priceKey(String(h.mjunp), String(h.mgubun)));
+              const matched = priceMap.get(priceKey(hDate(h, date), String(h.mjunp), String(h.mgubun)));
               const mergePayload = {
                 workDate: h.mdate,
                 companyName: h.mcomp,
@@ -529,7 +550,7 @@ Deno.serve(async (req) => {
                 processRule: processRule || null,
               };
 
-              mergedHeaderKeys.add(dedupKey(String(h.mjunp), String(h.mgubun ?? "")));
+              mergedHeaderKeys.add(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? "")));
               result.levelingMergeCandidates = result.levelingMergeCandidates || [];
               result.levelingMergeCandidates.push({
                 from_mjunp: target.mjunp, from_mdate: target.mdate, to_mjunp: h.mjunp, to_mdate: h.mdate,
@@ -549,8 +570,8 @@ Deno.serve(async (req) => {
                 );
                 const { error: upsertErr } = await supabase.from("dashboard_sync_log").upsert({
                   mjunp: String(h.mjunp),
-                  mdate: String(h.mdate ?? date),
-                  board_date: String(h.mdate ?? date),
+                  mdate: hDate(h, date),
+                  board_date: hDate(h, date),
                   work_type: String(h.mgubun ?? ""),
                   dashboard_erp_id: target.dashboard_erp_id,
                   company_name: mergePayload.companyName,
@@ -577,14 +598,14 @@ Deno.serve(async (req) => {
     timings.levelingMergeMs = Math.round(performance.now() - levelingMergeT0);
     result.levelingMerge = levelingMerge;
 
-    const newHeadersToInsert = newHeaders.filter((h) => !mergedHeaderKeys.has(dedupKey(String(h.mjunp), String(h.mgubun ?? ""))));
+    const newHeadersToInsert = newHeaders.filter((h) => !mergedHeaderKeys.has(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? ""))));
 
     const detailT0 = performance.now();
     const payloads = await mapWithConcurrency(newHeadersToInsert, 3, async (h) => {
       const { item, processRule, lengthParsed } = await fetchDetail(cookie, h, date);
-      const matched = priceMap.get(priceKey(String(h.mjunp), String(h.mgubun)));
+      const matched = priceMap.get(priceKey(hDate(h, date), String(h.mjunp), String(h.mgubun)));
       return {
-        _source: { mjunp: String(h.mjunp), mdate: String(h.mdate ?? date), workType: String(h.mgubun ?? "") },
+        _source: { mjunp: String(h.mjunp), mdate: hDate(h, date), workType: String(h.mgubun ?? "") },
         payload: {
           workDate: h.mdate,
           companyName: h.mcomp,
@@ -802,19 +823,19 @@ Deno.serve(async (req) => {
 
       const syncedMap = new Map<string, any>();
       for (const r of syncedRows || []) {
-        syncedMap.set(dedupKey(String(r.mjunp), String(r.work_type ?? "")), r);
+        syncedMap.set(dedupKey(String(r.mdate), String(r.mjunp), String(r.work_type ?? "")), r);
       }
 
-      const existingHeaders = allHeaders.filter((h) => syncedMap.has(dedupKey(String(h.mjunp), String(h.mgubun ?? ""))));
+      const existingHeaders = allHeaders.filter((h) => syncedMap.has(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? ""))));
       contentSync.checked = existingHeaders.length;
 
       const contentCandidates = await mapWithConcurrency(existingHeaders, 3, async (h) => {
-        const logRow = syncedMap.get(dedupKey(String(h.mjunp), String(h.mgubun ?? "")));
+        const logRow = syncedMap.get(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? "")));
         const { item, processRule, lengthParsed } = await fetchDetail(cookie, h, date);
         const currentProductName = (item.spum ?? "").toString().trim() || null;
         if (!currentProductName) return null;
 
-        const matched = priceMap.get(priceKey(String(h.mjunp), String(h.mgubun)));
+        const matched = priceMap.get(priceKey(hDate(h, date), String(h.mjunp), String(h.mgubun)));
         const payload = {
           workDate: h.mdate,
           companyName: h.mcomp,
@@ -1217,7 +1238,8 @@ Deno.serve(async (req) => {
       ok: true,
       timings,
       details: {
-        version: "v12",
+        version: "v13",
+        lateHeaders: result.lateHeaders ?? [],
         adopt: { checked: adopt.checked, adopted: adopt.adopted, parkedExtra: adopt.parkedExtra, warnings: adopt.warnings.length, errors: adopt.errors.length },
         heal: { groups: heal.groups, parked: heal.parked, warnings: heal.warnings, errors: heal.errors.length },
         claimRecovery: { attached: claimRecovery.attached ?? 0, released: claimRecovery.released ?? 0 },
