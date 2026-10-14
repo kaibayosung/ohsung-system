@@ -45,6 +45,9 @@
 //     ※ 대시보드 행을 DELETE하는 코드는 없다(삭제는 사람이 확인 후 직접).
 // v14 [2026-10-14] 되돌리기(reconcile) 비활성화. 어제 작업이 오늘로 이월된 뒤 오늘 완료되면 1분 안에
 //      원래 작업지시일로 옮겨져 오늘 보드에서 사라지던 버그. 이제 후보 수만 wouldRevert로 보고하고 쓰지 않음.
+// v15 [2026-10-14] (1) 그린ERP에서 삭제된 작업지시서 감시(B안: 대시보드 줄은 건드리지 않고 dashboard_sync_orphans에
+//      목록만 기록·해소). (2) 오늘 보드에 이월된 줄도 내용 변경 반영(10분마다, UPDATE만·재생성 없음).
+//      (3) 되돌리기(reconcile) 코드 제거. (4) 이월 단계의 '보드에서 이미 완료' 건은 로그 board_date를 실제 보드 날짜로 기록.
 // v13 [2026-10-13] 늦게 등록된 작업지시서 누락 수정.
 //     원인: 그린ERP 목록을 "오늘 하루"로만 조회 → 마지막 싱크(17:00) 뒤에 등록된 작업지시서는
 //           다음 날에도 날짜가 달라 영원히 빠짐 (10/12 17:10 등록된 #51~#56 6건).
@@ -72,7 +75,8 @@ const ADOPT_WINDOW_DAYS = 14; // v12: 이어받기 후보를 찾는 기간
 //      (예: 17:00 마지막 싱크 뒤 17:10에 등록된 작업지시서가 다음 날에도 영원히 빠지던 문제)
 //      이미 올린 건은 (작업지시일, 번호, 라인) 키로 걸러지므로 새로 등록된 건만 올라간다.
 const CATCHUP_DAYS = 3;
-const RECONCILE_ENABLED = false; // v14
+const ORPHAN_MASS_WARN = 5; // v15: 한 번에 이만큼 넘게 사라지면 경고(그린ERP 조회 이상 의심)
+const ROLLED_CONTENT_EVERY_MIN = 10; // v15: 이월된 줄의 내용 비교 주기(분)
 const CLAIM_STALE_MS = 3 * 60 * 1000; // v12: 이 시간 넘게 id가 비어 있는 선점은 복구 대상
 
 function parseSetCookie(headers: Headers): string {
@@ -285,13 +289,6 @@ async function fetchBoardRows(mysql: MysqlClient, ids: number[]): Promise<Map<nu
   return m;
 }
 
-async function fetchBoardStatusByIds(mysql: MysqlClient, ids: number[]): Promise<Map<number, string>> {
-  const rows = await fetchBoardRows(mysql, ids);
-  const m = new Map<number, string>();
-  for (const [id, r] of rows) m.set(id, r.status);
-  return m;
-}
-
 function connectMysql(): Promise<MysqlClient> {
   if (!LEVELER_DB_PASS) throw new Error("LEVELER_DB_PASS 시크릿이 설정되어 있지 않습니다.");
   return new MysqlClient().connect({
@@ -335,7 +332,7 @@ Deno.serve(async (req) => {
 
   const timings: Record<string, number> = {};
   const t0 = performance.now();
-  const result: Record<string, any> = { version: "v14", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
+  const result: Record<string, any> = { version: "v15", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
 
   try {
     const { cookie, ms: loginMs } = await greenpLogin();
@@ -359,6 +356,12 @@ Deno.serve(async (req) => {
     timings.listMs = Math.round(performance.now() - listT0);
     const allHeaders = ((listJson.data || []) as any[]).slice(0, limit);
     result.headerCount = allHeaders.length;
+    // v15: 그린ERP 목록 응답이 잘렸는지(totalRecord보다 적게 옴) 확인 — 잘렸으면 "목록에 없음"에 기대는 판단(이어받기의
+    // 키 없음 조건·정리·삭제 감시)을 이번 실행에서는 하지 않는다. (greenp-sync-v2의 출고 3건 잘림 사례 참고)
+    const listTotal = parseInt(String(listJson.totalRecord ?? allHeaders.length), 10);
+    const listComplete = listJson.result_cd === "OK" && (isNaN(listTotal) || allHeaders.length >= listTotal);
+    result.listComplete = listComplete;
+    if (!listComplete) result.listTotal = listTotal;
     // 오늘 그린ERP에 살아 있는 작업지시서 키 (작업지시일|번호|라인)
     const todayErpKeys = new Set(allHeaders.map((h) => erpStatusKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? ""))));
 
@@ -670,7 +673,7 @@ Deno.serve(async (req) => {
               const cands = (byCoil.get(coilKey(p.payload.companyName, p.payload.productName)) || []).filter((c) => {
                 if (String(c.mdate) === src.mdate && String(c.mjunp) === src.mjunp && String(c.work_type) === src.workType) return false;
                 // 원래 작업지시서가 과거 날짜이거나, 오늘 ERP 목록에 더 이상 없는 키(라인 변경·삭제 후 재발행)일 때만
-                const stale = String(c.mdate) < date || !todayErpKeys.has(erpStatusKey(String(c.mdate), String(c.mjunp), String(c.work_type)));
+                const stale = String(c.mdate) < date || (listComplete && !todayErpKeys.has(erpStatusKey(String(c.mdate), String(c.mjunp), String(c.work_type))));
                 if (!stale) return false;
                 const b = board.get(Number(c.dashboard_erp_id));
                 if (!b) return false; // 대시보드에서 이미 지워진 행
@@ -817,8 +820,8 @@ Deno.serve(async (req) => {
     try {
       const { data: syncedRows, error: syncedErr } = await supabase
         .from("dashboard_sync_log")
-        .select("id, mjunp, mdate, work_type, dashboard_erp_id, company_name, product_name, content_sig")
-        .eq("mdate", date)
+        .select("id, mjunp, mdate, board_date, work_type, dashboard_erp_id, company_name, product_name, content_sig")
+        .or(`mdate.eq.${date},board_date.eq.${date}`) // v15: 오늘 작업지시서 + 오늘 보드로 이월된 줄
         .eq("seeded", false)
         .is("retired_at", null)
         .not("dashboard_erp_id", "is", null);
@@ -829,8 +832,14 @@ Deno.serve(async (req) => {
         syncedMap.set(dedupKey(String(r.mdate), String(r.mjunp), String(r.work_type ?? "")), r);
       }
 
-      const existingHeaders = allHeaders.filter((h) => syncedMap.has(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? ""))));
+      // v15: 이월된 줄(작업지시일 < 오늘)은 그린ERP 호출을 줄이려고 10분마다만 비교
+      const rolledTick = new Date().getUTCMinutes() % ROLLED_CONTENT_EVERY_MIN === 0;
+      const existingHeaders = allHeaders.filter((h) => {
+        if (!syncedMap.has(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? "")))) return false;
+        return hDate(h, date) === date || rolledTick;
+      });
       contentSync.checked = existingHeaders.length;
+      contentSync.rolledTick = rolledTick;
 
       const contentCandidates = await mapWithConcurrency(existingHeaders, 3, async (h) => {
         const logRow = syncedMap.get(dedupKey(hDate(h, date), String(h.mjunp), String(h.mgubun ?? "")));
@@ -880,6 +889,12 @@ Deno.serve(async (req) => {
             try {
               const existRes = await mysql.execute(`SELECT id FROM erp_data WHERE id = ?`, [c.logRow.dashboard_erp_id]);
               const rowExists = ((existRes.rows || []) as any[]).length > 0;
+              const isRolled = String(c.logRow.mdate) !== date;
+              if (!rowExists && isRolled) {
+                // v15: 이월된 줄은 대시보드에서 지워졌으면 다시 만들지 않음(지난 날짜로 되살아나는 것 방지)
+                contentSync.errors.push({ mjunp: c.logRow.mjunp, mdate: c.logRow.mdate, stage: "rolled_row_missing", note: "대시보드 줄 없음 — 재생성 안 함" });
+                continue;
+              }
               if (rowExists) {
                 await mysql.execute(
                   `UPDATE erp_data SET company_name=?, product_name=?, specification=?, length=?, original_weight=?, used_weight=?, unit_price=COALESCE(?, unit_price), amount=COALESCE(?, amount), process_rule=? WHERE id=?`,
@@ -1012,7 +1027,9 @@ Deno.serve(async (req) => {
           let mysql: MysqlClient | null = null;
           try {
             mysql = await connectMysql();
-            const boardStatus = await fetchBoardStatusByIds(mysql, erpOpen.map((c) => Number(c.dashboard_erp_id)));
+            const boardRows = await fetchBoardRows(mysql, erpOpen.map((c) => Number(c.dashboard_erp_id)));
+            const boardStatus = new Map<number, string>();
+            for (const [id, r] of boardRows) boardStatus.set(id, r.status);
             const alreadyDoneOnBoard: any[] = [];
             const missingOnBoard: any[] = [];
             for (const c of erpOpen) {
@@ -1043,7 +1060,14 @@ Deno.serve(async (req) => {
                   rollover.errors.push({ id: c.id, mjunp: c.mjunp, error: String((e as Error)?.message || e) });
                 }
               }
-              for (const c of [...alreadyDoneOnBoard, ...missingOnBoard]) {
+              // v15: 보드에서 이미 완료된 건은 로그 board_date를 "실제 보드 날짜"로 기록(예전엔 오늘로 적어 되돌리기와 반복됨)
+              for (const c of alreadyDoneOnBoard) {
+                const actual = boardRows.get(Number(c.dashboard_erp_id))?.workDate;
+                if (!actual || actual === String(c.board_date)) continue;
+                const { error: updErr } = await supabase.from("dashboard_sync_log").update({ board_date: actual }).eq("id", c.id);
+                if (updErr) rollover.errors.push({ id: c.id, mjunp: c.mjunp, stage: "board_date_update", error: updErr.message });
+              }
+              for (const c of missingOnBoard) {
                 const { error: updErr } = await supabase
                   .from("dashboard_sync_log")
                   .update({ board_date: date })
@@ -1093,56 +1117,7 @@ Deno.serve(async (req) => {
     timings.rolloverMs = Math.round(performance.now() - rolloverT0);
     result.rollover = rollover;
 
-    // v5: 되돌리기(reconcile) — 오늘로 이월했는데 대시보드에서 "완료"인 건은 원래 날짜로. v12: 은퇴 로그 제외.
-    const reconcileT0 = performance.now();
-    const reconcile: Record<string, any> = { checked: 0, reverted: 0, errors: [] as any[] };
-    try {
-      const { data: rolledToday, error: rolledErr } = await supabase
-        .from("dashboard_sync_log")
-        .select("id, mjunp, mdate, board_date, work_type, dashboard_erp_id")
-        .eq("seeded", false)
-        .is("retired_at", null)
-        .not("dashboard_erp_id", "is", null)
-        .eq("board_date", date)
-        .neq("mdate", date);
-      if (rolledErr) throw new Error("reconcile 후보 조회 실패: " + rolledErr.message);
-      reconcile.checked = (rolledToday || []).length;
-
-      if (rolledToday && rolledToday.length > 0) {
-        let mysql: MysqlClient | null = null;
-        try {
-          mysql = await connectMysql();
-          const boardStatus = await fetchBoardStatusByIds(mysql, rolledToday.map((c: any) => Number(c.dashboard_erp_id)));
-          for (const c of rolledToday) {
-            if (boardStatus.get(Number(c.dashboard_erp_id)) !== "완료") continue;
-            // v14: 되돌리기 비활성화(보고만). 오늘로 이월된 작업을 오늘 완료하면 원래 작업지시일로 옮겨져
-            // 오늘 보드에서 사라지던 버그(2026-10-14 슬리터1 13건·슬리터2 3건·레벨링 1건).
-            // 이월 단계가 v5부터 보드 '완료'를 이미 확인하므로 되돌리기는 필요 없음.
-            reconcile.wouldRevert = (reconcile.wouldRevert || 0) + 1;
-            if (!RECONCILE_ENABLED || !commit) continue;
-            try {
-              await mysql.execute(`UPDATE erp_data SET work_date = ? WHERE id = ?`, [c.mdate, c.dashboard_erp_id]);
-              const { error: updErr } = await supabase
-                .from("dashboard_sync_log")
-                .update({ board_date: c.mdate })
-                .eq("id", c.id);
-              if (updErr) reconcile.errors.push({ id: c.id, mjunp: c.mjunp, error: updErr.message });
-              else reconcile.reverted++;
-            } catch (e) {
-              reconcile.errors.push({ id: c.id, mjunp: c.mjunp, error: String((e as Error)?.message || e) });
-            }
-          }
-        } finally {
-          if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
-        }
-      }
-      reconcile.ok = true;
-    } catch (e) {
-      reconcile.ok = false;
-      reconcile.error = String((e as Error)?.message || e);
-    }
-    timings.reconcileMs = Math.round(performance.now() - reconcileT0);
-    result.reconcile = reconcile;
+    // v5 되돌리기(reconcile)는 v14에서 끄고 v15에서 제거 — 오늘 완료한 이월 작업을 전날로 옮기던 원인.
 
     // v12 (4) 정리(heal) — 오늘 보드에 같은 코일(슬리팅 계열)의 열린 행이 2개 이상이면 하나만 남긴다.
     const healT0 = performance.now();
@@ -1168,7 +1143,9 @@ Deno.serve(async (req) => {
       const multi = [...groups.values()].filter((g) => new Set(g.map((x) => Number(x.dashboard_erp_id))).size > 1);
       heal.groups = multi.length;
 
-      if (multi.length > 0) {
+      if (multi.length > 0 && !listComplete) {
+        heal.skipped = "그린ERP 목록 응답이 잘림 — 이번 실행은 정리 보류";
+      } else if (multi.length > 0) {
         let mysql: MysqlClient | null = null;
         try {
           mysql = await connectMysql();
@@ -1227,6 +1204,111 @@ Deno.serve(async (req) => {
     timings.healMs = Math.round(performance.now() - healT0);
     result.heal = heal;
 
+    // v15 (5) 삭제 감시(B안) — 최근 CATCHUP_DAYS일 작업지시서 중 대시보드에 올린 것이 그린ERP 목록에서 사라지면
+    // dashboard_sync_orphans에 기록만 한다(대시보드 줄은 건드리지 않음). 다시 나타나면 해소 처리.
+    const orphanT0 = performance.now();
+    const orphan: Record<string, any> = { watched: 0, missing: 0, newlyMissing: 0, reappeared: 0, massWarning: false, errors: [] as any[] };
+    try {
+      if (allHeaders.length === 0 || !listComplete) {
+        orphan.skipped = allHeaders.length === 0 ? "그린ERP 목록이 비어 있음 — 조회 이상일 수 있어 판단 보류" : "그린ERP 목록 응답이 잘림 — 판단 보류";
+      } else {
+        const { data: watchLogs, error: wErr } = await supabase
+          .from("dashboard_sync_log")
+          .select("id, mjunp, mdate, work_type, dashboard_erp_id, company_name, product_name")
+          .eq("seeded", false)
+          .is("retired_at", null)
+          .not("dashboard_erp_id", "is", null)
+          .gte("mdate", dateMinus(date, CATCHUP_DAYS))
+          .lte("mdate", date);
+        if (wErr) throw new Error("삭제 감시 대상 조회 실패: " + wErr.message);
+        orphan.watched = (watchLogs || []).length;
+        const liveMissing = (watchLogs || []).filter((l: any) => !todayErpKeys.has(erpStatusKey(String(l.mdate), String(l.mjunp), String(l.work_type))));
+        // 2차 확인: 그린ERP 미러(greenp_joborders, 10분 주기)에도 없을 때만 "삭제"로 본다 — 목록 API가 잘리거나 일시 오류일 때 오판 방지
+        let missingLogs = liveMissing;
+        if (liveMissing.length > 0) {
+          const { data: mirrorRows, error: mErr } = await supabase
+            .from("greenp_joborders")
+            .select("joborder_no, joborder_date, work_type")
+            .gte("joborder_date", dateMinus(date, CATCHUP_DAYS))
+            .lte("joborder_date", date);
+          if (mErr) throw new Error("미러 확인 실패: " + mErr.message);
+          const mirrorKeys = new Set((mirrorRows || []).map((r: any) => erpStatusKey(String(r.joborder_date), String(r.joborder_no), String(r.work_type))));
+          missingLogs = liveMissing.filter((l: any) => !mirrorKeys.has(erpStatusKey(String(l.mdate), String(l.mjunp), String(l.work_type))));
+          orphan.mirrorDisagree = liveMissing.length - missingLogs.length;
+        }
+        const presentIds = (watchLogs || []).filter((l: any) => todayErpKeys.has(erpStatusKey(String(l.mdate), String(l.mjunp), String(l.work_type)))).map((l: any) => l.id);
+        orphan.missing = missingLogs.length;
+        result.orphanMissing = missingLogs.map((l: any) => ({ log_id: l.id, key: `${l.mdate}#${l.mjunp} ${l.work_type}`, erp_id: l.dashboard_erp_id, product_name: l.product_name }));
+        if (!commit) { orphan.skipped = "dry-run(기록 안 함)"; throw new Error("__dry__"); }
+
+        // 다시 나타난 것 해소
+        if (presentIds.length > 0) {
+          const { data: re, error: reErr } = await supabase
+            .from("dashboard_sync_orphans")
+            .update({ resolved_at: new Date().toISOString(), resolution: "reappeared" })
+            .in("log_id", presentIds)
+            .is("resolved_at", null)
+            .select("id");
+          if (reErr) orphan.errors.push({ stage: "resolve", error: reErr.message });
+          else orphan.reappeared = (re || []).length;
+        }
+
+        if (missingLogs.length > 0) {
+          const { data: existing } = await supabase
+            .from("dashboard_sync_orphans")
+            .select("id, log_id, miss_count, resolved_at")
+            .in("log_id", missingLogs.map((l: any) => l.id));
+          const byLog = new Map<number, any>();
+          for (const e of existing || []) byLog.set(Number(e.log_id), e);
+          let board = new Map<number, BoardRow>();
+          let mysql: MysqlClient | null = null;
+          try {
+            mysql = await connectMysql();
+            board = await fetchBoardRows(mysql, missingLogs.map((l: any) => Number(l.dashboard_erp_id)));
+          } finally {
+            if (mysql) { try { await mysql.close(); } catch (_e) { /* ignore */ } }
+          }
+          const nowIso = new Date().toISOString();
+          for (const l of missingLogs) {
+            const b = board.get(Number(l.dashboard_erp_id));
+            const boardFields = {
+              board_status: b ? b.status : "없음",
+              board_work_date: b ? b.workDate : null,
+              board_started: b ? b.started : null,
+            };
+            const e = byLog.get(Number(l.id));
+            if (!e) {
+              orphan.newlyMissing++;
+              const { error } = await supabase.from("dashboard_sync_orphans").insert({
+                log_id: l.id, mdate: l.mdate, mjunp: l.mjunp, work_type: l.work_type, dashboard_erp_id: l.dashboard_erp_id,
+                company_name: l.company_name, product_name: l.product_name, source: "sync", ...boardFields,
+              });
+              if (error) orphan.errors.push({ log_id: l.id, stage: "insert", error: error.message });
+            } else if (e.resolved_at) {
+              orphan.newlyMissing++;
+              const { error } = await supabase.from("dashboard_sync_orphans").update({
+                resolved_at: null, resolution: null, first_missing_at: nowIso, last_missing_at: nowIso, miss_count: 1, ...boardFields,
+              }).eq("id", e.id);
+              if (error) orphan.errors.push({ log_id: l.id, stage: "reopen", error: error.message });
+            } else {
+              const { error } = await supabase.from("dashboard_sync_orphans").update({
+                last_missing_at: nowIso, miss_count: Number(e.miss_count) + 1, ...boardFields,
+              }).eq("id", e.id);
+              if (error) orphan.errors.push({ log_id: l.id, stage: "update", error: error.message });
+            }
+          }
+          if (orphan.newlyMissing > ORPHAN_MASS_WARN) orphan.massWarning = true;
+        }
+      }
+      orphan.ok = true;
+    } catch (e) {
+      const msg = String((e as Error)?.message || e);
+      orphan.ok = msg === "__dry__";
+      if (msg !== "__dry__") orphan.error = msg;
+    }
+    timings.orphanMs = Math.round(performance.now() - orphanT0);
+    result.orphan = orphan;
+
     timings.totalMs = Math.round(performance.now() - t0);
     result.timings = timings;
     result.ok = true;
@@ -1241,16 +1323,19 @@ Deno.serve(async (req) => {
       rollover_checked: rollover.checked ?? null,
       rollover_updated: rollover.updated ?? null,
       rollover_already_done_on_board: rollover.alreadyDoneOnBoard ?? null,
-      reconcile_reverted: reconcile.reverted ?? null,
+      reconcile_reverted: 0,
       ok: true,
       timings,
       details: {
-        version: "v14",
+        version: "v15",
+        listComplete,
         lateHeaders: result.lateHeaders ?? [],
         adopt: { checked: adopt.checked, adopted: adopt.adopted, parkedExtra: adopt.parkedExtra, warnings: adopt.warnings.length, errors: adopt.errors.length },
         heal: { groups: heal.groups, parked: heal.parked, warnings: heal.warnings, errors: heal.errors.length },
         claimRecovery: { attached: claimRecovery.attached ?? 0, released: claimRecovery.released ?? 0 },
         rolloverSuperseded: rollover.supersededToday ?? 0,
+        orphan: { watched: orphan.watched, missing: orphan.missing, newlyMissing: orphan.newlyMissing, reappeared: orphan.reappeared, massWarning: orphan.massWarning, errors: orphan.errors.length, skipped: orphan.skipped ?? null },
+        contentSync: { checked: contentSync.checked, changed: contentSync.changed, updated: contentSync.updated, rolledTick: contentSync.rolledTick ?? null, errors: contentSync.errors.length },
       },
     });
 
@@ -1279,9 +1364,10 @@ Deno.serve(async (req) => {
 // 알려진 한계:
 // 1) 단가/금액은 content_sig에 포함. 미러(greenp_joborder_detail)에 단가가 아직 없으면 null로 간주(기존 값 유지).
 // 2) dashboard_sync_log는 "우리가 보낸 것"만 추적 — 대시보드에서 사람이 직접 추가한 행은 중복 정리 대상이 아님.
-// 3) 내용 변경 감지는 "오늘(date) 동기화된 건"만 대상.
+// 3) 내용 변경 감지는 오늘 작업지시서 + 오늘 보드로 이월된 줄(v15, 최근 3일 작업지시서만·10분마다, UPDATE만).
 // 4) 비고(메모)는 대시보드 /api/erp payload에 필드가 없어 동기화되지 않음.
-// 5) 이월은 greenp_joborders(3일 롤링 미러) 기준 + 대시보드 자체 상태(AND).
+// 5) 이월은 greenp_joborders 미러 기준 + 대시보드 자체 상태(AND). 미러의 상태 갱신은 작업지시일 이후 며칠만 됨.
+// 8) v15 삭제 감시는 최근 CATCHUP_DAYS일 작업지시서만, 목록·미러 둘 다에 없을 때만 기록. 대시보드 줄은 건드리지 않음.
 // 6) LEVELLING "나머지 확정 이어받기"는 회사명+코일ID+규격 + 미완료 휴리스틱(최근 3일, 후보 2건 이상이면 건드리지 않음).
 // 7) v12 이어받기·정리는 슬리팅 계열(SLITING/SLITING2)과 코일 번호 형태의 품명(6자 이상, 숫자 포함)에만 적용.
 //    같은 날 ERP에 같은 코일 작업지시서가 2개 이상 살아 있으면 자동으로 합치지 않고 경고만 남김.
