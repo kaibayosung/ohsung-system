@@ -43,6 +43,8 @@
 //         키의 행을 남기고, 나머지 중 '준비'·미시작이고 원래 날짜가 과거인 행은 원래 작업지시일로 되돌림
 //         (삭제하지 않음 — 되돌릴 수 있음). 그 밖의 경우는 경고만 남김.
 //     ※ 대시보드 행을 DELETE하는 코드는 없다(삭제는 사람이 확인 후 직접).
+// v14 [2026-10-14] 되돌리기(reconcile) 비활성화. 어제 작업이 오늘로 이월된 뒤 오늘 완료되면 1분 안에
+//      원래 작업지시일로 옮겨져 오늘 보드에서 사라지던 버그. 이제 후보 수만 wouldRevert로 보고하고 쓰지 않음.
 // v13 [2026-10-13] 늦게 등록된 작업지시서 누락 수정.
 //     원인: 그린ERP 목록을 "오늘 하루"로만 조회 → 마지막 싱크(17:00) 뒤에 등록된 작업지시서는
 //           다음 날에도 날짜가 달라 영원히 빠짐 (10/12 17:10 등록된 #51~#56 6건).
@@ -70,6 +72,7 @@ const ADOPT_WINDOW_DAYS = 14; // v12: 이어받기 후보를 찾는 기간
 //      (예: 17:00 마지막 싱크 뒤 17:10에 등록된 작업지시서가 다음 날에도 영원히 빠지던 문제)
 //      이미 올린 건은 (작업지시일, 번호, 라인) 키로 걸러지므로 새로 등록된 건만 올라간다.
 const CATCHUP_DAYS = 3;
+const RECONCILE_ENABLED = false; // v14
 const CLAIM_STALE_MS = 3 * 60 * 1000; // v12: 이 시간 넘게 id가 비어 있는 선점은 복구 대상
 
 function parseSetCookie(headers: Headers): string {
@@ -332,7 +335,7 @@ Deno.serve(async (req) => {
 
   const timings: Record<string, number> = {};
   const t0 = performance.now();
-  const result: Record<string, any> = { version: "v13", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
+  const result: Record<string, any> = { version: "v14", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
 
   try {
     const { cookie, ms: loginMs } = await greenpLogin();
@@ -1112,7 +1115,11 @@ Deno.serve(async (req) => {
           const boardStatus = await fetchBoardStatusByIds(mysql, rolledToday.map((c: any) => Number(c.dashboard_erp_id)));
           for (const c of rolledToday) {
             if (boardStatus.get(Number(c.dashboard_erp_id)) !== "완료") continue;
-            if (!commit) { reconcile.reverted++; continue; }
+            // v14: 되돌리기 비활성화(보고만). 오늘로 이월된 작업을 오늘 완료하면 원래 작업지시일로 옮겨져
+            // 오늘 보드에서 사라지던 버그(2026-10-14 슬리터1 13건·슬리터2 3건·레벨링 1건).
+            // 이월 단계가 v5부터 보드 '완료'를 이미 확인하므로 되돌리기는 필요 없음.
+            reconcile.wouldRevert = (reconcile.wouldRevert || 0) + 1;
+            if (!RECONCILE_ENABLED || !commit) continue;
             try {
               await mysql.execute(`UPDATE erp_data SET work_date = ? WHERE id = ?`, [c.mdate, c.dashboard_erp_id]);
               const { error: updErr } = await supabase
@@ -1238,7 +1245,7 @@ Deno.serve(async (req) => {
       ok: true,
       timings,
       details: {
-        version: "v13",
+        version: "v14",
         lateHeaders: result.lateHeaders ?? [],
         adopt: { checked: adopt.checked, adopted: adopt.adopted, parkedExtra: adopt.parkedExtra, warnings: adopt.warnings.length, errors: adopt.errors.length },
         heal: { groups: heal.groups, parked: heal.parked, warnings: heal.warnings, errors: heal.errors.length },
