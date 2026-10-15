@@ -57,8 +57,8 @@ PR-DTC-3100 LCD 인식 - 상용 운영 버전 (Groq 비전 모델 기반)
      잘라 보내려면 --crop "x0,y0,x1,y1"(0~1 비율) 또는 환경변수 OCR_CROP 사용.
      정확도 확인: python ocr_monitor_production.py --source ... --test --compare
      (원본과 축소본을 각각 1번씩 보내 값·토큰을 나란히 출력)
-  2) 라인이 안 돌 때는 판독 건너뜀: 레벨러 PLC(LEVELING_DATA)에 최근 10분간 움직임이
-     없으면 AI에 보내지 않고 2분마다 다시 확인(그래도 30분에 한 번은 판독). 직전에 보낸 화면과 거의 같으면 건너뜀
+  2) 라인이 안 돌 때는 판독 건너뜀: 레벨러 PLC(LEVELING_DATA) 기록은 계속 들어오는데 최근 10분간
+     움직임이 없으면 AI에 보내지 않고(PLC 기록 자체가 끊긴 경우는 수집 장애일 수 있어 판독 계속) 2분마다 다시 확인(그래도 30분에 한 번은 판독). 직전에 보낸 화면과 거의 같으면 건너뜀
      (단 12분에 한 번은 무조건 판독). 끄려면 --always.
   3) 살아있음 신호: 매 주기 ai_tension_settings.last_seen_at/last_state 를 갱신 →
      모니터 화면이 '꺼짐'과 '라인 정지로 쉬는 중'을 구분해서 보여줌.
@@ -79,7 +79,7 @@ import time
 import urllib.error
 import urllib.request
 import urllib.parse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import cv2
 import numpy as np
@@ -486,7 +486,7 @@ def line_activity():
         return "unknown", f"레벨러 기록 조회 실패({type(e).__name__})"
     if not rows:
         return "unknown", "레벨러 기록 없음"
-    now_kst = datetime.utcnow() + timedelta(hours=9)
+    now_kst = datetime.now(timezone.utc).replace(tzinfo=None) + timedelta(hours=9)
     since = now_kst - timedelta(minutes=LINE_IDLE_MIN)
     recent = []
     for r in rows:
@@ -497,8 +497,11 @@ def line_activity():
         if t >= since:
             recent.append(float(r.get("m") or 0))
     if not recent:
+        # 기록 자체가 끊긴 것은 '라인 정지'가 아니라 PLC 수집 프로그램이 멈췄을 수도 있다
+        # (2026-10-15 실제 사례: PLC 기록은 09:52에 멈췄는데 텐션은 계속 줄어드는 중 = 라인 가동).
+        # 이때는 쉬지 않고 판독한다(화면 변화 없음 건너뛰기는 그대로 적용).
         last_t = str(rows[0].get("t"))[11:16]
-        return "idle", f"레벨러 기록이 {LINE_IDLE_MIN}분 넘게 없음(마지막 {last_t})"
+        return "unknown", f"레벨러 PLC 기록이 {LINE_IDLE_MIN}분 넘게 끊김(마지막 {last_t}) - PLC 수집 확인 필요, 판독은 계속"
     moving = any(abs(recent[i] - recent[i + 1]) > 3 for i in range(len(recent) - 1))
     if not moving:
         return "idle", f"레벨러가 최근 {LINE_IDLE_MIN}분 동안 움직이지 않음"
