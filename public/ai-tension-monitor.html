@@ -167,13 +167,25 @@ function stateBanner(recent, settings){
   if (settings && settings.enabled === false){
     return `<div class="state-ban idle"><div class="sb-top"><span class="sb-dot"></span><span class="sb-title">인식 중단됨</span><span class="sb-right">마지막 기록 ${fmtDT(last.captured_at)}</span></div><div class="sb-body">아래 "인식 재개하기"를 누르면 판독 프로그램이 다시 기록합니다.</div></div>`;
   }
+  // 판독 프로그램의 살아있음 신호(2026-10-15 이후 버전): 10분 안에 신호가 있으면 '꺼짐'이 아니다
+  const hbAgo = settings && settings.last_seen_at ? (Date.now() - new Date(settings.last_seen_at).getTime())/1000 : null;
+  const hbAlive = hbAgo !== null && hbAgo < Math.max(600, intervalSec * 2.5);
+  if (hbAlive && settings.last_state === 'idle_line'){
+    return `<div class="state-ban idle"><div class="sb-top"><span class="sb-dot"></span><span class="sb-title">판독 쉬는 중 · 레벨러 정지</span><span class="sb-right">신호 ${spanLabel(hbAgo)} 전</span></div><div class="sb-body">${settings.last_note || '레벨러가 움직이지 않아 AI 판독을 쉬고 있습니다'} · 라인이 다시 돌면 자동으로 판독합니다(그래도 30분에 한 번은 판독). 마지막 기록 ${fmtDT(last.captured_at)}</div></div>`;
+  }
+  if (hbAlive && settings.last_state === 'camera_lost'){
+    return `<div class="state-ban off"><div class="sb-top"><span class="sb-dot"></span><span class="sb-title">카메라 연결 끊김</span><span class="sb-right">신호 ${spanLabel(hbAgo)} 전</span></div><div class="sb-body">판독 프로그램은 켜져 있지만 카메라 영상을 받지 못합니다. 휴대폰 IP Webcam 앱과 와이파이를 확인하세요.</div></div>`;
+  }
+  if (agoSec > offAfter && hbAlive && settings.last_state === 'unchanged'){
+    return `<div class="state-ban ok"><div class="sb-top"><span class="sb-dot"></span><span class="sb-title">판독 정상 · 화면 변화가 없어 판독 생략 중 (마지막 기록 ${fmtDT(last.captured_at)})</span></div></div>`;
+  }
   if (agoSec > offAfter){
     if (!isWorkHours()){
       return `<div class="state-ban idle"><div class="sb-top"><span class="sb-dot"></span><span class="sb-title">업무시간 외 · 판독 프로그램 꺼짐</span><span class="sb-right">${spanLabel(agoSec)}째</span></div><div class="sb-body">마지막 기록 ${fmtDT(last.captured_at)} · 업무시간(08:00~18:00)에 계속 꺼져 있으면 빨간색으로 알립니다.</div></div>`;
     }
     return `<div class="state-ban off"><div class="sb-top"><span class="sb-dot"></span><span class="sb-title">판독 프로그램 꺼짐</span><span class="sb-right">${spanLabel(agoSec)}째</span></div>
       <div class="sb-body">마지막 기록 ${fmtDT(last.captured_at)} · 카메라 영상이 나와도 판독 PC의 프로그램이 꺼져 있거나 인터넷이 끊기면 값이 들어오지 않습니다.</div>
-      <div class="sb-how">켜는 법: 판독 PC에서 <b style="color:#0f1e33">run_ocr_monitor.bat</b> 더블클릭 → ${Math.max(1, Math.round(intervalSec/60))}~5분 안에 아래 값이 바뀌면 정상</div></div>`;
+      <div class="sb-how">켜는 법: 판독 PC에서 <b style="color:#0f1e33">run_ocr_monitor.bat</b> 더블클릭 → 약 ${Math.max(2, Math.round(intervalSec/60))}분 안에 아래 값이 바뀌면 정상 (레벨러가 서 있으면 '판독 쉬는 중'으로 바뀜)</div></div>`;
   }
   // 최근 연속 실패 횟수
   let streak = 0; const kinds = {};
@@ -233,7 +245,7 @@ async function fetchTodayTokens(sinceIso){
 }
 
 async function fetchSettings(){
-  const res = await pgrest(`${SETTINGS_TABLE}?select=capture_interval_sec,enabled&id=eq.1&limit=1`);
+  const res = await pgrest(`${SETTINGS_TABLE}?select=capture_interval_sec,enabled,last_seen_at,last_state,last_note&id=eq.1&limit=1`);
   if (!res.ok) return null;
   const rows = await res.json();
   return rows[0] || null;
@@ -408,7 +420,7 @@ async function render(){
             const prev = recent[i-1]; // 더 최근 기록
             const gapSec = prev ? (new Date(prev.captured_at).getTime() - new Date(r.captured_at).getTime())/1000 : 0;
             const gapRow = prev && gapSec > Math.max(intervalSec * 2.5, 900) ? // 주기가 바뀐 과거 기록도 있으니 15분 이상 비었을 때만 표시
-               `<tr class="gap-row"><td colspan="8">— ${spanLabel(gapSec)} 기록 없음 (판독 프로그램 꺼짐 또는 연결 끊김) —</td></tr>` : '';
+               `<tr class="gap-row"><td colspan="8">— ${spanLabel(gapSec)} 기록 없음 (레벨러 정지로 판독 쉼, 또는 판독 프로그램 꺼짐·연결 끊김) —</td></tr>` : '';
             return `${gapRow}<tr>
               <td>${fmtDT(r.captured_at)}</td>
               <td>${num(r.output_percent) ?? '-'}</td>

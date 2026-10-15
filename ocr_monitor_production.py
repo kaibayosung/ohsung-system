@@ -51,6 +51,18 @@ PR-DTC-3100 LCD 인식 - 상용 운영 버전 (Groq 비전 모델 기반)
 
 5) 종료: 미리보기 창에서 q, 또는 Ctrl+C
 
+토큰 절감 (2026-10-15 추가 — Groq 무료 한도 하루 200,000 토큰 초과 대응)
+--------------------------------------------------------------------
+  1) 사진을 줄여 보냄: 긴 변 1024px로 축소(--max-dim, 0이면 원본). 컨트롤러 화면만
+     잘라 보내려면 --crop "x0,y0,x1,y1"(0~1 비율) 또는 환경변수 OCR_CROP 사용.
+     정확도 확인: python ocr_monitor_production.py --source ... --test --compare
+     (원본과 축소본을 각각 1번씩 보내 값·토큰을 나란히 출력)
+  2) 라인이 안 돌 때는 판독 건너뜀: 레벨러 PLC(LEVELING_DATA)에 최근 10분간 움직임이
+     없으면 AI에 보내지 않고 2분마다 다시 확인(그래도 30분에 한 번은 판독). 직전에 보낸 화면과 거의 같으면 건너뜀
+     (단 12분에 한 번은 무조건 판독). 끄려면 --always.
+  3) 살아있음 신호: 매 주기 ai_tension_settings.last_seen_at/last_state 를 갱신 →
+     모니터 화면이 '꺼짐'과 '라인 정지로 쉬는 중'을 구분해서 보여줌.
+
 현장 전원 On/Off 연동 (자동 시작/대기)
 --------------------------------------
 카메라(현장) 신호가 없으면 연결에 실패하고 조용히 대기하며 주기적으로
@@ -66,9 +78,11 @@ import re
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime
+import urllib.parse
+from datetime import datetime, timedelta
 
 import cv2
+import numpy as np
 
 # ---------------------------------------------------------------------------
 # 설정
@@ -100,6 +114,19 @@ GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_MODEL = "qwen/qwen3.8-27b"
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 GROQ_TIMEOUT_SEC = 20
+GROQ_MAX_WAIT_SEC = 60   # Groq가 이보다 오래 기다리라고 하면(하루 한도 초과) 이번 주기는 바로 포기
+
+# --- 토큰 절감 (2026-10-15) ---
+OCR_MAX_DIM_DEFAULT = 1024      # 긴 변 픽셀. 원본(1920 등) 대비 토큰 약 절반 이하
+OCR_JPEG_QUALITY = 85
+OCR_MAX_DIM = OCR_MAX_DIM_DEFAULT   # main()에서 --max-dim 값으로 바뀜
+OCR_CROP = None                     # (x0, y0, x1, y1) 비율. main()에서 --crop / OCR_CROP 로 설정
+LINE_CHECK_URL = "https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore"
+LINE_IDLE_MIN = 10              # 레벨러가 이 시간(분) 동안 안 움직였으면 '정지'로 보고 판독 쉼
+IDLE_RECHECK_SEC = 120          # 정지 중에는 2분마다 다시 확인
+IDLE_FORCE_READ_SEC = 30 * 60   # 정지로 보여도 30분에 한 번은 판독(레벨러 기록 프로그램이 멈춘 경우 대비)
+FORCE_READ_EVERY_SEC = 12 * 60  # 화면 변화가 없어도 이 간격마다 한 번은 판독(모니터의 '공백' 표시 방지)
+CHANGE_BLOCK_THRESHOLD = 12.0   # 화면 변화 판단: 작은 칸(블록) 하나라도 평균 밝기 차가 이 값 넘으면 '바뀜'
 
 PROMPT = (
     "이 사진은 PORA PR-DTC-3100 타퍼 텐션 컨트롤러 LCD 화면입니다. "
@@ -123,28 +150,57 @@ FIELDS = [
 # Groq 인식
 # ---------------------------------------------------------------------------
 
-def encode_frame_to_b64(frame, max_dim=None):
-    """OpenCV 프레임(BGR numpy 배열)을 JPEG로 인코딩해 base64 문자열로 변환.
-    max_dim을 주면 긴 변 기준으로 축소(토큰 절감용, 기본은 원본 그대로 전송 -
-    1분에 1회라 토큰 여유가 충분해 정확도를 우선함)."""
+def parse_crop(text):
+    """'x0,y0,x1,y1'(0~1 비율) -> 튜플. 잘못된 값이면 None(자르지 않음)."""
+    if not text:
+        return None
+    try:
+        v = [float(x) for x in str(text).split(",")]
+        if len(v) == 4 and 0 <= v[0] < v[2] <= 1 and 0 <= v[1] < v[3] <= 1:
+            return tuple(v)
+    except ValueError:
+        pass
+    print(f"[경고] crop 값 '{text}' 를 읽을 수 없어 자르지 않습니다 (예: 0.30,0.20,0.95,0.80)")
+    return None
+
+
+def prepare_frame(frame, max_dim=None, crop=None):
+    """(2026-10-15) 토큰 절감: 컨트롤러 화면 부분만 자르고(crop) 긴 변을 max_dim으로 줄인다.
+    이전에는 '1분에 1회라 토큰 여유가 충분'하다는 가정으로 원본을 그대로 보냈지만,
+    5분 주기로도 하루 한도(20만 토큰)에 걸려 축소가 기본이 됐다."""
     img = frame
+    if crop:
+        h, w = img.shape[:2]
+        x0, y0, x1, y1 = int(crop[0] * w), int(crop[1] * h), int(crop[2] * w), int(crop[3] * h)
+        if x1 - x0 > 50 and y1 - y0 > 50:
+            img = img[y0:y1, x0:x1]
     if max_dim:
         h, w = img.shape[:2]
         if max(h, w) > max_dim:
             scale = max_dim / max(h, w)
             img = cv2.resize(img, (int(w * scale), int(h * scale)), interpolation=cv2.INTER_AREA)
-    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, 90])
+    return img
+
+
+def encode_frame_to_b64(frame, max_dim=None, crop=None):
+    """OpenCV 프레임(BGR numpy 배열)을 (자르고 줄인 뒤) JPEG로 인코딩해 base64 문자열로 변환."""
+    img = prepare_frame(frame, max_dim, crop)
+    ok, buf = cv2.imencode(".jpg", img, [cv2.IMWRITE_JPEG_QUALITY, OCR_JPEG_QUALITY])
     if not ok:
         raise RuntimeError("JPEG 인코딩 실패")
     return base64.b64encode(buf.tobytes()).decode("ascii")
 
 
 def _parse_retry_after_sec(msg):
-    m = re.search(r"try again in ([\d.]+)(ms|s)", msg or "", re.IGNORECASE)
-    if not m:
+    """'try again in 6m30.5s' / '1h2m3s' / '850ms' -> 초. (예전엔 6m30s를 30초로 잘못 읽었음)"""
+    m = re.search(r"try again in ((?:[\d.]+h)?(?:[\d.]+m(?!s))?(?:[\d.]+(?:ms|s))?)", msg or "", re.IGNORECASE)
+    if not m or not m.group(1):
         return 3.0
-    val = float(m.group(1))
-    return (val / 1000.0 if m.group(2).lower() == "ms" else val) + 0.5
+    total = 0.0
+    for val, unit in re.findall(r"([\d.]+)(h|ms|m|s)", m.group(1).lower()):
+        v = float(val)
+        total += v * 3600 if unit == "h" else v * 60 if unit == "m" else v / 1000.0 if unit == "ms" else v
+    return total + 0.5
 
 
 def call_groq_once(b64, api_key, timeout=GROQ_TIMEOUT_SEC):
@@ -195,8 +251,10 @@ def call_groq(b64, api_key, timeout=GROQ_TIMEOUT_SEC, max_retries=2):
         except Exception as e:
             last_err = e
             is_rate_limit = getattr(e, "status", None) == 429 or "rate limit" in str(e).lower()
-            if is_rate_limit and attempt < max_retries:
-                time.sleep(_parse_retry_after_sec(str(e)))
+            wait = _parse_retry_after_sec(str(e)) if is_rate_limit else 0
+            # 하루 한도 초과처럼 오래 기다려야 하면 붙잡고 있지 않고 이번 주기는 실패로 넘긴다
+            if is_rate_limit and attempt < max_retries and wait <= GROQ_MAX_WAIT_SEC:
+                time.sleep(wait)
                 continue
             raise
     raise last_err
@@ -378,7 +436,7 @@ def do_ocr_and_record(frame, last_values, csv_writer, csv_file):
         return last_values
 
     try:
-        b64 = encode_frame_to_b64(frame)
+        b64 = encode_frame_to_b64(frame, OCR_MAX_DIM, OCR_CROP)
         text, usage = call_groq(b64, GROQ_API_KEY)
     except Exception as e:
         msg = f"{type(e).__name__}: {e}"
@@ -411,6 +469,76 @@ def do_ocr_and_record(frame, last_values, csv_writer, csv_file):
 
 
 # ---------------------------------------------------------------------------
+# 토큰 절감: 레벨러 가동 확인 · 화면 변화 확인 · 살아있음 신호 (2026-10-15)
+# ---------------------------------------------------------------------------
+
+def line_activity():
+    """레벨러 PLC(LEVELING_DATA) 최근 기록으로 라인이 도는지 본다.
+    반환: ('running'|'idle'|'unknown', 설명). 조회 실패는 'unknown' -> 판독은 그대로 진행(안전 쪽).
+    PLC 시각은 KST로 저장돼 있으므로 지금 시각도 KST로 비교한다."""
+    sql = ("SELECT DATE_FORMAT(TIMESTAMP,'%Y-%m-%d %H:%i:%s') t, MOVELENSV m "
+           "FROM LEVELING_DATA ORDER BY ID DESC LIMIT 300")
+    url = LINE_CHECK_URL + "?sql=" + urllib.parse.quote(sql)
+    try:
+        with urllib.request.urlopen(url, timeout=15) as resp:
+            rows = json.loads(resp.read().decode("utf-8")).get("rows") or []
+    except Exception as e:
+        return "unknown", f"레벨러 기록 조회 실패({type(e).__name__})"
+    if not rows:
+        return "unknown", "레벨러 기록 없음"
+    now_kst = datetime.utcnow() + timedelta(hours=9)
+    since = now_kst - timedelta(minutes=LINE_IDLE_MIN)
+    recent = []
+    for r in rows:
+        try:
+            t = datetime.strptime(str(r.get("t")), "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            continue
+        if t >= since:
+            recent.append(float(r.get("m") or 0))
+    if not recent:
+        last_t = str(rows[0].get("t"))[11:16]
+        return "idle", f"레벨러 기록이 {LINE_IDLE_MIN}분 넘게 없음(마지막 {last_t})"
+    moving = any(abs(recent[i] - recent[i + 1]) > 3 for i in range(len(recent) - 1))
+    if not moving:
+        return "idle", f"레벨러가 최근 {LINE_IDLE_MIN}분 동안 움직이지 않음"
+    return "running", "레벨러 가동 중"
+
+
+def frame_signature(frame):
+    """화면 비교용 작은 흑백 사진(160x90)."""
+    img = prepare_frame(frame, None, OCR_CROP)
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    return cv2.resize(gray, (160, 90), interpolation=cv2.INTER_AREA).astype(np.float32)
+
+
+def frame_changed(a, b):
+    """10x10 칸으로 나눠 칸별 평균 밝기 차를 보고, 한 칸이라도 크게 바뀌었으면 True.
+    (숫자 한 자리만 바뀌어도 그 칸은 크게 달라지므로 전체 평균보다 민감하다)"""
+    if a is None or b is None or a.shape != b.shape:
+        return True
+    d = np.abs(a - b).reshape(9, 10, 16, 10).mean(axis=(1, 3))
+    return float(d.max()) > CHANGE_BLOCK_THRESHOLD
+
+
+def send_heartbeat(state, note=""):
+    """ai_tension_settings 행에 살아있음 신호를 남긴다(updated_at은 건드리지 않음).
+    실패해도 판독 동작에는 영향 없음."""
+    key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
+    body = {"last_seen_at": datetime.now().astimezone().isoformat(), "last_state": state, "last_note": (note or "")[:200]}
+    req = urllib.request.Request(
+        f"{SUPABASE_URL}/rest/v1/{SUPABASE_SETTINGS_TABLE}?id=eq.1",
+        data=json.dumps(body).encode("utf-8"), method="PATCH",
+        headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json", "Prefer": "return=minimal"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            resp.read()
+    except Exception:
+        pass
+
+
+# ---------------------------------------------------------------------------
 # 메인
 # ---------------------------------------------------------------------------
 
@@ -421,7 +549,17 @@ def main():
     parser.add_argument("--interval", type=float, default=CAPTURE_INTERVAL_SEC,
                          help="초기 인식 주기(초), 기본 120. 실행 중에는 대시보드에서 바꾼 값이 우선됨")
     parser.add_argument("--test", action="store_true", help="프레임 1장만 받아 Groq 인식 결과를 출력하고 종료 (반복 없음)")
+    parser.add_argument("--max-dim", type=int, default=OCR_MAX_DIM_DEFAULT,
+                        help=f"AI에 보낼 사진 긴 변 픽셀(기본 {OCR_MAX_DIM_DEFAULT}, 0이면 원본 그대로)")
+    parser.add_argument("--crop", default=os.environ.get("OCR_CROP"),
+                        help='컨트롤러 화면만 잘라 보낼 영역 "x0,y0,x1,y1"(0~1 비율). 환경변수 OCR_CROP 로도 지정 가능')
+    parser.add_argument("--compare", action="store_true", help="--test와 함께: 원본과 축소본을 각각 보내 값·토큰 비교")
+    parser.add_argument("--always", action="store_true", help="라인 정지·화면 변화 없음이어도 건너뛰지 않고 매 주기 판독")
     args = parser.parse_args()
+
+    global OCR_MAX_DIM, OCR_CROP
+    OCR_MAX_DIM = args.max_dim if args.max_dim and args.max_dim > 0 else None
+    OCR_CROP = parse_crop(args.crop)
 
     source = int(args.source) if args.source.isdigit() else args.source
 
@@ -439,7 +577,17 @@ def main():
         if not GROQ_API_KEY:
             print("[실패] GROQ_API_KEY 환경변수가 설정되지 않았습니다.")
             return
-        b64 = encode_frame_to_b64(frame)
+        if args.compare:
+            for label, md, cr in [("원본", None, None), (f"축소(긴 변 {OCR_MAX_DIM or '원본'}{', 자르기' if OCR_CROP else ''})", OCR_MAX_DIM, OCR_CROP)]:
+                img = prepare_frame(frame, md, cr)
+                t2, u2 = call_groq(encode_frame_to_b64(frame, md, cr), GROQ_API_KEY)
+                p2 = parse_json_answer(t2) or {}
+                print(f"[{label}] 사진 {img.shape[1]}x{img.shape[0]} | 토큰 {u2.get('total_tokens')} | " +
+                      " ".join(f"{lab}={p2.get(k)}" for k, lab in FIELDS))
+            return
+        img = prepare_frame(frame, OCR_MAX_DIM, OCR_CROP)
+        print(f"[보내는 사진] {img.shape[1]}x{img.shape[0]} (원본 {frame.shape[1]}x{frame.shape[0]})")
+        b64 = encode_frame_to_b64(frame, OCR_MAX_DIM, OCR_CROP)
         text, usage = call_groq(b64, GROQ_API_KEY)
         print("[Groq 응답 원문]", text)
         parsed = parse_json_answer(text)
@@ -470,6 +618,8 @@ def main():
         print("          결과는 오성철강 연구실 웹페이지에서 실시간으로 확인하세요.")
     else:
         print("[DB 저장] 꺼짐 -> SUPABASE_SERVICE_ROLE_KEY 환경변수가 없어 로컬 CSV만 남습니다.")
+    print(f"[토큰 절감] 사진 긴 변 {OCR_MAX_DIM or '원본'}px{' · 컨트롤러 화면만 자름 ' + str(OCR_CROP) if OCR_CROP else ''}"
+          f" · {'항상 판독(--always)' if args.always else f'레벨러 {LINE_IDLE_MIN}분 정지/화면 변화 없음이면 건너뜀(최대 {FORCE_READ_EVERY_SEC // 60}분마다는 판독)'}")
     print("종료: 미리보기 창에서 q, 또는 Ctrl+C\n")
 
     last_values = {key: None for key, _ in FIELDS}
@@ -482,6 +632,9 @@ def main():
             was_connected = False
             was_enabled = True
             current = {"interval": args.interval, "enabled": True}
+            last_sig = None
+            last_sent = 0.0
+            last_line_state = None
             while True:
                 cleanup_old_captures()
 
@@ -494,11 +647,23 @@ def main():
 
                 if not current["enabled"]:
                     was_enabled = False
+                    send_heartbeat("paused", "대시보드에서 중단됨")
                     time.sleep(PAUSED_POLL_SEC)
                     continue
                 if not was_enabled:
                     print("[재개] 대시보드에서 다시 시작했습니다. 인식을 재개합니다.")
                     was_enabled = True
+
+                # (2) 레벨러가 안 돌면 AI에 보내지 않고 쉰다
+                if not args.always:
+                    line_state, line_note = line_activity()
+                    if line_state != last_line_state:
+                        print(f"[레벨러] {line_note}" + (" -> 판독 쉼" if line_state == "idle" else ""))
+                        last_line_state = line_state
+                    if line_state == "idle" and time.time() - last_sent < IDLE_FORCE_READ_SEC:
+                        send_heartbeat("idle_line", line_note)
+                        time.sleep(IDLE_RECHECK_SEC)
+                        continue
 
                 cap = try_open(source)
                 frame = None
@@ -512,6 +677,7 @@ def main():
                     if was_connected:
                         print("[연결 끊김] 카메라 신호가 사라졌습니다. 대기 모드로 전환합니다.")
                         log_event(csv_writer, csv_file, "session_end_lost_connection")
+                        send_heartbeat("camera_lost", "카메라 영상을 받지 못함")
                     was_connected = False
                     time.sleep(RECONNECT_WAIT_SEC)
                     continue
@@ -521,7 +687,17 @@ def main():
                     log_event(csv_writer, csv_file, "session_start")
                     was_connected = True
 
+                # (2) 직전에 보낸 화면과 거의 같으면 건너뜀 (단 FORCE_READ_EVERY_SEC 마다는 판독)
+                sig = frame_signature(frame)
+                if not args.always and last_sig is not None and not frame_changed(last_sig, sig) \
+                        and time.time() - last_sent < FORCE_READ_EVERY_SEC:
+                    send_heartbeat("unchanged", "화면 변화 없음 - 판독 건너뜀")
+                    time.sleep(current["interval"])
+                    continue
+
                 last_values = do_ocr_and_record(frame, last_values, csv_writer, csv_file)
+                last_sig, last_sent = sig, time.time()
+                send_heartbeat("reading", "판독함")
                 time.sleep(current["interval"])
 
         # 미리보기 창을 띄운 확인 모드 (현장 설치 직후 프레이밍 확인용)
