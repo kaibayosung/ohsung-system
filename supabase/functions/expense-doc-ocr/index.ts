@@ -6,7 +6,7 @@
 // 직접 인코딩해 보내면 바로 Claude Vision에 넘겨 분석합니다.
 //
 // 호출: POST { imageBase64: string(순수 base64, data: 접두어 제외), mediaType: 'image/png'|'image/jpeg' }
-// 응답: { ok, extracted: { request_date, items: [...] } } | { ok:false, error }
+// 응답: { ok, extracted: { request_date, items: [...] }, model } | { ok:false, error }
 
 const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Origin": "*",
@@ -14,12 +14,93 @@ const CORS_HEADERS: Record<string, string> = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const ACCOUNT_CATEGORIES = ['급여', '4대보험', '대출이자', '카드대금', '위탁대행/기타', '퇴직연금', '통신비', '수도광열비', '원자재매입', '설비 도입', '기타'];
+// [2026-10-20 비용 절감] 기본 모델 claude-sonnet-4-5 → claude-haiku-5-5
+//  (Sonnet 4.5 입력 $3 / 출력 $15 → Haiku 5.5 입력 $0.10 / 출력 $0.50 per 1M, 약 1/30).
+//  - Haiku 5.5는 adaptive thinking이 기본 ON이라 thinking을 끄고 effort=low로 둡니다.
+//  - Haiku 결과가 JSON으로 읽히지 않거나 호출이 실패하면 1회만 Sonnet 5로 재시도합니다.
+const PRIMARY_MODEL = "claude-haiku-5-5";
+const FALLBACK_MODEL = "claude-sonnet-5";
 
-async function callClaudeVision(base64: string, mediaType: string): Promise<any> {
+// content 배열에 thinking 블록이 섞일 수 있어 content[0].text 대신 text 블록만 모읍니다.
+function extractText(data: any): string {
+  const blocks = Array.isArray(data?.content) ? data.content : [];
+  return blocks
+    .filter((b: any) => b && b.type === "text" && typeof b.text === "string")
+    .map((b: any) => b.text)
+    .join("\n")
+    .trim();
+}
+
+// 코드블록(```json)이나 앞뒤 설명이 붙어도 첫 '{' ~ 마지막 '}'만 잘라 파싱합니다.
+function parseJsonLoose(text: string): any {
+  const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
+  try {
+    return JSON.parse(cleaned);
+  } catch (_e) {
+    const s = cleaned.indexOf("{");
+    const e = cleaned.lastIndexOf("}");
+    if (s >= 0 && e > s) return JSON.parse(cleaned.slice(s, e + 1));
+    throw new Error("JSON 파싱 실패: " + text.slice(0, 300));
+  }
+}
+
+async function visionOnce(
+  apiKey: string, model: string, base64: string, mediaType: string, prompt: string, maxTokens: number, cheap: boolean,
+): Promise<any> {
+  const body: Record<string, unknown> = {
+    model,
+    max_tokens: maxTokens,
+    messages: [
+      {
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+          { type: "text", text: prompt },
+        ],
+      },
+    ],
+  };
+  if (cheap) {
+    body.thinking = { type: "disabled" };
+    body.output_config = { effort: "low" };
+  }
+  const resp = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const errText = await resp.text();
+    throw new Error(`Claude API 오류 (${model}, ${resp.status}): ${errText.slice(0, 500)}`);
+  }
+  const json = await resp.json();
+  // 크레딧 추적용: Edge Function 로그에 모델·토큰 사용량을 남깁니다.
+  console.log("usage", JSON.stringify({ model, usage: json?.usage }));
+  return parseJsonLoose(extractText(json));
+}
+
+async function visionWithFallback(
+  base64: string, mediaType: string, prompt: string, maxTokens: number,
+): Promise<{ extracted: any; model: string }> {
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY") || "";
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY 시크릿이 설정되어 있지 않습니다.");
+  try {
+    const extracted = await visionOnce(apiKey, PRIMARY_MODEL, base64, mediaType, prompt, maxTokens, true);
+    return { extracted, model: PRIMARY_MODEL };
+  } catch (e) {
+    console.warn("Haiku 판독 실패 → Sonnet 재시도:", String((e as Error)?.message || e));
+  }
+  const extracted = await visionOnce(apiKey, FALLBACK_MODEL, base64, mediaType, prompt, maxTokens + 2000, false);
+  return { extracted, model: FALLBACK_MODEL };
+}
 
+const ACCOUNT_CATEGORIES = ['급여', '4대보험', '대출이자', '카드대금', '위탁대행/기타', '퇴직연금', '통신비', '수도광열비', '원자재매입', '설비 도입', '기타'];
+
+async function callClaudeVision(base64: string, mediaType: string): Promise<{ extracted: any; model: string }> {
   const prompt = `이 이미지는 회사의 "미지급금(결제건)" 또는 지출/이체 목록 표입니다 (스캔본, 사진, 또는 엑셀 캡처일 수 있습니다).
 표에 있는 각 행을 읽어서 아래 JSON 형식으로만 응답하세요 (설명, 코드블록, 다른 텍스트 없이 순수 JSON만):
 {
@@ -37,43 +118,22 @@ async function callClaudeVision(base64: string, mediaType: string): Promise<any>
 }
 합계/소계 행은 items에 포함하지 마세요. 값을 확신할 수 없으면 해당 필드만 null로 두고, 다른 필드는 있는 대로 채워주세요. 표에 보이는 행 수만큼 items 배열에 전부 넣어주세요.`;
 
-  const resp = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-5",
-      max_tokens: 4000,
-      messages: [{ role: "user", content: [
-        { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-        { type: "text", text: prompt },
-      ]}],
-    }),
-  });
-
-  if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Claude API 오류 (${resp.status}): ${errText.slice(0, 500)}`);
-  }
-  const json = await resp.json();
-  const text = json?.content?.[0]?.text || "";
-  const cleaned = text.trim().replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "");
-  try {
-    return JSON.parse(cleaned);
-  } catch (_e) {
-    throw new Error("Claude 응답 JSON 파싱 실패: " + text.slice(0, 300));
-  }
+  return await visionWithFallback(base64, mediaType, prompt, 4000);
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: CORS_HEADERS });
   }
+
   try {
     const body = await req.json();
     const { imageBase64, mediaType } = body || {};
     if (!imageBase64) throw new Error("imageBase64가 필요합니다.");
-    const extracted = await callClaudeVision(imageBase64, mediaType || "image/png");
-    return new Response(JSON.stringify({ ok: true, extracted }), {
+
+    const { extracted, model } = await callClaudeVision(imageBase64, mediaType || "image/png");
+
+    return new Response(JSON.stringify({ ok: true, extracted, model }), {
       headers: { "Content-Type": "application/json", ...CORS_HEADERS },
     });
   } catch (err) {
