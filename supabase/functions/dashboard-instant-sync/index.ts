@@ -54,6 +54,10 @@
 //     수정: 최근 CATCHUP_DAYS(3)일을 조회하고, 중복 판단 키를 (작업지시일, 번호, 라인)으로 통일.
 //           이미 올린 건은 로그로 걸러지고 새 건만 원래 작업지시일로 등록(선점 유니크 키는 그대로).
 //           단가 매칭·내용 변경감지 키에도 작업지시일 포함(날짜마다 번호가 1부터 다시 매겨지므로).
+// v16 [2026-10-30] (1) 작업지시서 품목이 여러 줄이면 코일 줄을 골라 쓰고 부자재(지관 등)는 가공규칙 끝에 붙임
+//      (2) 길이 "1000(세아)"처럼 메모가 붙어도 앞 숫자를 길이로 씀
+//      (3) 원중량·사용중량이 뒤바뀌어 들어가던 문제 수정: 그린ERP sweightw=원중량, sweight=사용중량
+//          (예: 10/27 CRQF0938B 원중량 10,310·사용중량 2,710이 대시보드에 반대로 들어감)
 
 import forge from "npm:node-forge@1.3.1";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -171,6 +175,10 @@ function parseLengthField(raw: any): { value: number | null; note: string | null
   if (/^-?\d+(\.\d+)?$/.test(cleaned)) {
     return { value: Math.round(parseFloat(cleaned)), note: null };
   }
+  // v16 [2026-10-30] "1000(세아)"처럼 숫자 뒤에 제철소 등 메모가 붙은 길이는 앞 숫자를 길이로 쓴다.
+  // (예전엔 null로 넘어가 대시보드가 무게로 998m를 따로 계산함)
+  const lead = cleaned.match(/^(\d+(?:\.\d+)?)\s*(?:m|M|미터)?\s*(?:[(\[]|$)/);
+  if (lead) return { value: Math.round(parseFloat(lead[1])), note: s };
   return { value: null, note: s };
 }
 
@@ -312,9 +320,24 @@ async function fetchDetail(cookie: string, h: any, date: string) {
       selectMdate: String(h.mdate ?? date), selectMjunp: String(h.mjunp ?? ""),
     }),
   ]);
-  const item = (d1.data || [])[0] || {};
+  // v16 [2026-10-30] 작업지시서 1건에 품목이 여러 줄일 수 있다(예: 코일 + 부자재 '지관' 2kg).
+  // 예전엔 첫 줄만 썼다 → 부자재 줄이 빠지고, 부자재가 첫 줄이면 코일 대신 부자재가 대시보드에 들어갈 위험.
+  // 코일 줄 = 규격(sspec)이 있는 줄 중 무게가 가장 큰 줄. 나머지 줄은 가공규칙 끝에 "부자재: 지관 2kg"로 붙인다.
+  const rows = ((d1.data || []) as any[]).filter((r) => r && (String(r.spum ?? "").trim() || String(r.sspec ?? "").trim()));
+  const w = (r: any) => Math.max(toNum(r.sweight) ?? 0, toNum(r.sweightw) ?? 0);
+  const specRows = rows.filter((r) => String(r.sspec ?? "").trim());
+  const pool = specRows.length > 0 ? specRows : rows;
+  const item = pool.length > 0 ? pool.reduce((a, b) => (w(b) > w(a) ? b : a)) : {};
+  const subItems = rows
+    .filter((r) => r !== item && String(r.spum ?? "").trim())
+    .map((r) => {
+      const kg = w(r);
+      return `${String(r.spum).trim()}${kg > 0 ? " " + Math.round(kg * 100) / 100 + "kg" : ""}`;
+    });
   const sizeRows = (d2.data || []) as any[];
-  const processRule = sizeRows.map((r) => r.sdesc).filter(Boolean).join(", ");
+  const ruleParts = sizeRows.map((r) => r.sdesc).filter(Boolean);
+  if (subItems.length > 0) ruleParts.push("부자재: " + subItems.join(", "));
+  const processRule = ruleParts.join(", ");
   const lengthParsed = parseLengthField(item.smeter);
   return { item, processRule, lengthParsed };
 }
@@ -332,7 +355,7 @@ Deno.serve(async (req) => {
 
   const timings: Record<string, number> = {};
   const t0 = performance.now();
-  const result: Record<string, any> = { version: "v15", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
+  const result: Record<string, any> = { version: "v16", date, catchupFrom: dateMinus(date, CATCHUP_DAYS), commit, seedOnly, mode: seedOnly ? "seed-only" : (commit ? "LIVE-WRITE" : "dry-run") };
 
   try {
     const { cookie, ms: loginMs } = await greenpLogin();
@@ -549,8 +572,8 @@ Deno.serve(async (req) => {
                 productName,
                 specification: item.sspec ?? null,
                 length: lengthParsed.value,
-                originalWeight: toNum(item.sweight),
-                usedWeight: toNum(item.sweightw),
+                originalWeight: toNum(item.sweightw),
+                usedWeight: toNum(item.sweight),
                 unitPrice: matched?.unit_price ?? null,
                 amount: matched?.amount ?? null,
                 processRule: processRule || null,
@@ -619,8 +642,8 @@ Deno.serve(async (req) => {
           productName: item.spum ?? null,
           specification: item.sspec ?? null,
           length: lengthParsed.value,
-          originalWeight: toNum(item.sweight),
-          usedWeight: toNum(item.sweightw),
+          originalWeight: toNum(item.sweightw),
+          usedWeight: toNum(item.sweight),
           unitPrice: matched?.unit_price ?? null,
           amount: matched?.amount ?? null,
           processRule: processRule || null,
@@ -855,8 +878,8 @@ Deno.serve(async (req) => {
           productName: currentProductName,
           specification: item.sspec ?? null,
           length: lengthParsed.value,
-          originalWeight: toNum(item.sweight),
-          usedWeight: toNum(item.sweightw),
+          originalWeight: toNum(item.sweightw),
+          usedWeight: toNum(item.sweight),
           unitPrice: matched?.unit_price ?? null,
           amount: matched?.amount ?? null,
           processRule: processRule || null,
@@ -1327,7 +1350,7 @@ Deno.serve(async (req) => {
       ok: true,
       timings,
       details: {
-        version: "v15",
+        version: "v16",
         listComplete,
         lateHeaders: result.lateHeaders ?? [],
         adopt: { checked: adopt.checked, adopted: adopt.adopted, parkedExtra: adopt.parkedExtra, warnings: adopt.warnings.length, errors: adopt.errors.length },
