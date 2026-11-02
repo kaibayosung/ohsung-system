@@ -7,284 +7,532 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-html,body{margin:0;background:#F3F5FE}
+html,body{margin:0;background:#0B1626}
 button{font-family:inherit;cursor:pointer}
 
 </style>
 </head>
 <body>
-<!-- Mockup for field test (sample data only). Source: 레벨링 통합 대시보드 목업 / AdminPC.dc.html -->
+<!-- Mockup for field test (sample data only). Source: 레벨링 통합 대시보드 목업 / Helper.dc.html -->
 <div id="stage"></div>
 
 <template id="tpl">
-<div style="min-width: 1280px; min-height: 100vh; background: #F3F5FE; color: #0F1E33; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; position: relative">
+<div style="min-width: 1280px; min-height: 100vh; box-sizing: border-box; background: #0B1626; color: #FFFFFF; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column">
 
-<!-- HEADER -->
-<header style="height: 64px; flex: 0 0 64px; background: #FFFFFF; border-bottom: 1px solid #E3E8F0; display: flex; align-items: center; gap: 16px; padding: 0 24px; position: sticky; top: 0; z-index: 5">
-<span style="width: 36px; height: 36px; border-radius: 10px; background: #0F1E33; color: #F5B547; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 14px">AI</span>
-<div style="display: flex; flex-direction: column; line-height: 1.15"><span style="font-size: 11px; font-weight: 700; color: #796CBF; letter-spacing: 1px">OHSUNG STEEL</span><b style="font-size: 18px">레벨러 품질 Admin</b></div>
-<nav style="display: flex; gap: 2px; margin-left: 24px; height: 64px">
-<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="4">
-<button type="button" onClick="{{tb.pick}}" style="height: 64px; padding: 0 18px; border: 0; border-bottom: 3px solid {{tb.line}}; background: transparent; color: {{tb.fg}}; font-size: 15px; font-weight: 700">{{tb.label}}</button>
-</sc-for>
+<!-- TOP BAR -->
+<div style="height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 12px; padding: 0 18px; background: #0F1E33; border-bottom: 1px solid #1E3352">
+<span style="width: 34px; height: 34px; border-radius: 10px; background: #F5B547; color: #0B1626; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 14px">AI</span>
+<b style="font-size: 18px; white-space: nowrap">레벨러 품질 Admin</b>
+<nav style="display: flex; gap: 4px; margin-left: 10px">
+<sc-for list="{{tabs}}" as="tb" hint-placeholder-count="4"><button type="button" onClick="{{tb.pick}}" style="height: 38px; padding: 0 14px; border-radius: 999px; border: 0; font-size: 14px; font-weight: 700; color: {{tb.fg}}; background: {{tb.bg}}">{{tb.label}}</button></sc-for>
 </nav>
-<div style="margin-left: auto; display: flex; align-items: center; gap: 10px">
-<span style="height: 38px; border: 1px solid #E3E8F0; border-radius: 10px; padding: 0 14px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700">📅 2026-11-02 (월)</span>
-<span style="font-size: 12px; color: #7D8BA1">화면 설계용 샘플 데이터</span>
+<span style="margin-left: auto; font-size: 11px; color: #5B6B82">화면 설계용 샘플 데이터</span>
 </div>
-</header>
 
-<div style="flex: 1 1 auto; display: flex; align-items: flex-start">
+<div style="flex: 1 1 auto; display: flex; align-items: stretch">
 
-<!-- SIDEBAR -->
-<aside style="flex: 0 0 300px; align-self: stretch; background: #FFFFFF; border-right: 1px solid #E3E8F0; padding: 18px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
-<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 16px">코일</b><span style="font-size: 13px; color: #7D8BA1">오늘 {{coilCount}}개</span></div>
-<div style="height: 40px; border-radius: 10px; border: 1px solid #E3E8F0; background: #F8F9FC; display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: #98A2B3">🔍 코일번호 · 업체</div>
+<!-- LEFT: COIL LIST -->
+<div style="flex: 0 0 280px; background: #0F1E33; border-right: 1px solid #1E3352; padding: 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 17px">① 코일 고르기</b><span style="font-size: 13px; color: #8FA3BF">11/02 (월)</span></div>
 <sc-for list="{{coils}}" as="c" hint-placeholder-count="4">
-<button type="button" onClick="{{c.pick}}" style="background: {{c.bg}}; border: 1.5px solid {{c.bd}}; border-radius: 12px; padding: 12px 14px; color: #0F1E33; text-align: left; display: flex; flex-direction: column; gap: 5px">
-<span style="display: flex; justify-content: space-between; width: 100%; font-size: 12px; color: #7D8BA1"><span>{{c.cust}} · {{c.time}}</span><span style="font-weight: 700; color: {{c.stC}}">{{c.st}}</span></span>
-<b style="font-size: 18px; font-family: 'IBM Plex Mono', monospace">{{c.id}}</b>
-<span style="font-size: 13px; color: #5C6478">{{c.spec}} · {{c.kg}}</span>
+<button type="button" onClick="{{c.pick}}" style="background: {{c.bg}}; border: 2px solid {{c.bd}}; border-radius: 14px; padding: 12px 14px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; width: 100%; font-size: 13px"><span style="color: #8FA3BF">{{c.cust}} · {{c.time}}</span><span style="font-weight: 700; color: {{c.stC}}">{{c.st}}</span></span>
+<b style="font-size: 20px; font-family: 'IBM Plex Mono', monospace">{{c.id}}</b>
+<span style="font-size: 14px; color: #C9D3E0">{{c.spec}}</span>
+<div style="display: flex; height: 8px; border-radius: 4px; overflow: hidden; gap: 1px; background: #0B1626">
+<sc-for list="{{c.mini}}" as="mn" hint-placeholder-count="4"><span style="flex: {{mn.f}} 1 0; background: {{mn.c}}"></span></sc-for>
+</div>
 <span style="display: flex; gap: 6px; flex-wrap: wrap">
-<span style="font-size: 12px; font-weight: 700; color: {{c.vFg}}; background: {{c.vBg}}; border-radius: 999px; padding: 2px 10px">{{c.vLabel}}</span>
-<span style="font-size: 12px; color: #B54708; background: #FFFAEB; border-radius: 999px; padding: 2px 10px">평탄 {{c.nf}}</span>
-<span style="font-size: 12px; color: #6941C6; background: #F4F3FF; border-radius: 999px; padding: 2px 10px">표면 {{c.ns}}</span>
+<span style="font-size: 13px; font-weight: 900; color: #0B1626; background: {{c.vC}}; border-radius: 999px; padding: 2px 10px">{{c.vLabel}}</span>
+<span style="font-size: 13px; color: #FEC84B; background: #2E2410; border-radius: 999px; padding: 2px 10px">평탄 {{c.nf}}</span>
+<span style="font-size: 13px; color: #D6BBFB; background: #251A3D; border-radius: 999px; padding: 2px 10px">표면 {{c.ns}}</span>
 </span>
 </button>
 </sc-for>
-</aside>
-
-<main style="flex: 1 1 auto; min-width: 0; padding: 20px 24px 40px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
-
-<!-- COIL HEADER -->
-<section style="background: #FFFFFF; border: 1px solid #E3E8F0; border-radius: 16px; padding: 16px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
-<div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 320px; min-width: 0">
-<span style="font-size: 13px; color: #7D8BA1">{{cur.cust}} · {{cur.time}} · <span style="font-weight: 700; color: {{cur.stC}}">{{cur.st}}</span></span>
-<b style="font-size: 28px; font-family: 'IBM Plex Mono', monospace; line-height: 1.1">{{cur.id}}</b>
-<span style="font-size: 15px; color: #5C6478">{{cur.spec}} · {{cur.kg}} · 절단 {{cur.cut}} · {{cur.len}} m · 박스 {{cur.nBox}}개</span>
 </div>
-<div style="display: flex; gap: 8px; flex-wrap: wrap">
-<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
-<div style="min-width: 118px; border: 1px solid #E3E8F0; border-top: 4px solid {{k.c}}; border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #7D8BA1">{{k.k}}</span><b style="font-size: 22px; color: {{k.c}}; white-space: nowrap">{{k.v}}</b><span style="font-size: 12px; color: #5C6478; white-space: nowrap">{{k.s}}</span></div>
+
+<!-- MAIN -->
+<div style="flex: 1 1 auto; min-width: 0; padding: 14px 16px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px">
+
+<!-- title strip -->
+<div style="display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap">
+<span style="font-size: 13px; color: #F5B547; font-weight: 700">② 코일 상태</span>
+<b style="font-size: 28px; font-family: 'IBM Plex Mono', monospace">{{cur.id}}</b>
+<span style="font-size: 16px; color: #C9D3E0">{{cur.cust}} · {{cur.spec}} · {{cur.kg}} · 절단 {{cur.cut}} · {{cur.len}} m · 박스 {{cur.nBox}}개</span>
+<span style="margin-left: auto; font-size: 15px; font-weight: 700; color: {{cur.stC}}">{{cur.st}} · {{cur.time}}</span>
+</div>
+
+<!-- SCOPE -->
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; background: #0F1E33; border: 1px solid #1E3352; border-radius: 14px; padding: 8px 10px">
+<b style="font-size: 14px; color: #C9D3E0; margin: 0 6px">보는 범위</b>
+<sc-for list="{{scopes}}" as="sp" hint-placeholder-count="5"><button type="button" onClick="{{sp.pick}}" style="{{sp.style}}"><b style="font-size: 15px">{{sp.label}}</b><span style="font-size: 12px; opacity: 0.85">{{sp.sub}}</span><span style="font-size: 11px; font-weight: 900; color: #0B1626; background: {{sp.vC}}; border-radius: 999px; padding: 1px 8px">{{sp.v}}</span></button></sc-for>
+</div>
+
+<sc-if value="{{isView}}" hint-placeholder-val="{{ true }}">
+<!-- KPI VISUALS -->
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px">
+
+<!-- 1. ship ring -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 16px; border-top: 4px solid {{kV.c}}">
+<div style="position: relative; width: 112px; height: 112px; flex: 0 0 112px">
+<svg viewBox="0 0 120 120" style="width: 112px; height: 112px" role="img" aria-label="출하율 {{ship.pct}}%">
+<circle cx="60" cy="60" r="48" fill="none" stroke="#1E3352" stroke-width="14"></circle>
+<circle cx="60" cy="60" r="48" fill="none" stroke="#4ADE80" stroke-width="14" stroke-dasharray="{{ship.dash}}" transform="rotate(-90 60 60)"></circle>
+<circle cx="60" cy="60" r="48" fill="none" stroke="#F04438" stroke-width="14" stroke-dasharray="{{ship.rmDash}}" stroke-dashoffset="{{ship.rmOff}}" transform="rotate(-90 60 60)"></circle>
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center"><b style="font-size: 24px; font-family: 'IBM Plex Mono', monospace">{{ship.pct}}%</b><span style="font-size: 11px; color: #8FA3BF">출하율</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<span style="font-size: 13px; color: #C9D3E0">종합 판정</span>
+<b style="font-size: 24px; line-height: 1.15; color: {{kV.c}}">{{kV.icon}} {{kV.label}}</b>
+<span style="font-size: 14px"><span style="color: #4ADE80">■</span> 출하 <b>{{ship.n}}</b>장</span>
+<span style="font-size: 14px"><span style="color: #F04438">■</span> 뺌 <b>{{ship.rm}}</b>장 <span style="color: #8FA3BF">/ 자른 {{ship.cut}}</span></span>
+</div>
+</div>
+
+<!-- 2. flatness gauge -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 14px; border-top: 4px solid {{kF.c}}">
+<div style="position: relative; width: 150px; flex: 0 0 150px">
+<svg viewBox="0 0 160 96" style="width: 150px; height: 90px" role="img" aria-label="평탄도 최대 {{kF.mm}} mm">
+<path d="M14 84 A66 66 0 0 1 146 84" fill="none" stroke="#1E3352" stroke-width="14"></path>
+<sc-for list="{{kF.bands}}" as="bd" hint-placeholder-count="3"><path d="M14 84 A66 66 0 0 1 146 84" fill="none" stroke="{{bd.c}}" stroke-width="14" stroke-dasharray="{{bd.dash}}" stroke-dashoffset="{{bd.off}}"></path></sc-for>
+<line x1="80" y1="84" x2="{{kF.nx}}" y2="{{kF.ny}}" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"></line>
+<circle cx="80" cy="84" r="6" fill="#FFFFFF"></circle>
+</svg>
+<div style="display: flex; justify-content: space-between; font-size: 10px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace; margin-top: -4px"><span>0</span><span>0.7</span><span>1.5</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span style="font-size: 13px; color: #C9D3E0">평탄도 최대 (CAM2)</span>
+<b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; color: {{kF.c}}; white-space: nowrap">{{kF.mm}}<span style="font-size: 14px"> mm</span></b>
+<span style="font-size: 13px; color: #C9D3E0; white-space: nowrap">기준 0.70 · 넘은 장 <b style="color: #FFFFFF">{{kF.n}}</b></span>
+<span style="font-size: 13px; color: #C9D3E0">평균 <b style="color: #FFFFFF">{{kF.avg}} mm</b></span>
+</div>
+</div>
+
+<!-- 3. grade distribution -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; justify-content: center; gap: 10px; border-top: 4px solid #A6F4C5">
+<span style="font-size: 13px; color: #C9D3E0">장별 평탄도 등급 — {{gradeTotal}}장</span>
+<div style="display: flex; height: 34px; gap: 2px; border-radius: 6px; overflow: hidden">
+<sc-for list="{{gradeBar}}" as="g" hint-placeholder-count="4"><div style="flex: {{g.f}} 1 0; min-width: {{g.minw}}; background: {{g.c}}; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; color: #0B1626">{{g.inLabel}}</div></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{gradeBar}}" as="g" hint-placeholder-count="4"><span style="display: flex; flex-direction: column; line-height: 1.2; white-space: nowrap"><span style="font-size: 12px; color: #C9D3E0"><span style="color: {{g.c}}">■</span> {{g.k}} {{g.short}}</span><b style="font-size: 18px; font-family: 'IBM Plex Mono', monospace">{{g.n}}<span style="font-size: 11px; color: #8FA3BF"> {{g.pct}}%</span></b></span></sc-for>
+</div>
+</div>
+
+<!-- 4. action donut -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; align-items: center; gap: 16px; border-top: 4px solid {{act.c}}">
+<div style="position: relative; width: 112px; height: 112px; flex: 0 0 112px">
+<svg viewBox="0 0 120 120" style="width: 112px; height: 112px" role="img" aria-label="결함 처리 현황">
+<circle cx="60" cy="60" r="48" fill="none" stroke="#1E3352" stroke-width="14"></circle>
+<sc-for list="{{act.segs}}" as="sg" hint-placeholder-count="3"><circle cx="60" cy="60" r="48" fill="none" stroke="{{sg.c}}" stroke-width="14" stroke-dasharray="{{sg.dash}}" stroke-dashoffset="{{sg.off}}" transform="rotate(-90 60 60)"></circle></sc-for>
+</svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center"><b style="font-size: 26px; font-family: 'IBM Plex Mono', monospace">{{act.total}}</b><span style="font-size: 11px; color: #8FA3BF">결함</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 5px">
+<span style="font-size: 13px; color: #C9D3E0">현장 조치</span>
+<sc-for list="{{act.segs}}" as="sg" hint-placeholder-count="3"><span style="font-size: 15px"><span style="color: {{sg.c}}">■</span> {{sg.label}} <b style="font-family: 'IBM Plex Mono', monospace">{{sg.n}}</b></span></sc-for>
+</div>
+</div>
+</div>
+
+<!-- AI -->
+<div style="background: #1A2E1F; border: 1px solid #2E6B3F; border-radius: 12px; padding: 10px 14px; display: flex; gap: 12px; align-items: center"><b style="font-size: 15px; color: #A6F4C5; white-space: nowrap">AI 요약</b><span style="font-size: 15px; line-height: 1.5; color: #D1FADF">{{cur.ai}}</span></div>
+
+<!-- BIG: ALONG THE COIL -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+<b style="font-size: 18px"><span style="color: #F5B547">③</span> {{bigTitle}}</b>
+<span style="font-size: 13px; color: #8FA3BF">막대 하나 = 판 한 장 · 높이 = 출렁 높이 · 색 = 등급</span>
+<span style="margin-left: auto; display: flex; gap: 12px; font-size: 13px; color: #C9D3E0"><sc-for list="{{gradeBar}}" as="g" hint-placeholder-count="4"><span><span style="color: {{g.c}}">■</span> {{g.label}}</span></sc-for><span><span style="display: inline-block; width: 16px; border-top: 2px dashed #F04438; vertical-align: middle"></span> 기준 0.70</span></span>
+</div>
+<!-- box header -->
+<sc-if value="{{isCoil}}" hint-placeholder-val="{{ true }}"><div style="display: flex; margin-left: 56px; gap: 0">
+<sc-for list="{{boxHead}}" as="bh" hint-placeholder-count="4"><div style="flex: {{bh.f}} 1 0; min-width: 0; border-left: 2px solid #3A5375; padding: 2px 8px; display: flex; gap: 8px; align-items: baseline; white-space: nowrap; overflow: hidden"><b style="font-size: 14px">박스 {{bh.n}}</b><span style="font-size: 12px; color: #8FA3BF">{{bh.sub}}</span><span style="font-size: 12px; font-weight: 700; color: {{bh.vC}}">{{bh.v}}</span></div></sc-for>
+</div></sc-if>
+<!-- flatness bars -->
+<div style="display: flex; gap: 8px">
+<div style="width: 48px; flex: 0 0 48px; position: relative; height: 240px; font-size: 11px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace; text-align: right">
+<sc-for list="{{yTicks}}" as="yt" hint-placeholder-count="4"><span style="position: absolute; right: 0; top: {{yt.top}}%; transform: translateY(-50%)">{{yt.label}}</span></sc-for>
+</div>
+<div style="position: relative; flex: 1 1 auto; height: 240px; background: #0F1E33; border-radius: 6px">
+<svg viewBox="0 0 1000 240" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" role="img" aria-label="장별 평탄도 막대 그래프">
+<sc-for list="{{yTicks}}" as="yt" hint-placeholder-count="4"><line x1="0" y1="{{yt.y}}" x2="1000" y2="{{yt.y}}" stroke="#1E3352" stroke-width="1" vector-effect="non-scaling-stroke"></line></sc-for>
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="40"><rect x="{{b.x}}" y="{{b.y}}" width="{{b.w}}" height="{{b.h}}" fill="{{b.c}}"></rect></sc-for>
+<line x1="0" y1="{{limitY}}" x2="1000" y2="{{limitY}}" stroke="#F04438" stroke-width="2" stroke-dasharray="8 5" vector-effect="non-scaling-stroke"></line>
+<sc-for list="{{boxLinesX}}" as="bl" hint-placeholder-count="3"><line x1="{{bl.x}}" y1="0" x2="{{bl.x}}" y2="240" stroke="#5B6B82" stroke-width="2" vector-effect="non-scaling-stroke"></line></sc-for>
+</svg>
+<sc-for list="{{flatCallouts}}" as="fc" hint-placeholder-count="2">
+<div style="position: absolute; left: {{fc.x}}%; top: {{fc.top}}%; transform: translate(-50%, -100%); display: flex; flex-direction: column; align-items: center; pointer-events: none">
+<span style="font-size: 12px; font-weight: 900; background: #F04438; color: #FFFFFF; border-radius: 6px; padding: 2px 7px; white-space: nowrap">{{fc.label}}</span>
+<span style="width: 2px; height: 8px; background: #F04438"></span>
+</div>
 </sc-for>
+<span style="position: absolute; left: 6px; top: {{limitPct}}%; transform: translateY(-120%); font-size: 11px; font-weight: 700; color: #FDA29B">기준 0.70 mm</span>
 </div>
-</section>
+</div>
+<!-- surface lane -->
+<div style="display: flex; gap: 8px; margin-top: 6px">
+<div style="width: 48px; flex: 0 0 48px; font-size: 11px; color: #D6BBFB; text-align: right; line-height: 1.3; padding-top: 18px">표면<br>(폭)</div>
+<div style="position: relative; flex: 1 1 auto; height: 76px; background: #C9D1DC; border-radius: 6px">
+<sc-for list="{{boxLinesPct}}" as="bl" hint-placeholder-count="3"><span style="position: absolute; left: {{bl.pct}}%; top: 0; bottom: 0; border-left: 2px solid #98A2B3"></span></sc-for>
+<sc-if value="{{repeatOn}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 0; right: 0; top: 63%; border-top: 2px dashed #7F56D9"></span><span style="position: absolute; right: 8px; top: 63%; transform: translateY(-120%); font-size: 12px; font-weight: 900; color: #53389E">같은 자리 반복 ×6 — 롤 이물 의심</span></sc-if>
+<sc-for list="{{surfDots}}" as="sd" hint-placeholder-count="2"><span style="position: absolute; left: {{sd.x}}%; top: {{sd.y}}%; transform: translate(-50%, -50%) rotate(45deg); width: 16px; height: 16px; background: #7F56D9; border: 3px solid #FFFFFF; box-sizing: border-box"></span></sc-for>
+<sc-if value="{{noSurf}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; color: #475467; font-weight: 700">표면 결함 없음</span></sc-if>
+</div>
+</div>
+<!-- action lane -->
+<div style="display: flex; gap: 8px">
+<div style="width: 48px; flex: 0 0 48px; font-size: 11px; color: #8FA3BF; text-align: right; padding-top: 6px">조치</div>
+<div style="position: relative; flex: 1 1 auto; height: 30px; border-bottom: 1px solid #3A5375">
+<sc-for list="{{actMarks}}" as="am" hint-placeholder-count="3"><span style="position: absolute; left: {{am.x}}%; top: 2px; transform: translateX(-50%); font-size: 12px; font-weight: 900; color: #0B1626; background: {{am.c}}; border-radius: 6px; padding: 2px 6px; white-space: nowrap">{{am.label}}</span></sc-for>
+</div>
+</div>
+<!-- x axis -->
+<div style="display: flex; gap: 8px">
+<div style="width: 48px; flex: 0 0 48px"></div>
+<div style="position: relative; flex: 1 1 auto; height: 30px; font-size: 11px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace">
+<sc-for list="{{xTicks}}" as="xt" hint-placeholder-count="6"><span style="position: absolute; left: {{xt.pct}}%; transform: translateX({{xt.tx}}); text-align: {{xt.al}}; line-height: 1.3; white-space: nowrap">{{xt.m}}<br><span style="color: #5B6B82">{{xt.t}}</span></span></sc-for>
+</div>
+</div>
+</div>
 
-<!-- ============ PAGE: 품질 보기 ============ -->
-<sc-if value="{{isView}}" hint-placeholder-val="{{ false }}">
-<section style="background: #ECFDF3; border: 1px solid #ABEFC6; border-radius: 14px; padding: 12px 18px; display: flex; gap: 14px; align-items: center"><b style="color: #067647; white-space: nowrap">AI 요약</b><span style="font-size: 15px; line-height: 1.55; color: #054F31">{{cur.ai}}</span></section>
-<section style="background: #FFFFFF; border: 1px solid #E3E8F0; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
-<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap"><b style="font-size: 18px">평탄도 — 판이 얼마나 출렁이나</b><span style="font-size: 13px; color: #7D8BA1">한 칸 = 한 장 · 빨간 칸을 누르면 그 불량 이미지로 이동</span>
-<span style="margin-left: auto; display: flex; gap: 14px; flex-wrap: wrap">
-<sc-for list="{{grades}}" as="gr" hint-placeholder-count="4"><span style="display: flex; align-items: center; gap: 6px; font-size: 13px"><svg viewBox="0 0 80 28" style="width: 44px; height: 18px" role="img" aria-label="{{gr.label}}"><line x1="2" y1="25" x2="78" y2="25" stroke="#D0D5DD" stroke-width="2"></line><path d="{{gr.path}}" fill="none" stroke="{{gr.c}}" stroke-width="4" stroke-linecap="round"></path></svg><b style="color: {{gr.tc}}">{{gr.label}}</b><span style="color: #7D8BA1">{{gr.desc}}</span></span></sc-for>
-</span></div>
+<!-- ROW: 3 charts -->
+<div style="display: grid; grid-template-columns: 1.25fr 1fr 0.9fr; gap: 12px">
+
+<!-- box comparison -->
+<sc-if value="{{isCoil}}" hint-placeholder-val="{{ true }}"><div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 16px"><span style="color: #F5B547">④</span> 박스별 품질 <span style="font-size: 12px; color: #8FA3BF; font-weight: 400">· 줄을 누르면 그 박스로</span></b>
+<div style="display: grid; grid-template-columns: 54px 1fr 54px 54px 60px; gap: 10px; font-size: 12px; color: #8FA3BF"><span></span><span>장별 등급 (A → D)</span><span style="text-align: right">평탄</span><span style="text-align: right">표면</span><span style="text-align: right">출하</span></div>
 <sc-for list="{{boxRows}}" as="r" hint-placeholder-count="4">
-<div style="display: grid; grid-template-columns: 90px 1fr 110px; gap: 14px; align-items: center">
-<span style="display: flex; flex-direction: column; line-height: 1.25"><b style="font-size: 16px">박스 {{r.n}}</b><span style="font-size: 12px; color: #7D8BA1; font-family: 'IBM Plex Mono', monospace">{{r.sheets}}</span></span>
-<div style="display: flex; gap: 2px; height: 34px">
-<sc-for list="{{r.cells}}" as="ce" hint-placeholder-count="30">
-<sc-if value="{{ce.isD}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{ce.open}}" aria-label="{{ce.label}}" style="flex: 1 1 0; min-width: 0; padding: 0; border-radius: 3px; background: #F04438; border: 2px solid #0F1E33; box-sizing: border-box"></button></sc-if>
-<sc-if value="{{ce.isN}}" hint-placeholder-val="{{ true }}"><span style="flex: 1 1 0; min-width: 0; border-radius: 3px; background: {{ce.c}}"></span></sc-if>
+<button type="button" onClick="{{r.pick}}" style="display: grid; grid-template-columns: 54px 1fr 54px 54px 60px; gap: 10px; align-items: center; background: transparent; border: 0; padding: 2px 0; color: #FFFFFF; text-align: left">
+<b style="font-size: 15px">박스 {{r.n}}</b>
+<div style="display: flex; height: 26px; gap: 2px; border-radius: 4px; overflow: hidden; background: #0F1E33">
+<sc-for list="{{r.segs}}" as="s" hint-placeholder-count="4"><div style="flex: {{s.f}} 1 0; min-width: 0; background: {{s.c}}; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0B1626">{{s.label}}</div></sc-for>
+</div>
+<b style="text-align: right; font-size: 16px; color: {{r.fC}}">{{r.nf}}</b>
+<b style="text-align: right; font-size: 16px; color: {{r.sC}}">{{r.ns}}</b>
+<b style="text-align: right; font-size: 16px; font-family: 'IBM Plex Mono', monospace">{{r.ship}}</b>
+</button>
+</sc-for>
+<span style="font-size: 12px; color: #8FA3BF">{{boxInsight}}</span>
+</div></sc-if>
+<sc-if value="{{isBox}}" hint-placeholder-val="{{ false }}"><div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 16px"><span style="color: #F5B547">④</span> 이 박스의 불량 장</b>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{boxDefs}}" as="bd" hint-placeholder-count="2">
+<div style="background: #0F1E33; border-radius: 10px; overflow: hidden; display: flex; flex-direction: column">
+<div style="position: relative; height: 92px"><img src="{{bd.img}}" alt="{{bd.sub}}" style="width: 100%; height: 100%; object-fit: cover; object-position: {{bd.op}}; display: block"><span style="position: absolute; left: 6px; top: 6px; font-size: 11px; font-weight: 900; color: #0B1626; background: {{bd.tC}}; border-radius: 6px; padding: 1px 6px">{{bd.tLabel}}</span><span style="position: absolute; right: 6px; bottom: 6px; font-size: 12px; font-weight: 900; color: #0B1626; background: {{bd.aC}}; border-radius: 6px; padding: 1px 6px">{{bd.act}}</span></div>
+<div style="padding: 6px 8px; display: flex; flex-direction: column; gap: 1px"><b style="font-size: 14px">{{bd.sub}} <span style="font-family: 'IBM Plex Mono', monospace; color: #FDA29B; font-size: 13px">{{bd.val}}</span></b><span style="font-size: 12px; color: #C9D3E0">{{bd.sheet}}번째 장 · {{bd.where}}</span></div>
+</div>
 </sc-for>
 </div>
-<span style="font-size: 13px; color: #5C6478">불량 <b style="color: {{r.fC}}">{{r.nf}}</b> · 표면 <b style="color: {{r.sC}}">{{r.ns}}</b></span>
+<sc-if value="{{noBoxDefs}}" hint-placeholder-val="{{ false }}"><div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #A6F4C5; padding: 30px 0"><b style="font-size: 36px">✓</b><span style="font-size: 15px; font-weight: 700">이 박스는 불량 없음</span></div></sc-if>
+</div></sc-if>
+
+<!-- histogram -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; gap: 10px"><b style="font-size: 16px"><span style="color: #F5B547">⑤</span> 평탄도 분포</b><span style="font-size: 12px; color: #8FA3BF">몇 장이 어느 높이인가 (0.05 mm 간격)</span></div>
+<div style="position: relative; height: 170px; margin-top: 8px">
+<svg viewBox="0 0 520 170" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" role="img" aria-label="평탄도 분포 히스토그램">
+<sc-for list="{{hist.bars}}" as="hb" hint-placeholder-count="20"><rect x="{{hb.x}}" y="{{hb.y}}" width="{{hb.w}}" height="{{hb.h}}" rx="2" fill="{{hb.c}}"></rect></sc-for>
+<line x1="{{hist.limitX}}" y1="0" x2="{{hist.limitX}}" y2="170" stroke="#F04438" stroke-width="2" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"></line>
+<line x1="0" y1="169" x2="520" y2="169" stroke="#3A5375" stroke-width="2" vector-effect="non-scaling-stroke"></line>
+</svg>
+<span style="position: absolute; left: 0; top: -6px; font-size: 12px; font-weight: 700; white-space: nowrap; color: #C9D3E0">가장 많음 <b style="color: #FFFFFF">{{hist.peakLabel}}</b></span>
+<span style="position: absolute; left: {{hist.limitPct}}%; top: 22px; transform: translateX(6px); font-size: 11px; font-weight: 700; color: #FDA29B; white-space: nowrap">기준 0.70 →<br>넘은 장 {{hist.over}}</span>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 11px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace"><span>0</span><span>0.35</span><span>0.70</span><span>1.05</span><span>1.40 mm</span></div>
+</div>
+
+<!-- defect types -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 16px"><span style="color: #F5B547">⑥</span> 결함 종류</b>
+<sc-for list="{{types}}" as="ty" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; align-items: baseline; gap: 8px"><span style="font-size: 11px; font-weight: 900; color: #0B1626; background: {{ty.tC}}; border-radius: 6px; padding: 1px 6px">{{ty.cam}}</span><b style="font-size: 15px">{{ty.name}}</b><b style="margin-left: auto; font-size: 18px; font-family: 'IBM Plex Mono', monospace">{{ty.n}}</b></div>
+<div style="display: flex; height: 16px; gap: 2px; border-radius: 4px; overflow: hidden; background: #0F1E33; width: {{ty.w}}%">
+<sc-for list="{{ty.segs}}" as="s" hint-placeholder-count="3"><div style="flex: {{s.f}} 1 0; background: {{s.c}}"></div></sc-for>
+</div>
 </div>
 </sc-for>
-<span style="font-size: 12px; color: #98A2B3">※ 높이(mm)는 AI 평탄도 값(예: 1,209)을 환산한 예시 — 실제 단위는 카메라 값 확인 후 확정.</span>
-</section>
-<section style="background: #FFFFFF; border: 1px solid #E3E8F0; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
-<div style="display: flex; align-items: baseline; gap: 12px"><b style="font-size: 18px">표면 결함 — 코일 길이 따라</b><span style="font-size: 13px; color: #7D8BA1">위에서 본 판 · 위아래 = 폭 방향 · ◆를 누르면 그 불량 이미지로 이동</span></div>
-<div style="position: relative; height: 120px; background: #E4E7EC; border-radius: 6px">
-<sc-for list="{{boxLines}}" as="bl" hint-placeholder-count="3"><span style="position: absolute; left: {{bl.pct}}%; top: 0; bottom: 0; border-left: 1px dashed #98A2B3"></span></sc-for>
-<sc-if value="{{repeatOn}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; left: 0; right: 0; top: 63%; border-top: 2px dashed #7F56D9; opacity: 0.6"></span><span style="position: absolute; right: 10px; top: 63%; transform: translateY(-130%); font-size: 12px; font-weight: 700; color: #53389E">같은 자리 반복 — 롤 이물 의심</span></sc-if>
-<sc-for list="{{surfDots}}" as="sd" hint-placeholder-count="2"><button type="button" onClick="{{sd.open}}" aria-label="{{sd.label}}" style="position: absolute; left: {{sd.x}}%; top: {{sd.y}}%; transform: translate(-50%, -50%) rotate(45deg); width: 18px; height: 18px; background: #7F56D9; border: 3px solid #FFFFFF; box-sizing: border-box; padding: 0"></button></sc-for>
+<sc-if value="{{noTypes}}" hint-placeholder-val="{{ false }}"><div style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; color: #A6F4C5; font-size: 16px; font-weight: 700">✓ 결함 없음</div></sc-if>
+<span style="margin-top: auto; font-size: 12px; color: #8FA3BF"><span style="color: #F5B547">■</span> 뺌 <span style="color: #4ADE80">■</span> 확인 후 포함 <span style="color: #F04438">■</span> 미처리</span>
 </div>
-<div style="position: relative; height: 16px; font-size: 12px; color: #7D8BA1; font-family: 'IBM Plex Mono', monospace"><span style="position: absolute; left: 0">0 m</span><sc-for list="{{boxLabels}}" as="bb" hint-placeholder-count="4"><span style="position: absolute; left: {{bb.pct}}%; transform: translateX(-50%); color: #344054">박스 {{bb.n}}</span></sc-for><span style="position: absolute; right: 0">{{cur.len}} m</span></div>
-</section>
+</div>
+
+<!-- TODAY COMPARISON -->
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: baseline; gap: 10px"><b style="font-size: 16px"><span style="color: #F5B547">⑦</span> {{cmpTitle}}</b><span style="font-size: 12px; color: #8FA3BF">{{cmpSub}}</span></div>
+<div style="display: grid; grid-template-columns: 170px 1fr 1fr 110px; gap: 16px; font-size: 12px; color: #8FA3BF"><span>{{cmpCol}}</span><span>결함 장 비율 (%)</span><span>평탄도 최대 (mm) · 빨간 선 = 기준 0.70</span><span>판정</span></div>
+<sc-for list="{{compare}}" as="cp" hint-placeholder-count="4">
+<button type="button" onClick="{{cp.pick}}" style="display: grid; grid-template-columns: 170px 1fr 1fr 110px; gap: 16px; align-items: center; background: {{cp.bg}}; border: 2px solid {{cp.bd}}; border-radius: 10px; padding: 8px 10px; color: #FFFFFF; text-align: left">
+<span style="display: flex; flex-direction: column; line-height: 1.2"><b style="font-size: 15px; font-family: 'IBM Plex Mono', monospace">{{cp.id}}</b><span style="font-size: 12px; color: #8FA3BF">{{cp.cust}}</span></span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1 1 auto; height: 16px; background: #0F1E33; border-radius: 4px; overflow: hidden"><span style="display: block; height: 16px; width: {{cp.rateW}}%; background: #9E77ED; border-radius: 0 4px 4px 0"></span></span><b style="font-size: 14px; font-family: 'IBM Plex Mono', monospace; width: 52px; text-align: right">{{cp.rate}}</b></span>
+<span style="display: flex; align-items: center; gap: 8px"><span style="flex: 1 1 auto; height: 16px; background: #0F1E33; border-radius: 4px; position: relative"><span style="display: block; height: 16px; width: {{cp.maxW}}%; background: {{cp.maxC}}; border-radius: 0 4px 4px 0"></span><span style="position: absolute; left: {{cp.limW}}%; top: -3px; bottom: -3px; border-left: 2px solid #F04438"></span></span><b style="font-size: 14px; font-family: 'IBM Plex Mono', monospace; width: 52px; text-align: right">{{cp.max}}</b></span>
+<span style="font-size: 13px; font-weight: 900; color: #0B1626; background: {{cp.vC}}; border-radius: 999px; padding: 3px 10px; justify-self: start">{{cp.v}}</span>
+</button>
+</sc-for>
+</div>
 </sc-if>
 
-<!-- ============ PAGE: 불량 이미지 ============ -->
-<sc-if value="{{isImg}}" hint-placeholder-val="{{ true }}">
-<section style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
-<b style="font-size: 20px">불량 이미지</b><span style="font-size: 14px; color: #7D8BA1">불량 하나마다 원본 · 확대 · 비교 3장</span>
-<span style="display: flex; gap: 6px; margin-left: 12px"><sc-for list="{{imgBoxOpts}}" as="o" hint-placeholder-count="4"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
-<span style="display: flex; gap: 6px"><sc-for list="{{imgTypeOpts}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
-<button type="button" onClick="{{toggleOver}}" style="{{overStyle}}">{{overLabel}}</button>
-<button type="button" onClick="{{zipAllImg}}" style="margin-left: auto; height: 42px; padding: 0 18px; border-radius: 10px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 14px; font-weight: 700">⬇ 보이는 불량 사진 전체 받기 ({{imgFileCount}}장 · ZIP)</button>
-</section>
-<section style="display: grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 16px">
-<sc-for list="{{defCards}}" as="d" hint-placeholder-count="4">
-<article style="background: #FFFFFF; border: {{d.border}}; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
-<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
-<span style="font-size: 12px; font-weight: 700; color: {{d.tFg}}; background: {{d.tBg}}; border-radius: 6px; padding: 3px 8px">{{d.tLabel}}</span>
-<b style="font-size: 19px">{{d.sub}}</b>
-<span style="font-size: 13px; color: #7D8BA1">#{{d.no}}</span>
-<span style="margin-left: auto; font-size: 15px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #B42318">{{d.val}}</span>
-</div>
-<div style="display: flex; flex-wrap: wrap; gap: 8px; font-size: 13px">
-<span style="background: #F3F5FE; border-radius: 8px; padding: 4px 10px"><b>박스 {{d.box}}</b> · {{d.sheet}}번째 장</span>
-<span style="background: #F3F5FE; border-radius: 8px; padding: 4px 10px">코일 {{d.m}} m</span>
-<span style="background: #F3F5FE; border-radius: 8px; padding: 4px 10px">{{d.where}}</span>
-<span style="background: #F3F5FE; border-radius: 8px; padding: 4px 10px">{{d.time}}</span>
-<span style="margin-left: auto; font-weight: 700; color: {{d.aC}}">현장 {{d.act}}</span><span style="font-weight: 700; color: {{d.rC}}">· {{d.rev}}</span>
-</div>
-<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
-<figure style="margin: 0; display: flex; flex-direction: column; gap: 4px">
-<div style="position: relative; height: 150px; border-radius: 10px; overflow: hidden; background: #000000"><img src="{{d.img}}" alt="{{d.sub}} 원본" style="width: 100%; height: 100%; object-fit: cover; display: block"><span style="position: absolute; left: {{d.rx}}%; top: {{d.ry}}%; width: {{d.rw}}%; height: {{d.rh}}%; transform: translate(-50%, -50%); border: 3px solid #F04438; border-radius: 6px"></span></div>
-<figcaption style="font-size: 12px; color: #5C6478">① 원본 프레임</figcaption>
-</figure>
-<figure style="margin: 0; display: flex; flex-direction: column; gap: 4px">
-<div style="position: relative; height: 150px; border-radius: 10px; overflow: hidden; background: #000000"><img src="{{d.img}}" alt="{{d.sub}} 확대" style="width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(2.4); transform-origin: {{d.rx}}% {{d.ry}}%"><span style="position: absolute; right: 6px; top: 6px; font-size: 11px; font-weight: 700; color: #FFFFFF; background: rgba(0,0,0,0.6); border-radius: 4px; padding: 1px 6px">×2.4</span></div>
-<figcaption style="font-size: 12px; color: #5C6478">② 결함 확대</figcaption>
-</figure>
-<figure style="margin: 0; display: flex; flex-direction: column; gap: 4px">
-<sc-if value="{{d.isSurf}}" hint-placeholder-val="{{ true }}"><div style="position: relative; height: 150px; border-radius: 10px; overflow: hidden; background: #000000"><img src="{{d.img}}" alt="앞 장 같은 자리" style="width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(2.4); transform-origin: {{d.cx}}% {{d.ry}}%; filter: brightness(1.08)"><span style="position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 700; color: #FFFFFF; background: {{d.cmpBg}}; border-radius: 4px; padding: 1px 6px">{{d.cmpTag}}</span></div>
-<figcaption style="font-size: 12px; color: #5C6478">③ 앞 장 같은 자리 ({{d.prevSheet}}번째 장)</figcaption></sc-if>
-<sc-if value="{{d.isFlat}}" hint-placeholder-val="{{ false }}"><div style="height: 150px; border-radius: 10px; background: #F8F9FC; border: 1px solid #E3E8F0; box-sizing: border-box; padding: 8px; display: flex; flex-direction: column; gap: 4px; justify-content: center">
-<span style="font-size: 11px; color: #7D8BA1">옆에서 본 판</span>
-<sc-if value="{{d.isEdge}}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 300 54" style="width: 100%; height: 44px" role="img" aria-label="가장자리 출렁"><line x1="4" y1="48" x2="296" y2="48" stroke="#98A2B3" stroke-width="2"></line><path d="M8 40 Q22 14 36 40 T64 40 L236 40 Q250 14 264 40 T292 40" fill="none" stroke="#0F1E33" stroke-width="5" stroke-linecap="round"></path><line x1="22" y1="40" x2="22" y2="20" stroke="#F04438" stroke-width="3"></line></svg></sc-if>
-<sc-if value="{{d.isBuckle}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 300 54" style="width: 100%; height: 44px" role="img" aria-label="가운데 볼록"><line x1="4" y1="48" x2="296" y2="48" stroke="#98A2B3" stroke-width="2"></line><path d="M8 42 L100 42 Q150 10 200 42 L292 42" fill="none" stroke="#0F1E33" stroke-width="5" stroke-linecap="round"></path><line x1="150" y1="42" x2="150" y2="22" stroke="#F04438" stroke-width="3"></line></svg></sc-if>
-<span style="font-size: 12px; color: #B42318; font-weight: 700">{{d.val}} 뜸 · 기준 0.70 mm</span>
-<span style="font-size: 11px; color: #5C6478; line-height: 1.35">{{d.explain}}</span>
-</div>
-<figcaption style="font-size: 12px; color: #5C6478">③ 레이저 단면 (모양)</figcaption></sc-if>
-</figure>
-</div>
-<span style="font-size: 13px; line-height: 1.5; color: #344054; background: #F8F9FC; border-radius: 10px; padding: 8px 12px">AI · {{d.ai}}</span>
-<div style="display: flex; gap: 8px; flex-wrap: wrap">
-<button type="button" onClick="{{d.dl}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #0F1E33; background: #FFFFFF; color: #0F1E33; font-size: 14px; font-weight: 700">⬇ 이 불량 사진 3장</button>
-<button type="button" onClick="{{d.toVideo}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #E3E8F0; background: #FFFFFF; color: #796CBF; font-size: 14px; font-weight: 700">▶ 전체 영상에서 이 순간 보기</button>
-<span style="margin-left: auto; display: flex; gap: 6px"><sc-for list="{{d.revBtns}}" as="rb" hint-placeholder-count="3"><button type="button" onClick="{{rb.pick}}" style="{{rb.style}}">{{rb.label}}</button></sc-for></span>
-</div>
-</article>
-</sc-for>
-</section>
-<sc-if value="{{noDefs}}" hint-placeholder-val="{{ false }}"><section style="background: #FFFFFF; border: 1px solid #E3E8F0; border-radius: 16px; padding: 48px; text-align: center; color: #067647; font-size: 18px; font-weight: 700">✓ 조건에 맞는 불량이 없습니다</section></sc-if>
-</sc-if>
-
-<!-- ============ PAGE: 전체 영상 ============ -->
-<sc-if value="{{isVideo}}" hint-placeholder-val="{{ false }}">
-<section style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
-<b style="font-size: 20px">전체 영상</b><span style="font-size: 14px; color: #7D8BA1">코일 처음부터 끝까지 녹화 · 카메라 2대</span>
-<span style="display: flex; gap: 6px; margin-left: 12px"><sc-for list="{{camOpts}}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
-<button type="button" onClick="{{dlBoth}}" style="margin-left: auto; height: 42px; padding: 0 18px; border-radius: 10px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 14px; font-weight: 700">⬇ 두 카메라 전체 받기 ({{vid.bothSize}})</button>
-</section>
-<section style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(360px, 1fr); gap: 16px; align-items: start">
-<div style="background: #0B1626; border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
-<div style="position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #000000">
-<img src="{{vid.img}}" alt="{{vid.camName}} 녹화" style="width: 100%; height: 100%; object-fit: cover; display: block">
-<span style="position: absolute; left: 12px; top: 12px; font-size: 14px; font-family: 'IBM Plex Mono', monospace; color: #FFFFFF; background: rgba(0,0,0,0.65); border-radius: 6px; padding: 4px 10px">{{vid.camName}} · {{vid.clock}} · {{vid.where}}</span>
-<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 84px; height: 84px; border-radius: 50%; background: rgba(11,22,38,0.7); border: 3px solid #FFFFFF; color: #FFFFFF; font-size: 32px; display: flex; align-items: center; justify-content: center">▶</span>
-<sc-if value="{{vid.atDefect}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 12px; top: 12px; font-size: 14px; font-weight: 900; color: #FFFFFF; background: #F04438; border-radius: 6px; padding: 4px 10px">⚠ {{vid.defName}}</span></sc-if>
-</div>
-<div style="position: relative; height: 46px">
-<div style="position: absolute; left: 0; right: 0; top: 14px; height: 18px; display: flex; gap: 2px">
-<sc-for list="{{vid.segs}}" as="sg" hint-placeholder-count="4"><button type="button" onClick="{{sg.pick}}" style="flex: {{sg.f}} 1 0; height: 18px; padding: 0; border: 0; border-radius: 3px; background: {{sg.bg}}; color: #FFFFFF; font-size: 11px; font-weight: 700">{{sg.label}}</button></sc-for>
-</div>
-<sc-for list="{{vid.marks}}" as="mk" hint-placeholder-count="3"><button type="button" onClick="{{mk.pick}}" aria-label="{{mk.label}}" style="position: absolute; left: {{mk.x}}%; top: 4px; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%; padding: 0; border: 2px solid #FFFFFF; background: {{mk.c}}"></button></sc-for>
-<span style="position: absolute; left: {{vid.posPct}}%; top: 8px; width: 3px; height: 32px; background: #F5B547; transform: translateX(-50%); border-radius: 2px"></span>
-</div>
-<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace"><span>{{vid.start}}</span><span>● 표면 결함 · ● 평탄도 결함 — 점을 누르면 그 순간으로</span><span>{{vid.end}}</span></div>
-</div>
-<div style="background: #FFFFFF; border: 1px solid #E3E8F0; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
-<b style="font-size: 16px">영상 받기 — {{vid.camName}}</b>
-<div style="border: 2px solid #796CBF; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; background: #F4F3FF">
-<div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 16px">코일 전체 영상</b><span style="font-size: 13px; color: #5C6478">{{vid.start}} – {{vid.end}} · {{vid.dur}} · {{vid.size}} · MP4</span></div>
-<button type="button" onClick="{{dlFull}}" style="margin-left: auto; height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: #796CBF; color: #FFFFFF; font-size: 14px; font-weight: 700; white-space: nowrap">⬇ 전체 받기</button>
-</div>
-<span style="font-size: 13px; color: #7D8BA1">박스 구간으로 나눠 받기</span>
-<sc-for list="{{vid.rows}}" as="vr" hint-placeholder-count="4">
-<div style="display: flex; align-items: center; gap: 10px; border: 1px solid #E3E8F0; border-radius: 10px; padding: 8px 12px">
-<b style="font-size: 15px; width: 54px">박스 {{vr.n}}</b>
-<span style="font-size: 13px; color: #5C6478; font-family: 'IBM Plex Mono', monospace">{{vr.range}}</span>
-<span style="font-size: 12px; color: #7D8BA1">{{vr.size}}</span>
-<sc-if value="{{vr.hasDef}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; font-weight: 700; color: #B42318">불량 {{vr.nDef}}</span></sc-if>
-<button type="button" onClick="{{vr.dl}}" style="margin-left: auto; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #0F1E33; background: #FFFFFF; color: #0F1E33; font-size: 13px; font-weight: 700">⬇ 받기</button>
-</div>
-</sc-for>
-<span style="font-size: 12px; color: #98A2B3; line-height: 1.5">녹화 원본(recording_session · segment)을 코일 시작~끝 시각으로 이어 붙여 만듭니다. 보관 기간 90일(예정) — 고객 클레임 대비 필요 코일은 "보관 연장".</span>
-</div>
-</section>
-</sc-if>
-
-<!-- ============ PAGE: 품질 리포트 ============ -->
 <sc-if value="{{isReport}}" hint-placeholder-val="{{ false }}">
-<section style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
-<b style="font-size: 20px">품질 리포트</b>
-<span style="display: flex; background: #FFFFFF; border: 1px solid #E3E8F0; border-radius: 12px; padding: 4px; gap: 4px"><sc-for list="{{rptModes}}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
-<sc-if value="{{rpt.isBox}}" hint-placeholder-val="{{ true }}"><span style="display: flex; gap: 6px"><sc-for list="{{rpt.boxTabs}}" as="o" hint-placeholder-count="4"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span></sc-if>
-<span style="display: flex; gap: 6px; margin-left: auto"><sc-for list="{{langOpts}}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
-<button type="button" onClick="{{rptPdf}}" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 14px; font-weight: 700">⬇ PDF 받기</button>
-<button type="button" onClick="{{rptSend}}" style="height: 42px; padding: 0 16px; border-radius: 10px; border: 1.5px solid #796CBF; background: #FFFFFF; color: #796CBF; font-size: 14px; font-weight: 700">✉ 고객에게 보내기</button>
-</section>
-<div style="display: flex; justify-content: center">
-<div style="width: 794px; background: #FFFFFF; box-shadow: 0 6px 24px rgba(15,30,51,0.12); border: 1px solid #E3E8F0; padding: 34px 38px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
-<div style="display: flex; align-items: flex-end; gap: 12px; border-bottom: 3px solid #0F1E33; padding-bottom: 8px">
-<div style="display: flex; flex-direction: column"><b style="font-size: 12px; color: #796CBF; letter-spacing: 1px">{{rt.company}}</b><b style="font-size: 24px">{{rpt.title}}</b></div>
-<span style="margin-left: auto; font-size: 11px; color: #5C6478; text-align: right; font-family: 'IBM Plex Mono', monospace">{{rt.docNo}} {{rpt.docNo}}<br>{{rt.issued}} 2026-11-02</span>
+<div style="display: flex; gap: 14px; align-items: flex-start">
+
+<!-- PAPER PAGES -->
+<div style="flex: 1 1 auto; min-width: 0; background: #13243D; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<div style="align-self: stretch; display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<b style="font-size: 16px"><span style="color: #F5B547">③</span> 리포트 미리보기 — {{rp.kindLabel}}</b>
+<span style="font-size: 12px; color: #8FA3BF">A4 {{rp.pages}}장 · 위 "보는 범위"로 코일 전체 / 박스를 바꿉니다</span>
+<span style="margin-left: auto; display: flex; gap: 6px"><sc-for list="{{langOpts}}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
 </div>
+
+<!-- PAGE 1 -->
+<span style="align-self: flex-start; margin-left: calc(50% - 397px); font-size: 11px; color: #8FA3BF">1 / {{rp.pages}}</span>
+<div style="width: 794px; min-height: 1123px; background: #FFFFFF; color: #101828; box-shadow: 0 8px 30px rgba(0,0,0,0.45); padding: 34px 38px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #0F1E33; padding-bottom: 10px">
+<div style="display: flex; flex-direction: column"><b style="font-size: 12px; color: #796CBF; letter-spacing: 1px">{{rt.company}}</b><b style="font-size: 24px; color: #0F1E33">{{rp.title}}</b><span style="font-size: 12px; color: #5C6478; font-family: 'IBM Plex Mono', monospace">{{rt.docNo}} {{rp.docNo}} · {{rt.issued}} 2026-11-02</span></div>
+<div style="margin-left: auto; width: 64px; height: 64px; border: 2px solid #0F1E33; border-radius: 6px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 4px; box-sizing: border-box" aria-label="QR"><sc-for list="{{qr}}" as="q" hint-placeholder-count="25"><span style="background: {{q.c}}"></span></sc-for></div>
+<span style="font-size: 10px; color: #7D8BA1; width: 70px; line-height: 1.35">{{rt.qrNote}}</span>
+</div>
+
 <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid #E3E8F0; border-left: 1px solid #E3E8F0">
-<sc-for list="{{rpt.info}}" as="f" hint-placeholder-count="8"><div style="padding: 6px 10px; border-right: 1px solid #E3E8F0; border-bottom: 1px solid #E3E8F0"><span style="font-size: 10px; color: #7D8BA1">{{f.k}}</span><br><b style="font-size: 13px">{{f.v}}</b></div></sc-for>
+<sc-for list="{{rp.info}}" as="f" hint-placeholder-count="8"><div style="padding: 6px 10px; border-right: 1px solid #E3E8F0; border-bottom: 1px solid #E3E8F0"><span style="font-size: 10px; color: #7D8BA1">{{f.k}}</span><br><b style="font-size: 13px">{{f.v}}</b></div></sc-for>
 </div>
-<div style="display: flex; align-items: center; gap: 16px; background: {{rpt.vBg}}; border-radius: 8px; padding: 12px 16px">
-<span style="flex: 0 0 auto; border: 3px solid {{rpt.vC}}; color: {{rpt.vC}}; border-radius: 8px; padding: 4px 14px; font-size: 22px; font-weight: 900; transform: rotate(-4deg); white-space: nowrap">{{rpt.stamp}}</span>
-<div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 15px">{{rpt.vLine}}</b><span style="font-size: 13px; color: #5C6478; font-family: 'IBM Plex Mono', monospace">{{rpt.calc}}</span></div>
+
+<!-- verdict band -->
+<div style="display: flex; align-items: center; gap: 18px; background: {{rp.vBg}}; border-radius: 10px; padding: 14px 18px">
+<span style="flex: 0 0 auto; border: 3px solid {{rp.vC}}; color: {{rp.vC}}; border-radius: 8px; padding: 4px 14px; font-size: 22px; font-weight: 900; transform: rotate(-4deg); white-space: nowrap">{{rp.stamp}}</span>
+<div style="position: relative; width: 84px; height: 84px; flex: 0 0 84px">
+<svg viewBox="0 0 120 120" style="width: 84px; height: 84px" role="img" aria-label="ship"><circle cx="60" cy="60" r="48" fill="none" stroke="#E4E7EC" stroke-width="16"></circle><circle cx="60" cy="60" r="48" fill="none" stroke="#3FAE6A" stroke-width="16" stroke-dasharray="{{ship.dash}}" transform="rotate(-90 60 60)"></circle><circle cx="60" cy="60" r="48" fill="none" stroke="#F04438" stroke-width="16" stroke-dasharray="{{ship.rmDash}}" stroke-dashoffset="{{ship.rmOff}}" transform="rotate(-90 60 60)"></circle></svg>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center"><b style="font-size: 15px; font-family: 'IBM Plex Mono', monospace">{{ship.pct}}%</b><span style="font-size: 9px; color: #5C6478">{{rt.shipRate}}</span></div>
 </div>
-<sc-if value="{{rpt.isCoil}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; flex: 1 1 auto">
+<sc-for list="{{rp.nums}}" as="nu" hint-placeholder-count="4"><div style="display: flex; flex-direction: column"><span style="font-size: 10px; color: #5C6478">{{nu.k}}</span><b style="font-size: 20px; font-family: 'IBM Plex Mono', monospace; color: {{nu.c}}">{{nu.v}}</b></div></sc-for>
+</div>
+</div>
+<span style="font-size: 13px; font-weight: 700; margin-top: -6px">{{rp.vLine}}</span>
+
+<!-- 1 flatness -->
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: baseline; gap: 10px"><b style="font-size: 14px; color: #0F1E33">1. {{rt.flatTitle}}</b><span style="font-size: 11px; color: #7D8BA1">{{rt.flatSub}}</span><span style="margin-left: auto; font-size: 12px; font-weight: 700">{{rt.maxH}} {{kF.mm}} mm · {{rt.avgH}} {{kF.avg}} mm</span></div>
+<div style="position: relative; height: 120px; background: #F8F9FC; border: 1px solid #E3E8F0; border-radius: 4px">
+<svg viewBox="0 0 1000 120" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" role="img" aria-label="flatness per sheet">
+<sc-for list="{{pbars}}" as="b" hint-placeholder-count="40"><rect x="{{b.x}}" y="{{b.y}}" width="{{b.w}}" height="{{b.h}}" fill="{{b.c}}"></rect></sc-for>
+<line x1="0" y1="{{pLimitY}}" x2="1000" y2="{{pLimitY}}" stroke="#D92D20" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke"></line>
+<sc-for list="{{boxLinesX}}" as="bl" hint-placeholder-count="3"><line x1="{{bl.x}}" y1="0" x2="{{bl.x}}" y2="120" stroke="#98A2B3" stroke-width="1.5" vector-effect="non-scaling-stroke"></line></sc-for>
+</svg>
+<span style="position: absolute; right: 4px; top: {{pLimitPct}}%; transform: translateY(-115%); font-size: 10px; font-weight: 700; color: #B42318">{{rt.limit}} 0.70 mm</span>
+<sc-for list="{{flatCallouts}}" as="fc" hint-placeholder-count="2"><span style="position: absolute; left: {{fc.x}}%; top: 2px; transform: translateX(-50%); font-size: 10px; font-weight: 900; color: #FFFFFF; background: #D92D20; border-radius: 4px; padding: 0 4px; white-space: nowrap">{{fc.short}}</span></sc-for>
+</div>
+<div style="position: relative; height: 14px; font-size: 10px; color: #7D8BA1; font-family: 'IBM Plex Mono', monospace"><sc-for list="{{pxTicks}}" as="xt" hint-placeholder-count="4"><span style="position: absolute; left: {{xt.pct}}%; transform: translateX({{xt.tx}}); white-space: nowrap">{{xt.label}}</span></sc-for></div>
+<div style="display: flex; height: 18px; gap: 2px; border-radius: 3px; overflow: hidden"><sc-for list="{{pGrade}}" as="g" hint-placeholder-count="4"><div style="flex: {{g.f}} 1 0; background: {{g.c}}"></div></sc-for></div>
+<div style="display: flex; gap: 16px; font-size: 12px; color: #344054"><sc-for list="{{pGrade}}" as="g" hint-placeholder-count="4"><span><span style="display: inline-block; width: 10px; height: 10px; background: {{g.c}}; border-radius: 2px; vertical-align: middle"></span> {{g.label}} <b>{{g.n}}</b> <span style="color: #7D8BA1">({{g.pct}}%)</span></span></sc-for></div>
+</div>
+
+<!-- 2 surface -->
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: baseline; gap: 10px"><b style="font-size: 14px; color: #0F1E33">2. {{rt.surfTitle}}</b><span style="font-size: 11px; color: #7D8BA1">{{rt.surfSub}}</span><span style="margin-left: auto; font-size: 12px; font-weight: 700">{{rt.surfN}} {{kS.n}}</span></div>
+<div style="position: relative; height: 56px; background: #E4E7EC; border-radius: 4px">
+<sc-for list="{{boxLinesPct}}" as="bl" hint-placeholder-count="3"><span style="position: absolute; left: {{bl.pct}}%; top: 0; bottom: 0; border-left: 1.5px solid #98A2B3"></span></sc-for>
+<sc-for list="{{surfDots}}" as="sd" hint-placeholder-count="2"><span style="position: absolute; left: {{sd.x}}%; top: {{sd.y}}%; transform: translate(-50%, -50%) rotate(45deg); width: 12px; height: 12px; background: #7F56D9; border: 2px solid #FFFFFF; box-sizing: border-box"></span></sc-for>
+<sc-if value="{{noSurf}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #067647; font-weight: 700">✓ {{rt.noSurf}}</span></sc-if>
+</div>
+</div>
+
+<!-- 3 box summary (coil) -->
+<sc-if value="{{isCoil}}" hint-placeholder-val="{{ true }}">
 <div style="display: flex; flex-direction: column; gap: 4px">
-<b style="font-size: 14px">{{rt.boxSum}}</b>
-<div style="display: grid; grid-template-columns: 54px 54px 54px 60px 1fr 64px 120px; gap: 8px; font-size: 11px; color: #7D8BA1; border-bottom: 1px solid #E3E8F0; padding-bottom: 3px"><span>{{rt.box}}</span><span>{{rt.cutN}}</span><span>{{rt.rmN}}</span><span>{{rt.shipN}}</span><span>{{rt.flatG}}</span><span>{{rt.surfN}}</span><span>{{rt.verdict}}</span></div>
-<sc-for list="{{rpt.boxSumRows}}" as="bs" hint-placeholder-count="4">
-<div style="display: grid; grid-template-columns: 54px 54px 54px 60px 1fr 64px 120px; gap: 8px; align-items: center; font-size: 13px; border-bottom: 1px solid #F0F2F5; padding: 3px 0">
-<b>{{bs.n}}</b><span style="font-family: 'IBM Plex Mono', monospace">{{bs.cut}}</span><span style="font-family: 'IBM Plex Mono', monospace; color: #B42318">{{bs.rm}}</span><b style="font-family: 'IBM Plex Mono', monospace">{{bs.ship}}</b>
-<div style="display: flex; height: 12px; border-radius: 3px; overflow: hidden; background: #E4E7EC"><div style="width: {{bs.a}}%; background: #3FAE6A"></div><div style="width: {{bs.b}}%; background: #A6E3B8"></div><div style="width: {{bs.c}}%; background: #F79009"></div><div style="width: {{bs.d}}%; background: #F04438"></div></div>
-<span>{{bs.surf}}</span><b style="color: {{bs.vC}}; font-size: 12px">{{bs.v}}</b>
+<b style="font-size: 14px; color: #0F1E33">3. {{rt.boxSum}}</b>
+<div style="display: grid; grid-template-columns: 50px 1fr 50px 50px 56px 130px; gap: 10px; font-size: 11px; color: #7D8BA1; border-bottom: 1px solid #E3E8F0; padding-bottom: 3px"><span>{{rt.box}}</span><span>{{rt.gradeCol}}</span><span>{{rt.flatN}}</span><span>{{rt.surfShort}}</span><span>{{rt.shipN}}</span><span>{{rt.verdict}}</span></div>
+<sc-for list="{{boxRows}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 50px 1fr 50px 50px 56px 130px; gap: 10px; align-items: center; font-size: 13px; border-bottom: 1px solid #F0F2F5; padding: 3px 0">
+<b>{{r.n}}</b>
+<div style="display: flex; height: 14px; gap: 1px; border-radius: 3px; overflow: hidden; background: #E4E7EC"><sc-for list="{{r.psegs}}" as="s" hint-placeholder-count="4"><div style="flex: {{s.f}} 1 0; background: {{s.c}}"></div></sc-for></div>
+<span>{{r.nf}}</span><span>{{r.ns}}</span><b style="font-family: 'IBM Plex Mono', monospace">{{r.ship}}</b><b style="font-size: 12px; color: {{r.pvC}}">{{r.pv}}</b>
 </div>
 </sc-for>
 </div>
 </sc-if>
-<div style="display: flex; flex-direction: column; gap: 4px">
-<div style="display: flex; align-items: baseline; gap: 10px"><b style="font-size: 14px">{{rt.flatTitle}}</b><span style="font-size: 11px; color: #7D8BA1">{{rt.flatSub}}</span><span style="margin-left: auto; font-size: 12px; font-weight: 700">{{rt.maxH}} {{rpt.maxH}}</span></div>
-<sc-for list="{{rpt.flatRows}}" as="fr" hint-placeholder-count="1">
-<div style="display: flex; align-items: center; gap: 8px"><span style="font-size: 11px; color: #5C6478; width: 46px; flex: 0 0 46px">{{fr.label}}</span><div style="flex: 1 1 auto; display: flex; gap: 1px; height: {{fr.h}}px"><sc-for list="{{fr.cells}}" as="ce" hint-placeholder-count="30"><span style="flex: 1 1 0; min-width: 0; background: {{ce.c}}; outline: {{ce.ol}}"></span></sc-for></div></div>
-</sc-for>
-<div style="display: flex; gap: 14px; font-size: 12px; color: #344054"><sc-for list="{{rpt.gradeCounts}}" as="gc" hint-placeholder-count="4"><span><span style="display: inline-block; width: 10px; height: 10px; background: {{gc.c}}; border-radius: 2px; vertical-align: middle"></span> {{gc.label}} <b>{{gc.n}}</b></span></sc-for></div>
-</div>
-<div style="display: flex; flex-direction: column; gap: 4px">
-<b style="font-size: 14px">{{rt.defTitle}}</b>
-<div style="display: grid; grid-template-columns: 64px 44px 1.2fr 0.9fr 1fr 0.8fr 1.1fr; gap: 8px; font-size: 11px; color: #7D8BA1; border-bottom: 1px solid #E3E8F0; padding-bottom: 3px"><span>{{rt.photo}}</span><span>{{rt.box}}</span><span>{{rt.kind}}</span><span>{{rt.sheet}}</span><span>{{rt.where}}</span><span>{{rt.score}}</span><span>{{rt.handling}}</span></div>
-<sc-for list="{{rpt.defRows}}" as="dr" hint-placeholder-count="3">
-<div style="display: grid; grid-template-columns: 64px 44px 1.2fr 0.9fr 1fr 0.8fr 1.1fr; gap: 8px; align-items: center; font-size: 13px; border-bottom: 1px solid #F0F2F5; padding-bottom: 4px">
-<img src="{{dr.img}}" alt="{{dr.kind}}" style="width: 64px; height: 40px; object-fit: cover; object-position: {{dr.op}}; border-radius: 3px">
-<b>{{dr.box}}</b><b>{{dr.kind}}</b><span>{{dr.sheet}}</span><span>{{dr.where}}</span><span style="font-family: 'IBM Plex Mono', monospace">{{dr.val}}</span><b style="color: {{dr.hC}}">{{dr.handling}}</b>
-</div>
-</sc-for>
-<sc-if value="{{rpt.noDef}}" hint-placeholder-val="{{ false }}"><span style="font-size: 13px; color: #067647; font-weight: 700">✓ {{rt.noDef}}</span></sc-if>
-</div>
+
+<!-- notes -->
 <div style="background: #F3F5FE; border-radius: 6px; padding: 8px 12px; display: flex; flex-direction: column; gap: 3px">
-<b style="font-size: 13px">{{rt.notesTitle}}</b>
-<sc-for list="{{rpt.notes}}" as="n" hint-placeholder-count="2"><span style="font-size: 12px; color: #344054">· {{n.text}}<span style="color: #7D8BA1">{{n.orig}}</span></span></sc-for>
+<b style="font-size: 13px">{{rp.notesNo}}. {{rt.notesTitle}}</b>
+<sc-for list="{{rp.notes}}" as="n" hint-placeholder-count="2"><span style="font-size: 12px; color: #344054">· {{n.text}}<span style="color: #7D8BA1">{{n.orig}}</span></span></sc-for>
 </div>
-<div style="display: flex; align-items: flex-end; gap: 12px; margin-top: 8px">
+
+<div style="margin-top: auto; display: flex; align-items: flex-end; gap: 12px">
 <span style="font-size: 10px; color: #7D8BA1; line-height: 1.5; flex: 1 1 auto">{{rt.foot1}}<br>{{rt.foot2}}<br>{{rt.foot3}}</span>
 <div style="width: 92px; border: 1px solid #D0D5DD; text-align: center"><span style="display: block; font-size: 10px; color: #7D8BA1; border-bottom: 1px solid #D0D5DD; padding: 2px">{{rt.inspector}}</span><span style="display: block; height: 40px"></span></div>
 <div style="width: 92px; border: 1px solid #D0D5DD; text-align: center"><span style="display: block; font-size: 10px; color: #7D8BA1; border-bottom: 1px solid #D0D5DD; padding: 2px">{{rt.approver}}</span><span style="display: block; height: 40px"></span></div>
 </div>
 </div>
+
+<!-- PAGE 2 : defect photos -->
+<sc-if value="{{rp.hasPage2}}" hint-placeholder-val="{{ true }}">
+<span style="align-self: flex-start; margin-left: calc(50% - 397px); font-size: 11px; color: #8FA3BF">2 / {{rp.pages}}</span>
+<div style="width: 794px; min-height: 1123px; background: #FFFFFF; color: #101828; box-shadow: 0 8px 30px rgba(0,0,0,0.45); padding: 34px 38px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; align-items: baseline; gap: 12px; border-bottom: 2px solid #0F1E33; padding-bottom: 8px"><b style="font-size: 18px; color: #0F1E33">{{rp.photoNo}}. {{rt.photoTitle}}</b><span style="font-size: 12px; color: #5C6478">{{rp.title}} · {{rt.photoSub}}</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{rp.photos}}" as="ph" hint-placeholder-count="3">
+<div style="border: 1px solid #E3E8F0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column">
+<div style="position: relative; height: 140px; background: #000000"><img src="{{ph.img}}" alt="{{ph.kind}}" style="width: 100%; height: 100%; object-fit: cover; display: block"><span style="position: absolute; left: {{ph.rx}}%; top: {{ph.ry}}%; width: {{ph.rw}}%; height: {{ph.rh}}%; transform: translate(-50%, -50%); border: 3px solid #F04438; border-radius: 4px"></span><span style="position: absolute; left: 6px; top: 6px; font-size: 11px; font-weight: 900; color: #FFFFFF; background: rgba(15,30,51,0.85); border-radius: 4px; padding: 1px 6px">#{{ph.no}}</span></div>
+<div style="padding: 8px 10px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: flex; align-items: baseline; gap: 6px"><b style="font-size: 14px">{{ph.kind}}</b><b style="margin-left: auto; font-size: 13px; font-family: 'IBM Plex Mono', monospace; color: #B42318">{{ph.val}}</b></div>
+<span style="font-size: 12px; color: #344054">{{ph.where}}</span>
+<b style="font-size: 12px; color: {{ph.hC}}">{{ph.handling}}</b>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 12px; background: #F3F5FE; border-radius: 8px; padding: 12px 14px">
+<div style="width: 54px; height: 54px; border: 2px solid #0F1E33; border-radius: 6px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; padding: 3px; box-sizing: border-box"><sc-for list="{{qr}}" as="q" hint-placeholder-count="25"><span style="background: {{q.c}}"></span></sc-for></div>
+<span style="font-size: 12px; color: #344054; line-height: 1.5">{{rt.qrLong}}</span>
+</div>
+</div>
+</sc-if>
+</div>
+
+<!-- RIGHT: HOW IT IS MADE -->
+<div style="flex: 0 0 380px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 72px">
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 16px"><span style="color: #F5B547">④</span> 리포트는 이렇게 만들어집니다</b>
+<sc-for list="{{howSteps}}" as="hs" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px">
+<span style="width: 28px; height: 28px; border-radius: 50%; background: {{hs.c}}; color: #0B1626; font-size: 14px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex: 0 0 28px">{{hs.n}}</span>
+<span style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 14px">{{hs.title}}</b><span style="font-size: 12px; line-height: 1.5; color: #C9D3E0">{{hs.body}}</span></span>
+</div>
+</sc-for>
+</div>
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<b style="font-size: 15px">판정 규칙 (박스 · 코일 공통)</b>
+<sc-for list="{{rules}}" as="ru" hint-placeholder-count="3"><div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><span style="font-size: 12px; font-weight: 900; color: {{ru.c}}; border: 2px solid {{ru.c}}; border-radius: 6px; padding: 1px 8px; white-space: nowrap">{{ru.stamp}}</span><span style="color: #C9D3E0">{{ru.when}}</span></div></sc-for>
+</div>
+<div style="background: #13243D; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px">
+<b style="font-size: 15px">들어가는 데이터 — 지금 상태</b>
+<sc-for list="{{dataRows}}" as="dr" hint-placeholder-count="8"><div style="display: flex; align-items: center; gap: 8px; font-size: 13px"><span style="font-size: 11px; font-weight: 900; color: #0B1626; background: {{dr.c}}; border-radius: 6px; padding: 1px 7px; white-space: nowrap; min-width: 44px; text-align: center">{{dr.st}}</span><span>{{dr.k}}</span><span style="margin-left: auto; font-size: 11px; color: #8FA3BF; text-align: right">{{dr.src}}</span></div></sc-for>
+</div>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+<span style="min-height: 48px; border-radius: 12px; background: #F5B547; color: #0B1626; font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: center">⬇ PDF 받기</span>
+<span style="min-height: 48px; border-radius: 12px; border: 2px solid #7CB4F5; color: #7CB4F5; font-size: 15px; font-weight: 900; display: flex; align-items: center; justify-content: center; box-sizing: border-box">✉ 고객에게 보내기</span>
+</div>
+</div>
 </div>
 </sc-if>
 
-</main>
+<!-- ============ PAGE: 불량 이미지 ============ -->
+<sc-if value="{{isImg}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; background: #13243D; border-radius: 14px; padding: 10px 14px">
+<b style="font-size: 18px"><span style="color: #F5B547">③</span> 불량 이미지</b><span style="font-size: 13px; color: #8FA3BF">불량 하나마다 원본 · 확대 · 비교 3장</span>
+<span style="font-size: 13px; font-weight: 700; color: #F5B547; margin-left: 8px">{{scopeLabel}}</span>
+<span style="display: flex; gap: 6px"><sc-for list="{{imgTypeOpts}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
+<button type="button" onClick="{{toggleOver}}" style="{{overStyle}}">{{overLabel}}</button>
+<button type="button" onClick="{{zipAllImg}}" style="margin-left: auto; height: 42px; padding: 0 18px; border-radius: 10px; border: 0; background: #F5B547; color: #0B1626; font-size: 14px; font-weight: 900">⬇ 보이는 불량 사진 전체 받기 ({{imgFileCount}}장 · ZIP)</button>
 </div>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(470px, 1fr)); gap: 12px">
+<sc-for list="{{defCards}}" as="d" hint-placeholder-count="4">
+<article style="background: #13243D; border: {{d.border}}; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="font-size: 11px; font-weight: 900; color: #0B1626; background: {{d.tC}}; border-radius: 6px; padding: 2px 8px">{{d.tLabel}}</span>
+<b style="font-size: 19px">{{d.sub}}</b><span style="font-size: 13px; color: #8FA3BF">#{{d.no}}</span>
+<span style="margin-left: auto; font-size: 15px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: #FDA29B">{{d.val}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px; font-size: 13px; align-items: center">
+<span style="background: #0F1E33; border-radius: 8px; padding: 4px 10px"><b>박스 {{d.box}}</b> · {{d.sheet}}번째 장</span>
+<span style="background: #0F1E33; border-radius: 8px; padding: 4px 10px">코일 {{d.m}} m</span>
+<span style="background: #0F1E33; border-radius: 8px; padding: 4px 10px">{{d.where}}</span>
+<span style="background: #0F1E33; border-radius: 8px; padding: 4px 10px; color: #8FA3BF">{{d.time}}</span>
+<span style="margin-left: auto; font-weight: 700; color: {{d.aC}}">현장 {{d.act}}</span><span style="font-weight: 700; color: {{d.rC}}">· {{d.rev}}</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="position: relative; height: 150px; border-radius: 10px; overflow: hidden; background: #000000"><img src="{{d.img}}" alt="{{d.sub}} 원본" style="width: 100%; height: 100%; object-fit: cover; display: block"><span style="position: absolute; left: {{d.rx}}%; top: {{d.ry}}%; width: {{d.rw}}%; height: {{d.rh}}%; transform: translate(-50%, -50%); border: 3px solid #F04438; border-radius: 6px"></span></div>
+<figcaption style="font-size: 12px; color: #8FA3BF">① 원본 프레임</figcaption>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="position: relative; height: 150px; border-radius: 10px; overflow: hidden; background: #000000"><img src="{{d.img}}" alt="{{d.sub}} 확대" style="width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(2.4); transform-origin: {{d.rx}}% {{d.ry}}%"><span style="position: absolute; right: 6px; top: 6px; font-size: 11px; font-weight: 700; background: rgba(0,0,0,0.6); border-radius: 4px; padding: 1px 6px">×2.4</span></div>
+<figcaption style="font-size: 12px; color: #8FA3BF">② 결함 확대</figcaption>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; gap: 4px">
+<sc-if value="{{d.isSurf}}" hint-placeholder-val="{{ true }}"><div style="position: relative; height: 150px; border-radius: 10px; overflow: hidden; background: #000000"><img src="{{d.img}}" alt="앞 장 같은 자리" style="width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(2.4); transform-origin: {{d.cx}}% {{d.ry}}%; filter: brightness(1.08)"><span style="position: absolute; left: 6px; bottom: 6px; font-size: 11px; font-weight: 700; background: {{d.cmpBg}}; border-radius: 4px; padding: 1px 6px">{{d.cmpTag}}</span></div>
+<figcaption style="font-size: 12px; color: #8FA3BF">③ 앞 장 같은 자리 ({{d.prevSheet}}번째 장)</figcaption></sc-if>
+<sc-if value="{{d.isFlat}}" hint-placeholder-val="{{ false }}"><div style="height: 150px; border-radius: 10px; background: #0F1E33; box-sizing: border-box; padding: 8px; display: flex; flex-direction: column; gap: 4px; justify-content: center">
+<span style="font-size: 11px; color: #8FA3BF">옆에서 본 판</span>
+<sc-if value="{{d.isEdge}}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 300 54" style="width: 100%; height: 44px" role="img" aria-label="가장자리 출렁"><line x1="4" y1="48" x2="296" y2="48" stroke="#5B6B82" stroke-width="2"></line><path d="M8 40 Q22 14 36 40 T64 40 L236 40 Q250 14 264 40 T292 40" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"></path><line x1="22" y1="40" x2="22" y2="20" stroke="#F04438" stroke-width="3"></line></svg></sc-if>
+<sc-if value="{{d.isBuckle}}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 300 54" style="width: 100%; height: 44px" role="img" aria-label="가운데 볼록"><line x1="4" y1="48" x2="296" y2="48" stroke="#5B6B82" stroke-width="2"></line><path d="M8 42 L100 42 Q150 10 200 42 L292 42" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"></path><line x1="150" y1="42" x2="150" y2="22" stroke="#F04438" stroke-width="3"></line></svg></sc-if>
+<span style="font-size: 12px; color: #FDA29B; font-weight: 700">{{d.val}} 뜸 · 기준 0.70 mm</span>
+<span style="font-size: 11px; color: #C9D3E0; line-height: 1.35">{{d.explain}}</span>
+</div>
+<figcaption style="font-size: 12px; color: #8FA3BF">③ 레이저 단면 (모양)</figcaption></sc-if>
+</figure>
+</div>
+<span style="font-size: 13px; line-height: 1.5; color: #D1FADF; background: #1A2E1F; border-radius: 10px; padding: 8px 12px">AI · {{d.ai}}</span>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<button type="button" onClick="{{d.dl}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #F5B547; background: transparent; color: #F5B547; font-size: 14px; font-weight: 700">⬇ 이 불량 사진 3장</button>
+<button type="button" onClick="{{d.toVideo}}" style="height: 40px; padding: 0 14px; border-radius: 10px; border: 1px solid #3A5375; background: transparent; color: #FFFFFF; font-size: 14px; font-weight: 700">▶ 전체 영상에서 이 순간</button>
+<span style="margin-left: auto; display: flex; gap: 6px"><sc-for list="{{d.revBtns}}" as="rb" hint-placeholder-count="3"><button type="button" onClick="{{rb.pick}}" style="{{rb.style}}">{{rb.label}}</button></sc-for></span>
+</div>
+</article>
+</sc-for>
+</div>
+<sc-if value="{{noDefs}}" hint-placeholder-val="{{ false }}"><div style="background: #13243D; border-radius: 14px; padding: 48px; text-align: center; color: #A6F4C5; font-size: 18px; font-weight: 700">✓ 조건에 맞는 불량이 없습니다</div></sc-if>
+</sc-if>
 
+<!-- ============ PAGE: 전체 영상 ============ -->
+<sc-if value="{{isVideo}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; background: #13243D; border-radius: 14px; padding: 10px 14px">
+<b style="font-size: 18px"><span style="color: #F5B547">③</span> 전체 영상</b><span style="font-size: 13px; color: #8FA3BF">코일 처음부터 끝까지 녹화 · 카메라 2대</span>
+<span style="display: flex; gap: 6px; margin-left: 8px"><sc-for list="{{camOpts}}" as="o" hint-placeholder-count="2"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></span>
+<button type="button" onClick="{{dlBoth}}" style="margin-left: auto; height: 42px; padding: 0 18px; border-radius: 10px; border: 0; background: #F5B547; color: #0B1626; font-size: 14px; font-weight: 900">⬇ 두 카메라 전체 받기 ({{vid.bothSize}})</button>
+</div>
+<div style="display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(380px, 1fr); gap: 12px; align-items: start">
+<div style="background: #13243D; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<div style="position: relative; aspect-ratio: 16 / 9; border-radius: 10px; overflow: hidden; background: #000000">
+<img src="{{vid.img}}" alt="{{vid.camName}} 녹화" style="width: 100%; height: 100%; object-fit: cover; display: block">
+<span style="position: absolute; left: 12px; top: 12px; font-size: 14px; font-family: 'IBM Plex Mono', monospace; background: rgba(0,0,0,0.65); border-radius: 6px; padding: 4px 10px">{{vid.camName}} · {{vid.clock}} · {{vid.where}}</span>
+<span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 84px; height: 84px; border-radius: 50%; background: rgba(11,22,38,0.7); border: 3px solid #FFFFFF; font-size: 32px; display: flex; align-items: center; justify-content: center">▶</span>
+<sc-if value="{{vid.atDefect}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; right: 12px; top: 12px; font-size: 14px; font-weight: 900; background: #F04438; border-radius: 6px; padding: 4px 10px">⚠ {{vid.defName}}</span></sc-if>
+</div>
+<div style="position: relative; height: 46px">
+<div style="position: absolute; left: 0; right: 0; top: 14px; height: 18px; display: flex; gap: 2px">
+<sc-for list="{{vid.segs}}" as="sg" hint-placeholder-count="4"><button type="button" onClick="{{sg.pick}}" style="flex: {{sg.f}} 1 0; height: 18px; padding: 0; border: 0; border-radius: 3px; background: {{sg.bg}}; color: {{sg.fg}}; font-size: 11px; font-weight: 700">{{sg.label}}</button></sc-for>
+</div>
+<sc-for list="{{vid.marks}}" as="mk" hint-placeholder-count="3"><button type="button" onClick="{{mk.pick}}" aria-label="{{mk.label}}" style="position: absolute; left: {{mk.x}}%; top: 4px; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%; padding: 0; border: 2px solid #FFFFFF; background: {{mk.c}}"></button></sc-for>
+<span style="position: absolute; left: {{vid.posPct}}%; top: 8px; width: 3px; height: 32px; background: #FFFFFF; transform: translateX(-50%); border-radius: 2px"></span>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 12px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace"><span>{{vid.start}}</span><span><span style="color: #9E77ED">●</span> 표면 결함 · <span style="color: #F04438">●</span> 평탄도 결함 — 점을 누르면 그 순간으로</span><span>{{vid.end}}</span></div>
+</div>
+<div style="background: #13243D; border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+<b style="font-size: 16px">영상 받기 — {{vid.camName}}</b>
+<div style="border: 2px solid #F5B547; border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; background: #2A2310">
+<div style="display: flex; flex-direction: column; gap: 2px"><b style="font-size: 16px">코일 전체 영상</b><span style="font-size: 13px; color: #C9D3E0">{{vid.start}} – {{vid.end}} · {{vid.dur}} · {{vid.size}} · MP4</span></div>
+<button type="button" onClick="{{dlFull}}" style="margin-left: auto; height: 42px; padding: 0 16px; border-radius: 10px; border: 0; background: #F5B547; color: #0B1626; font-size: 14px; font-weight: 900; white-space: nowrap">⬇ 전체 받기</button>
+</div>
+<span style="font-size: 13px; color: #8FA3BF">박스 구간으로 나눠 받기</span>
+<sc-for list="{{vid.rows}}" as="vr" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; gap: 10px; background: #0F1E33; border-radius: 10px; padding: 8px 12px">
+<b style="font-size: 15px; width: 54px">박스 {{vr.n}}</b>
+<span style="font-size: 13px; color: #C9D3E0; font-family: 'IBM Plex Mono', monospace">{{vr.range}}</span>
+<span style="font-size: 12px; color: #8FA3BF">{{vr.size}}</span>
+<sc-if value="{{vr.hasDef}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; font-weight: 700; color: #FDA29B">불량 {{vr.nDef}}</span></sc-if>
+<button type="button" onClick="{{vr.dl}}" style="margin-left: auto; height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #3A5375; background: transparent; color: #FFFFFF; font-size: 13px; font-weight: 700">⬇ 받기</button>
+</div>
+</sc-for>
+<span style="font-size: 12px; color: #5B6B82; line-height: 1.5">녹화 원본(recording_segment)을 박스 구간으로 저장하고, 코일 전체는 같은 코일의 구간을 이어 붙여 만듭니다. 보관 기간 90일(예정) · 클레임 대비 코일은 "보관 연장".</span>
+</div>
+</div>
+</sc-if>
+
+
+</div>
+</div>
 <sc-if value="{{toastOn}}" hint-placeholder-val="{{ false }}">
-<div style="position: fixed; right: 24px; bottom: 24px; width: 440px; background: #0F1E33; color: #FFFFFF; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 10px 30px rgba(15,30,51,0.35); z-index: 9">
+<div style="position: fixed; right: 24px; bottom: 24px; width: 440px; background: #16301F; border: 2px solid #4ADE80; border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 9">
 <div style="display: flex; align-items: center"><b style="font-size: 16px; color: #A6F4C5">{{toast.title}}</b><button type="button" onClick="{{closeToast}}" aria-label="닫기" style="margin-left: auto; width: 32px; height: 32px; border-radius: 8px; border: 0; background: #1E3352; color: #FFFFFF; font-size: 16px">×</button></div>
-<span style="font-size: 13px; line-height: 1.5; color: #C9D3E0">{{toast.body}}</span>
+<span style="font-size: 13px; line-height: 1.5; color: #D1FADF">{{toast.body}}</span>
 <span style="font-size: 12px; font-family: 'IBM Plex Mono', monospace; background: #0B1626; border-radius: 6px; padding: 6px 8px">{{toast.code}}</span>
 </div>
 </sc-if>
-
 </div>
 </template>
 <script>
@@ -326,7 +574,7 @@ button{font-family:inherit;cursor:pointer}
 class Component extends DCLogic {
   constructor(props) {
     super(props);
-    this.state = { page: 'img', coil: 0, imgBox: 0, imgType: 'all', hideOver: true, focus: null, rev: {}, cam: 'cam1', vpos: null, rptMode: 'coil', rptBox: 1, lang: 'ko', toast: null };
+    this.state = { coil: 0, scope: 0, page: 'view', lang: 'ko', imgType: 'all', hideOver: true, focus: null, rev: {}, cam: 'cam1', vpos: null, toast: null };
   }
   renderVals() {
     var self = this, S = this.state;
@@ -334,202 +582,260 @@ class Component extends DCLogic {
     // defects: [type, sub, box, sheet, widthPct, value, time, action, review]
     var COILS = [
       { id: 'SAMPLE-A01', cust: 'A사', spec: '0.60 × 1219', kg: '4,060 kg', cut: 2.565, boxes: [70, 70, 70, 67], done: 277, st: '완료', t0: '10:05', t1: '11:47', base: 430, endRise: 540,
-        ai: '코일 끝 20%(540 m 이후)에서 엣지 웨이브 3건 — 텐션이 내려가는 구간과 겹칩니다. 다음 같은 두께 작업은 끝부분 속도 15 유지를 권장. 표면은 스크래치 1 · 찍힘 1로 반복 없음.',
+        ai: '코일 끝 20%(540 m 이후)에서 엣지 웨이브 3건 — 텐션이 내려가는 구간과 겹칩니다. 다음 같은 두께 작업은 끝부분 속도 15 유지를 권장. 표면은 스크래치 1건, 반복 없음.',
         notes: [['깨끗한 종이로 포장', 'Pack with clean paper'], ['평판도 대각 특히 주의', 'Watch flatness and diagonal closely']],
-        d: [['surf', '스크래치', 1, 47, 42, '0.91', '10:41:12', '뺌', 'real'], ['flat', '엣지 웨이브', 2, 23, 0, '1,209', '10:58:40', '뺌', 'real'], ['surf', '찍힘', 3, 11, 78, '0.84', '11:12:05', '확인', 'over'], ['flat', '엣지 웨이브', 4, 40, 0, '812', '11:38:20', '뺌', 'real'], ['flat', '엣지 웨이브', 4, 51, 0, '905', '11:42:02', '미처리', 'real']] },
+        d: [['surf', '스크래치', 1, 47, 42, '0.91', '', '뺌', 'real'], ['flat', '엣지 웨이브', 2, 23, 0, '1,209', '', '뺌', 'real'], ['surf', '찍힘', 3, 11, 78, '0.84', '', '확인', 'over'], ['flat', '엣지 웨이브', 4, 40, 0, '812', '', '뺌', 'real'], ['flat', '엣지 웨이브', 4, 51, 0, '905', '', '미처리', 'real']] },
       { id: 'SAMPLE-D03', cust: 'D사', spec: '0.80 × 1219', kg: '6,120 kg', cut: 3.0, boxes: [60, 60, 60], done: 180, st: '완료', t0: '08:20', t1: '09:44', base: 380, endRise: 0,
         ai: '같은 폭 위치(63%)에 스크래치가 17장 간격으로 6번 반복 — 롤 한 바퀴 주기와 비슷해 롤 이물 가능성이 높습니다. 다음 작업 전 롤 청소 확인.',
         notes: [['밑면 윗면 스크레치 조금이라도 있으면 반품', 'Any scratch on top or bottom = returned']],
-        d: [['surf', '스크래치', 1, 12, 63, '0.88', '08:31:40', '확인', 'real'], ['surf', '스크래치', 1, 29, 63, '0.90', '08:37:15', '뺌', 'real'], ['surf', '스크래치', 1, 46, 63, '0.93', '08:42:51', '뺌', 'real'], ['surf', '스크래치', 2, 3, 63, '0.92', '08:48:22', '뺌', 'real'], ['flat', '센터 버클', 2, 15, 0, '760', '08:52:10', '확인', 'over'], ['surf', '스크래치', 2, 20, 64, '0.95', '08:53:58', '미처리', 'real'], ['surf', '스크래치', 2, 37, 63, '0.94', '08:59:31', '미처리', 'real']] },
+        d: [['surf', '스크래치', 1, 12, 63, '0.88', '', '확인', 'real'], ['surf', '스크래치', 1, 29, 63, '0.90', '', '뺌', 'real'], ['surf', '스크래치', 1, 46, 63, '0.93', '', '뺌', 'real'], ['surf', '스크래치', 2, 3, 63, '0.92', '', '뺌', 'real'], ['flat', '센터 버클', 2, 15, 0, '760', '', '확인', 'over'], ['surf', '스크래치', 2, 20, 64, '0.95', '', '미처리', 'real'], ['surf', '스크래치', 2, 37, 63, '0.94', '', '미처리', 'real']] },
       { id: 'SAMPLE-C12', cust: 'C사', spec: '1.55 × 1219', kg: '10,110 kg', cut: 2.45, boxes: [55, 55, 55, 52], done: 85, st: '작업 중', t0: '12:40', t1: '13:20', base: 300, endRise: 0,
-        ai: '지금까지 85장 · 평탄도 A~B로 안정적. 표면 찍힘 1건은 현장에서 확인 후 계속.',
+        ai: '지금까지 85장 · 평탄도 A~B로 안정적. 표면 찍힘 1건은 과검출로 판정.',
         notes: [['다이 놓으시요', 'Put a skid under the stack']],
-        d: [['surf', '찍힘', 1, 33, 18, '0.86', '13:02:44', '확인', 'over']] },
+        d: [['surf', '찍힘', 1, 33, 18, '0.86', '', '확인', 'over']] },
       { id: 'SAMPLE-B07', cust: 'B사', spec: '1.15 × 1219', kg: '2,710 kg', cut: 2.45, boxes: [80], done: 80, st: '완료', t0: '09:50', t1: '10:02', base: 260, endRise: 0,
-        ai: '결함 없음 · 평탄도 전 구간 A~B. 이 셋팅을 1.15t 기준값으로 저장해 두면 좋습니다.',
-        notes: [['종이포장X', 'No paper packing']], d: [] }
+        ai: '결함 없음 · 평탄도 전 구간 A~B. 이 셋팅을 1.15t 기준값으로 저장해 두면 좋습니다.', notes: [['종이포장X', 'No paper packing']], d: [] }
     ];
+    var GC = { A: '#3FAE6A', B: '#A6F4C5', C: '#F79009', D: '#F04438', N: '#1E3352' }, PGC = { A: '#3FAE6A', B: '#A6E3B8', C: '#F79009', D: '#F04438', N: '#E4E7EC' };
+    var GL = { A: 'A 평평', B: 'B 거의 평평', C: 'C 조금 출렁', D: 'D 불량' };
+    var VM = { ok: ['합격', '#4ADE80', '✓'], cond: ['합격 (불량 제외)', '#A6F4C5', '✓'], warn: ['주의', '#F79009', '!'], hold: ['재검 필요', '#F04438', '!'], bad: ['불합격', '#F04438', '✗'], run: ['작업 중', '#7CB4F5', '▶'] };
+    var ACT = { '뺌': '#F5B547', '확인': '#4ADE80', '미처리': '#F04438' };
     function sum(a) { return a.reduce(function (x, y) { return x + y; }, 0); }
     function fmt(n) { return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
-    function f(s, o) { return s.replace(/\{(\w)\}/g, function (_, k) { return o[k]; }); }
-    function mins(t) { var p = t.split(':'); return +p[0] * 60 + +p[1] + (p[2] ? +p[2] / 60 : 0); }
-    function hm(m) { var h = Math.floor(m / 60), mm = Math.floor(m % 60), ss = Math.round((m * 60) % 60); return (h < 10 ? '0' : '') + h + ':' + (mm < 10 ? '0' : '') + mm + ':' + (ss < 10 ? '0' : '') + ss; }
-    function mmOf(v) { return (parseInt(v.replace(',', ''), 10) / 1000).toFixed(2) + ' mm'; }
-    function chip(on, accent) { var a = accent || '#0F1E33'; return 'height: 36px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; border: 1px solid ' + (on ? a : '#D0D5DD') + '; background: ' + (on ? a : '#FFFFFF') + '; color: ' + (on ? '#FFFFFF' : '#344054'); }
-    function prep(c) {
+    function mins(t) { var p = t.split(':'); return +p[0] * 60 + +p[1]; }
+    function hm(m) { var h = Math.floor(m / 60), mm = Math.round(m % 60); if (mm === 60) { h++; mm = 0; } return h + ':' + (mm < 10 ? '0' : '') + mm; }
+    function gradeOf(v) { return v > 700 ? 'D' : (v > 500 ? 'C' : (v > 350 ? 'B' : 'A')); }
+    function chip(on) { return 'height: 36px; padding: 0 14px; border-radius: 999px; font-size: 13px; font-weight: 700; white-space: nowrap; border: 1px solid ' + (on ? '#F5B547' : '#3A5375') + '; background: ' + (on ? '#F5B547' : 'transparent') + '; color: ' + (on ? '#0B1626' : '#FFFFFF'); }
+    function model(c) {
       var total = sum(c.boxes), len = Math.round(total * c.cut);
-      var ds = c.d.map(function (x, i) { var g = sum(c.boxes.slice(0, x[2] - 1)) + x[3]; return { i: i, t: x[0], sub: x[1], box: x[2], sheet: x[3], w: x[4], val: x[5], time: hm(mins(c.t0) + (mins(c.t1) - mins(c.t0)) * (g - 0.5) / c.done), act: x[7], rev0: x[8], g: g, m: Math.round(g * c.cut) }; });
-      var real = ds.filter(function (x) { return x.rev0 !== 'over'; });
-      var nf = real.filter(function (x) { return x.t === 'flat'; }).length, ns = real.length - nf;
-      var open = real.filter(function (x) { return x.act !== '뺌'; }).length;
-      var v = c.st === '작업 중' ? 'run' : (!real.length ? 'ok' : (open >= 2 || ns >= 4 ? 'bad' : 'warn'));
-      return { c: c, total: total, len: len, ds: ds, real: real, nf: nf, ns: ns, open: open, v: v };
-    }
-    var P = COILS.map(prep);
-    var VM = { ok: ['합격', '#067647', '#ECFDF3'], warn: ['주의', '#B54708', '#FFFAEB'], bad: ['불합격', '#B42318', '#FEF3F2'], run: ['작업 중', '#1E40AF', '#EFF4FF'] };
-    var coils = P.map(function (p, i) {
-      var on = S.coil === i;
-      return { id: p.c.id, cust: p.c.cust, time: p.c.t0 + '–' + (p.c.st === '작업 중' ? '' : p.c.t1), spec: p.c.spec, kg: p.c.kg, st: p.c.st, stC: p.c.st === '작업 중' ? '#1E40AF' : '#7D8BA1', vLabel: VM[p.v][0], vFg: VM[p.v][1], vBg: VM[p.v][2], nf: p.nf, ns: p.ns, bg: on ? '#F4F3FF' : '#FFFFFF', bd: on ? '#796CBF' : '#E3E8F0', pick: function () { self.setState({ coil: i, focus: null, vpos: null, rptBox: 1, imgBox: 0, toast: null }); } };
-    });
-    var p = P[S.coil], c = p.c, short = c.id.replace('SAMPLE-', '');
-    var tabs = [['view', '품질 보기'], ['img', '불량 이미지'], ['video', '전체 영상'], ['report', '품질 리포트']].map(function (t) { var on = S.page === t[0]; return { label: t[1], line: on ? '#796CBF' : 'transparent', fg: on ? '#0F1E33' : '#7D8BA1', pick: function () { self.setState({ page: t[0], toast: null }); } }; });
-    var cur = { id: c.id, cust: c.cust, spec: c.spec, kg: c.kg, cut: fmt(Math.round(c.cut * 1000)) + ' mm', len: fmt(p.len), nBox: c.boxes.length, time: c.t0 + '–' + (c.st === '작업 중' ? '' : c.t1), st: c.st, stC: c.st === '작업 중' ? '#1E40AF' : '#067647', ai: c.ai };
-    // flatness model
-    function fb(m) { var v = c.base + 55 * Math.sin(m / 37) + 25 * Math.sin(m / 11); if (c.endRise && m > c.endRise) v += (m - c.endRise) * 1.7; return v; }
-    var GC = { A: '#3FAE6A', B: '#A6E3B8', C: '#F79009', D: '#F04438', N: '#E4E7EC' };
-    function revOf(x) { return S.rev[c.id + ':' + x.i] || x.rev0; }
-    function isReal(x) { return revOf(x) !== 'over'; }
-    function boxStats(bi) {
-      var n = c.boxes[bi], st = sum(c.boxes.slice(0, bi)), done = Math.max(0, Math.min(n, c.done - st));
-      var cnt = { A: 0, B: 0, C: 0, D: 0 }, cells = [], maxV = 0;
-      for (var k = 1; k <= n; k++) {
-        if (k > done) { cells.push({ isN: true, isD: false, c: GC.N, ol: 'none' }); continue; }
-        var dx = p.ds.filter(function (x) { return x.t === 'flat' && x.box === bi + 1 && x.sheet === k && isReal(x); })[0];
-        if (dx) { cnt.D++; maxV = Math.max(maxV, parseInt(dx.val.replace(',', ''), 10)); cells.push({ isD: true, isN: false, c: GC.D, ol: '1.5px solid #101828', open: goImg(dx.i), label: dx.sub + ' 박스 ' + (bi + 1) + ' ' + k + '번째 장' }); continue; }
-        var v = fb((st + k) * c.cut), g = v > 500 ? 'C' : (v > 350 ? 'B' : 'A'); cnt[g]++; maxV = Math.max(maxV, v);
-        cells.push({ isN: true, isD: false, c: GC[g], ol: 'none' });
+      var ds = c.d.map(function (x, i) { var g = sum(c.boxes.slice(0, x[2] - 1)) + x[3]; var rv0 = S.rev[c.id + ':' + i] || x[8]; return { i: i, t: x[0], sub: x[1], box: x[2], sheet: x[3], w: x[4], val: x[5], v: parseInt(x[5].replace(',', ''), 10), act: x[7], real0: x[8] !== 'over', real: rv0 !== 'over', g: g, m: Math.round(g * c.cut) }; });
+      function fb(m) { var v = c.base + 55 * Math.sin(m / 37) + 25 * Math.sin(m / 11); if (c.endRise && m > c.endRise) v += (m - c.endRise) * 1.7; return Math.min(v, 690); }
+      var vals = [];
+      for (var g = 1; g <= total; g++) {
+        if (g > c.done) { vals.push(null); continue; }
+        var dx = ds.filter(function (x) { return x.real && x.t === 'flat' && x.g === g; })[0];
+        vals.push(dx ? dx.v : fb(g * c.cut));
       }
-      var inBox = p.ds.filter(function (x) { return x.box === bi + 1; });
-      var realIn = inBox.filter(isReal);
-      var removed = inBox.filter(function (x) { return x.act === '뺌'; }).length;
-      var kept = realIn.filter(function (x) { return x.act !== '뺌'; }).length;
-      return { n: n, done: done, cnt: cnt, cells: cells, maxV: maxV, inBox: inBox, realIn: realIn, removed: removed, kept: kept, ship: done - removed };
+      var starts = [], a = 0; c.boxes.forEach(function (n) { starts.push(a); a += n; });
+      return { c: c, total: total, len: len, ds: ds, vals: vals, starts: starts };
     }
-    function goImg(i) { return function () { self.setState({ page: 'img', focus: i, imgBox: 0, imgType: 'all' }); }; }
-    var BS = c.boxes.map(function (_, i) { return boxStats(i); });
-    var maxAll = Math.max.apply(null, BS.map(function (b) { return b.maxV; }));
-    var removedAll = sum(BS.map(function (b) { return b.removed; }));
-    var kpis = [
-      { k: '종합 판정', v: VM[p.v][0], s: p.v === 'ok' ? '결함 없음' : (p.v === 'run' ? '끝나면 판정' : '조치 확인'), c: VM[p.v][1] },
-      { k: '평탄도 최대', v: (maxAll / 1000).toFixed(2) + ' mm', s: '기준 0.70 · 불량 ' + p.nf + '장', c: maxAll > 700 ? '#B42318' : '#067647' },
-      { k: '표면 결함', v: p.ns + '건', s: p.ns ? '과검출 제외' : '없음', c: p.ns >= 4 ? '#B42318' : (p.ns ? '#6941C6' : '#067647') },
-      { k: '출하', v: (c.done - removedAll) + '장', s: '자른 ' + c.done + ' − 뺌 ' + removedAll, c: '#0F1E33' },
-      { k: '미처리', v: p.open + '건', s: p.open ? '재검 필요' : '모두 처리', c: p.open ? '#B42318' : '#067647' }
-    ];
-    // ---- view page
-    var grades = [['A 평평', '≤0.35', 'M4 22 L76 22', GC.A, '#067647'], ['B 거의 평평', '≤0.50', 'M4 22 Q14 18 24 22 T44 22 T64 22 L76 22', '#5FBF7F', '#067647'], ['C 조금 출렁', '≤0.70', 'M4 22 Q12 12 20 22 T36 22 L60 22 Q68 12 76 22', GC.C, '#B54708'], ['D 출렁 불량', '>0.70 mm', 'M4 22 Q10 4 16 22 T28 22 L52 22 Q58 4 64 22 T76 22', GC.D, '#B42318']].map(function (g) { return { label: g[0], desc: g[1], path: g[2], c: g[3], tc: g[4] }; });
-    var boxRows = BS.map(function (b, i) { var nf = b.realIn.filter(function (x) { return x.t === 'flat'; }).length, ns = b.realIn.length - nf; return { n: i + 1, sheets: b.done + ' / ' + b.n, cells: b.cells, nf: nf + '장', ns: ns + '건', fC: nf ? '#B42318' : '#98A2B3', sC: ns ? '#6941C6' : '#98A2B3' }; });
-    var boxLines = [], boxLabels = [], a2 = 0;
-    c.boxes.forEach(function (n, i) { var s0 = a2 * c.cut; a2 += n; var e0 = a2 * c.cut; boxLabels.push({ n: i + 1, pct: ((s0 + e0) / 2 / p.len * 100).toFixed(1) }); if (i < c.boxes.length - 1) boxLines.push({ pct: (e0 / p.len * 100).toFixed(1) }); });
-    var surfDots = p.ds.filter(function (x) { return x.t === 'surf' && isReal(x); }).map(function (x) { return { x: (x.m / p.len * 100).toFixed(1), y: x.w, open: goImg(x.i), label: x.sub + ' 박스 ' + x.box + ' ' + x.sheet + '번째 장' }; });
-    // ---- image page
-    var imgBoxOpts = [[0, '전체 박스']].concat(c.boxes.map(function (_, i) { return [i + 1, '박스 ' + (i + 1)]; })).map(function (o) { return { label: o[1], pick: function () { self.setState({ imgBox: o[0], focus: null }); }, style: chip(S.imgBox === o[0]) }; });
-    var imgTypeOpts = [['all', '전체'], ['flat', '평탄도'], ['surf', '표면']].map(function (o) { return { label: o[1], pick: function () { self.setState({ imgType: o[0] }); }, style: chip(S.imgType === o[0], '#796CBF') }; });
-    var REV = { real: ['실제 불량', '#B42318'], over: ['과검출', '#667085'], hold: ['보류', '#B54708'] };
-    var ACT = { '뺌': '#067647', '확인': '#B54708', '미처리': '#B42318' };
-    var shown = p.ds.filter(function (x) { return (!S.imgBox || x.box === S.imgBox) && (S.imgType === 'all' || x.t === S.imgType) && (!S.hideOver || isReal(x)); });
+    function stats(mo, s0, s1, running) {
+      var cnt = { A: 0, B: 0, C: 0, D: 0 }, dv = [];
+      for (var k = s0; k < s1; k++) { var v = mo.vals[k]; if (v === null) continue; cnt[gradeOf(v)]++; dv.push(v); }
+      var inR = mo.ds.filter(function (x) { return x.g - 1 >= s0 && x.g - 1 < s1; });
+      var real = inR.filter(function (x) { return x.real; });
+      var removed = inR.filter(function (x) { return x.act === '뺌'; }).length;
+      var kept = real.filter(function (x) { return x.act !== '뺌'; }).length;
+      var nf = real.filter(function (x) { return x.t === 'flat'; }).length;
+      var v = running ? 'run' : (!real.length ? 'ok' : (!kept ? 'cond' : 'hold'));
+      return { cnt: cnt, done: dv.length, max: dv.length ? Math.max.apply(null, dv) : 0, avg: dv.length ? sum(dv) / dv.length : 0, real: real, removed: removed, kept: kept, nf: nf, ns: real.length - nf, v: v };
+    }
+    var M = COILS.map(model);
+    var MS = M.map(function (mo) { return stats(mo, 0, mo.total, mo.c.st === '작업 중'); });
+    var coils = M.map(function (mo, i) {
+      var on = S.coil === i, c = mo.c, st = MS[i];
+      return { id: c.id, cust: c.cust, spec: c.spec, time: c.t0 + '–' + (c.st === '작업 중' ? '' : c.t1), st: c.st, stC: c.st === '작업 중' ? '#7CB4F5' : '#8FA3BF', vLabel: VM[st.v][0], vC: VM[st.v][1], nf: st.nf, ns: st.ns, bg: on ? '#1F3A5C' : '#13243D', bd: on ? '#F5B547' : '#23395A',
+        mini: ['A', 'B', 'C', 'D'].map(function (k) { return { f: st.cnt[k] || 0.0001, c: GC[k] }; }), pick: function () { self.setState({ coil: i, scope: 0, focus: null, vpos: null, toast: null }); } };
+    });
+    var mo = M[S.coil], c = mo.c, running = c.st === '작업 중';
+    var scope = Math.min(S.scope, c.boxes.length), isCoil = scope === 0;
+    var s0 = isCoil ? 0 : mo.starts[scope - 1], s1 = isCoil ? mo.total : s0 + c.boxes[scope - 1];
+    var boxDone = function (bi) { return Math.max(0, Math.min(c.boxes[bi], c.done - mo.starts[bi])); };
+    var st = isCoil ? MS[S.coil] : stats(mo, s0, s1, running && boxDone(scope - 1) < c.boxes[scope - 1]);
+    if (isCoil && running) st.v = 'run';
+    var T0 = mins(c.t0), T1 = mins(c.t1);
+    var cur = { id: c.id, cust: c.cust, spec: c.spec, kg: c.kg, cut: fmt(Math.round(c.cut * 1000)) + ' mm', len: fmt(mo.len), nBox: c.boxes.length, st: c.st, stC: running ? '#7CB4F5' : '#A6F4C5', time: c.t0 + '–' + (running ? '' : c.t1), ai: c.ai };
+    var tabs = [['view', '품질 보기'], ['img', '불량 이미지'], ['video', '전체 영상'], ['report', '품질 리포트']].map(function (t) { var on = S.page === t[0]; return { label: t[1], bg: on ? '#F5B547' : 'transparent', fg: on ? '#0B1626' : '#8FA3BF', pick: function () { self.setState({ page: t[0], toast: null }); } }; });
+    // scopes
+    var scopes = [{ label: '코일 전체', sub: c.done + '/' + mo.total + '장', v: VM[MS[S.coil].v][0], vC: VM[MS[S.coil].v][1], on: isCoil, n: 0 }].concat(c.boxes.map(function (n, i) { var bs = stats(mo, mo.starts[i], mo.starts[i] + n, running && boxDone(i) < n); return { label: '박스 ' + (i + 1), sub: boxDone(i) + '/' + n + '장', v: VM[bs.v][0], vC: VM[bs.v][1], on: scope === i + 1, n: i + 1 }; })).map(function (x) {
+      return { label: x.label, sub: x.sub, v: x.v, vC: x.vC, pick: function () { self.setState({ scope: x.n, focus: null, vpos: null }); }, style: 'height: 44px; padding: 0 14px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 2px solid ' + (x.on ? '#F5B547' : '#23395A') + '; background: ' + (x.on ? '#2A2310' : '#13243D') + '; color: ' + (x.on ? '#F5B547' : '#FFFFFF') };
+    });
+    // ---- report
+    var EN = S.lang === 'en';
+    var KO = { company: '오성철강 OHSUNG STEEL', titleCoil: '레벨러 품질 검사 결과서 — 코일 전체', titleBox: '레벨러 품질 검사 결과서 — 박스 {b}', docNo: '문서번호', issued: '발행일', qrNote: '사진 · 영상 보기 (고객 포털)',
+      cust: '고객사', coil: '코일 ID', spec: '규격 (두께 × 폭)', weight: '중량', box: '박스', boxes: '박스 수', date: '작업 일시', equip: '검사 장비', equipV: 'CAM1 표면 · CAM2 레이저 평탄도', cutL: '절단 길이',
+      shipRate: '출하율', nCut: '자른 장', nRm: '뺀 장', nShip: '출하 장', nMax: '최대 출렁 (mm)',
+      ok: '합격', okL: '평탄도 · 표면 모두 기준 이내입니다.', cond: '합격 (불량 제외)', condL: '불량 {n}장을 빼고 출하했습니다.', hold: '재검 필요', holdL: '불량 {n}장이 남아 있을 수 있습니다 — 재검 후 출하.', run: '작업 중', runL: '작업이 끝나면 판정됩니다.',
+      flatTitle: '평탄도 — 장마다 막대 하나', flatSub: '높이 = 출렁 높이 · 색 = 등급', maxH: '최대', avgH: '평균', limit: '기준', gA: 'A 평평', gB: 'B 거의 평평', gC: 'C 조금 출렁', gD: 'D 불량',
+      surfTitle: '표면 결함 위치', surfSub: '위에서 본 판 · 위아래 = 폭 방향', surfN: '표면 결함', noSurf: '표면 결함 없음',
+      boxSum: '박스별 요약', gradeCol: '평탄도 등급 비율', flatN: '평탄', surfShort: '표면', shipN: '출하', verdict: '판정',
+      notesTitle: '작업지시서 비고', photoTitle: '불량 사진', photoSub: '빨간 상자 = 결함 위치', qrLong: 'QR을 찍으면 이 코일의 불량 사진 원본과 전체 영상(CAM1 · CAM2)을 고객 포털에서 볼 수 있습니다.',
+      foot1: '※ 관리자가 "과검출"로 판정한 항목은 포함하지 않습니다.', foot2: '※ 평탄도 높이(mm)는 레이저 측정값 환산 기준입니다.', foot3: '※ 불량 사진은 다음 장에 있습니다.', inspector: '검사', approver: '승인',
+      sheetFmt: '박스 {b} · {s}번째 장', removed: '빼냄 · 출하 제외', checked: '확인 후 포함', open: '미처리 · 재검', edge: '양쪽 가장자리', center: '가운데', widthFmt: '폭 {w}%',
+      sub: { '스크래치': '스크래치', '찍힘': '찍힘', '엣지 웨이브': '엣지 웨이브', '센터 버클': '센터 버클' } };
+    var ENd = { company: 'OHSUNG STEEL', titleCoil: 'Leveler Quality Report — Whole Coil', titleBox: 'Leveler Quality Report — Box {b}', docNo: 'Doc No.', issued: 'Issued', qrNote: 'Photos · videos (customer portal)',
+      cust: 'Customer', coil: 'Coil ID', spec: 'Spec (t × w)', weight: 'Weight', box: 'Box', boxes: 'Boxes', date: 'Production', equip: 'Inspection', equipV: 'CAM1 surface · CAM2 laser flatness', cutL: 'Cut length',
+      shipRate: 'shipped', nCut: 'Cut', nRm: 'Removed', nShip: 'Shipped', nMax: 'Max wave (mm)',
+      ok: 'PASS', okL: 'Flatness and surface are within limits.', cond: 'PASS (defects removed)', condL: '{n} defective sheet(s) removed before shipping.', hold: 'RE-CHECK', holdL: '{n} defective sheet(s) may remain — re-check before shipping.', run: 'RUNNING', runL: 'Judged when finished.',
+      flatTitle: 'Flatness — one bar per sheet', flatSub: 'height = wave height · color = grade', maxH: 'Max', avgH: 'Avg', limit: 'Limit', gA: 'A flat', gB: 'B nearly flat', gC: 'C slight wave', gD: 'D defect',
+      surfTitle: 'Surface defect positions', surfSub: 'top view · up/down = width', surfN: 'Surface defects', noSurf: 'No surface defects',
+      boxSum: 'Summary by box', gradeCol: 'Flatness grade mix', flatN: 'Flat', surfShort: 'Surf.', shipN: 'Ship', verdict: 'Result',
+      notesTitle: 'Work order notes', photoTitle: 'Defect photos', photoSub: 'red box = defect position', qrLong: 'Scan the QR to see the original defect photos and the full videos (CAM1 · CAM2) of this coil on the customer portal.',
+      foot1: '※ Items judged as "over-detection" by the reviewer are excluded.', foot2: '※ Flatness height (mm) is converted from the laser measurement.', foot3: '※ Defect photos are on the next page.', inspector: 'Inspected', approver: 'Approved',
+      sheetFmt: 'Box {b} · sheet {s}', removed: 'Removed', checked: 'Checked, kept', open: 'Open · re-check', edge: 'Both edges', center: 'Center', widthFmt: 'width {w}%',
+      sub: { '스크래치': 'Scratch', '찍힘': 'Dent', '엣지 웨이브': 'Edge wave', '센터 버클': 'Center buckle' } };
+    var rt = EN ? ENd : KO;
+    // KPI
+    var C = 2 * Math.PI * 48;
+    var shipN = st.done - st.removed, shipPct = st.done ? shipN / st.done : 0;
+    var ship = { n: shipN, rm: st.removed, cut: st.done, pct: (shipPct * 100).toFixed(1), dash: (C * shipPct).toFixed(1) + ' ' + C.toFixed(1), rmDash: (C * (1 - shipPct)).toFixed(1) + ' ' + C.toFixed(1), rmOff: (-C * shipPct).toFixed(1) };
+    var kV = { label: VM[st.v][0], c: VM[st.v][1], icon: VM[st.v][2] };
+    var GLEN = Math.PI * 66, MAXG = 1500;
+    function band(lo, hi, col) { return { c: col, dash: ((hi - lo) / MAXG * GLEN).toFixed(1) + ' ' + GLEN.toFixed(1), off: (-(lo / MAXG) * GLEN).toFixed(1) }; }
+    var ag = Math.min(1, st.max / MAXG), th = Math.PI * (1 - ag);
+    var kF = { mm: (st.max / 1000).toFixed(2), avg: (st.avg / 1000).toFixed(2), n: st.cnt.D, c: st.max > 700 ? '#F04438' : (st.max > 500 ? '#F79009' : '#4ADE80'), bands: [band(0, 500, '#3FAE6A'), band(500, 700, '#F79009'), band(700, 1500, '#F04438')], nx: (80 + 56 * Math.cos(th)).toFixed(1), ny: (84 - 56 * Math.sin(th)).toFixed(1) };
+    var kS = { n: st.ns };
+    var gt = st.done;
+    var gradeBar = ['A', 'B', 'C', 'D'].map(function (k) { var n = st.cnt[k], pct = gt ? n / gt * 100 : 0; return { label: GL[k], k: k, short: { A: '평평', B: '거의', C: '출렁', D: '불량' }[k], n: n, pct: pct.toFixed(pct < 10 ? 1 : 0), f: n || 0.0001, minw: n ? '6px' : '0', c: GC[k], inLabel: pct >= 12 ? k : '' }; });
+    var ac = { '뺌': 0, '확인': 0, '미처리': 0 }; st.real.forEach(function (x) { ac[x.act]++; });
+    var accA = 0, actTotal = st.real.length;
+    var act = { total: actTotal, c: ac['미처리'] ? '#F04438' : '#4ADE80', segs: [['뺌', '뺌 (출하 제외)'], ['확인', '확인 후 포함'], ['미처리', '미처리']].map(function (k) { var n = ac[k[0]], fr = actTotal ? n / actTotal : 0; var sg = { label: k[1], n: n, c: ACT[k[0]], dash: (C * fr).toFixed(1) + ' ' + C.toFixed(1), off: (-C * accA).toFixed(1) }; accA += fr; return sg; }) };
+    // big chart over scope
+    var N = s1 - s0, W = 1000 / N, HMAX = 1400;
+    function Y(v) { return 240 - Math.min(v, HMAX) / HMAX * 232; }
+    function pY(v) { return 120 - Math.min(v, HMAX) / HMAX * 114; }
+    var bars = [], pbars = [];
+    for (var k = s0; k < s1; k++) {
+      var v = mo.vals[k], x = ((k - s0) * W).toFixed(2), w = Math.max(0.5, W - (N > 120 ? 0.6 : 1.5)).toFixed(2);
+      if (v === null) { bars.push({ x: x, y: 236, w: w, h: 4, c: GC.N }); pbars.push({ x: x, y: 117, w: w, h: 3, c: PGC.N }); continue; }
+      var g = gradeOf(v), y = Y(v), py = pY(v);
+      bars.push({ x: x, y: y.toFixed(1), w: w, h: (240 - y).toFixed(1), c: GC[g] });
+      pbars.push({ x: x, y: py.toFixed(1), w: w, h: (120 - py).toFixed(1), c: PGC[g] });
+    }
+    var yTicks = [0, 350, 700, 1050, 1400].map(function (v) { return { y: Y(v).toFixed(1), top: (Y(v) / 240 * 100).toFixed(1), label: (v / 1000).toFixed(2) }; });
+    function px(g) { return ((g - 1 - s0 + 0.5) / N * 100).toFixed(2); }
+    var flatCallouts = st.real.filter(function (x) { return x.t === 'flat'; }).map(function (x, j) { return { x: px(x.g), top: (Y(x.v) / 240 * 100 - (j % 2) * 15).toFixed(1), label: x.sub + ' ' + (x.v / 1000).toFixed(2) + ' mm', short: (x.v / 1000).toFixed(2) }; });
+    var boxLinesX = [], boxLinesPct = [], boxHead = [];
+    if (isCoil) c.boxes.forEach(function (n, i) {
+      var bs = stats(mo, mo.starts[i], mo.starts[i] + n, running && boxDone(i) < n);
+      boxHead.push({ n: i + 1, f: n, sub: boxDone(i) + '/' + n + '장 · 출하 ' + (bs.done - bs.removed), v: VM[bs.v][0], vC: VM[bs.v][1] });
+      if (i < c.boxes.length - 1) { var e = mo.starts[i] + n; boxLinesX.push({ x: (e * W).toFixed(1) }); boxLinesPct.push({ pct: (e / N * 100).toFixed(2) }); }
+    });
+    var surfDots = st.real.filter(function (x) { return x.t === 'surf'; }).map(function (x) { return { x: px(x.g), y: x.w }; });
+    var actMarks = st.real.map(function (x) { return { x: px(x.g), c: ACT[x.act], label: (x.act === '뺌' ? '✂ 뺌' : (x.act === '확인' ? '✓ 확인' : '! 미처리')) + (isCoil ? '' : ' · ' + x.sheet + '장') }; });
+    var xTicks, pxTicks;
+    if (isCoil) {
+      xTicks = [0, 0.2, 0.4, 0.6, 0.8, 1].map(function (f) { return { tx: f === 0 ? '0' : (f === 1 ? '-100%' : '-50%'), al: f === 0 ? 'left' : (f === 1 ? 'right' : 'center'), pct: (f * 100).toFixed(1), m: fmt(Math.round(mo.len * f)) + ' m', t: running && f * N > c.done ? '' : hm(T0 + (T1 - T0) * Math.min(1, f * N / c.done)) }; });
+    } else {
+      var n0 = c.boxes[scope - 1], marks = [1, Math.round(n0 / 4), Math.round(n0 / 2), Math.round(n0 * 3 / 4), n0];
+      xTicks = marks.map(function (sh, j) { var f = (sh - 0.5) / n0; return { tx: j === 0 ? '0' : (j === 4 ? '-100%' : '-50%'), al: j === 0 ? 'left' : (j === 4 ? 'right' : 'center'), pct: (f * 100).toFixed(1), m: sh + '번째 장', t: fmt(Math.round((s0 + sh) * c.cut)) + ' m' }; });
+    }
+    pxTicks = xTicks.map(function (t) { return { pct: t.pct, tx: t.tx, label: t.m }; });
+    var bigTitle = isCoil ? '코일 전체 한눈에 — 처음부터 끝까지' : '박스 ' + scope + ' 한눈에 — 1번째 장부터 ' + c.boxes[scope - 1] + '번째 장까지';
+    // box rows (coil)
+    var worst = null;
+    var boxRows = c.boxes.map(function (n, i) {
+      var bs = stats(mo, mo.starts[i], mo.starts[i] + n, running && boxDone(i) < n);
+      var cd = bs.cnt.C + bs.cnt.D; if (bs.done && (!worst || cd / bs.done > worst.r)) worst = { n: i + 1, r: cd / bs.done, cd: cd };
+      var segs = bs.done ? ['A', 'B', 'C', 'D'].map(function (g) { return { f: bs.cnt[g] || 0.0001, c: GC[g], label: bs.cnt[g] / bs.done >= 0.12 ? bs.cnt[g] : '' }; }) : [{ f: 1, c: GC.N, label: '작업 전' }];
+      var psegs = bs.done ? ['A', 'B', 'C', 'D'].map(function (g) { return { f: bs.cnt[g] || 0.0001, c: PGC[g] }; }) : [{ f: 1, c: PGC.N }];
+      return { n: i + 1, segs: segs, psegs: psegs, nf: bs.nf || '—', ns: bs.ns || '—', fC: bs.nf ? '#FEC84B' : '#5B6B82', sC: bs.ns ? '#D6BBFB' : '#5B6B82', ship: bs.done ? bs.done - bs.removed : '—', pv: rtV(bs.v), pvC: { ok: '#067647', cond: '#067647', hold: '#B42318', run: '#1E40AF', warn: '#B54708', bad: '#B42318' }[bs.v], pick: function () { self.setState({ scope: i + 1 }); } };
+    });
+    var boxInsight = worst && worst.cd ? '주황 · 빨강(C · D)이 가장 많은 박스: 박스 ' + worst.n + ' — ' + worst.cd + '장 (' + Math.round(worst.r * 100) + '%)' : '모든 박스가 A~B 위주입니다.';
+    // box defects (box scope)
+    function where(x) { return x.t === 'flat' ? (x.sub === '센터 버클' ? '가운데' : '양쪽 가장자리') : '폭 ' + x.w + '%'; }
+    var boxDefs = st.real.map(function (x) { var isF = x.t === 'flat'; return { sub: x.sub, val: isF ? (x.v / 1000).toFixed(2) + ' mm' : x.val, sheet: x.sheet, where: where(x), img: isF ? FLAT : SURF, op: isF ? '50% 50%' : (30 + x.w / 2) + '% 50%', tLabel: isF ? 'CAM2 평탄' : 'CAM1 표면', tC: isF ? '#FEC84B' : '#D6BBFB', act: x.act, aC: ACT[x.act] }; });
+    // histogram
+    var bins = []; for (var b = 0; b < 28; b++) bins.push(0);
+    for (var k2 = s0; k2 < s1; k2++) { var vv = mo.vals[k2]; if (vv === null) continue; bins[Math.min(27, Math.floor(vv / 50))]++; }
+    var hmax = Math.max.apply(null, bins) || 1, bw = 520 / 28, peak = bins.indexOf(hmax);
+    var hist = { bars: bins.map(function (n, i) { var h = n / hmax * 160; return { x: (i * bw + 1).toFixed(1), w: (bw - 2).toFixed(1), y: (169 - h).toFixed(1), h: h.toFixed(1), c: GC[gradeOf(i * 50 + 25)] }; }), limitX: (14 * bw).toFixed(1), limitPct: '50.0', peakLabel: st.done ? (peak * 0.05).toFixed(2) + '~' + ((peak + 1) * 0.05).toFixed(2) + ' mm · ' + hmax + '장' : '—', over: st.cnt.D + '장' };
+    // types
+    var TY = {};
+    st.real.forEach(function (x) { if (!TY[x.sub]) TY[x.sub] = { name: x.sub, t: x.t, n: 0, a: { '뺌': 0, '확인': 0, '미처리': 0 } }; TY[x.sub].n++; TY[x.sub].a[x.act]++; });
+    var tyList = Object.keys(TY).map(function (k) { return TY[k]; }).sort(function (p, q) { return q.n - p.n; });
+    var tmax = tyList.length ? tyList[0].n : 1;
+    var types = tyList.map(function (t) { return { name: t.name, n: t.n, cam: t.t === 'flat' ? 'CAM2 평탄' : 'CAM1 표면', tC: t.t === 'flat' ? '#FEC84B' : '#D6BBFB', w: Math.max(18, t.n / tmax * 100).toFixed(0), segs: ['뺌', '확인', '미처리'].filter(function (k) { return t.a[k]; }).map(function (k) { return { f: t.a[k], c: ACT[k] }; }) }; });
+    // compare
+    var cmpItems;
+    if (isCoil) cmpItems = M.map(function (m2, i) { var s2 = MS[i]; return { id: m2.c.id, sub: m2.c.cust + ' · ' + m2.c.spec, st: s2, on: S.coil === i, pick: function () { self.setState({ coil: i, scope: 0 }); } }; });
+    else cmpItems = c.boxes.map(function (n, i) { var s2 = stats(mo, mo.starts[i], mo.starts[i] + n, running && boxDone(i) < n); return { id: '박스 ' + (i + 1), sub: boxDone(i) + '/' + n + '장', st: s2, on: scope === i + 1, pick: function () { self.setState({ scope: i + 1 }); } }; });
+    var maxRate = Math.max.apply(null, cmpItems.map(function (x) { return x.st.done ? x.st.real.length / x.st.done : 0; })) || 1;
+    var compare = cmpItems.map(function (x) { var r = x.st.done ? x.st.real.length / x.st.done : 0; return { id: x.id, cust: x.sub, spec: '', rate: (r * 100).toFixed(1) + '%', rateW: Math.max(1, r / maxRate * 100).toFixed(1), max: (x.st.max / 1000).toFixed(2), maxW: Math.min(100, x.st.max / 1500 * 100).toFixed(1), limW: (700 / 1500 * 100).toFixed(1), maxC: x.st.max > 700 ? '#F04438' : (x.st.max > 500 ? '#F79009' : '#3FAE6A'), v: VM[x.st.v][0], vC: VM[x.st.v][1], bg: x.on ? '#1F3A5C' : '#0F1E33', bd: x.on ? '#F5B547' : '#0F1E33', pick: x.pick }; });
+    function f(s, o) { return s.replace(/\{(\w)\}/g, function (_, k) { return o[k]; }); }
+    function rtV(v) { var R = EN ? ENd : KO; return { ok: R.ok, cond: R.cond, hold: R.hold, run: R.run, warn: R.hold, bad: R.hold }[v]; }
+    var CUST_EN = { 'A사': 'Customer A', 'B사': 'Customer B', 'C사': 'Customer C', 'D사': 'Customer D' };
+    var rv = st.v === 'warn' || st.v === 'bad' ? (st.kept ? 'hold' : 'cond') : st.v;
+    var VL = { ok: [rt.ok, rt.okL, '#067647', '#ECFDF3'], cond: [rt.cond, f(rt.condL, { n: st.removed }), '#067647', '#ECFDF3'], hold: [rt.hold, f(rt.holdL, { n: st.kept }), '#B42318', '#FEF3F2'], run: [rt.run, rt.runL, '#1E40AF', '#EFF4FF'] }[rv];
+    var short = c.id.replace('SAMPLE-', '');
+    var photos = st.real.map(function (x) { var isF = x.t === 'flat'; return { no: x.i + 1, kind: rt.sub[x.sub], val: isF ? (x.v / 1000).toFixed(2) + ' mm' : x.val, where: f(rt.sheetFmt, { b: x.box, s: x.sheet }) + ' · ' + (isF ? (x.sub === '센터 버클' ? rt.center : rt.edge) : f(rt.widthFmt, { w: x.w })), handling: x.act === '뺌' ? rt.removed : (x.act === '확인' ? rt.checked : rt.open), hC: x.act === '뺌' ? '#067647' : (x.act === '확인' ? '#B54708' : '#B42318'), img: isF ? FLAT : SURF, rx: isF ? 50 : (30 + x.w * 0.4).toFixed(0), ry: isF ? 49 : 48, rw: isF ? 84 : 14, rh: isF ? 14 : 40 }; });
+    var rp = {
+      kindLabel: isCoil ? '코일 전체 결과서' : '박스 ' + scope + ' 결과서', title: isCoil ? rt.titleCoil : f(rt.titleBox, { b: scope }), docNo: 'QR-20261102-' + short + (isCoil ? '-ALL' : '-B' + scope),
+      info: (isCoil ? [[rt.cust, EN ? CUST_EN[c.cust] : c.cust], [rt.coil, c.id], [rt.spec, c.spec + ' mm'], [rt.weight, c.kg], [rt.boxes, String(c.boxes.length)], [rt.cutL, cur.cut], [rt.date, '2026-11-02 ' + c.t0 + '–' + c.t1], [rt.equip, rt.equipV]]
+        : [[rt.cust, EN ? CUST_EN[c.cust] : c.cust], [rt.coil, c.id], [rt.spec, c.spec + ' mm'], [rt.box, scope + ' / ' + c.boxes.length], [rt.nCut, String(st.done)], [rt.cutL, cur.cut], [rt.date, '2026-11-02 ' + c.t0 + '–' + c.t1], [rt.equip, rt.equipV]]).map(function (x) { return { k: x[0], v: x[1] }; }),
+      stamp: VL[0], vLine: VL[1], vC: VL[2], vBg: VL[3],
+      nums: [[rt.nCut, st.done, '#101828'], [rt.nRm, st.removed, st.removed ? '#B42318' : '#101828'], [rt.nShip, shipN, '#067647'], [rt.nMax, (st.max / 1000).toFixed(2), st.max > 700 ? '#B42318' : '#101828']].map(function (x) { return { k: x[0], v: x[1], c: x[2] }; }),
+      notes: c.notes.map(function (nn) { return { text: EN ? nn[1] : nn[0], orig: EN ? '  (' + nn[0] + ')' : '' }; }), notesNo: isCoil ? 4 : 3,
+      hasPage2: photos.length > 0, pages: photos.length ? 2 : 1, photoNo: isCoil ? 5 : 4, photos: photos
+    };
+    var pGrade = ['A', 'B', 'C', 'D'].map(function (k) { var n = st.cnt[k]; return { label: { A: rt.gA, B: rt.gB, C: rt.gC, D: rt.gD }[k], n: n, pct: gt ? (n / gt * 100).toFixed(0) : 0, f: n || 0.0001, c: PGC[k] }; });
+    var qrPat = [1,1,1,0,1, 1,0,1,1,0, 1,1,1,0,1, 0,1,0,1,1, 1,0,1,1,1];
+    var qr = qrPat.map(function (q) { return { c: q ? '#0F1E33' : '#FFFFFF' }; });
+    var howSteps = [
+      ['박스가 끝나면 → 박스 결과서 초안', 'PLC 박스 번호가 바뀌고 녹화 구간이 닫히는 순간, 그 박스의 장수 · 평탄도 · 표면 · 조치로 자동 작성', '#7CB4F5'],
+      ['코일이 끝나면 → 코일 전체 결과서 초안', '박스 결과서를 합쳐 출하율 · 박스별 요약 · 불량 사진 장을 만듭니다', '#7CB4F5'],
+      ['관리자 확인 — 실제 불량 / 과검출', '불량 이미지 탭에서 판정 (detection_alert.human_label). 과검출은 결과서에서 빠집니다', '#F5B547'],
+      ['승인 → PDF 한국어 · English', '승인 칸에 이름이 찍히고 PDF가 만들어집니다. 영문은 용어집으로 바꿔 AI 없이', '#4ADE80'],
+      ['고객에게 — 메일 + 포털 + QR', 'QR을 찍으면 이 코일의 사진 원본과 전체 영상을 포털에서 볼 수 있습니다', '#4ADE80']
+    ].map(function (x, i) { return { n: i + 1, title: x[0], body: x[1], c: x[2] }; });
+    var rules = [['합격', '#4ADE80', '실제 불량 0건'], ['합격 (불량 제외)', '#4ADE80', '실제 불량이 있지만 모두 빼냄'], ['재검 필요', '#F04438', '실제 불량 중 박스에 남은 장이 있음 (확인 후 포함 · 미처리)']].map(function (x) { return { stamp: x[0], c: x[1], when: x[2] }; });
+    var dataRows = [['있음', '#4ADE80', '코일 · 고객 · 규격 · 박스 계획 · 비고', 'erp_data · greenp'], ['계산', '#7CB4F5', '장수 · 장 번호 · 길이 위치', 'PLC MOVELENSV'], ['있음', '#4ADE80', '불량 사진 원본', 'detection_alert.image_path'], ['있음', '#4ADE80', '전체 영상 (박스 구간)', 'recording_segment'], ['있음', '#4ADE80', '실제 불량 / 과검출 판정', 'human_label'], ['보완', '#F79009', '평탄도 값 — 정상 판까지 · 단위 확인', 'inference_score_log'], ['이번 주', '#F79009', '표면 점수 (CAM1)', 'camera_id = 1'], ['필요', '#F04438', '결함 종류 · 위치 (ROI)', 'AI 출력 추가'], ['필요', '#F04438', '현장 조치 (뺌 · 확인) · 승인 기록', '새 테이블']].map(function (x) { return { st: x[0], c: x[1], k: x[2], src: x[3] }; });
+    // ---- 불량 이미지 / 전체 영상 (scope-aware)
+    function hms(m) { var tot = Math.round(m * 60), h = Math.floor(tot / 3600), mi = Math.floor(tot % 3600 / 60), se = tot % 60; return (h < 10 ? '0' : '') + h + ':' + (mi < 10 ? '0' : '') + mi + ':' + (se < 10 ? '0' : '') + se; }
+    function tOf(x) { return T0 + (T1 - T0) * (x.g - 0.5) / c.done; }
+    var REV = { real: ['실제 불량', '#F04438'], over: ['과검출', '#8FA3BF'], hold: ['보류', '#F79009'] };
+    function revOf(x) { return S.rev[c.id + ':' + x.i] || (x.real0 ? 'real' : 'over'); }
+    var inScope = mo.ds.filter(function (x) { return x.g - 1 >= s0 && x.g - 1 < s1; });
+    var shown = inScope.filter(function (x) { return (S.imgType === 'all' || x.t === S.imgType) && (!S.hideOver || x.real); });
     var defCards = shown.map(function (x) {
-      var isF = x.t === 'flat', r = revOf(x);
-      var rx = isF ? 50 : 30 + x.w * 0.4, ry = isF ? 49 : 48;
-      var rep = !isF && p.ds.some(function (y) { return y !== x && y.t === 'surf' && Math.abs(y.w - x.w) <= 2 && y.g < x.g && x.g - y.g <= 20; });
+      var isF = x.t === 'flat', r = revOf(x), rx = isF ? 50 : 30 + x.w * 0.4, ry = isF ? 49 : 48;
+      var rep = !isF && mo.ds.some(function (y) { return y !== x && y.t === 'surf' && Math.abs(y.w - x.w) <= 2 && y.g < x.g && x.g - y.g <= 20; });
       return {
-        no: x.i + 1, sub: x.sub, tLabel: isF ? '평탄도 · CAM2' : '표면 · CAM1', tFg: isF ? '#B54708' : '#6941C6', tBg: isF ? '#FFFAEB' : '#F4F3FF', val: isF ? mmOf(x.val) : '점수 ' + x.val,
-        box: x.box, sheet: x.sheet, m: fmt(x.m), where: isF ? (x.sub === '센터 버클' ? '판 가운데' : '양쪽 가장자리') : '폭 ' + x.w + '%', time: x.time, act: x.act, aC: ACT[x.act], rev: REV[r][0], rC: REV[r][1],
+        no: x.i + 1, sub: x.sub, tLabel: isF ? '평탄도 · CAM2' : '표면 · CAM1', tC: isF ? '#FEC84B' : '#D6BBFB', val: isF ? (x.v / 1000).toFixed(2) + ' mm' : '점수 ' + x.val,
+        box: x.box, sheet: x.sheet, m: fmt(x.m), where: where(x), time: hms(tOf(x)), act: x.act, aC: ACT[x.act], rev: REV[r][0], rC: REV[r][1],
         img: isF ? FLAT : SURF, rx: rx.toFixed(0), ry: ry, rw: isF ? 84 : 14, rh: isF ? 14 : 40, cx: (rx + 8).toFixed(0), prevSheet: Math.max(1, x.sheet - 1),
-        cmpTag: rep ? '같은 자리 반복' : '깨끗함', cmpBg: rep ? '#B42318' : '#067647',
+        cmpTag: rep ? '같은 자리 반복' : '깨끗함', cmpBg: rep ? '#D92D20' : '#067647',
         isSurf: !isF, isFlat: isF, isEdge: isF && x.sub !== '센터 버클', isBuckle: isF && x.sub === '센터 버클',
         explain: x.sub === '센터 버클' ? '가운데가 가장자리보다 더 늘어나 볼록 솟은 상태' : '가장자리가 가운데보다 더 늘어나 물결처럼 출렁이는 상태',
         ai: isF ? (c.endRise && x.m > c.endRise ? '코일 끝 텐션 감소 구간에서 발생 — 셋팅보다 끝부분 텐션 문제.' : '단발성 — 앞뒤 5장은 정상.') : (rep ? '같은 폭 위치에서 반복 — 롤 이물 의심, 롤 청소 기록 확인.' : '앞 장 같은 자리는 깨끗함 — 반복 아님.'),
-        border: S.focus === x.i ? '2.5px solid #796CBF' : '1px solid #E3E8F0',
+        border: S.focus === x.i ? '2px solid #F5B547' : '2px solid #13243D',
         dl: function () { self.setState({ toast: { title: '⬇ 불량 사진 3장', body: x.sub + ' · 박스 ' + x.box + ' ' + x.sheet + '번째 장 — 원본 · 확대 · ' + (isF ? '단면' : '앞 장 비교'), code: short + '_B' + x.box + '_S' + x.sheet + '_' + x.t + '_3장.zip' } }); },
-        toVideo: function () { self.setState({ page: 'video', cam: isF ? 'cam2' : 'cam1', vpos: mins(x.time) }); },
-        revBtns: ['real', 'over', 'hold'].map(function (k) { var on = r === k; return { label: REV[k][0], pick: function () { var o = Object.assign({}, S.rev); o[c.id + ':' + x.i] = k; self.setState({ rev: o }); }, style: 'height: 34px; padding: 0 10px; border-radius: 8px; font-size: 12px; font-weight: 700; border: 1px solid ' + (on ? REV[k][1] : '#D0D5DD') + '; background: ' + (on ? REV[k][1] : '#FFFFFF') + '; color: ' + (on ? '#FFFFFF' : '#344054') }; })
+        toVideo: function () { self.setState({ page: 'video', cam: isF ? 'cam2' : 'cam1', vpos: tOf(x) }); },
+        revBtns: ['real', 'over', 'hold'].map(function (k) { var on = r === k; return { label: REV[k][0], pick: function () { var o = Object.assign({}, S.rev); o[c.id + ':' + x.i] = k; self.setState({ rev: o }); }, style: 'height: 34px; padding: 0 10px; border-radius: 8px; font-size: 12px; font-weight: 900; border: 1px solid ' + REV[k][1] + '; background: ' + (on ? REV[k][1] : 'transparent') + '; color: ' + (on ? '#0B1626' : '#FFFFFF') }; })
       };
     });
-    // ---- video page
-    var T0 = mins(c.t0), T1 = mins(c.t1), DUR = T1 - T0;
-    var camName = S.cam === 'cam1' ? 'CAM1 표면' : 'CAM2 평탄도';
-    function mb(minutes) { return minutes * 24; }
+    var imgTypeOpts = [['all', '전체'], ['flat', '평탄도'], ['surf', '표면']].map(function (o) { return { label: o[1], pick: function () { self.setState({ imgType: o[0] }); }, style: chip(S.imgType === o[0]) }; });
+    var DUR = Math.max(1, T1 - T0), camName = S.cam === 'cam1' ? 'CAM1 표면' : 'CAM2 평탄도';
+    function mb(mn) { return mn * 24; }
     function sz(v) { return v >= 1000 ? (v / 1000).toFixed(1) + ' GB' : Math.round(v) + ' MB'; }
-    var segT = [], acc = 0;
-    c.boxes.forEach(function (n) { var a = T0 + DUR * acc / c.done; acc += n; var b = T0 + DUR * Math.min(acc, c.done) / c.done; segT.push([a, Math.min(b, T1)]); });
-    var vpos = S.vpos === null ? T0 + DUR * 0.3 : S.vpos;
-    var nearDef = p.ds.filter(function (x) { return isReal(x) && Math.abs(mins(x.time) - vpos) < 0.05 && (S.cam === 'cam1' ? x.t === 'surf' : x.t === 'flat'); })[0];
-    var curBox = 1; segT.forEach(function (s, i) { if (vpos >= s[0]) curBox = i + 1; });
+    var segT = c.boxes.map(function (n, i) { var a1 = T0 + DUR * mo.starts[i] / c.done, b1 = T0 + DUR * Math.min(mo.starts[i] + n, c.done) / c.done; return [a1, Math.max(a1, Math.min(b1, T1))]; });
+    var defVpos = isCoil ? T0 + DUR * 0.3 : segT[scope - 1][0] + 0.2;
+    var vpos = S.vpos === null ? defVpos : S.vpos;
+    var curBox = 1; segT.forEach(function (sg, i) { if (vpos >= sg[0] && sg[1] > sg[0]) curBox = i + 1; });
+    var nearDef = mo.ds.filter(function (x) { return x.real && Math.abs(tOf(x) - vpos) < 0.05 && (S.cam === 'cam1' ? x.t === 'surf' : x.t === 'flat'); })[0];
     var vid = {
       camName: camName, img: S.cam === 'cam1' ? SURF : FLAT, start: c.t0, end: c.t1, dur: Math.floor(DUR / 60) + '시간 ' + Math.round(DUR % 60) + '분', size: sz(mb(DUR)), bothSize: sz(mb(DUR) * 2),
-      clock: hm(vpos), where: '박스 ' + curBox, atDefect: !!nearDef, defName: nearDef ? nearDef.sub + ' · 박스 ' + nearDef.box + ' ' + nearDef.sheet + '번째 장' : '',
-      posPct: ((vpos - T0) / DUR * 100).toFixed(2),
-      segs: segT.map(function (s, i) { var on = curBox === i + 1; return { f: Math.max(0.01, s[1] - s[0]).toFixed(2), label: '박스 ' + (i + 1), bg: s[1] <= s[0] ? '#3A5375' : (on ? '#796CBF' : (i % 2 ? '#2E4A6E' : '#3A5A84')), pick: function () { self.setState({ vpos: s[0] + 0.01 }); } }; }),
-      marks: p.ds.filter(isReal).map(function (x) { return { x: ((mins(x.time) - T0) / DUR * 100).toFixed(2), c: x.t === 'surf' ? '#9E77ED' : '#F04438', label: x.sub + ' ' + x.time, pick: function () { self.setState({ vpos: mins(x.time), cam: x.t === 'surf' ? 'cam1' : 'cam2' }); } }; }),
-      rows: segT.map(function (s, i) { var nd = p.ds.filter(function (x) { return isReal(x) && x.box === i + 1; }).length; return { n: i + 1, range: s[1] > s[0] ? hm(s[0]).slice(0, 5) + '–' + hm(s[1]).slice(0, 5) : '아직 작업 전', size: s[1] > s[0] ? sz(mb(s[1] - s[0])) : '—', hasDef: nd > 0, nDef: nd, dl: function () { self.setState({ toast: { title: '⬇ 박스 ' + (i + 1) + ' 구간 영상', body: camName + ' · ' + hm(s[0]).slice(0, 5) + '–' + hm(s[1]).slice(0, 5) + ' · ' + sz(mb(s[1] - s[0])), code: short + '_' + S.cam.toUpperCase() + '_box' + (i + 1) + '.mp4' } }); } }; })
+      clock: hms(vpos), where: '박스 ' + curBox, atDefect: !!nearDef, defName: nearDef ? nearDef.sub + ' · 박스 ' + nearDef.box + ' ' + nearDef.sheet + '번째 장' : '', posPct: ((vpos - T0) / DUR * 100).toFixed(2),
+      segs: segT.map(function (sg, i) { var on = curBox === i + 1 || scope === i + 1; return { f: Math.max(0.01, sg[1] - sg[0]).toFixed(2), label: '박스 ' + (i + 1), fg: on ? '#0B1626' : '#FFFFFF', bg: sg[1] <= sg[0] ? '#1E3352' : (on ? '#F5B547' : (i % 2 ? '#2E4A6E' : '#3A5A84')), pick: function () { self.setState({ vpos: sg[0] + 0.01 }); } }; }),
+      marks: mo.ds.filter(function (x) { return x.real; }).map(function (x) { return { x: ((tOf(x) - T0) / DUR * 100).toFixed(2), c: x.t === 'surf' ? '#9E77ED' : '#F04438', label: x.sub, pick: function () { self.setState({ vpos: tOf(x), cam: x.t === 'surf' ? 'cam1' : 'cam2' }); } }; }),
+      rows: segT.map(function (sg, i) { var nd = mo.ds.filter(function (x) { return x.real && x.box === i + 1; }).length, ok = sg[1] > sg[0]; return { n: i + 1, range: ok ? hms(sg[0]).slice(0, 5) + '–' + hms(sg[1]).slice(0, 5) : '아직 작업 전', size: ok ? sz(mb(sg[1] - sg[0])) : '—', hasDef: nd > 0, nDef: nd, dl: function () { self.setState({ toast: { title: '⬇ 박스 ' + (i + 1) + ' 구간 영상', body: camName + ' · ' + sz(mb(sg[1] - sg[0])), code: short + '_' + S.cam.toUpperCase() + '_box' + (i + 1) + '.mp4' } }); } }; })
     };
-    var camOpts = [['cam1', 'CAM1 표면'], ['cam2', 'CAM2 평탄도']].map(function (o) { return { label: o[1], pick: function () { self.setState({ cam: o[0] }); }, style: chip(S.cam === o[0], '#796CBF') }; });
-    // ---- report page
-    var EN = S.lang === 'en';
-    var KO = { company: '오성철강 OHSUNG STEEL', titleBox: '레벨러 품질 검사 결과서 — 박스 {b}', titleCoil: '레벨러 품질 검사 결과서 — 코일 전체', docNo: '문서번호', issued: '발행일',
-      cust: '고객사', coil: '코일 ID', spec: '규격 (두께 × 폭)', weight: '중량', box: '박스', boxes: '박스 수', sheets: '장수 (출하 / 자른)', cut: '절단 길이', date: '작업 일시', equip: '검사 장비', equipV: 'CAM1 표면 · CAM2 레이저 평탄도',
-      pass: '합격', passL: '평탄도 · 표면 모두 기준 이내', cond: '합격 (불량 제외)', condL: '불량 {n}장을 빼고 출하했습니다', hold: '재검 필요', holdL: '불량 {n}장이 남아 있을 수 있습니다 — 재검 후 출하', run: '작업 중', runL: '작업이 끝나면 판정됩니다',
-      calc: '자른 {c}장 − 뺀 {r}장 = 출하 {s}장', boxSum: '박스별 요약', cutN: '자른', rmN: '뺀', shipN: '출하', flatG: '평탄도 등급', surfN: '표면', verdict: '판정',
-      flatTitle: '평탄도 (한 칸 = 한 장)', flatSub: '왼쪽 = 첫 장 · 오른쪽 = 마지막 장', maxH: '최대 출렁 높이', gA: 'A 평평', gB: 'B 거의 평평', gC: 'C 조금 출렁', gD: 'D 불량 (출하 제외)',
-      defTitle: '불량 상세', photo: '사진', kind: '종류', sheet: '장', where: '판 위 위치', score: '값', handling: '처리', noDef: '불량이 없습니다',
-      sheetFmt: '{s}번째', removed: '빼냄 · 출하 제외', checked: '확인 후 포함', open: '미처리 · 재검', edge: '양쪽 가장자리', center: '가운데', widthFmt: '폭 {w}%',
-      notesTitle: '작업지시서 비고', foot1: '※ 관리자가 "과검출"로 판정한 항목은 포함하지 않습니다.', foot2: '※ 평탄도 높이(mm)는 레이저 측정값 환산 기준입니다.', foot3: '※ 불량 사진 · 전체 영상은 고객 포털에서 받을 수 있습니다.', inspector: '검사', approver: '승인',
-      sub: { '스크래치': '스크래치', '찍힘': '찍힘', '엣지 웨이브': '엣지 웨이브', '센터 버클': '센터 버클' } };
-    var ENd = { company: 'OHSUNG STEEL', titleBox: 'Leveler Quality Report — Box {b}', titleCoil: 'Leveler Quality Report — Whole Coil', docNo: 'Doc No.', issued: 'Issued',
-      cust: 'Customer', coil: 'Coil ID', spec: 'Spec (t × w)', weight: 'Weight', box: 'Box', boxes: 'Boxes', sheets: 'Sheets (shipped / cut)', cut: 'Cut length', date: 'Production', equip: 'Inspection', equipV: 'CAM1 surface · CAM2 laser flatness',
-      pass: 'PASS', passL: 'Flatness and surface within limits', cond: 'PASS (defects removed)', condL: '{n} defective sheet(s) removed before shipping', hold: 'RE-CHECK', holdL: '{n} defective sheet(s) may remain — re-check before shipping', run: 'RUNNING', runL: 'Judged when finished',
-      calc: 'cut {c} − removed {r} = shipped {s}', boxSum: 'Summary by box', cutN: 'Cut', rmN: 'Rem.', shipN: 'Ship', flatG: 'Flatness grade', surfN: 'Surface', verdict: 'Result',
-      flatTitle: 'Flatness (one cell per sheet)', flatSub: 'left = first sheet · right = last', maxH: 'Max wave height', gA: 'A flat', gB: 'B nearly flat', gC: 'C slight wave', gD: 'D defect (not shipped)',
-      defTitle: 'Defect details', photo: 'Photo', kind: 'Type', sheet: 'Sheet', where: 'Position', score: 'Value', handling: 'Handling', noDef: 'No defects',
-      sheetFmt: '#{s}', removed: 'Removed', checked: 'Checked, kept', open: 'Open · re-check', edge: 'Both edges', center: 'Center', widthFmt: 'width {w}%',
-      notesTitle: 'Work order notes', foot1: '※ Items judged as "over-detection" by the reviewer are excluded.', foot2: '※ Flatness height (mm) is converted from the laser measurement.', foot3: '※ Defect photos and full videos are available on the customer portal.', inspector: 'Inspected', approver: 'Approved',
-      sub: { '스크래치': 'Scratch', '찍힘': 'Dent', '엣지 웨이브': 'Edge wave', '센터 버클': 'Center buckle' } };
-    var CUST_EN = { 'A사': 'Customer A', 'B사': 'Customer B', 'C사': 'Customer C', 'D사': 'Customer D' };
-    var rt = EN ? ENd : KO;
-    function verdictOf(bs, running) {
-      if (running) return { stamp: rt.run, line: rt.runL, c: '#1E40AF', bg: '#EFF4FF', short: rt.run };
-      if (!bs.realN) return { stamp: rt.pass, line: rt.passL, c: '#067647', bg: '#ECFDF3', short: rt.pass };
-      if (!bs.kept) return { stamp: rt.cond, line: f(rt.condL, { n: bs.removed }), c: '#067647', bg: '#ECFDF3', short: rt.cond };
-      return { stamp: rt.hold, line: f(rt.holdL, { n: bs.kept }), c: '#B42318', bg: '#FEF3F2', short: rt.hold };
-    }
-    function pc(x, d) { return d ? (x / d * 100).toFixed(1) : 0; }
-    function defRow(x) {
-      var isF = x.t === 'flat';
-      return { box: x.box, kind: rt.sub[x.sub], sheet: f(rt.sheetFmt, { s: x.sheet }), where: isF ? (x.sub === '센터 버클' ? rt.center : rt.edge) : f(rt.widthFmt, { w: x.w }), val: isF ? mmOf(x.val) : x.val, handling: x.act === '뺌' ? rt.removed : (x.act === '확인' ? rt.checked : rt.open), hC: x.act === '뺌' ? '#067647' : (x.act === '확인' ? '#B54708' : '#B42318'), img: isF ? FLAT : SURF, op: isF ? '50% 50%' : (30 + x.w / 2) + '% 50%' };
-    }
-    function counts(list) { var g = { A: 0, B: 0, C: 0, D: 0 }; list.forEach(function (b) { ['A', 'B', 'C', 'D'].forEach(function (k) { g[k] += b.cnt[k]; }); }); return [['A', rt.gA], ['B', rt.gB], ['C', rt.gC], ['D', rt.gD]].map(function (x) { return { label: x[1], n: g[x[0]], c: GC[x[0]] }; }); }
-    var running = c.st === '작업 중';
-    var isBoxMode = S.rptMode === 'box', RB = Math.min(S.rptBox, c.boxes.length), bsel = BS[RB - 1];
-    var rpt;
-    var custName = EN ? CUST_EN[c.cust] : c.cust;
-    var notes = c.notes.map(function (nn) { return { text: EN ? nn[1] : nn[0], orig: EN ? '  (' + nn[0] + ')' : '' }; });
-    if (isBoxMode) {
-      var vb = verdictOf({ realN: bsel.realIn.length, kept: bsel.kept, removed: bsel.removed }, bsel.done < bsel.n && running);
-      rpt = { isBox: true, isCoil: false, title: f(rt.titleBox, { b: RB }), docNo: 'QR-20261102-' + short + '-B' + RB,
-        info: [[rt.cust, custName], [rt.coil, c.id], [rt.spec, c.spec + ' mm'], [rt.box, RB + ' / ' + c.boxes.length], [rt.sheets, bsel.ship + ' / ' + bsel.done], [rt.cut, cur.cut], [rt.date, '2026-11-02 ' + c.t0 + '–' + c.t1], [rt.equip, rt.equipV]].map(function (x) { return { k: x[0], v: x[1] }; }),
-        stamp: vb.stamp, vLine: vb.line, vC: vb.c, vBg: vb.bg, calc: f(rt.calc, { c: bsel.done, r: bsel.removed, s: bsel.ship }),
-        flatRows: [{ label: rt.box + ' ' + RB, h: 26, cells: bsel.cells }], gradeCounts: counts([bsel]), maxH: (bsel.maxV / 1000).toFixed(2) + ' mm',
-        defRows: bsel.realIn.map(defRow), noDef: !bsel.realIn.length, notes: notes, boxSumRows: [] };
-    } else {
-      var keptAll = sum(BS.map(function (b) { return b.kept; })), realAll = sum(BS.map(function (b) { return b.realIn.length; }));
-      var vc = verdictOf({ realN: realAll, kept: keptAll, removed: removedAll }, running);
-      rpt = { isBox: false, isCoil: true, title: rt.titleCoil, docNo: 'QR-20261102-' + short + '-ALL',
-        info: [[rt.cust, custName], [rt.coil, c.id], [rt.spec, c.spec + ' mm'], [rt.weight, c.kg], [rt.boxes, String(c.boxes.length)], [rt.sheets, (c.done - removedAll) + ' / ' + c.done], [rt.date, '2026-11-02 ' + c.t0 + '–' + c.t1], [rt.equip, rt.equipV]].map(function (x) { return { k: x[0], v: x[1] }; }),
-        stamp: vc.stamp, vLine: vc.line, vC: vc.c, vBg: vc.bg, calc: f(rt.calc, { c: c.done, r: removedAll, s: c.done - removedAll }),
-        boxSumRows: BS.map(function (b, i) { var v = verdictOf({ realN: b.realIn.length, kept: b.kept, removed: b.removed }, b.done < b.n && running); var tot = b.done; return { n: i + 1, cut: b.done, rm: b.removed || '—', ship: b.ship, a: pc(b.cnt.A, tot), b: pc(b.cnt.B, tot), c: pc(b.cnt.C, tot), d: pc(b.cnt.D, tot), surf: b.realIn.filter(function (x) { return x.t === 'surf'; }).length || '—', v: v.short, vC: v.c }; }),
-        flatRows: BS.map(function (b, i) { return { label: rt.box + ' ' + (i + 1), h: 16, cells: b.cells }; }), gradeCounts: counts(BS), maxH: (maxAll / 1000).toFixed(2) + ' mm',
-        defRows: p.ds.filter(isReal).map(defRow), noDef: !p.ds.filter(isReal).length, notes: notes };
-      rpt.boxTabs = [];
-    }
-    rpt.boxTabs = c.boxes.map(function (_, i) { return { label: '박스 ' + (i + 1), pick: function () { self.setState({ rptBox: i + 1 }); }, style: chip(RB === i + 1) }; });
-    var rptModes = [['box', '박스별'], ['coil', '코일 전체']].map(function (o) { var on = S.rptMode === o[0]; return { label: o[1], pick: function () { self.setState({ rptMode: o[0] }); }, style: 'height: 36px; padding: 0 18px; border-radius: 9px; border: 0; font-size: 14px; font-weight: 700; background: ' + (on ? '#796CBF' : 'transparent') + '; color: ' + (on ? '#FFFFFF' : '#5C6478') }; });
+    var camOpts = [['cam1', 'CAM1 표면'], ['cam2', 'CAM2 평탄도']].map(function (o) { return { label: o[1], pick: function () { self.setState({ cam: o[0] }); }, style: chip(S.cam === o[0]) }; });
     var langOpts = [['ko', '한국어'], ['en', 'English']].map(function (o) { return { label: o[1], pick: function () { self.setState({ lang: o[0] }); }, style: chip(S.lang === o[0]) }; });
-    var pdfName = short + (isBoxMode ? '_box' + RB : '_coil') + '_quality_' + (EN ? 'EN' : 'KO') + '.pdf';
     return {
-      tabs: tabs, coils: coils, coilCount: coils.length, cur: cur, kpis: kpis,
-      isView: S.page === 'view', isImg: S.page === 'img', isVideo: S.page === 'video', isReport: S.page === 'report',
-      grades: grades, boxRows: boxRows, boxLines: boxLines, boxLabels: boxLabels, surfDots: surfDots, repeatOn: c.id === 'SAMPLE-D03',
-      imgBoxOpts: imgBoxOpts, imgTypeOpts: imgTypeOpts, defCards: defCards, noDefs: defCards.length === 0, imgFileCount: defCards.length * 3,
-      overLabel: S.hideOver ? '✓ 과검출 숨김' : '과검출도 보기', overStyle: chip(S.hideOver, '#067647'), toggleOver: function () { self.setState({ hideOver: !S.hideOver }); },
-      zipAllImg: function () { self.setState({ toast: { title: '⬇ 불량 사진 ZIP', body: defCards.length + '개 불량 × 3장 = ' + defCards.length * 3 + '장 · 불량마다 폴더 (박스_장_종류) + 목록.csv', code: short + '_defect_images.zip' } }); },
+      tabs: tabs, coils: coils, cur: cur, scopes: scopes, isView: S.page === 'view', isReport: S.page === 'report', isCoil: isCoil, isBox: !isCoil,
+      ship: ship, kV: kV, kF: kF, kS: kS, gradeBar: gradeBar, gradeTotal: gt, act: act,
+      bigTitle: bigTitle, bars: bars, yTicks: yTicks, limitY: Y(700).toFixed(1), limitPct: (Y(700) / 240 * 100).toFixed(1), flatCallouts: flatCallouts, boxLinesX: boxLinesX, boxLinesPct: boxLinesPct, boxHead: boxHead,
+      surfDots: surfDots, noSurf: surfDots.length === 0, repeatOn: c.id === 'SAMPLE-D03' && (isCoil || scope <= 2), actMarks: actMarks, xTicks: xTicks,
+      boxRows: boxRows, boxInsight: boxInsight, boxDefs: boxDefs, noBoxDefs: boxDefs.length === 0, hist: hist, types: types, noTypes: types.length === 0,
+      compare: compare, cmpTitle: isCoil ? '오늘 코일 비교' : '이 코일의 박스 비교', cmpSub: isCoil ? '줄을 누르면 그 코일로 바뀝니다' : '줄을 누르면 그 박스로 바뀝니다', cmpCol: isCoil ? '코일' : '박스',
+      rt: rt, rp: rp, isImg: S.page === 'img', isVideo: S.page === 'video', scopeLabel: isCoil ? '코일 전체' : '박스 ' + scope, defCards: defCards, noDefs: defCards.length === 0, imgFileCount: defCards.length * 3, imgTypeOpts: imgTypeOpts,
+      overLabel: S.hideOver ? '✓ 과검출 숨김' : '과검출도 보기', overStyle: chip(S.hideOver), toggleOver: function () { self.setState({ hideOver: !S.hideOver }); },
+      zipAllImg: function () { self.setState({ toast: { title: '⬇ 불량 사진 ZIP', body: defCards.length + '개 불량 × 3장 = ' + defCards.length * 3 + '장 · 불량마다 폴더 + 목록.csv', code: short + (isCoil ? '' : '_box' + scope) + '_defect_images.zip' } }); },
       camOpts: camOpts, vid: vid,
-      dlFull: function () { self.setState({ toast: { title: '⬇ 코일 전체 영상', body: camName + ' · ' + c.t0 + '–' + c.t1 + ' · ' + vid.size + ' — 준비되면 받기가 시작됩니다 (큰 파일은 몇 분 걸릴 수 있어요)', code: short + '_' + S.cam.toUpperCase() + '_full.mp4' } }); },
+      dlFull: function () { self.setState({ toast: { title: '⬇ 코일 전체 영상', body: camName + ' · ' + c.t0 + '–' + c.t1 + ' · ' + vid.size, code: short + '_' + S.cam.toUpperCase() + '_full.mp4' } }); },
       dlBoth: function () { self.setState({ toast: { title: '⬇ 두 카메라 전체 영상', body: 'CAM1 표면 + CAM2 평탄도 · ' + vid.bothSize, code: short + '_CAM1_full.mp4 · ' + short + '_CAM2_full.mp4' } }); },
-      rptModes: rptModes, langOpts: langOpts, rpt: rpt, rt: rt,
-      rptPdf: function () { self.setState({ toast: { title: '⬇ PDF 받기', body: (isBoxMode ? '박스 ' + RB + ' 결과서' : '코일 전체 결과서') + ' · A4', code: pdfName } }); },
-      rptSend: function () { self.setState({ toast: { title: '✉ 고객에게 보냈습니다', body: custName + ' 담당자 메일 + 고객 포털 "품질 결과서" 게시', code: pdfName } }); },
-      toastOn: !!S.toast, toast: S.toast || { title: '', body: '', code: '' }, closeToast: function () { self.setState({ toast: null }); }
+      toastOn: !!S.toast, toast: S.toast || { title: '', body: '', code: '' }, closeToast: function () { self.setState({ toast: null }); }, pbars: pbars, pLimitY: pY(700).toFixed(1), pLimitPct: (pY(700) / 120 * 100).toFixed(1), pxTicks: pxTicks, pGrade: pGrade, qr: qr, howSteps: howSteps, rules: rules, dataRows: dataRows, langOpts: langOpts
     };
   }
 }
