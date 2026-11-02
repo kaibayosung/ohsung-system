@@ -1,0 +1,572 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>레벨러 AI 헬퍼 (한국어) · 오성철강</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;height:100%;background:#050A14;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:800px;transform-origin:center center}
+
+</style>
+</head>
+<body>
+<!-- Mockup for field test (sample data only). Source: 레벨링 통합 대시보드 목업 / Helper.dc.html -->
+<div id="stage"></div>
+
+<template id="tpl">
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: {{bg}}; color: #FFFFFF; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden; border: {{frame}}">
+
+<!-- TOP BAR -->
+<div style="height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: {{barBg}}; border-bottom: 1px solid #1E3352">
+<span style="width: 34px; height: 34px; border-radius: 10px; background: #F5B547; color: #0B1626; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 14px; flex: 0 0 34px">AI</span>
+<b style="font-size: 17px; white-space: nowrap">{{t.appTitle}}</b>
+<nav style="display: flex; gap: 4px; margin-left: 8px">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
+<button type="button" onClick="{{s.go}}" style="display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 11px; border-radius: 999px; font-size: 14px; font-weight: 700; border: 0; background: {{s.bg}}; color: {{s.fg}}; font-family: inherit; cursor: pointer; white-space: nowrap"><span style="width: 22px; height: 22px; border-radius: 50%; background: {{s.nbg}}; color: {{s.nfg}}; font-size: 12px; display: flex; align-items: center; justify-content: center">{{s.n}}</span>{{s.label}}</button>
+</sc-for>
+</nav>
+<button type="button" onClick="{{openNotes}}" style="margin-left: auto; height: 44px; padding: 0 14px; border-radius: 10px; border: 2px solid #F5B547; background: {{notesBtnBg}}; color: #F5B547; font-size: 15px; font-weight: 900; font-family: inherit; cursor: pointer; white-space: nowrap">{{t.notes}}{{notesBadge}}</button>
+<button type="button" onClick="{{toggleLang}}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #3A5375; background: transparent; color: #FFFFFF; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer">{{t.langBtn}}</button>
+</div>
+
+<sc-if value="{{alarmOn}}" hint-placeholder-val="{{ false }}">
+<div style="height: 42px; flex: 0 0 42px; background: #F04438; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: 900">⚠ {{t.alarmBanner}}</div>
+</sc-if>
+
+<!-- BODY -->
+<div style="flex: 1 1 auto; min-height: 0; padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+
+<!-- STEP 1 -->
+<sc-if value="{{is1}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s1Title}}</b><span style="font-size: 15px; color: #8FA3BF">{{t.s1Sub}}</span></div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1 1 auto">
+<sc-for list="{{coils}}" as="c" hint-placeholder-count="3">
+<button type="button" onClick="{{c.pick}}" style="background: #13243D; border: 2px solid {{c.bd}}; border-radius: 18px; padding: 22px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 12px; font-family: inherit; cursor: pointer">
+<span style="font-size: 15px; color: #8FA3BF">{{c.cust}}</span>
+<b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace">{{c.coil}}</b>
+<span style="font-size: 20px; font-weight: 700">{{c.spec}}</span>
+<span style="display: flex; gap: 8px; flex-wrap: wrap">
+<span style="font-size: 15px; background: #1E3352; border-radius: 8px; padding: 6px 10px">{{c.kg}}</span>
+<span style="font-size: 15px; background: #1E3352; border-radius: 8px; padding: 6px 10px">{{c.boxes}}</span>
+<span style="font-size: 15px; background: #1E3352; border-radius: 8px; padding: 6px 10px">{{c.cut}}</span>
+</span>
+<span style="font-size: 15px; color: #F5B547">{{c.note}}</span>
+<span style="margin-top: auto; font-size: 16px; font-weight: 700; color: {{c.stC}}">{{c.st}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<!-- STEP 2 -->
+<sc-if value="{{is2}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s2Title}}</b><span style="font-size: 16px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace">SAMPLE-A01 · 0.60 × 1219 · 2,565mm</span></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; flex: 1 1 auto">
+<sc-for list="{{boxes}}" as="b" hint-placeholder-count="4">
+<button type="button" onClick="{{b.pick}}" style="background: {{b.bg}}; border: 2px solid {{b.bd}}; border-radius: 18px; padding: 22px; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-family: inherit; cursor: pointer">
+<span style="font-size: 18px; color: #8FA3BF">{{t.box}}</span>
+<b style="font-size: 72px; line-height: 1; font-family: 'IBM Plex Mono', monospace">{{b.no}}</b>
+<span style="font-size: 22px; font-weight: 700">{{b.target}}</span>
+<span style="font-size: 15px; color: {{b.stC}}; font-weight: 700">{{b.st}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<!-- STEP 3 -->
+<sc-if value="{{is3}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s3Title}}</b><span style="font-size: 15px; color: #F5B547; font-weight: 700">{{checkText}}</span></div>
+<div style="display: flex; gap: 14px; flex: 1 1 auto; min-height: 0">
+<div style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{orderChecks}}" as="o" hint-placeholder-count="6">
+<button type="button" onClick="{{o.toggle}}" style="background: {{o.bg}}; border: 2px solid {{o.bd}}; border-radius: 16px; padding: 16px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 6px; position: relative; font-family: inherit; cursor: pointer">
+<span style="font-size: 15px; color: #8FA3BF">{{o.k}}</span>
+<b style="font-size: 26px; font-family: 'IBM Plex Mono', monospace; line-height: 1.2">{{o.v}}</b>
+<span style="font-size: 13px; color: #C9D3E0">{{o.hint}}</span>
+<span style="position: absolute; right: 14px; top: 14px; width: 32px; height: 32px; border-radius: 50%; border: 2px solid {{o.ck}}; background: {{o.ckbg}}; color: #0B1626; font-weight: 900; font-size: 17px; display: flex; align-items: center; justify-content: center">{{o.mark}}</span>
+</button>
+</sc-for>
+</div>
+<div style="flex: 0 0 360px; background: #2A2310; border: 2px solid {{notesBd}}; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<b style="font-size: 20px; color: #F5B547">{{t.notesTitle}}</b>
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+<div style="display: flex; gap: 10px; font-size: 16px; line-height: 1.5"><span style="color: #F5B547; font-weight: 900">{{n.i}}</span><span>{{n.text}}</span></div>
+</sc-for>
+<button type="button" onClick="{{readNotes}}" style="margin-top: auto; min-height: 56px; border-radius: 12px; border: 0; background: {{readBg}}; color: #0B1626; font-size: 18px; font-weight: 900; font-family: inherit; cursor: pointer">{{readLabel}}</button>
+</div>
+</div>
+</sc-if>
+
+<!-- STEP 4 : SETUP — current vs recommended -->
+<sc-if value="{{is4}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s4Title}}</b><span style="font-size: 15px; color: {{setupC}}; font-weight: 700">{{setupText}}</span></div>
+<div style="display: flex; gap: 14px; flex: 1 1 auto; min-height: 0">
+<div style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{settings}}" as="s" hint-placeholder-count="6">
+<button type="button" onClick="{{s.fix}}" style="background: {{s.bg}}; border: 2px solid {{s.bd}}; border-radius: 16px; padding: 14px 16px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 6px; font-family: inherit; cursor: pointer">
+<span style="display: flex; justify-content: space-between; width: 100%; align-items: center"><span style="font-size: 15px; color: #8FA3BF">{{s.k}}</span><span style="font-size: 13px; font-weight: 900; color: #0B1626; background: {{s.okC}}; border-radius: 999px; padding: 2px 10px">{{s.ok}}</span></span>
+<span style="display: flex; align-items: baseline; gap: 10px">
+<span style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #8FA3BF">{{t.now}}</span><b style="font-size: 34px; font-family: 'IBM Plex Mono', monospace; color: {{s.curC}}; line-height: 1.1">{{s.cur}}</b></span>
+<span style="font-size: 22px; color: #5B6B82">→</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 12px; color: #8FA3BF">{{t.reco}}</span><b style="font-size: 34px; font-family: 'IBM Plex Mono', monospace; color: #F5B547; line-height: 1.1">{{s.v}}</b></span>
+<span style="font-size: 15px; color: #C9D3E0">{{s.u}}</span>
+</span>
+<span style="font-size: 14px; color: {{s.hintC}}; line-height: 1.4; font-weight: {{s.hintW}}">{{s.hint}}</span>
+</button>
+</sc-for>
+</div>
+<div style="flex: 0 0 290px; background: #13243D; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<b style="font-size: 18px; color: #F5B547">{{t.aiTitle}}</b>
+<span style="font-size: 15px; line-height: 1.6">{{t.aiTip1}}</span>
+<span style="font-size: 15px; line-height: 1.6">{{t.aiTip2}}</span>
+<span style="margin-top: auto; font-size: 13px; color: #8FA3BF">{{t.cardHint}}</span>
+</div>
+</div>
+</sc-if>
+
+<!-- STEP 5 : RUNNING (floor-screen style) -->
+<sc-if value="{{is5}}" hint-placeholder-val="{{ false }}">
+<!-- header row -->
+<div style="display: flex; gap: 10px; flex: 0 0 92px">
+<div style="flex: 1 1 auto; background: #13243D; border-radius: 14px; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0">
+<div style="display: flex; align-items: baseline; gap: 12px; white-space: nowrap"><b style="font-size: 20px">{{jobTitle}}</b><span style="font-size: 13px; color: #8FA3BF">SAMPLE-A01 · {{t.started}} 10:05</span></div>
+<div style="display: flex; gap: 3px; height: 12px">
+<sc-for list="{{boxProg}}" as="p" hint-placeholder-count="4">
+<div style="flex: {{p.f}} 1 0; background: #0B1626; border-radius: 4px; overflow: hidden"><div style="height: 12px; width: {{p.pct}}%; background: {{p.c}}"></div></div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 18px; font-size: 14px; color: #C9D3E0; white-space: nowrap"><span><b style="color: #FFFFFF; font-size: 17px">{{coilPct}}%</b> · {{posM}} / 710 m</span><span>{{t.elapsed}} <b style="color: #FFFFFF">{{elapsed}}</b></span><span>{{t.left}} <b style="color: #FFFFFF">{{leftMin}}</b></span><span>{{t.ends}} <b style="color: #FFFFFF">{{endsAt}}</b></span></div>
+</div>
+<div style="flex: 0 0 210px; background: #13243D; border-radius: 14px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center">
+<span style="font-size: 13px; color: #8FA3BF">{{countLabel}}</span>
+<div style="display: flex; align-items: baseline; gap: 6px"><b style="font-size: 50px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #F5B547">{{count}}</b><span style="font-size: 22px; color: #C9D3E0; font-family: 'IBM Plex Mono', monospace">/ {{target}}</span><span style="margin-left: auto; font-size: 13px; color: #FDA29B">{{t.removedShort}} {{removed}}</span></div>
+</div>
+<div style="flex: 0 0 300px; background: {{verdict5.bg}}; border: 2px solid {{verdict5.bd}}; border-radius: 14px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; gap: 2px">
+<b style="font-size: 22px; color: {{verdict5.fg}}">{{verdict5.icon}} {{verdict5.title}}</b>
+<span style="font-size: 13px; line-height: 1.4; color: #E4E7EC">{{verdict5.body}}</span>
+</div>
+</div>
+
+<!-- line diagram -->
+<div style="flex: 0 0 104px; background: #13243D; border-radius: 14px; padding: 8px 16px; display: flex; align-items: center; gap: 0">
+<sc-for list="{{line}}" as="u" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; flex: {{u.f}}; min-width: 0">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto">
+<div style="width: {{u.w}}px; height: 52px; border-radius: {{u.r}}; background: {{u.fill}}; border: 3px solid {{u.c}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; color: #0B1626">{{u.icon}}</div>
+<b style="font-size: 13px; white-space: nowrap">{{u.name}}</b>
+<span style="font-size: 12px; color: {{u.vc}}; white-space: nowrap; font-family: 'IBM Plex Mono', monospace">{{u.val}}</span>
+</div>
+<sc-if value="{{u.link}}" hint-placeholder-val="{{ true }}"><div style="flex: 1 1 auto; height: 0; border-top: 4px dashed #6F8FBF; margin: 0 6px 30px"></div></sc-if>
+</div>
+</sc-for>
+</div>
+
+<!-- gauges -->
+<div style="flex: 0 0 132px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
+<sc-for list="{{gauges}}" as="g" hint-placeholder-count="5">
+<div style="background: #13243D; border-radius: 14px; padding: 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 0; border-top: 4px solid {{g.c}}">
+<span style="align-self: flex-start; font-size: 13px; color: #C9D3E0">{{g.k}}</span>
+<svg viewBox="0 0 120 66" style="width: 110px; height: 56px" role="img" aria-label="{{g.k}} {{g.v}}">
+<path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="#24395A" stroke-width="10" stroke-linecap="round"></path>
+<path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="#3FAE6A" stroke-width="10" stroke-dasharray="{{g.band}}" stroke-dashoffset="{{g.off}}"></path>
+<line x1="60" y1="60" x2="{{g.nx}}" y2="{{g.ny}}" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></line>
+<circle cx="60" cy="60" r="5" fill="#FFFFFF"></circle>
+</svg>
+<b style="font-size: 24px; line-height: 1.1; font-family: 'IBM Plex Mono', monospace">{{g.v}}<span style="font-size: 12px; color: #C9D3E0"> {{g.u}}</span></b>
+<span style="font-size: 11px; color: #8FA3BF">{{t.normal}} {{g.range}}</span>
+<span style="font-size: 12px; font-weight: 700; color: {{g.c}}">{{g.s}}</span>
+</div>
+</sc-for>
+</div>
+
+<!-- chart + guide -->
+<div style="flex: 1 1 auto; min-height: 0; display: flex; gap: 10px">
+<div style="flex: 1 1 auto; background: #13243D; border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
+<div style="display: flex; gap: 6px; align-items: center">
+<sc-for list="{{chartTabs}}" as="ct" hint-placeholder-count="4">
+<button type="button" onClick="{{ct.pick}}" style="{{ct.style}}">{{ct.label}}</button>
+</sc-for>
+<span style="margin-left: auto; display: flex; gap: 10px; font-size: 11px; color: #C9D3E0; white-space: nowrap"><span><span style="display: inline-block; width: 14px; height: 3px; background: #F5B547; vertical-align: middle"></span> {{t.actual}}</span><span><span style="display: inline-block; width: 14px; border-top: 2px dashed #FFFFFF; vertical-align: middle"></span> {{t.forecast}}</span><span><span style="display: inline-block; width: 12px; height: 10px; background: rgba(63,174,106,0.35); vertical-align: middle"></span> {{t.normal}}</span><span style="color: #F04438">● {{t.defect}}</span></span>
+</div>
+<div style="position: relative; flex: 1 1 auto; min-height: 0">
+<svg viewBox="0 0 600 150" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" role="img" aria-label="{{chartAria}}">
+<polygon points="{{ch.band}}" fill="rgba(63,174,106,0.28)"></polygon>
+<sc-for list="{{ch.boxLines}}" as="bl" hint-placeholder-count="3"><line x1="{{bl.x}}" y1="0" x2="{{bl.x}}" y2="150" stroke="#3A5375" stroke-width="1" stroke-dasharray="3 3"></line></sc-for>
+<polyline points="{{ch.fc}}" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"></polyline>
+<polyline points="{{ch.act}}" fill="none" stroke="#F5B547" stroke-width="3" vector-effect="non-scaling-stroke"></polyline>
+<line x1="{{ch.nowX}}" y1="0" x2="{{ch.nowX}}" y2="150" stroke="#FFFFFF" stroke-width="1.5" vector-effect="non-scaling-stroke"></line>
+</svg>
+<sc-for list="{{ch.marks}}" as="mk" hint-placeholder-count="1"><span style="position: absolute; left: {{mk.x}}%; top: 2px; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%; background: #F04438; border: 2px solid #FFFFFF; box-sizing: border-box"></span></sc-for>
+<span style="position: absolute; left: {{ch.nowPct}}%; bottom: 2px; transform: translateX(4px); font-size: 11px; color: #FFFFFF; background: #0B1626; padding: 1px 5px; border-radius: 4px; white-space: nowrap">{{t.nowLabel}} {{posM}}m</span>
+</div>
+<div style="display: flex; justify-content: space-between; font-size: 11px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace"><span>0 m</span><span>{{t.box}} 1 | 2 | 3 | 4</span><span>710 m</span></div>
+</div>
+<div style="flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px">
+<div style="flex: 1 1 auto; background: #1A2E1F; border: 1px solid #2E6B3F; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<b style="font-size: 16px; color: #A6F4C5">AI · {{guide.title}}</b>
+<span style="font-size: 14px; line-height: 1.5; color: #D1FADF">{{guide.body}}</span>
+</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
+<span style="font-size: 11px; color: #8FA3BF">{{t.demo}}</span>
+<button type="button" onClick="{{addTen}}" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px dashed #3A5375; background: transparent; color: #C9D3E0; font-size: 12px; font-family: inherit; cursor: pointer">{{t.plusTen}}</button>
+<button type="button" onClick="{{fireSurf}}" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px dashed #F04438; background: transparent; color: #FDA29B; font-size: 12px; font-family: inherit; cursor: pointer">{{t.fireSurf}}</button>
+<button type="button" onClick="{{fireFlat}}" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px dashed #F04438; background: transparent; color: #FDA29B; font-size: 12px; font-family: inherit; cursor: pointer">{{t.fireFlat}}</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<!-- STEP 6 -->
+<sc-if value="{{is6}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{s6Title}}</b><span style="font-size: 16px; color: #8FA3BF">{{t.s6Sub}}</span></div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
+<div style="background: #13243D; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 16px; color: #8FA3BF">{{t.target}}</span><b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace">{{target}}</b></div>
+<div style="background: #13243D; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 16px; color: #8FA3BF">{{t.machine}}</span><b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace">{{count}}</b></div>
+<div style="background: #2A1618; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 16px; color: #FDA29B">{{t.removed}}</span><b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace; color: #FDA29B">{{removed}}</b></div>
+<div style="background: #13243D; border: 2px solid #F5B547; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 16px; color: #F5B547">{{t.packed}}</span>
+<div style="display: flex; align-items: center; gap: 10px">
+<button type="button" onClick="{{minus}}" aria-label="-1" style="width: 52px; height: 52px; border-radius: 12px; border: 0; background: #1E3352; color: #FFFFFF; font-size: 28px; cursor: pointer">−</button>
+<b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace; min-width: 90px; text-align: center">{{packed}}</b>
+<button type="button" onClick="{{plus}}" aria-label="+1" style="width: 52px; height: 52px; border-radius: 12px; border: 0; background: #1E3352; color: #FFFFFF; font-size: 28px; cursor: pointer">+</button>
+</div>
+</div>
+</div>
+<div style="background: {{verdict.bg}}; border: 2px solid {{verdict.bd}}; border-radius: 16px; padding: 18px; display: flex; align-items: center; gap: 16px">
+<span style="width: 56px; height: 56px; border-radius: 50%; background: {{verdict.bd}}; color: #0B1626; font-size: 30px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex: 0 0 56px">{{verdict.icon}}</span>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 24px">{{verdict.title}}</b><span style="font-size: 17px; color: #E4E7EC">{{verdict.body}}</span></div>
+</div>
+<div style="background: #13243D; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0">
+<b style="font-size: 16px">{{t.logTitle}}</b>
+<sc-for list="{{log}}" as="g" hint-placeholder-count="2">
+<div style="display: flex; gap: 12px; align-items: center; font-size: 16px"><span style="font-family: 'IBM Plex Mono', monospace; color: #8FA3BF">{{g.t}}</span><b style="color: #FDA29B">{{g.kind}}</b><span>{{g.where}}</span><span style="margin-left: auto; font-weight: 700; color: {{g.ac}}">{{g.action}}</span></div>
+</sc-for>
+<sc-if value="{{noLog}}" hint-placeholder-val="{{ false }}"><span style="font-size: 15px; color: #8FA3BF">{{t.noLog}}</span></sc-if>
+</div>
+</sc-if>
+
+<!-- PREV / NEXT -->
+<div style="display: flex; gap: 12px; flex: 0 0 auto">
+<button type="button" onClick="{{prev}}" style="min-height: 52px; padding: 0 22px; border-radius: 12px; border: 1px solid #3A5375; background: transparent; color: #FFFFFF; font-size: 17px; font-family: inherit; cursor: pointer; opacity: {{prevOp}}">{{t.prev}}</button>
+<span style="flex: 1 1 auto"></span>
+<button type="button" onClick="{{next}}" style="min-height: 52px; padding: 0 26px; border-radius: 12px; border: 0; background: #F5B547; color: #0B1626; font-size: 18px; font-weight: 900; font-family: inherit; cursor: pointer">{{nextLabel}}</button>
+</div>
+</div>
+
+<!-- NOTES SHEET -->
+<sc-if value="{{notesOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(5,10,20,0.7); display: flex; justify-content: flex-end">
+<div style="width: 460px; height: 100%; background: #2A2310; border-left: 3px solid #F5B547; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 24px; color: #F5B547">{{t.notesTitle}}</b><button type="button" onClick="{{closeNotes}}" aria-label="close" style="width: 48px; height: 48px; border-radius: 12px; border: 0; background: #3D3317; color: #FFFFFF; font-size: 22px; cursor: pointer">×</button></div>
+<span style="font-size: 14px; color: #C9B98A">SAMPLE-A01 · {{t.fromOrder}}</span>
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+<div style="display: flex; gap: 12px; font-size: 18px; line-height: 1.55; background: #3D3317; border-radius: 12px; padding: 14px"><span style="color: #F5B547; font-weight: 900">{{n.i}}</span><span>{{n.text}}</span></div>
+</sc-for>
+<button type="button" onClick="{{readNotesClose}}" style="margin-top: auto; min-height: 60px; border-radius: 14px; border: 0; background: {{readBg}}; color: #0B1626; font-size: 19px; font-weight: 900; font-family: inherit; cursor: pointer">{{readLabel}}</button>
+</div>
+</div>
+</sc-if>
+
+<!-- ALARM MODAL -->
+<sc-if value="{{alarmOn}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 0; right: 0; top: 102px; bottom: 0; background: rgba(120,10,20,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box">
+<div style="width: 1000px; background: #7A1219; border: 4px solid #FFFFFF; border-radius: 22px; padding: 22px; display: flex; gap: 20px">
+<div style="flex: 0 0 400px; position: relative; border-radius: 14px; overflow: hidden; background: #000000; height: 400px">
+<img src="{{alarm.img}}" alt="{{alarm.title}}" style="width: 100%; height: 100%; object-fit: cover; display: block">
+<div style="position: absolute; left: {{alarm.rx}}%; top: {{alarm.ry}}%; width: {{alarm.rw}}%; height: {{alarm.rh}}%; transform: translate(-50%, -50%); border: 5px solid #F04438; border-radius: 8px"></div>
+</div>
+<div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px">
+<span style="align-self: flex-start; font-size: 16px; font-weight: 900; color: #7A1219; background: #FFFFFF; border-radius: 999px; padding: 6px 14px">⚠ {{alarm.cam}}</span>
+<b style="font-size: 38px; line-height: 1.15">{{alarm.title}}</b>
+<sc-if value="{{alarm.isFlat}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 10px; align-items: stretch">
+<div style="flex: 0 0 auto; background: #F04438; border-radius: 12px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center"><span style="font-size: 13px; color: #FEE4E2">{{t.warpLabel}}</span><b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; line-height: 1.1">1,209 · D</b><span style="font-size: 12px; color: #FEE4E2">{{t.limitLabel}} 700</span></div>
+<div style="flex: 1 1 auto; background: #4A0D12; border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; color: #FDA29B">{{t.shapeLabel}}</span>
+<svg viewBox="0 0 300 60" style="width: 100%; height: 56px" role="img" aria-label="{{alarm.title}}"><line x1="6" y1="30" x2="294" y2="30" stroke="#8FA3BF" stroke-width="1.5" stroke-dasharray="5 4"></line><path d="M6 30 Q20 6 34 30 T62 30 L238 30 Q252 54 266 30 T294 30" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"></path><circle cx="20" cy="14" r="9" fill="none" stroke="#F04438" stroke-width="3"></circle><circle cx="280" cy="46" r="9" fill="none" stroke="#F04438" stroke-width="3"></circle></svg>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{alarm.isSurf}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 10px; align-items: stretch">
+<div style="flex: 0 0 auto; background: #F04438; border-radius: 12px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center"><span style="font-size: 13px; color: #FEE4E2">{{t.scoreLabel}}</span><b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; line-height: 1.1">0.91</b><span style="font-size: 12px; color: #FEE4E2">{{t.limitLabel}} 0.80</span></div>
+<div style="flex: 1 1 auto; background: #4A0D12; border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #FDA29B">{{t.topLabel}}</span>
+<svg viewBox="0 0 300 64" style="width: 100%; height: 58px" role="img" aria-label="{{alarm.title}}"><rect x="4" y="4" width="292" height="56" rx="3" fill="#D0D5DD"></rect><line x1="4" y1="32" x2="296" y2="32" stroke="#98A2B3" stroke-width="1" stroke-dasharray="4 4"></line><line x1="120" y1="27" x2="190" y2="29" stroke="#D92D20" stroke-width="4" stroke-linecap="round"></line><circle cx="155" cy="28" r="16" fill="none" stroke="#D92D20" stroke-width="2.5"></circle><path d="M250 54 L282 54 M276 49 L282 54 L276 59" stroke="#475467" stroke-width="2" fill="none"></path></svg>
+<span style="font-size: 12px; color: #FDA29B">{{t.repeatNote}}</span>
+</div>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="background: #4A0D12; border-radius: 12px; padding: 12px"><span style="font-size: 14px; color: #FDA29B">{{t.inBox}}</span><br><b style="font-size: 26px">{{alarm.sheetText}}</b></div>
+<div style="background: #4A0D12; border-radius: 12px; padding: 12px"><span style="font-size: 14px; color: #FDA29B">{{t.onSheet}}</span><br><b style="font-size: 26px">{{alarm.where}}</b></div>
+</div>
+<span style="font-size: 17px; line-height: 1.55; color: #FEE4E2">{{alarm.tip}}</span>
+<div style="margin-top: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+<button type="button" onClick="{{ackOk}}" style="min-height: 76px; border-radius: 14px; border: 0; background: #4ADE80; color: #0B1626; font-size: 20px; font-weight: 900; font-family: inherit; cursor: pointer">{{t.ok}}<br><span style="font-size: 13px; font-weight: 700">{{t.okSub}}</span></button>
+<button type="button" onClick="{{ackRemove}}" style="min-height: 76px; border-radius: 14px; border: 0; background: #F5B547; color: #0B1626; font-size: 20px; font-weight: 900; font-family: inherit; cursor: pointer">{{t.rm}}<br><span style="font-size: 13px; font-weight: 700">{{t.rmSub}}</span></button>
+<button type="button" onClick="{{ackStop}}" style="min-height: 76px; border-radius: 14px; border: 2px solid #FFFFFF; background: #D92D20; color: #FFFFFF; font-size: 20px; font-weight: 900; font-family: inherit; cursor: pointer">{{t.stop}}<br><span style="font-size: 13px; font-weight: 700">{{t.stopSub}}</span></button>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</template>
+<script>
+
+(function(){
+  function get(scope, path){ var p=path.trim().split('.'), v=scope; for(var i=0;i<p.length;i++){ if(v==null) return undefined; v=v[p[i]]; } return v; }
+  function sub(str, scope){ return str.replace(/\{\{([^}]+)\}\}/g, function(_,k){ var v=get(scope,k); return v==null?'':String(v); }); }
+  function hole(str){ var m=/^\s*\{\{([^}]+)\}\}\s*$/.exec(str||''); return m?m[1]:null; }
+  function render(node, scope, out){
+    if(node.nodeType===3){ out.push(document.createTextNode(sub(node.nodeValue,scope))); return; }
+    if(node.nodeType!==1) return;
+    var tag=node.localName;
+    if(tag==='sc-for'){
+      var list=get(scope,hole(node.getAttribute('list')))||[], as=node.getAttribute('as');
+      for(var i=0;i<list.length;i++){ var s=Object.create(scope); s[as]=list[i]; kids(node,s,out); }
+      return;
+    }
+    if(tag==='sc-if'){ if(get(scope,hole(node.getAttribute('value')))) kids(node,scope,out); return; }
+    var el=document.createElementNS(node.namespaceURI, tag);
+    for(var a=0;a<node.attributes.length;a++){
+      var at=node.attributes[a], n=at.name;
+      if(n.indexOf('hint-')===0) continue;
+      if(n.toLowerCase()==='onclick'){ var fn=get(scope,hole(at.value)); if(typeof fn==='function') el.addEventListener('click',fn); continue; }
+      el.setAttribute(n, sub(at.value,scope));
+    }
+    var c=[]; kids(node,scope,c); c.forEach(function(x){el.appendChild(x);});
+    out.push(el);
+  }
+  function kids(node,scope,out){ for(var ch=node.firstChild; ch; ch=ch.nextSibling) render(ch,scope,out); }
+  window.DCLogic=function(props){ this.props=props||{}; this.state={}; };
+  DCLogic.prototype.setState=function(p){ Object.assign(this.state,p); this.__render(); };
+  window.__mount=function(Comp, props, root, tplEl){
+    var c=new Comp(props);
+    c.__render=function(){ var out=[]; kids(tplEl.content, c.renderVals(), out); root.replaceChildren.apply(root,out); };
+    c.__render(); return c;
+  };
+})();
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 1, box: 2, chk: {}, fixed: {}, count: 23, removed: 0, packed: null, alarm: null, log: [], marks: [], notesOpen: false, notesRead: false, lang: null, sig: 'flat' };
+  }
+  renderVals() {
+    var self = this, S = this.state;
+    var L = S.lang || this.props.lang || 'ko';
+    var KO = {
+      appTitle: '레벨러 헬퍼', langBtn: 'EN', notes: '비고', notesTitle: '비고 — 꼭 읽으세요', fromOrder: '작업지시서 메모',
+      steps: ['코일', '박스', '지시서', '장비 셋팅', '작업 중', '장수 확인'],
+      s1Title: '오늘 작업할 코일을 고르세요', s1Sub: '11/03 (화) · 작업지시 3건',
+      s2Title: '몇 번 박스를 작업하나요?', box: '박스', sheetsUnit: '장', done: '완료', nextUp: '다음 작업', waiting: '대기',
+      s3Title: '작업지시서 확인', checkFmt: '{n} / 6 확인 · 확인 안 해도 이동 가능',
+      oc: [['업체', '라벨과 같은지'], ['규격', '코일 꼬리표와 비교'], ['중량', '±1% 이내'], ['절단 길이', '지시서: 0.6X4X2565'], ['박스 {b} 장수', '작업내용: 2565=70'], ['출고지', '포장·라벨 확인']],
+      ocShip: '시화',
+      notesList: ['끝 5장은 불량 가능 → 따로 포장', '이 고객은 스크래치 클레임 이력 있음 → 표면 알람 나오면 바로 빼기', '라벨 2장 (박스 안 · 밖)', '시화 출고 · 오후 4시 상차'],
+      read: '읽었어요', readDone: '✓ 읽음',
+      s4Title: '장비 셋팅 — 지금 값과 추천 값', setupFmt: '{n}개 맞춤 · {m}개 조정 필요', setupOk: '모두 추천 값과 같아요',
+      now: '지금', reco: '추천', match: '맞음', adjust: '조정',
+      st: [['절단 길이', '지시서 값 그대로'], ['속도 설정', '{v}로 낮추세요 · 처음 30분은 15'], ['가속 / 감속', '지난 0.60t 작업과 같음'], ['저속 구간', '절단 직전 감속'], ['언코일러 텐션', '{v}%로 낮추세요 · 끝으로 갈수록 자동 감소'], ['시작경', '텐션기 화면 값과 같음']],
+      aiTitle: 'AI 한마디', aiTip1: '지난 0.60t 작업에서 속도를 25로 올린 직후 휨이 커졌어요. 처음 30분은 15로 시작하세요.', aiTip2: '코일 끝(마지막 20%)에서 텐션이 내려가면 휨이 늘 수 있어요. 끝부분은 판을 자주 보세요.', cardHint: '주황 카드를 눌러 "조정했음" 표시',
+      started: '시작', elapsed: '경과', left: '남은', ends: '종료 예상', countFmt: '박스 {b} · 자른 장수', removedShort: '불량', removed: '빼낸 불량',
+      vKeep: '현재 설정 유지', vKeepB: '모든 값이 정상 범위 · 평탄도 B · 표면 결함 없음', vCheck: '지금 확인', vCheckB: '코일 끝 구간 — 텐션 감소로 휨 증가 예상, 5장마다 판 확인', vAlarm: '결함 발생', vAlarmB: '알람을 확인하세요',
+      line: ['언코일러', '레벨러 7롤', '이송·절단', '카메라', '적재'],
+      sig: [['이송 속도', 'm/min'], ['인버터 부하', '%'], ['텐션 (OCR)', '%'], ['사이클 / 장', '초'], ['평탄도', '']],
+      sOk: '정상', sLow: '끝부분 정상 감소', sWatch: '주의', sBad: '경고 — 기준 초과', warpLabel: '휨 값', limitLabel: '기준', scoreLabel: '이상 점수', topLabel: '판을 위에서 본 위치 — 빨간 선이 스크래치 (→ 진행 방향)', repeatNote: '앞 3장 같은 자리 없음 · 반복되면 롤 이물 의심', shapeLabel: '판 모양 (레이저 단면) — 빨간 원이 휜 곳',
+      normal: '정상', actual: '실측', forecast: '예측', defect: '결함', nowLabel: '현재',
+      tabs: ['평탄도', '부하', '텐션', '속도'], chartAria: '코일 길이에 따른 실측·예측·정상 범위',
+      gOkT: '지금 좋아요 — 이대로', gOkB: '속도를 올리려면 20까지만, 올린 뒤 5분간 평탄도 그래프를 보세요.',
+      gEndT: '코일 끝 — 판을 자주 보세요', gEndB: '그래프처럼 텐션이 내려가면 평탄도가 올라갑니다. 속도 15 유지, 5장마다 확인.',
+      demo: '시연', plusTen: '+10장', fireSurf: '표면 결함', fireFlat: '평탄도 결함',
+      s6Fmt: '박스 {b} 장수 확인', s6Sub: '기계가 센 장수와 실제 장수를 맞춰 보세요', target: '지시서 목표', machine: '기계가 자른 장수', packed: '박스에 담은 장수 (직접 입력)',
+      vOkT: '맞아요 — 목표 {t}장 그대로', vLessT: '{n}장 부족해요', vLessB: '다음 박스에서 채우거나 관리자에게 알리세요', vMoreT: '{n}장 많아요', vMoreB: '박스 장수를 다시 세어 주세요', vCalc: '자른 {c} − 불량 {r} = {g}',
+      logTitle: '이 박스 알람 기록', noLog: '알람 없음',
+      prev: '← 이전', nextFmt: ['코일 고르기 →', '지시서 보기 →', '장비 셋팅 →', '작업 시작 →', '박스 완료 →', '저장 · 다음 박스 {b} →'],
+      alarmBanner: '결함 발생 — 확인하세요', inBox: '박스에서', onSheet: '판 위치', sheetFmt: '박스 {b} · {s}번째 장',
+      ok: '확인', okSub: '괜찮음 · 계속', rm: '이 장 빼기', rmSub: '불량으로 분리', stop: '멈춤', stopSub: '관리자 호출',
+      aOk: '확인·계속', aRm: '1장 뺌', aStop: '멈춤·호출',
+      surf: ['CAM1 표면 결함', '스크래치 의심', '가운데 (42%)', '이 고객은 스크래치 클레임 이력 있음 → 비고대로 이 장은 빼세요. 같은 자리에 반복되면 롤 이물 확인.'],
+      flat: ['CAM2 평탄도 결함', '엣지 웨이브 (가장자리 출렁임)', '양쪽 가장자리', '속도를 15로 낮추고 다음 장을 보세요. 계속 나오면 관리자를 부르세요.'],
+      coils: [['A사', '▶ 1순위 · 작업 대기', '비고 4건'], ['B사', '대기', ''], ['C사', '대기', '비고 1건']], boxesFmt: '{n}박스', jobFmt: 'A사 · 0.60 × 1219 · 4,060 kg · 박스 {b}'
+    };
+    var EN = {
+      appTitle: 'Leveler Helper', langBtn: '한국어', notes: 'Notes', notesTitle: 'Notes — please read', fromOrder: 'from the work order',
+      steps: ['Coil', 'Box', 'Order', 'Setup', 'Running', 'Count'],
+      s1Title: "Pick today's coil", s1Sub: 'Tue 11/03 · 3 work orders',
+      s2Title: 'Which box are you running?', box: 'Box', sheetsUnit: ' sheets', done: 'Done', nextUp: 'Next', waiting: 'Waiting',
+      s3Title: 'Check the work order', checkFmt: '{n} / 6 checked · you can move on anytime',
+      oc: [['Customer', 'Same as the label?'], ['Spec', 'Compare with coil tag'], ['Weight', 'Within ±1%'], ['Cut length', 'Order: 0.6X4X2565'], ['Box {b} sheets', 'Order: 2565=70'], ['Ship to', 'Check packing · labels']],
+      ocShip: 'Sihwa',
+      notesList: ['Last 5 sheets may be bad → pack separately', 'This customer had a scratch claim → remove the sheet on any surface alarm', '2 labels per box (inside · outside)', 'Ship to Sihwa · loading at 4 PM'],
+      read: 'I read it', readDone: '✓ Read',
+      s4Title: 'Machine setup — now vs suggested', setupFmt: '{n} match · {m} to adjust', setupOk: 'All match the suggestion',
+      now: 'Now', reco: 'Suggested', match: 'OK', adjust: 'Adjust',
+      st: [['Cut length', 'Same as the work order'], ['Speed set', 'Lower to {v} · 15 for the first 30 min'], ['Accel / Decel', 'Same as the last 0.60 mm job'], ['Slow zone', 'Slow down before the cut'], ['Uncoiler tension', 'Lower to {v}% · drops automatically near the end'], ['Start diameter', 'Same as the tension display']],
+      aiTitle: 'AI tip', aiTip1: 'On the last 0.60 mm job, flatness got worse right after speed went to 25. Start at 15 for 30 minutes.', aiTip2: 'Near the coil end (last 20%) tension drops and sheets may warp more. Check sheets more often there.', cardHint: 'Tap an orange card when you have adjusted it',
+      started: 'started', elapsed: 'Elapsed', left: 'Left', ends: 'Ends', countFmt: 'Box {b} · sheets cut', removedShort: 'removed', removed: 'Removed',
+      vKeep: 'Keep the settings', vKeepB: 'All signals in range · flatness B · no surface defects', vCheck: 'Check now', vCheckB: 'Coil end — tension dropping, more warp expected. Check every 5th sheet', vAlarm: 'Defect', vAlarmB: 'Please handle the alarm',
+      line: ['Uncoiler', 'Leveler (7 rolls)', 'Feed · cut', 'Cameras', 'Stacker'],
+      sig: [['Feed speed', 'm/min'], ['Inverter load', '%'], ['Tension (OCR)', '%'], ['Cycle / sheet', 's'], ['Flatness', '']],
+      sOk: 'Normal', sLow: 'Normal drop at end', sWatch: 'Watch', sBad: 'Over the limit', warpLabel: 'Warp', limitLabel: 'Limit', scoreLabel: 'Anomaly score', topLabel: 'Top view of the sheet — red line = scratch (→ feed direction)', repeatNote: 'Not on the previous 3 sheets · if it repeats, check the rolls', shapeLabel: 'Sheet shape (laser profile) — red circles = warped',
+      normal: 'Normal', actual: 'Actual', forecast: 'Forecast', defect: 'Defect', nowLabel: 'Now',
+      tabs: ['Flatness', 'Load', 'Tension', 'Speed'], chartAria: 'Actual, forecast and normal range along the coil',
+      gOkT: 'Looking good — keep going', gOkB: 'If you speed up, go to 20 max and watch the flatness chart for 5 minutes.',
+      gEndT: 'Coil end — check sheets often', gEndB: 'As the chart shows, flatness rises when tension drops. Keep speed at 15 and check every 5th sheet.',
+      demo: 'Demo', plusTen: '+10', fireSurf: 'Surface', fireFlat: 'Flatness',
+      s6Fmt: 'Box {b} count check', s6Sub: 'Match the machine count with the real count', target: 'Target', machine: 'Machine count', packed: 'Sheets in the box (enter)',
+      vOkT: 'Correct — {t} sheets', vLessT: '{n} short', vLessB: 'Fill from the next box or tell the supervisor', vMoreT: '{n} too many', vMoreB: 'Please count the box again', vCalc: 'cut {c} − removed {r} = {g}',
+      logTitle: 'Alarms in this box', noLog: 'No alarms',
+      prev: '← Back', nextFmt: ['Pick coil →', 'View order →', 'Machine setup →', 'Start →', 'Finish box →', 'Save · start box {b} →'],
+      alarmBanner: 'DEFECT — please check', inBox: 'In the box', onSheet: 'On the sheet', sheetFmt: 'Box {b} · sheet {s}',
+      ok: 'OK', okSub: 'Fine · continue', rm: 'Remove sheet', rmSub: 'Set aside as defect', stop: 'Stop', stopSub: 'Call supervisor',
+      aOk: 'OK', aRm: 'Removed 1', aStop: 'Stopped',
+      surf: ['CAM1 surface defect', 'Possible scratch', 'Center (42%)', 'This customer had a scratch claim → remove this sheet (see Notes). If it repeats in the same spot, check the rolls.'],
+      flat: ['CAM2 flatness defect', 'Edge wave', 'Both edges', 'Slow down to 15 and check the next sheet. If it keeps coming, call the supervisor.'],
+      coils: [['Customer A', '▶ Priority 1 · ready', '4 notes'], ['Customer B', 'Waiting', ''], ['Customer C', 'Waiting', '1 note']], boxesFmt: '{n} boxes', jobFmt: 'Customer A · 0.60 × 1219 · 4,060 kg · Box {b}'
+    };
+    var T = L === 'en' ? EN : KO;
+    function f(s, o) { return s.replace(/\{(\w)\}/g, function (_, k) { return o[k]; }); }
+    function go(n) { return function () { self.setState({ step: n, notesOpen: false }); }; }
+    var steps = T.steps.map(function (l, i) {
+      var n = i + 1, on = n === S.step, done = n < S.step;
+      return { n: n, label: l, go: go(n), bg: on ? '#F5B547' : 'transparent', fg: on ? '#0B1626' : (done ? '#A6F4C5' : '#8FA3BF'), nbg: on ? '#0B1626' : (done ? '#2E6B3F' : '#1E3352'), nfg: on ? '#F5B547' : '#FFFFFF' };
+    });
+    var cdata = [['SAMPLE-A01', '0.60 × 1219', '4,060kg', 4, '2,565mm'], ['SAMPLE-B07', '1.15 × 1219', '2,710kg', 1, '2,450mm'], ['SAMPLE-C12', '1.55 × 1219', '10,110kg', 4, '2,450mm']];
+    var coils = cdata.map(function (c, i) { return { coil: c[0], spec: c[1], kg: c[2], boxes: f(T.boxesFmt, { n: c[3] }), cut: c[4], cust: T.coils[i][0], st: T.coils[i][1], note: T.coils[i][2], stC: i === 0 ? '#F5B547' : '#8FA3BF', bd: i === 0 ? '#F5B547' : '#23395A', pick: go(2) }; });
+    var bx = [[1, 70, T.done + ' 70', '#4ADE80'], [2, 70, T.nextUp, '#F5B547'], [3, 70, T.waiting, '#8FA3BF'], [4, 67, T.waiting, '#8FA3BF']];
+    var boxes = bx.map(function (b) { var on = b[0] === S.box; return { no: b[0], target: b[1] + T.sheetsUnit, st: b[2], stC: b[3], bg: on ? '#1F3A5C' : '#13243D', bd: on ? '#F5B547' : '#23395A', pick: function () { self.setState({ box: b[0], step: 3 }); } }; });
+    var target = bx[S.box - 1][1];
+    var ocv = [T.coils[0][0], '0.60 × 1219', '4,060kg', '2,565mm', target + T.sheetsUnit, T.ocShip];
+    var checkDone = 0;
+    var orderChecks = T.oc.map(function (o, i) {
+      var on = !!S.chk[i]; if (on) checkDone++;
+      return { k: f(o[0], { b: S.box }), v: ocv[i], hint: o[1], bg: on ? '#16301F' : '#13243D', bd: on ? '#4ADE80' : '#23395A', ck: on ? '#4ADE80' : '#3A5375', ckbg: on ? '#4ADE80' : 'transparent', mark: on ? '✓' : '', toggle: function () { var c = Object.assign({}, S.chk); c[i] = !c[i]; self.setState({ chk: c }); } };
+    });
+    var notes = T.notesList.map(function (t, i) { return { i: i + 1, text: t }; });
+    // setup: [current, recommended, unit]
+    var sv = [['2,565', '2,565', 'mm'], ['20', '15', 'm/min'], ['10 / 1', '10 / 1', 's'], ['50', '50', 'mm'], ['62', '57', '%'], ['975', '975', 'mm']];
+    var nMatch = 0;
+    var settings = T.st.map(function (s, i) {
+      var ok = sv[i][0] === sv[i][1] || !!S.fixed[i];
+      if (ok) nMatch++;
+      return { k: s[0], cur: ok ? sv[i][1] : sv[i][0], v: sv[i][1], u: sv[i][2], hint: f(s[1], { v: sv[i][1] }), ok: ok ? '✓ ' + T.match : '! ' + T.adjust, okC: ok ? '#4ADE80' : '#F79009', curC: ok ? '#FFFFFF' : '#F79009', hintC: ok ? '#C9D3E0' : '#FEC84B', hintW: ok ? '400' : '700', bg: ok ? '#13243D' : '#2E2410', bd: ok ? '#23395A' : '#F79009', fix: function () { var c = Object.assign({}, S.fixed); c[i] = !c[i]; self.setState({ fixed: c }); } };
+    });
+    var count = Math.min(S.count, target), left = target - count;
+    var global = 70 * (S.box - 1) + count;
+    var pos = Math.round(global * 2.565);
+    var nearEnd = pos > 540;
+    // header
+    var boxProg = bx.map(function (b, i) { var n = i + 1; var pct = n < S.box ? 100 : (n === S.box ? Math.round(count / b[1] * 100) : 0); return { f: b[1], pct: pct, c: n < S.box ? '#4ADE80' : '#F5B547' }; });
+    var mins = Math.round((277 - global) * 19.5 / 60);
+    var startMin = 10 * 60 + 5, elapsedMin = Math.round(global * 19.5 / 60) + 12;
+    function hm(m) { var h = Math.floor(m / 60) % 24, mm = m % 60; return h + ':' + (mm < 10 ? '0' + mm : mm); }
+    var alarmOn = !!S.alarm;
+    var verdict5 = alarmOn ? { icon: '⚠', title: T.vAlarm, body: T.vAlarmB, bg: '#7A1219', bd: '#F04438', fg: '#FFFFFF' }
+      : (nearEnd ? { icon: '!', title: T.vCheck, body: T.vCheckB, bg: '#2E2410', bd: '#F79009', fg: '#FEC84B' }
+        : { icon: '✓', title: T.vKeep, body: T.vKeepB, bg: '#16301F', bd: '#3FAE6A', fg: '#A6F4C5' });
+    // line diagram
+    var tens = nearEnd ? 49 : 56;
+    var flatV = nearEnd ? 720 : 450;
+    var line = [
+      { name: T.line[0], val: 'Ø 975→' + Math.round(975 - global * 1.4) + ' · ' + tens + '%', icon: '', w: 52, r: '50%', fill: '#8FA3BF', c: nearEnd ? '#F79009' : '#6F8FBF', vc: nearEnd ? '#FEC84B' : '#C9D3E0', f: '1 1 0', link: true },
+      { name: T.line[1], val: 'load 24%', icon: '●●●', w: 74, r: '10px', fill: '#DCE6F2', c: '#6F8FBF', vc: '#C9D3E0', f: '1 1 0', link: true },
+      { name: T.line[2], val: '15 m/min · 2,565', icon: '✂', w: 52, r: '10px', fill: '#DCE6F2', c: '#6F8FBF', vc: '#C9D3E0', f: '1 1 0', link: true },
+      { name: T.line[3], val: (S.alarm === 'surf' ? 'CAM1 ✗ ' + T.surf[1] : 'CAM1 ✓') + ' · CAM2 ' + (S.alarm === 'flat' ? 'D ✗' : (nearEnd ? 'C' : 'B')), icon: '◉', w: 52, r: '10px', fill: alarmOn ? '#F04438' : '#A6F4C5', c: alarmOn ? '#F04438' : '#3FAE6A', vc: alarmOn ? '#FDA29B' : '#A6F4C5', f: '1 1 0', link: true },
+      { name: T.line[4], val: T.box + ' ' + S.box + ' · ' + count + '/' + target, icon: '▤', w: 60, r: '6px', fill: '#F5B547', c: '#F5B547', vc: '#F5B547', f: '0 0 auto', link: false }
+    ];
+    // gauges
+    function gauge(k, u, v, disp, min, max, lo, hi, s, c) {
+      var LEN = 157.08, a = Math.max(0, Math.min(1, (v - min) / (max - min))), th = Math.PI * (1 - a);
+      return { k: k, u: u, v: disp, range: lo + '~' + hi, s: s, c: c, nx: (60 + 42 * Math.cos(th)).toFixed(1), ny: (60 - 42 * Math.sin(th)).toFixed(1), band: ((hi - lo) / (max - min) * LEN).toFixed(1) + ' ' + LEN, off: (-(lo - min) / (max - min) * LEN).toFixed(1) };
+    }
+    var G = '#3FAE6A', Y = '#F79009';
+    var gauges = [
+      gauge(T.sig[0][0], T.sig[0][1], 15, '15', 0, 30, 12, 18, T.sOk, G),
+      gauge(T.sig[1][0], T.sig[1][1], 24, '24', 0, 100, 15, 40, T.sOk, G),
+      gauge(T.sig[2][0], T.sig[2][1], tens, String(tens), 0, 100, nearEnd ? 45 : 52, nearEnd ? 55 : 62, nearEnd ? T.sLow : T.sOk, nearEnd ? Y : G),
+      gauge(T.sig[3][0], T.sig[3][1], 19.5, '19.5', 0, 40, 16, 23, T.sOk, G),
+      S.alarm === 'flat' ? gauge(T.sig[4][0], T.sig[4][1], 1209, 'D 1209', 0, 1200, 0, 700, T.sBad, '#F04438')
+        : gauge(T.sig[4][0], T.sig[4][1], flatV, (nearEnd ? 'C ' : 'B ') + flatV, 0, 1200, 0, 700, nearEnd ? T.sWatch : T.sOk, nearEnd ? Y : G)
+    ];
+    // chart
+    var TOT = 710;
+    var SIG = {
+      flat: { lo: 0, hi: 1100, act: function (m) { return 430 + 60 * Math.sin(m / 40) + (m > 520 ? (m - 520) * 1.6 : 0); }, fc: function (m) { return 450 + (m > 540 ? (m - 540) * 1.8 : 0); }, band: function (m) { return [150, 700]; } },
+      load: { lo: 0, hi: 60, act: function (m) { return 24 + 5 * Math.sin(m / 30); }, fc: function (m) { return 24; }, band: function (m) { return [15, 40]; } },
+      tension: { lo: 30, hi: 70, act: function (m) { return 57 - Math.max(0, m - 420) * 0.035 + Math.sin(m / 25) * 0.6; }, fc: function (m) { return 57 - Math.max(0, m - 420) * 0.035; }, band: function (m) { var c = 57 - Math.max(0, m - 420) * 0.035; return [c - 4, c + 4]; } },
+      speed: { lo: 0, hi: 30, act: function (m) { return 15; }, fc: function (m) { return 15; }, band: function (m) { return [12, 18]; } }
+    };
+    var sg = SIG[S.sig];
+    function X(m) { return (m / TOT * 600).toFixed(1); }
+    function Yv(v) { return (145 - (v - sg.lo) / (sg.hi - sg.lo) * 140).toFixed(1); }
+    var act = [], fc = [], top = [], bot = [];
+    for (var m = 0; m <= TOT; m += 10) {
+      var b = sg.band(m); top.push(X(m) + ',' + Yv(b[1])); bot.unshift(X(m) + ',' + Yv(b[0]));
+      if (m <= pos) act.push(X(m) + ',' + Yv(sg.act(m))); else fc.push(X(m) + ',' + Yv(sg.fc(m)));
+    }
+    if (S.alarm === 'flat' && S.sig === 'flat') act.push(X(pos) + ',' + Yv(1100));
+    if (act.length) fc.unshift(act[act.length - 1]);
+    var ch = { band: top.concat(bot).join(' '), act: act.join(' '), fc: fc.join(' '), nowX: X(pos), nowPct: (pos / TOT * 100).toFixed(1), boxLines: [1, 2, 3].map(function (i) { return { x: X(i * 70 * 2.565) }; }), marks: S.marks.map(function (mm) { return { x: (mm / TOT * 100).toFixed(1) }; }) };
+    var chartTabs = ['flat', 'load', 'tension', 'speed'].map(function (k, i) { var on = S.sig === k; return { label: T.tabs[i], pick: function () { self.setState({ sig: k }); }, style: 'min-height: 32px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid ' + (on ? '#F5B547' : '#3A5375') + '; background: ' + (on ? '#F5B547' : 'transparent') + '; color: ' + (on ? '#0B1626' : '#FFFFFF') }; });
+    var guide = nearEnd ? { title: T.gEndT, body: T.gEndB } : { title: T.gOkT, body: T.gOkB };
+    var A = {
+      surf: { d: T.surf, img: '/leveler-helper-cam1.jpg', rx: 42, ry: 48, rw: 14, rh: 40 },
+      flat: { d: T.flat, img: '/leveler-helper-cam2.jpg', rx: 50, ry: 49, rw: 84, rh: 14 }
+    };
+    var alarm = S.alarm ? { isFlat: S.alarm === 'flat', isSurf: S.alarm === 'surf', cam: A[S.alarm].d[0], title: A[S.alarm].d[1], where: A[S.alarm].d[2], tip: A[S.alarm].d[3], img: A[S.alarm].img, rx: A[S.alarm].rx, ry: A[S.alarm].ry, rw: A[S.alarm].rw, rh: A[S.alarm].rh, sheetText: f(T.sheetFmt, { b: S.box, s: count }) } : { cam: '', title: '', where: '', tip: '', img: '', sheetText: '' };
+    function ack(kind) {
+      return function () {
+        var mm = (30 + S.log.length * 7) % 60;
+        var e = { t: '10:' + (mm < 10 ? '0' + mm : mm), kind: A[S.alarm].d[1], where: f(T.sheetFmt, { b: S.box, s: count }), action: kind === 'ok' ? T.aOk : (kind === 'rm' ? T.aRm : T.aStop), ac: kind === 'ok' ? '#4ADE80' : (kind === 'rm' ? '#F5B547' : '#FDA29B') };
+        self.setState({ alarm: null, log: S.log.concat([e]), marks: S.marks.concat([pos]), removed: S.removed + (kind === 'rm' ? 1 : 0) });
+      };
+    }
+    var packed = S.packed === null ? count - S.removed : S.packed;
+    var calc = f(T.vCalc, { c: count, r: S.removed, g: count - S.removed });
+    var verdict;
+    if (packed === target) verdict = { icon: '✓', title: f(T.vOkT, { t: target }), body: calc, bg: '#16301F', bd: '#4ADE80' };
+    else if (packed < target) verdict = { icon: '!', title: f(T.vLessT, { n: target - packed }), body: T.vLessB + ' · ' + calc, bg: '#2E2410', bd: '#F5B547' };
+    else verdict = { icon: '?', title: f(T.vMoreT, { n: packed - target }), body: T.vMoreB, bg: '#2E2410', bd: '#F5B547' };
+    function next() {
+      if (S.step === 6) self.setState({ box: Math.min(4, S.box + 1), step: 5, count: 0, removed: 0, packed: null, log: [] });
+      else if (S.step === 5) self.setState({ step: 6, packed: null });
+      else self.setState({ step: S.step + 1 });
+    }
+    return {
+      t: T, steps: steps, coils: coils, boxes: boxes, orderChecks: orderChecks, notes: notes, settings: settings,
+      is1: S.step === 1, is2: S.step === 2, is3: S.step === 3, is4: S.step === 4, is5: S.step === 5, is6: S.step === 6,
+      checkText: f(T.checkFmt, { n: checkDone }),
+      setupText: nMatch === 6 ? T.setupOk : f(T.setupFmt, { n: nMatch, m: 6 - nMatch }), setupC: nMatch === 6 ? '#4ADE80' : '#F79009',
+      prev: function () { self.setState({ step: Math.max(1, S.step - 1) }); }, prevOp: S.step === 1 ? '0.35' : '1',
+      next: next, nextLabel: f(T.nextFmt[S.step - 1], { b: Math.min(4, S.box + 1) }),
+      jobTitle: f(T.jobFmt, { b: S.box }), boxProg: boxProg, coilPct: Math.round(global / 277 * 100), posM: pos, elapsed: elapsedMin + (L === 'en' ? ' min' : '분'), leftMin: mins + (L === 'en' ? ' min' : '분'), endsAt: hm(startMin + elapsedMin + mins),
+      countLabel: f(T.countFmt, { b: S.box }), target: target, count: count, removed: S.removed,
+      verdict5: verdict5, line: line, gauges: gauges, ch: ch, chartTabs: chartTabs, chartAria: T.chartAria, guide: guide,
+      addTen: function () { self.setState({ count: Math.min(target, S.count + 10) }); },
+      fireSurf: function () { self.setState({ alarm: 'surf' }); }, fireFlat: function () { self.setState({ alarm: 'flat' }); },
+      alarmOn: alarmOn, alarm: alarm, ackOk: ack('ok'), ackRemove: ack('rm'), ackStop: ack('stop'),
+      log: S.log, noLog: S.log.length === 0,
+      s6Title: f(T.s6Fmt, { b: S.box }), packed: packed, minus: function () { self.setState({ packed: packed - 1 }); }, plus: function () { self.setState({ packed: packed + 1 }); }, verdict: verdict,
+      notesOpen: S.notesOpen, openNotes: function () { self.setState({ notesOpen: true }); }, closeNotes: function () { self.setState({ notesOpen: false }); },
+      readNotes: function () { self.setState({ notesRead: !S.notesRead }); }, readNotesClose: function () { self.setState({ notesRead: true, notesOpen: false }); },
+      readLabel: S.notesRead ? T.readDone : T.read, readBg: S.notesRead ? '#4ADE80' : '#F5B547', notesBd: S.notesRead ? '#4ADE80' : '#F5B547',
+      notesBadge: S.notesRead ? ' ✓' : ' 4', notesBtnBg: S.notesRead ? 'transparent' : '#3D3317',
+      toggleLang: function () { self.setState({ lang: L === 'en' ? 'ko' : 'en' }); },
+      bg: alarmOn ? '#4A0D12' : '#0B1626', barBg: alarmOn ? '#B42318' : '#0F1E33', frame: alarmOn ? '8px solid #F04438' : '0'
+    };
+  }
+}
+(function(){
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1280, window.innerHeight/800); stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+  window.__mount(Component, {lang:'ko'}, stage, document.getElementById('tpl'));
+})();
+</script>
+</body>
+</html>
