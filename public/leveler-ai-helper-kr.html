@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-html,body{margin:0;height:100%;background:#050A14;overflow:hidden}
+html,body{margin:0;height:100%;background:#FFFFFF;overflow:hidden}
 #stage{position:absolute;left:50%;top:50%;width:1280px;height:800px;transform-origin:center center}
 
 </style>
@@ -17,296 +17,186 @@ html,body{margin:0;height:100%;background:#050A14;overflow:hidden}
 <div id="stage"></div>
 
 <template id="tpl">
-<div style="width: 1280px; height: 800px; box-sizing: border-box; background: {{bg}}; color: #FFFFFF; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden; border: {{frame}}">
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; color: #0B1626; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden; border: {{frame}}">
 
 <!-- TOP BAR -->
-<div style="height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: {{barBg}}; border-bottom: 1px solid #1E3352">
-<span style="width: 34px; height: 34px; border-radius: 10px; background: #F5B547; color: #0B1626; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 18px; flex: 0 0 34px">AI</span>
-<b style="font-size: 21px; white-space: nowrap">{{t.appTitle}}</b>
-<nav style="display: flex; gap: 4px; margin-left: 8px">
-<sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
-<button type="button" onClick="{{s.go}}" style="display: flex; align-items: center; gap: 6px; height: 44px; padding: 0 11px; border-radius: 999px; font-size: 18px; font-weight: 700; border: 0; background: {{s.bg}}; color: {{s.fg}}; font-family: inherit; cursor: pointer; white-space: nowrap"><span style="width: 22px; height: 22px; border-radius: 50%; background: {{s.nbg}}; color: {{s.nfg}}; font-size: 16px; display: flex; align-items: center; justify-content: center">{{s.n}}</span>{{s.label}}</button>
+<div style="height: 92px; flex: 0 0 92px; display: flex; align-items: center; gap: 18px; padding: 0 24px; background: {{barBg}}; color: #FFFFFF; box-sizing: border-box">
+<b style="font-size: 40px; font-weight: 900; white-space: nowrap"><span style="font-size: 32px; color: #AFC0D6; margin-right: 12px">{{stepNo}}/6</span>{{stepName}}</b>
+<div style="display: flex; gap: 10px; align-items: center; margin-left: 14px">
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="6">
+<button type="button" onClick="{{d.go}}" aria-label="{{d.label}}" style="width: {{d.w}}px; height: 22px; border-radius: 11px; border: 0; padding: 0; background: {{d.c}}; cursor: pointer"></button>
 </sc-for>
-</nav>
-<button type="button" onClick="{{openNotes}}" style="margin-left: auto; height: 44px; padding: 0 14px; border-radius: 10px; border: 2px solid #F5B547; background: {{notesBtnBg}}; color: #F5B547; font-size: 19px; font-weight: 900; font-family: inherit; cursor: pointer; white-space: nowrap">{{t.notes}}{{notesBadge}}</button>
-<button type="button" onClick="{{toggleLang}}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 1px solid #3A5375; background: transparent; color: #FFFFFF; font-size: 18px; font-weight: 700; font-family: inherit; cursor: pointer">{{t.langBtn}}</button>
 </div>
-
-<sc-if value="{{alarmOn}}" hint-placeholder-val="{{ false }}">
-<div style="height: 42px; flex: 0 0 42px; background: #F04438; display: flex; align-items: center; justify-content: center; font-size: 23px; font-weight: 900">⚠ {{t.alarmBanner}}</div>
-</sc-if>
+<button type="button" onClick="{{openNotes}}" style="margin-left: auto; height: 66px; padding: 0 24px; border-radius: 14px; border: 0; background: {{notesBtnBg}}; color: #0B1626; font-size: 32px; font-weight: 900; font-family: inherit; cursor: pointer; white-space: nowrap">{{t.notes}}{{notesBadge}}</button>
+<button type="button" onClick="{{toggleLang}}" style="height: 66px; padding: 0 18px; border-radius: 14px; border: 2px solid #6F86A6; background: transparent; color: #FFFFFF; font-size: 28px; font-weight: 700; font-family: inherit; cursor: pointer">{{t.langBtn}}</button>
+</div>
 
 <!-- BODY -->
-<div style="flex: 1 1 auto; min-height: 0; padding: 12px 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+<div style="flex: 1 1 auto; min-height: 0; padding: 18px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
 
-<!-- STEP 1 -->
+<!-- STEP 1 : COIL -->
 <sc-if value="{{is1}}" hint-placeholder-val="{{ true }}">
-<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s1Title}}</b><span style="font-size: 19px; color: #8FA3BF">{{t.s1Sub}}</span></div>
-<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; flex: 1 1 auto">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s1Title}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
 <sc-for list="{{coils}}" as="c" hint-placeholder-count="3">
-<button type="button" onClick="{{c.pick}}" style="background: #13243D; border: 2px solid {{c.bd}}; border-radius: 18px; padding: 22px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 12px; font-family: inherit; cursor: pointer">
-<span style="font-size: 19px; color: #8FA3BF">{{c.cust}}</span>
-<b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace">{{c.coil}}</b>
-<span style="font-size: 24px; font-weight: 700">{{c.spec}}</span>
-<span style="display: flex; gap: 8px; flex-wrap: wrap">
-<span style="font-size: 19px; background: #1E3352; border-radius: 8px; padding: 6px 10px">{{c.kg}}</span>
-<span style="font-size: 19px; background: #1E3352; border-radius: 8px; padding: 6px 10px">{{c.boxes}}</span>
-<span style="font-size: 19px; background: #1E3352; border-radius: 8px; padding: 6px 10px">{{c.cut}}</span>
-</span>
-<span style="font-size: 19px; color: #F5B547">{{c.note}}</span>
-<span style="margin-top: auto; font-size: 20px; font-weight: 700; color: {{c.stC}}">{{c.st}}</span>
+<button type="button" onClick="{{c.pick}}" style="flex: 1 1 0; background: {{c.bg}}; border: 4px solid {{c.bd}}; border-radius: 24px; padding: 20px 26px; color: #0B1626; text-align: left; display: flex; flex-direction: column; gap: 10px; font-family: inherit; cursor: pointer">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568">{{c.cust}}</span>
+<b style="font-size: 66px; line-height: 1.05; font-family: 'IBM Plex Mono', monospace">{{c.short}}</b>
+<b style="font-size: 46px; font-weight: 900; white-space: nowrap">{{c.spec}}</b>
+<span style="font-size: 32px; color: #4A5568">{{c.boxes}}</span>
+<span style="margin-top: auto; font-size: 34px; font-weight: 900; color: {{c.stC}}">{{c.st}}</span>
 </button>
 </sc-for>
 </div>
 </sc-if>
 
-<!-- STEP 2 -->
+<!-- STEP 2 : BOX -->
 <sc-if value="{{is2}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s2Title}}</b><span style="font-size: 20px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace">SAMPLE-A01 · 0.60 × 1219 · 2,565mm</span></div>
-<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; flex: 1 1 auto">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s2Title}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
 <sc-for list="{{boxes}}" as="b" hint-placeholder-count="4">
-<button type="button" onClick="{{b.pick}}" style="background: {{b.bg}}; border: 2px solid {{b.bd}}; border-radius: 18px; padding: 22px; color: #FFFFFF; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; font-family: inherit; cursor: pointer">
-<span style="font-size: 22px; color: #8FA3BF">{{t.box}}</span>
-<b style="font-size: 72px; line-height: 1; font-family: 'IBM Plex Mono', monospace">{{b.no}}</b>
-<span style="font-size: 24px; font-weight: 700">{{b.target}}</span>
-<span style="font-size: 19px; color: {{b.stC}}; font-weight: 700">{{b.st}}</span>
+<button type="button" onClick="{{b.pick}}" style="flex: 1 1 0; background: {{b.bg}}; border: 4px solid {{b.bd}}; border-radius: 24px; color: #0B1626; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-family: inherit; cursor: pointer">
+<b style="font-size: 170px; line-height: 1; font-family: 'IBM Plex Mono', monospace">{{b.no}}</b>
+<span style="font-size: 44px; font-weight: 900; color: {{b.stC}}; white-space: nowrap">{{b.st}}</span>
 </button>
 </sc-for>
 </div>
 </sc-if>
 
-<!-- STEP 3 -->
+<!-- STEP 3 : ORDER -->
 <sc-if value="{{is3}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s3Title}}</b><span style="font-size: 19px; color: #F5B547; font-weight: 700">{{checkText}}</span></div>
-<div style="display: flex; gap: 14px; flex: 1 1 auto; min-height: 0">
-<div style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
-<sc-for list="{{orderChecks}}" as="o" hint-placeholder-count="6">
-<button type="button" onClick="{{o.toggle}}" style="background: {{o.bg}}; border: 2px solid {{o.bd}}; border-radius: 16px; padding: 16px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 6px; position: relative; font-family: inherit; cursor: pointer">
-<span style="font-size: 19px; color: #8FA3BF">{{o.k}}</span>
-<b style="font-size: 26px; font-family: 'IBM Plex Mono', monospace; line-height: 1.2">{{o.v}}</b>
-<span style="font-size: 17px; color: #C9D3E0">{{o.hint}}</span>
-<span style="position: absolute; right: 14px; top: 14px; width: 32px; height: 32px; border-radius: 50%; border: 2px solid {{o.ck}}; background: {{o.ckbg}}; color: #0B1626; font-weight: 900; font-size: 21px; display: flex; align-items: center; justify-content: center">{{o.mark}}</span>
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s3Title}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<div style="flex: 1.1 1 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{orderChecks}}" as="o" hint-placeholder-count="4">
+<button type="button" onClick="{{o.toggle}}" style="background: {{o.bg}}; border: 4px solid {{o.bd}}; border-radius: 24px; padding: 16px 22px; color: #0B1626; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 4px; font-family: inherit; cursor: pointer; min-width: 0">
+<span style="font-size: 32px; font-weight: 700; color: {{o.kc}}">{{o.k}} {{o.mark}}</span>
+<b style="font-size: {{o.fs}}px; line-height: 1.1; font-family: 'IBM Plex Mono', monospace; white-space: nowrap">{{o.v}}</b>
 </button>
 </sc-for>
 </div>
-<div style="flex: 0 0 360px; background: #2A2310; border: 2px solid {{notesBd}}; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
-<b style="font-size: 24px; color: #F5B547">{{t.notesTitle}}</b>
-<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
-<div style="display: flex; gap: 10px; font-size: 20px; line-height: 1.5"><span style="color: #F5B547; font-weight: 900">{{n.i}}</span><span>{{n.text}}</span></div>
+<div style="flex: 1 1 0; background: #FFF6E0; border: 4px solid #E8A317; border-radius: 24px; padding: 18px 26px; display: flex; flex-direction: column; gap: 14px">
+<b style="font-size: 38px; font-weight: 900; color: #B45F00">{{t.notes}}</b>
+<sc-for list="{{notesShort}}" as="n" hint-placeholder-count="4">
+<div style="font-size: 34px; line-height: 1.3"><b style="color: #B45F00">{{n.i}}.</b> {{n.text}}</div>
 </sc-for>
-<button type="button" onClick="{{readNotes}}" style="margin-top: auto; min-height: 56px; border-radius: 12px; border: 0; background: {{readBg}}; color: #0B1626; font-size: 22px; font-weight: 900; font-family: inherit; cursor: pointer">{{readLabel}}</button>
 </div>
 </div>
 </sc-if>
 
-<!-- STEP 4 : SETUP — current vs recommended -->
+<!-- STEP 4 : SETUP -->
 <sc-if value="{{is4}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{t.s4Title}}</b><span style="font-size: 19px; color: {{setupC}}; font-weight: 700">{{setupText}}</span></div>
-<div style="display: flex; gap: 14px; flex: 1 1 auto; min-height: 0">
-<div style="flex: 1 1 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
-<sc-for list="{{settings}}" as="s" hint-placeholder-count="6">
-<button type="button" onClick="{{s.fix}}" style="background: {{s.bg}}; border: 2px solid {{s.bd}}; border-radius: 16px; padding: 14px 16px; color: #FFFFFF; text-align: left; display: flex; flex-direction: column; gap: 6px; font-family: inherit; cursor: pointer">
-<span style="display: flex; justify-content: space-between; width: 100%; align-items: center"><span style="font-size: 19px; color: #8FA3BF">{{s.k}}</span><span style="font-size: 17px; font-weight: 900; color: #0B1626; background: {{s.okC}}; border-radius: 999px; padding: 2px 10px">{{s.ok}}</span></span>
-<span style="display: flex; align-items: baseline; gap: 7px">
-<span style="display: flex; flex-direction: column"><span style="font-size: 16px; color: #8FA3BF">{{t.now}}</span><b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; color: {{s.curC}}; line-height: 1.1; white-space: nowrap">{{s.cur}}</b></span>
-<span style="font-size: 24px; color: #5B6B82">→</span>
-<span style="display: flex; flex-direction: column"><span style="font-size: 16px; color: #8FA3BF">{{t.reco}}</span><b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; color: #F5B547; line-height: 1.1; white-space: nowrap">{{s.v}}</b></span>
-<span style="font-size: 16px; color: #C9D3E0">{{s.u}}</span>
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2; color: {{setupTitleC}}">{{setupTitle}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<sc-for list="{{adjustList}}" as="s" hint-placeholder-count="2">
+<button type="button" onClick="{{s.fix}}" style="flex: 1 1 0; background: {{s.bg}}; border: 4px solid {{s.bd}}; border-radius: 24px; padding: 18px 28px; color: #0B1626; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 8px; font-family: inherit; cursor: pointer">
+<span style="font-size: 34px; font-weight: 700; color: #4A5568">{{s.k}} · {{s.u}}</span>
+<span style="display: flex; align-items: center; gap: 24px; white-space: nowrap">
+<b style="font-size: 100px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #8A94A6; text-decoration: {{s.strike}}">{{s.cur}}</b>
+<span style="font-size: 60px; color: #6B778A">→</span>
+<b style="font-size: 150px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: {{s.vC}}">{{s.v}}</b>
 </span>
-<span style="font-size: 18px; color: {{s.hintC}}; line-height: 1.4; font-weight: {{s.hintW}}">{{s.hint}}</span>
+<span style="font-size: 36px; font-weight: 900; color: {{s.vC}}">{{s.hint}}</span>
 </button>
 </sc-for>
 </div>
-<div style="flex: 0 0 290px; background: #13243D; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
-<b style="font-size: 22px; color: #F5B547">{{t.aiTitle}}</b>
-<span style="font-size: 19px; line-height: 1.6">{{t.aiTip1}}</span>
-<span style="font-size: 19px; line-height: 1.6">{{t.aiTip2}}</span>
-<span style="margin-top: auto; font-size: 17px; color: #8FA3BF">{{t.cardHint}}</span>
-</div>
+<div style="flex: 0 0 auto; background: #F3F5F9; border: 4px solid #D5DCE6; border-radius: 24px; padding: 14px 24px; display: flex; align-items: center; gap: 20px">
+<span style="font-size: 32px; font-weight: 900; color: #17804F; background: #E3F4EA; border-radius: 999px; padding: 6px 20px; white-space: nowrap">✓ {{okCount}} {{t.match}}</span>
+<span style="font-size: 32px; color: #4A5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{okLine}}</span>
 </div>
 </sc-if>
 
-<!-- STEP 5 : RUNNING (floor-screen style) -->
+<!-- STEP 5 : RUNNING -->
 <sc-if value="{{is5}}" hint-placeholder-val="{{ false }}">
-<!-- header row -->
-<div style="display: flex; gap: 10px; flex: 0 0 92px">
-<div style="flex: 1 1 auto; background: #13243D; border-radius: 14px; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center; gap: 6px; min-width: 0">
-<div style="display: flex; align-items: baseline; gap: 12px; white-space: nowrap"><b style="font-size: 24px">{{jobTitle}}</b><span style="font-size: 15px; color: #8FA3BF">SAMPLE-A01 · {{t.started}} 10:05</span></div>
-<div style="display: flex; gap: 3px; height: 12px">
-<sc-for list="{{boxProg}}" as="p" hint-placeholder-count="4">
-<div style="flex: {{p.f}} 1 0; background: #0B1626; border-radius: 4px; overflow: hidden"><div style="height: 12px; width: {{p.pct}}%; background: {{p.c}}"></div></div>
-</sc-for>
+<div style="display: flex; gap: 18px; flex: 0 0 236px">
+<div style="flex: 1.25 1 0; background: {{run.bg}}; border-radius: 24px; padding: 18px 28px; display: flex; flex-direction: column; justify-content: center; gap: 6px; color: {{run.fg}}">
+<b style="font-size: 70px; font-weight: 900; line-height: 1.1">{{run.icon}} {{run.title}}</b>
+<span style="font-size: 34px; line-height: 1.25">{{run.body}}</span>
 </div>
-<div style="display: flex; gap: 18px; font-size: 18px; color: #C9D3E0; white-space: nowrap"><span><b style="color: #FFFFFF; font-size: 21px">{{coilPct}}%</b> · {{posM}} / 710 m</span><span>{{t.elapsed}} <b style="color: #FFFFFF">{{elapsed}}</b></span><span>{{t.left}} <b style="color: #FFFFFF">{{leftMin}}</b></span><span>{{t.ends}} <b style="color: #FFFFFF">{{endsAt}}</b></span></div>
-</div>
-<div style="flex: 0 0 210px; background: #13243D; border-radius: 14px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center">
-<span style="font-size: 17px; color: #8FA3BF">{{countLabel}}</span>
-<div style="display: flex; align-items: baseline; gap: 6px; white-space: nowrap"><b style="font-size: 50px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #F5B547">{{count}}</b><span style="font-size: 22px; color: #C9D3E0; font-family: 'IBM Plex Mono', monospace">/ {{target}}</span><span style="margin-left: auto; font-size: 15px; color: #FDA29B">{{t.removedShort}} {{removed}}</span></div>
-</div>
-<div style="flex: 0 0 300px; background: {{verdict5.bg}}; border: 2px solid {{verdict5.bd}}; border-radius: 14px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; gap: 2px">
-<b style="font-size: 24px; color: {{verdict5.fg}}">{{verdict5.icon}} {{verdict5.title}}</b>
-<span style="font-size: 17px; line-height: 1.4; color: #E4E7EC">{{verdict5.body}}</span>
+<div style="flex: 1 1 0; background: #F3F5F9; border: 4px solid #D5DCE6; border-radius: 24px; padding: 16px 26px; display: flex; flex-direction: column; justify-content: center; gap: 4px">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568">{{countLabel}}</span>
+<span style="white-space: nowrap"><b style="font-size: 128px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #B45F00">{{count}}</b><b style="font-size: 60px; font-family: 'IBM Plex Mono', monospace; color: #4A5568"> / {{target}}</b></span>
+<span style="font-size: 30px; color: #4A5568">{{coilPct}}% · {{t.ends}} {{endsAt}}</span>
 </div>
 </div>
-
-<!-- line diagram -->
-<div style="flex: 0 0 104px; background: #13243D; border-radius: 14px; padding: 8px 16px; display: flex; align-items: center; gap: 0">
-<sc-for list="{{line}}" as="u" hint-placeholder-count="5">
-<div style="display: flex; align-items: center; flex: {{u.f}}; min-width: 0">
-<div style="display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 0 0 auto">
-<div style="width: {{u.w}}px; height: 52px; border-radius: {{u.r}}; background: {{u.fill}}; border: 3px solid {{u.c}}; box-sizing: border-box; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 900; color: #0B1626">{{u.icon}}</div>
-<b style="font-size: 17px; white-space: nowrap">{{u.name}}</b>
-<span style="font-size: 16px; color: {{u.vc}}; white-space: nowrap; font-family: 'IBM Plex Mono', monospace">{{u.val}}</span>
-</div>
-<sc-if value="{{u.link}}" hint-placeholder-val="{{ true }}"><div style="flex: 1 1 auto; height: 0; border-top: 4px dashed #6F8FBF; margin: 0 6px 30px"></div></sc-if>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<sc-for list="{{run3}}" as="g" hint-placeholder-count="3">
+<div style="flex: 1 1 0; background: #F3F5F9; border: 4px solid #D5DCE6; border-top: 12px solid {{g.c}}; border-radius: 24px; padding: 12px 26px; display: flex; flex-direction: column; justify-content: center; gap: 4px">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568">{{g.k}}</span>
+<b style="font-size: 96px; line-height: 1; font-family: 'IBM Plex Mono', monospace; white-space: nowrap">{{g.v}}<span style="font-size: 40px">{{g.u}}</span></b>
+<span style="font-size: 32px; font-weight: 700; color: {{g.c}}; white-space: nowrap">{{g.s}}</span>
 </div>
 </sc-for>
-</div>
-
-<!-- gauges -->
-<div style="flex: 0 0 132px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px">
-<sc-for list="{{gauges}}" as="g" hint-placeholder-count="5">
-<div style="background: #13243D; border-radius: 14px; padding: 6px 10px; display: flex; flex-direction: column; align-items: center; gap: 0; border-top: 4px solid {{g.c}}">
-<span style="align-self: flex-start; font-size: 17px; color: #C9D3E0">{{g.k}}</span>
-<svg viewBox="0 0 120 66" style="width: 110px; height: 56px" role="img" aria-label="{{g.k}} {{g.v}}">
-<path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="#24395A" stroke-width="10" stroke-linecap="round"></path>
-<path d="M10 60 A50 50 0 0 1 110 60" fill="none" stroke="#3FAE6A" stroke-width="10" stroke-dasharray="{{g.band}}" stroke-dashoffset="{{g.off}}"></path>
-<line x1="60" y1="60" x2="{{g.nx}}" y2="{{g.ny}}" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"></line>
-<circle cx="60" cy="60" r="5" fill="#FFFFFF"></circle>
-</svg>
-<b style="font-size: 24px; line-height: 1.1; font-family: 'IBM Plex Mono', monospace">{{g.v}}<span style="font-size: 16px; color: #C9D3E0"> {{g.u}}</span></b>
-<span style="font-size: 15px; color: #8FA3BF">{{t.normal}} {{g.range}}</span>
-<span style="font-size: 16px; font-weight: 700; color: {{g.c}}">{{g.s}}</span>
-</div>
-</sc-for>
-</div>
-
-<!-- chart + guide -->
-<div style="flex: 1 1 auto; min-height: 0; display: flex; gap: 10px">
-<div style="flex: 1 1 auto; background: #13243D; border-radius: 14px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0">
-<div style="display: flex; gap: 6px; align-items: center">
-<sc-for list="{{chartTabs}}" as="ct" hint-placeholder-count="4">
-<button type="button" onClick="{{ct.pick}}" style="{{ct.style}}">{{ct.label}}</button>
-</sc-for>
-<span style="margin-left: auto; display: flex; gap: 10px; font-size: 15px; color: #C9D3E0; white-space: nowrap"><span><span style="display: inline-block; width: 14px; height: 3px; background: #F5B547; vertical-align: middle"></span> {{t.actual}}</span><span><span style="display: inline-block; width: 14px; border-top: 2px dashed #FFFFFF; vertical-align: middle"></span> {{t.forecast}}</span><span><span style="display: inline-block; width: 12px; height: 10px; background: rgba(63,174,106,0.35); vertical-align: middle"></span> {{t.normal}}</span><span style="color: #F04438">● {{t.defect}}</span></span>
-</div>
-<div style="position: relative; flex: 1 1 auto; min-height: 0">
-<svg viewBox="0 0 600 150" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%" role="img" aria-label="{{chartAria}}">
-<polygon points="{{ch.band}}" fill="rgba(63,174,106,0.28)"></polygon>
-<sc-for list="{{ch.boxLines}}" as="bl" hint-placeholder-count="3"><line x1="{{bl.x}}" y1="0" x2="{{bl.x}}" y2="150" stroke="#3A5375" stroke-width="1" stroke-dasharray="3 3"></line></sc-for>
-<polyline points="{{ch.fc}}" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="5 4" vector-effect="non-scaling-stroke"></polyline>
-<polyline points="{{ch.act}}" fill="none" stroke="#F5B547" stroke-width="3" vector-effect="non-scaling-stroke"></polyline>
-<line x1="{{ch.nowX}}" y1="0" x2="{{ch.nowX}}" y2="150" stroke="#FFFFFF" stroke-width="1.5" vector-effect="non-scaling-stroke"></line>
-</svg>
-<sc-for list="{{ch.marks}}" as="mk" hint-placeholder-count="1"><span style="position: absolute; left: {{mk.x}}%; top: 2px; transform: translateX(-50%); width: 14px; height: 14px; border-radius: 50%; background: #F04438; border: 2px solid #FFFFFF; box-sizing: border-box"></span></sc-for>
-<span style="position: absolute; left: {{ch.nowPct}}%; bottom: 2px; transform: translateX(4px); font-size: 15px; color: #FFFFFF; background: #0B1626; padding: 1px 5px; border-radius: 4px; white-space: nowrap">{{t.nowLabel}} {{posM}}m</span>
-</div>
-<div style="display: flex; justify-content: space-between; font-size: 15px; color: #8FA3BF; font-family: 'IBM Plex Mono', monospace"><span>0 m</span><span>{{t.box}} 1 | 2 | 3 | 4</span><span>710 m</span></div>
-</div>
-<div style="flex: 0 0 300px; display: flex; flex-direction: column; gap: 8px">
-<div style="flex: 1 1 auto; background: #1A2E1F; border: 1px solid #2E6B3F; border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
-<b style="font-size: 20px; color: #A6F4C5">AI · {{guide.title}}</b>
-<span style="font-size: 18px; line-height: 1.5; color: #D1FADF">{{guide.body}}</span>
-</div>
-<div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center">
-<span style="font-size: 15px; color: #8FA3BF">{{t.demo}}</span>
-<button type="button" onClick="{{addTen}}" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px dashed #3A5375; background: transparent; color: #C9D3E0; font-size: 16px; font-family: inherit; cursor: pointer">{{t.plusTen}}</button>
-<button type="button" onClick="{{fireSurf}}" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px dashed #F04438; background: transparent; color: #FDA29B; font-size: 16px; font-family: inherit; cursor: pointer">{{t.fireSurf}}</button>
-<button type="button" onClick="{{fireFlat}}" style="min-height: 34px; padding: 0 10px; border-radius: 8px; border: 1px dashed #F04438; background: transparent; color: #FDA29B; font-size: 16px; font-family: inherit; cursor: pointer">{{t.fireFlat}}</button>
-</div>
-</div>
 </div>
 </sc-if>
 
-<!-- STEP 6 -->
+<!-- STEP 6 : COUNT -->
 <sc-if value="{{is6}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; justify-content: space-between; align-items: baseline"><b style="font-size: 26px">{{s6Title}}</b><span style="font-size: 20px; color: #8FA3BF">{{t.s6Sub}}</span></div>
-<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">
-<div style="background: #13243D; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 20px; color: #8FA3BF">{{t.target}}</span><b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace">{{target}}</b></div>
-<div style="background: #13243D; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 20px; color: #8FA3BF">{{t.machine}}</span><b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace">{{count}}</b></div>
-<div style="background: #2A1618; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 20px; color: #FDA29B">{{t.removed}}</span><b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace; color: #FDA29B">{{removed}}</b></div>
-<div style="background: #13243D; border: 2px solid #F5B547; border-radius: 16px; padding: 18px; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 20px; color: #F5B547">{{t.packed}}</span>
-<div style="display: flex; align-items: center; gap: 10px">
-<button type="button" onClick="{{minus}}" aria-label="-1" style="width: 52px; height: 52px; border-radius: 12px; border: 0; background: #1E3352; color: #FFFFFF; font-size: 28px; cursor: pointer">−</button>
-<b style="font-size: 52px; font-family: 'IBM Plex Mono', monospace; min-width: 90px; text-align: center">{{packed}}</b>
-<button type="button" onClick="{{plus}}" aria-label="+1" style="width: 52px; height: 52px; border-radius: 12px; border: 0; background: #1E3352; color: #FFFFFF; font-size: 28px; cursor: pointer">+</button>
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s6Ask}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<div style="flex: 1.3 1 0; background: #FFF6E0; border: 4px solid #E8A317; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px">
+<div style="display: flex; align-items: center; gap: 40px">
+<button type="button" onClick="{{minus}}" aria-label="-1" style="width: 120px; height: 120px; border-radius: 24px; border: 0; background: #E3E8F0; color: #0B1626; font-size: 80px; font-weight: 900; font-family: inherit; cursor: pointer">−</button>
+<b style="font-size: 170px; line-height: 1; font-family: 'IBM Plex Mono', monospace; min-width: 230px; text-align: center">{{packed}}</b>
+<button type="button" onClick="{{plus}}" aria-label="+1" style="width: 120px; height: 120px; border-radius: 24px; border: 0; background: #E3E8F0; color: #0B1626; font-size: 80px; font-weight: 900; font-family: inherit; cursor: pointer">+</button>
 </div>
+<span style="font-size: 34px; color: #4A5568">{{t.machine}} {{count}} · {{t.removedShort}} {{removed}}</span>
 </div>
+<div style="flex: 1 1 0; background: {{verdict.bg}}; border: 4px solid {{verdict.bd}}; border-radius: 24px; padding: 20px 28px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+<b style="font-size: 72px; font-weight: 900; line-height: 1.1; color: {{verdict.fg}}">{{verdict.title}}</b>
+<span style="font-size: 34px; line-height: 1.35">{{t.target}} {{target}}. {{verdict.body}}</span>
+<sc-if value="{{hasLog}}" hint-placeholder-val="{{ false }}"><span style="font-size: 30px; font-weight: 700; color: #C62828">⚠ {{logText}}</span></sc-if>
 </div>
-<div style="background: {{verdict.bg}}; border: 2px solid {{verdict.bd}}; border-radius: 16px; padding: 18px; display: flex; align-items: center; gap: 16px">
-<span style="width: 56px; height: 56px; border-radius: 50%; background: {{verdict.bd}}; color: #0B1626; font-size: 30px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex: 0 0 56px">{{verdict.icon}}</span>
-<div style="display: flex; flex-direction: column; gap: 4px"><b style="font-size: 24px">{{verdict.title}}</b><span style="font-size: 21px; color: #E4E7EC">{{verdict.body}}</span></div>
-</div>
-<div style="background: #13243D; border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0">
-<b style="font-size: 20px">{{t.logTitle}}</b>
-<sc-for list="{{log}}" as="g" hint-placeholder-count="2">
-<div style="display: flex; gap: 12px; align-items: center; font-size: 20px"><span style="font-family: 'IBM Plex Mono', monospace; color: #8FA3BF">{{g.t}}</span><b style="color: #FDA29B">{{g.kind}}</b><span>{{g.where}}</span><span style="margin-left: auto; font-weight: 700; color: {{g.ac}}">{{g.action}}</span></div>
-</sc-for>
-<sc-if value="{{noLog}}" hint-placeholder-val="{{ false }}"><span style="font-size: 19px; color: #8FA3BF">{{t.noLog}}</span></sc-if>
 </div>
 </sc-if>
+
+</div>
 
 <!-- PREV / NEXT -->
-<div style="display: flex; gap: 12px; flex: 0 0 auto">
-<button type="button" onClick="{{prev}}" style="min-height: 52px; padding: 0 22px; border-radius: 12px; border: 1px solid #3A5375; background: transparent; color: #FFFFFF; font-size: 21px; font-family: inherit; cursor: pointer; opacity: {{prevOp}}">{{t.prev}}</button>
-<span style="flex: 1 1 auto"></span>
-<button type="button" onClick="{{next}}" style="min-height: 52px; padding: 0 26px; border-radius: 12px; border: 0; background: #F5B547; color: #0B1626; font-size: 22px; font-weight: 900; font-family: inherit; cursor: pointer">{{nextLabel}}</button>
+<div style="height: 118px; flex: 0 0 118px; display: flex; align-items: center; gap: 16px; padding: 0 28px; border-top: 3px solid #E3E8F0; box-sizing: border-box">
+<button type="button" onClick="{{prev}}" style="height: 90px; padding: 0 36px; border-radius: 18px; border: 3px solid #9AA8BC; background: #FFFFFF; color: #4A5568; font-size: 36px; font-weight: 700; font-family: inherit; cursor: pointer; opacity: {{prevOp}}">{{t.prev}}</button>
+<sc-if value="{{is5}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 8px; align-items: center; margin-left: 12px">
+<span style="font-size: 18px; color: #9AA8BC">{{t.demo}}</span>
+<button type="button" onClick="{{addTen}}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 2px dashed #C3CCD9; background: transparent; color: #6B778A; font-size: 18px; font-family: inherit; cursor: pointer">{{t.plusTen}}</button>
+<button type="button" onClick="{{fireSurf}}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 2px dashed #F0A8A8; background: transparent; color: #C62828; font-size: 18px; font-family: inherit; cursor: pointer">{{t.fireSurf}}</button>
+<button type="button" onClick="{{fireFlat}}" style="height: 44px; padding: 0 12px; border-radius: 10px; border: 2px dashed #F0A8A8; background: transparent; color: #C62828; font-size: 18px; font-family: inherit; cursor: pointer">{{t.fireFlat}}</button>
 </div>
+</sc-if>
+<span style="flex: 1 1 auto"></span>
+<button type="button" onClick="{{next}}" style="height: 94px; padding: 0 48px; border-radius: 18px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 44px; font-weight: 900; font-family: inherit; cursor: pointer; white-space: nowrap">{{nextLabel}}</button>
 </div>
 
 <!-- NOTES SHEET -->
 <sc-if value="{{notesOpen}}" hint-placeholder-val="{{ false }}">
-<div style="position: absolute; inset: 0; background: rgba(5,10,20,0.7); display: flex; justify-content: flex-end">
-<div style="width: 460px; height: 100%; background: #2A2310; border-left: 3px solid #F5B547; padding: 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px">
-<div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 24px; color: #F5B547">{{t.notesTitle}}</b><button type="button" onClick="{{closeNotes}}" aria-label="close" style="width: 48px; height: 48px; border-radius: 12px; border: 0; background: #3D3317; color: #FFFFFF; font-size: 24px; cursor: pointer">×</button></div>
-<span style="font-size: 18px; color: #C9B98A">SAMPLE-A01 · {{t.fromOrder}}</span>
+<div style="position: absolute; inset: 0; background: rgba(11,22,38,0.55); display: flex; justify-content: flex-end">
+<div style="width: 700px; height: 100%; background: #FFFFFF; border-left: 6px solid #E8A317; padding: 26px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 44px; font-weight: 900; color: #B45F00">{{t.notesTitle}}</b><button type="button" onClick="{{closeNotes}}" aria-label="close" style="width: 72px; height: 72px; border-radius: 16px; border: 0; background: #E3E8F0; color: #0B1626; font-size: 44px; cursor: pointer">×</button></div>
 <sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
-<div style="display: flex; gap: 12px; font-size: 22px; line-height: 1.55; background: #3D3317; border-radius: 12px; padding: 14px"><span style="color: #F5B547; font-weight: 900">{{n.i}}</span><span>{{n.text}}</span></div>
+<div style="display: flex; gap: 14px; font-size: 32px; line-height: 1.35; background: #FFF6E0; border-radius: 16px; padding: 14px 18px"><b style="color: #B45F00">{{n.i}}</b><span>{{n.text}}</span></div>
 </sc-for>
-<button type="button" onClick="{{readNotesClose}}" style="margin-top: auto; min-height: 60px; border-radius: 14px; border: 0; background: {{readBg}}; color: #0B1626; font-size: 23px; font-weight: 900; font-family: inherit; cursor: pointer">{{readLabel}}</button>
+<button type="button" onClick="{{readNotesClose}}" style="margin-top: auto; height: 96px; border-radius: 18px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 40px; font-weight: 900; font-family: inherit; cursor: pointer">{{readLabel}}</button>
 </div>
 </div>
 </sc-if>
 
 <!-- ALARM MODAL -->
 <sc-if value="{{alarmOn}}" hint-placeholder-val="{{ false }}">
-<div style="position: absolute; left: 0; right: 0; top: 102px; bottom: 0; background: rgba(120,10,20,0.55); display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box">
-<div style="width: 1000px; background: #7A1219; border: 4px solid #FFFFFF; border-radius: 22px; padding: 22px; display: flex; gap: 20px">
-<div style="flex: 0 0 400px; position: relative; border-radius: 14px; overflow: hidden; background: #000000; height: 400px">
+<div style="position: absolute; left: 0; right: 0; top: 92px; bottom: 0; background: rgba(120,10,20,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box">
+<div style="width: 1220px; background: #FFFFFF; border: 8px solid #C62828; border-radius: 24px; padding: 22px; display: flex; gap: 22px; box-sizing: border-box">
+<div style="flex: 0 0 400px; position: relative; border-radius: 16px; overflow: hidden; background: #000000; height: 520px">
 <img src="{{alarm.img}}" alt="{{alarm.title}}" style="width: 100%; height: 100%; object-fit: cover; display: block">
-<div style="position: absolute; left: {{alarm.rx}}%; top: {{alarm.ry}}%; width: {{alarm.rw}}%; height: {{alarm.rh}}%; transform: translate(-50%, -50%); border: 5px solid #F04438; border-radius: 8px"></div>
+<div style="position: absolute; left: {{alarm.rx}}%; top: {{alarm.ry}}%; width: {{alarm.rw}}%; height: {{alarm.rh}}%; transform: translate(-50%, -50%); border: 6px solid #F04438; border-radius: 8px"></div>
 </div>
-<div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px">
-<span style="align-self: flex-start; font-size: 20px; font-weight: 900; color: #7A1219; background: #FFFFFF; border-radius: 999px; padding: 6px 14px">⚠ {{alarm.cam}}</span>
-<b style="font-size: 38px; line-height: 1.15">{{alarm.title}}</b>
-<sc-if value="{{alarm.isFlat}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; gap: 10px; align-items: stretch">
-<div style="flex: 0 0 auto; background: #F04438; border-radius: 12px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center"><span style="font-size: 17px; color: #FEE4E2">{{t.warpLabel}}</span><b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; line-height: 1.1">1,209 · D</b><span style="font-size: 16px; color: #FEE4E2">{{t.limitLabel}} 700</span></div>
-<div style="flex: 1 1 auto; background: #4A0D12; border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 2px">
-<span style="font-size: 17px; color: #FDA29B">{{t.shapeLabel}}</span>
-<svg viewBox="0 0 300 60" style="width: 100%; height: 56px" role="img" aria-label="{{alarm.title}}"><line x1="6" y1="30" x2="294" y2="30" stroke="#8FA3BF" stroke-width="1.5" stroke-dasharray="5 4"></line><path d="M6 30 Q20 6 34 30 T62 30 L238 30 Q252 54 266 30 T294 30" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round"></path><circle cx="20" cy="14" r="9" fill="none" stroke="#F04438" stroke-width="3"></circle><circle cx="280" cy="46" r="9" fill="none" stroke="#F04438" stroke-width="3"></circle></svg>
-</div>
-</div>
-</sc-if>
-<sc-if value="{{alarm.isSurf}}" hint-placeholder-val="{{ false }}">
-<div style="display: flex; gap: 10px; align-items: stretch">
-<div style="flex: 0 0 auto; background: #F04438; border-radius: 12px; padding: 8px 14px; display: flex; flex-direction: column; justify-content: center"><span style="font-size: 17px; color: #FEE4E2">{{t.scoreLabel}}</span><b style="font-size: 30px; font-family: 'IBM Plex Mono', monospace; line-height: 1.1">0.91</b><span style="font-size: 16px; color: #FEE4E2">{{t.limitLabel}} 0.80</span></div>
-<div style="flex: 1 1 auto; background: #4A0D12; border-radius: 12px; padding: 8px 12px; display: flex; flex-direction: column; gap: 4px">
-<span style="font-size: 17px; color: #FDA29B">{{t.topLabel}}</span>
-<svg viewBox="0 0 300 64" style="width: 100%; height: 58px" role="img" aria-label="{{alarm.title}}"><rect x="4" y="4" width="292" height="56" rx="3" fill="#D0D5DD"></rect><line x1="4" y1="32" x2="296" y2="32" stroke="#98A2B3" stroke-width="1" stroke-dasharray="4 4"></line><line x1="120" y1="27" x2="190" y2="29" stroke="#D92D20" stroke-width="4" stroke-linecap="round"></line><circle cx="155" cy="28" r="16" fill="none" stroke="#D92D20" stroke-width="2.5"></circle><path d="M250 54 L282 54 M276 49 L282 54 L276 59" stroke="#475467" stroke-width="2" fill="none"></path></svg>
-<span style="font-size: 16px; color: #FDA29B">{{t.repeatNote}}</span>
-</div>
-</div>
-</sc-if>
-<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
-<div style="background: #4A0D12; border-radius: 12px; padding: 12px"><span style="font-size: 18px; color: #FDA29B">{{t.inBox}}</span><br><b style="font-size: 26px">{{alarm.sheetText}}</b></div>
-<div style="background: #4A0D12; border-radius: 12px; padding: 12px"><span style="font-size: 18px; color: #FDA29B">{{t.onSheet}}</span><br><b style="font-size: 26px">{{alarm.where}}</b></div>
-</div>
-<span style="font-size: 21px; line-height: 1.55; color: #FEE4E2">{{alarm.tip}}</span>
-<div style="margin-top: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
-<button type="button" onClick="{{ackOk}}" style="min-height: 76px; border-radius: 14px; border: 0; background: #4ADE80; color: #0B1626; font-size: 24px; font-weight: 900; font-family: inherit; cursor: pointer">{{t.ok}}<br><span style="font-size: 17px; font-weight: 700">{{t.okSub}}</span></button>
-<button type="button" onClick="{{ackRemove}}" style="min-height: 76px; border-radius: 14px; border: 0; background: #F5B547; color: #0B1626; font-size: 24px; font-weight: 900; font-family: inherit; cursor: pointer">{{t.rm}}<br><span style="font-size: 17px; font-weight: 700">{{t.rmSub}}</span></button>
-<button type="button" onClick="{{ackStop}}" style="min-height: 76px; border-radius: 14px; border: 2px solid #FFFFFF; background: #D92D20; color: #FFFFFF; font-size: 24px; font-weight: 900; font-family: inherit; cursor: pointer">{{t.stop}}<br><span style="font-size: 17px; font-weight: 700">{{t.stopSub}}</span></button>
+<div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px; color: #0B1626; min-width: 0">
+<span style="align-self: flex-start; font-size: 30px; font-weight: 900; color: #FFFFFF; background: #C62828; border-radius: 999px; padding: 6px 20px">⚠ {{alarm.cam}}</span>
+<b style="font-size: 56px; font-weight: 900; line-height: 1.1; color: #C62828">{{alarm.title}}</b>
+<span style="font-size: 34px; font-weight: 700">{{alarm.sheetText}} · {{alarm.where}}</span>
+<span style="font-size: 32px; line-height: 1.4; color: #4A5568">{{alarm.tip}}</span>
+<div style="margin-top: auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<button type="button" onClick="{{ackOk}}" style="height: 120px; border-radius: 18px; border: 0; background: #17804F; color: #FFFFFF; font-size: 32px; font-weight: 900; line-height: 1.15; font-family: inherit; cursor: pointer">{{t.ok}}<br><span style="font-size: 21px; font-weight: 700">{{t.okSub}}</span></button>
+<button type="button" onClick="{{ackRemove}}" style="height: 120px; border-radius: 18px; border: 0; background: #E8A317; color: #0B1626; font-size: 32px; font-weight: 900; line-height: 1.15; font-family: inherit; cursor: pointer">{{t.rm}}<br><span style="font-size: 21px; font-weight: 700">{{t.rmSub}}</span></button>
+<button type="button" onClick="{{ackStop}}" style="height: 120px; border-radius: 18px; border: 0; background: #C62828; color: #FFFFFF; font-size: 32px; font-weight: 900; line-height: 1.15; font-family: inherit; cursor: pointer">{{t.stop}}<br><span style="font-size: 21px; font-weight: 700">{{t.stopSub}}</span></button>
 </div>
 </div>
 </div>
@@ -430,6 +320,21 @@ class Component extends DCLogic {
       coils: [['Customer A', '▶ Priority 1 · ready', '4 notes'], ['Customer B', 'Waiting', ''], ['Customer C', 'Waiting', '1 note']], boxesFmt: '{n} boxes', jobFmt: 'Customer A · 0.60 × 1219 · 4,060 kg · Box {b}'
     };
     var T = L === 'en' ? EN : KO;
+    var XEN = { s1Title: "Pick today's coil", s2Title: 'Which box?', s3Title: 'Check the order', s6Ask: 'Sheets in the box?', notesTitle: 'Notes',
+      notesShort: ['Last 5 sheets → pack separately', 'Scratch alarm → remove sheet', '2 labels per box', 'Sihwa · load at 4 PM'],
+      stShort: ['Cut', 'Speed', 'Accel', 'Slow', 'Tension', 'Dia'], chgFmt: 'Change {n} settings', allSet: 'All set — press Start', tapDone: 'Tap when done', changed: '✓ Changed', first30: 'First 30 min',
+      ocK: ['Size', 'Cut length', 'Box {b} sheets', 'Ship to'], doFirst: '▶ Do first', boxDone: 'Done', boxNext: 'Next · {n}',
+      keepT: 'Keep going', keepB: 'All normal', checkT: 'Check sheets', checkB: 'Coil end — check every 5th sheet', alarmT: 'Defect!', alarmB: 'Handle the alarm',
+      ends: 'ends', logFmt: '{n} alarm(s) in this box', vOkT: 'Correct ✓', vLessB2: 'Fill from the next box or tell the supervisor.', vMoreB2: 'Please count again.', okRange: 'OK · {r}',
+      nextFmt: ['Pick coil →', 'Next →', 'I read it · Setup →', 'Start →', 'Box done →', 'Save · Box {b} →'] };
+    var XKO = { s1Title: '오늘 작업할 코일', s2Title: '몇 번 박스?', s3Title: '지시서 확인', s6Ask: '박스에 담은 장수는?', notesTitle: '비고',
+      notesShort: ['끝 5장 → 따로 포장', '표면 알람 → 바로 빼기', '라벨 2장 (안 · 밖)', '시화 · 오후 4시 상차'],
+      stShort: ['절단', '속도', '가감속', '저속', '텐션', '시작경'], chgFmt: '{n}개 바꾸세요', allSet: '모두 맞음 — 시작하세요', tapDone: '바꾼 뒤 누르세요', changed: '✓ 바꿈', first30: '처음 30분',
+      ocK: ['규격', '절단 길이', '박스 {b} 장수', '출고지'], doFirst: '▶ 먼저 작업', boxDone: '완료', boxNext: '다음 · {n}장',
+      keepT: '이대로 계속', keepB: '모두 정상', checkT: '판 확인', checkB: '코일 끝 — 5장마다 확인', alarmT: '결함!', alarmB: '알람을 확인하세요',
+      ends: '종료', logFmt: '이 박스 알람 {n}건', vOkT: '맞아요 ✓', vLessB2: '다음 박스에서 채우거나 관리자에게 알리세요.', vMoreB2: '다시 세어 주세요.', okRange: '정상 · {r}',
+      nextFmt: ['코일 선택 →', '다음 →', '읽었어요 · 셋팅 →', '작업 시작 →', '박스 완료 →', '저장 · 박스 {b} →'] };
+    T = Object.assign({}, T, L === 'en' ? XEN : XKO);
     function f(s, o) { return s.replace(/\{(\w)\}/g, function (_, k) { return o[k]; }); }
     function go(n) { return function () { self.setState({ step: n, notesOpen: false }); }; }
     var steps = T.steps.map(function (l, i) {
@@ -535,9 +440,29 @@ class Component extends DCLogic {
     function next() {
       if (S.step === 6) self.setState({ box: Math.min(4, S.box + 1), step: 5, count: 0, removed: 0, packed: null, log: [] });
       else if (S.step === 5) self.setState({ step: 6, packed: null });
-      else self.setState({ step: S.step + 1 });
+      else self.setState(Object.assign({ step: S.step + 1 }, S.step === 3 ? { notesRead: true } : {}));
     }
-    return {
+    // ---- simplified white layout values ----
+    var GC = { '#3FAE6A': '#17804F', '#F79009': '#B45F00', '#F04438': '#C62828' };
+    var dots = T.steps.map(function (l, i) { var n = i + 1; return { label: l, go: go(n), w: n === S.step ? 48 : 22, c: n === S.step ? '#F5B547' : (n < S.step ? '#3FAE6A' : '#3A5375') }; });
+    var coilsX = coils.map(function (c, i) { return Object.assign({}, c, { short: c.coil.replace('SAMPLE-', ''), boxes: c.boxes === '1 boxes' ? '1 box' : c.boxes, st: i === 0 ? T.doFirst : c.st, stC: i === 0 ? '#B45F00' : '#6B778A', bg: i === 0 ? '#FFF6E0' : '#F3F5F9', bd: i === 0 ? '#E8A317' : '#D5DCE6' }); });
+    var boxesX = bx.map(function (b) { var on = b[0] === S.box, dn = b[0] < S.box; return { no: b[0], st: dn ? T.boxDone : (on ? f(T.boxNext, { n: b[1] }) : String(b[1])), stC: dn ? '#17804F' : (on ? '#B45F00' : '#6B778A'), bg: on ? '#FFF6E0' : '#F3F5F9', bd: on ? '#E8A317' : '#D5DCE6', pick: function () { self.setState({ box: b[0], step: 3 }); } }; });
+    var oIdx = [1, 3, 4, 5], oVal = ['0.60×1219', '2,565', String(target), T.ocShip];
+    var orderX = oIdx.map(function (ix, j) { var on = !!S.chk[ix]; var v = oVal[j]; return { k: f(T.ocK[j], { b: S.box }), v: v, fs: v.length > 7 ? 46 : 56, mark: on ? '✓' : '', kc: on ? '#17804F' : '#4A5568', bg: on ? '#E3F4EA' : '#F3F5F9', bd: on ? '#17804F' : '#D5DCE6', toggle: function () { var c = Object.assign({}, S.chk); c[ix] = !c[ix]; self.setState({ chk: c }); } }; });
+    var notesShort = T.notesShort.map(function (t, i) { return { i: i + 1, text: t }; });
+    var adjustList = [], okParts = [], okCount = 0, remain = 0;
+    sv.forEach(function (x, i) {
+      if (x[0] === x[1]) { okCount++; okParts.push(T.stShort[i] + ' ' + x[1].replace(/ /g, '')); return; }
+      var fx = !!S.fixed[i]; if (!fx) remain++;
+      adjustList.push({ k: T.st[i][0], u: x[2], cur: x[0], v: x[1], strike: 'line-through', vC: fx ? '#17804F' : '#B45F00', hint: fx ? T.changed : (i === 1 ? T.first30 + ' · ' + T.tapDone : T.tapDone), bg: fx ? '#E3F4EA' : '#FFF6E0', bd: fx ? '#17804F' : '#E8A317', fix: function () { var c = Object.assign({}, S.fixed); c[i] = !c[i]; self.setState({ fixed: c }); } });
+    });
+    var run = alarmOn ? { icon: '⚠', title: T.alarmT, body: T.alarmB, bg: '#C62828', fg: '#FFFFFF' }
+      : (nearEnd ? { icon: '!', title: T.checkT, body: T.checkB, bg: '#E8A317', fg: '#0B1626' } : { icon: '✓', title: T.keepT, body: T.keepB, bg: '#17804F', fg: '#FFFFFF' });
+    var run3 = [0, 2, 4].map(function (k) { var g = gauges[k]; var c = GC[g.c] || g.c; var v = k === 4 ? String(g.v).split(' ')[0] : g.v; return { k: g.k, v: v, u: k === 2 ? '%' : '', c: c, s: g.s === T.sOk ? f(T.okRange, { r: k === 4 ? '≤ 700' : g.range.replace('~', '–') }) : g.s }; });
+    var verdictX = packed === target ? { title: f(T.vOkT, { t: target }), body: '', bg: '#E3F4EA', bd: '#17804F', fg: '#17804F' }
+      : (packed < target ? { title: f(T.vLessT, { n: target - packed }), body: T.vLessB2, bg: '#FFF6E0', bd: '#E8A317', fg: '#C62828' }
+        : { title: f(T.vMoreT, { n: packed - target }), body: T.vMoreB2, bg: '#FFF6E0', bd: '#E8A317', fg: '#C62828' });
+    var base = {
       t: T, steps: steps, coils: coils, boxes: boxes, orderChecks: orderChecks, notes: notes, settings: settings,
       is1: S.step === 1, is2: S.step === 2, is3: S.step === 3, is4: S.step === 4, is5: S.step === 5, is6: S.step === 6,
       checkText: f(T.checkFmt, { n: checkDone }),
@@ -559,6 +484,15 @@ class Component extends DCLogic {
       toggleLang: function () { self.setState({ lang: L === 'en' ? 'ko' : 'en' }); },
       bg: alarmOn ? '#4A0D12' : '#0B1626', barBg: alarmOn ? '#B42318' : '#0F1E33', frame: alarmOn ? '8px solid #F04438' : '0'
     };
+    return Object.assign(base, {
+      stepNo: S.step, stepName: T.steps[S.step - 1] + (S.step >= 5 ? ' · ' + T.box + ' ' + S.box : ''), dots: dots,
+      coils: coilsX, boxes: boxesX, orderChecks: orderX, notesShort: notesShort,
+      adjustList: adjustList, okCount: okCount, okLine: okParts.join(' · '),
+      setupTitle: remain ? f(T.chgFmt, { n: remain }) : T.allSet, setupTitleC: remain ? '#0B1626' : '#17804F',
+      run: run, run3: run3, verdict: verdictX, hasLog: S.log.length > 0, logText: f(T.logFmt, { n: S.log.length }),
+      barBg: alarmOn ? '#C62828' : '#0F1E33', frame: alarmOn ? '8px solid #C62828' : '0',
+      notesBtnBg: S.notesRead ? '#A6F4C5' : '#F5B547'
+    });
   }
 }
 (function(){
