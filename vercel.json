@@ -19,6 +19,10 @@
     {
       "source": "/leveler-cam",
       "destination": "/leveler-live-cam.html"
+    },
+    {
+      "source": "/leveler-quality",
+      "destination": "/leveling-defect-map.html"
     }
   ]
 }

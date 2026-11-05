@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레벨링 결함 지도 · 오성철강</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{
+  --ink:#0f1e33; --sec:#4e5a72; --mut:#78869c; --acc:#796cbf;
+  --bg:#f3f5fe; --card:#fff; --line:#e1e7f0; --line2:#eef1f7;
+  --good:#17804f; --goodbg:#e3f4ea; --warn:#b26a00; --warnbg:#fbefd9; --bad:#c62828; --badbg:#fbe7e7;
+  --sf:#c62828; --ew:#d98324; --cb:#8a5cf6; --fl:#cf4b4b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Pretendard','Noto Sans KR',system-ui,sans-serif;font-weight:500;font-size:20px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding:0 22px 52px}
+header{background:var(--card);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:6}
+.hd{max-width:1240px;margin:0 auto;display:flex;align-items:center;gap:15px;padding:18px 22px;flex-wrap:wrap}
+.logo{width:50px;height:50px;border-radius:12px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:19px}
+h1{margin:0;font-size:28px;font-weight:800}
+.sub{font-size:16px;color:var(--mut);margin-top:3px}
+.sp{flex:1}
+.live{font-size:14px;font-weight:800;color:var(--good);background:var(--goodbg);border:1px solid #cbe6d6;border-radius:999px;padding:6px 13px}
+select,input,button{font-family:inherit;font-size:18px;font-weight:700;height:48px;padding:0 15px;border-radius:11px;border:1px solid #d5dce6;background:#fff;color:var(--ink);cursor:pointer}
+button{cursor:pointer}
+.back{background:transparent;border:none;color:var(--acc);font-weight:800;font-size:21px;padding:0;margin-top:16px}
+
+.coilbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin:18px 0 16px}
+.coilbar .cid{font-size:32px;font-weight:800;letter-spacing:-.5px}
+.coilbar .spec{font-size:16px;color:var(--sec);margin-top:3px}
+.chip{font-size:15px;font-weight:700;color:var(--sec);background:#f5f7fc;border:1px solid var(--line);border-radius:10px;padding:8px 13px}
+.verdict{margin-left:auto;display:flex;align-items:center;gap:11px;font-size:20px;font-weight:800;color:var(--bad)}
+.verdict.ok{color:var(--good)}
+.dot{width:15px;height:15px;border-radius:50%;background:var(--bad);box-shadow:0 0 0 5px var(--badbg);display:inline-block}
+.verdict.ok .dot{background:var(--good);box-shadow:0 0 0 5px var(--goodbg)}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:18px}
+.ct{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.ct b{font-size:22px}
+.ct .tag{font-size:15px;color:var(--mut);font-weight:700;margin-left:auto}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:15.5px;color:var(--sec);font-weight:700}
+.legend i{width:15px;height:15px;border-radius:5px;display:inline-block;margin-right:7px;vertical-align:-2px}
+
+.coilmap{padding:26px 22px 18px}
+.cbar{display:flex;height:58px;border-radius:11px;overflow:hidden;border:1px solid var(--line)}
+.cseg{position:relative;border-right:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:var(--sec);background:#eef2f9;cursor:pointer}
+.cseg:last-child{border-right:none}
+.cseg.hot{background:#fbe9e9}
+.ctick{position:absolute;top:58px;transform:translateX(-50%);pointer-events:none}
+.ctick .pin{width:15px;height:15px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px #0004;margin:7px auto 0}
+.coilaxis{display:flex;justify-content:space-between;font-size:14px;color:var(--mut);font-weight:700;margin-top:40px}
+
+.summ{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;padding:20px 22px}
+.bcard{border:1px solid var(--line);border-radius:14px;padding:18px;cursor:pointer;background:#fcfdff;transition:border-color .12s,box-shadow .12s}
+.bcard:hover{border-color:var(--acc);box-shadow:0 3px 14px #796cbf1a}
+.bcard.hot{border-color:#f0cccc;background:#fffafa}
+.bcard .bt{display:flex;align-items:baseline;gap:10px}
+.bcard .bn{font-size:24px;font-weight:800}
+.bcard .sz{font-size:15px;color:var(--mut);font-weight:700}
+.bcard .range{font-size:14px;color:var(--mut);font-weight:600;margin-top:3px}
+.bcard .dsum{margin-top:13px;display:flex;gap:8px;flex-wrap:wrap}
+.tych{font-size:15px;font-weight:800;color:#fff;border-radius:9px;padding:5px 11px}
+.bcard .okb{font-size:16px;font-weight:800;color:var(--good);background:var(--goodbg);border-radius:9px;padding:6px 12px;display:inline-block;margin-top:13px}
+.bcard .more{margin-top:15px;font-size:16px;font-weight:800;color:var(--acc)}
+
+#boxview{display:none}
+.bhead{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:14px 0 16px}
+.bhead .t{font-size:29px;font-weight:800}
+.bhead .m{font-size:17px;color:var(--sec);font-weight:700}
+.ruler{padding:30px 24px 22px}
+.strip{position:relative;height:96px}
+.sbg{position:absolute;left:0;right:0;top:46px;height:34px;background:#f5f7fc;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.sbg .g{position:absolute;top:0;bottom:0;width:1px;background:#e7ebf3}
+.flag{position:absolute;top:0;transform:translateX(-50%);cursor:pointer;text-align:center}
+.flag .n{font-size:16px;font-weight:800;white-space:nowrap;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:4px 11px;box-shadow:0 2px 5px #0001}
+.flag .stem{width:3px;height:14px;margin:3px auto 0}
+.flag .pin{width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 4px #0004;margin:0 auto}
+.saxis{position:absolute;left:0;right:0;top:84px;display:flex;justify-content:space-between;font-size:15px;color:var(--mut);font-weight:700}
+
+.defblock{border:1px solid var(--line);border-radius:16px;margin-bottom:18px;overflow:hidden}
+.dhead{display:flex;align-items:center;gap:12px;padding:18px 22px;border-bottom:1px solid var(--line2);flex-wrap:wrap}
+.dhead .tdot{width:16px;height:16px;border-radius:50%;display:inline-block}
+.dhead .ttl{font-size:23px;font-weight:800}
+.dhead .loc{font-size:16px;color:var(--sec);font-weight:700}
+.dhead .val{margin-left:auto;font-size:22px;font-weight:800}
+.dhead .val.bad{color:var(--bad)} .dhead .val.warn{color:var(--warn)}
+
+.sfbody{display:grid;grid-template-columns:1.15fr 1fr;gap:22px;padding:22px}
+.imgbox{position:relative;aspect-ratio:16/11;background:#0b1626;border-radius:13px;overflow:hidden}
+.imgbox img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.imgbox .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#7f8ca3;font-size:15px;text-align:center;padding:16px}
+.bbox{position:absolute;border:3px solid #ffb13b;border-radius:4px;box-shadow:0 0 0 3px #ffb13b22}
+.bbox b{position:absolute;top:-26px;left:0;font-size:13.5px;color:#ffc877;font-weight:800;white-space:nowrap}
+.kv .r{display:flex;justify-content:space-between;font-size:18px;border-bottom:1px solid var(--line2);padding:12px 0;gap:14px}
+.kv .r .k{color:var(--mut);font-weight:700}
+.kv .r .v{font-weight:800;text-align:right}
+.note2{font-size:17px;color:var(--sec);line-height:1.55;margin-top:14px}
+.acts{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.acts a,.acts button{font-size:17px;font-weight:800;height:52px;padding:0 18px;border-radius:12px;border:1.5px solid #d5dce6;background:#fff;color:var(--ink);display:inline-flex;align-items:center;justify-content:center;text-decoration:none;flex:1;min-width:150px}
+.acts .pri{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.wvbody{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;padding:22px}
+.panel{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fcfdff}
+.panel h4{margin:0 0 12px;font-size:17px;font-weight:800;color:var(--sec)}
+.verd{display:inline-flex;align-items:center;gap:9px;font-size:20px;font-weight:800;background:#fbefd9;color:var(--warn);border-radius:12px;padding:11px 16px}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:15px}
+.metric{background:#f5f7fc;border:1px solid var(--line);border-radius:12px;padding:14px}
+.metric .l{font-size:15px;color:var(--mut);font-weight:700}
+.metric .v{font-size:29px;font-weight:800;margin-top:3px}
+.metric .v small{font-size:15px;color:var(--sec);font-weight:700}
+.metric.bad .v{color:var(--bad)}
+.gauge{height:15px;border-radius:8px;background:#eef1f7;overflow:hidden;margin-top:11px;position:relative}
+.gauge .fill{height:100%;background:var(--bad)}
+.gauge .thr{position:absolute;top:-4px;bottom:-4px;width:3px;background:#0f1e33}
+.small{font-size:14.5px;color:var(--mut);font-weight:700;margin-top:9px;line-height:1.5}
+
+.state{padding:48px 22px;text-align:center;color:var(--mut);font-size:19px;font-weight:700}
+.foot{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
+.foot .fl{font-size:15.5px;color:var(--sec);line-height:1.8}
+.foot b{color:var(--ink)}
+@media (max-width:860px){.sfbody,.wvbody{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="hd">
+    <span class="logo">OS</span>
+    <div>
+      <h1>레벨링 결함 지도</h1>
+      <div class="sub">AI 비전검사(표면·편탄도) 결과를 코일→박스→장으로 봅니다</div>
+    </div>
+    <span class="sp"></span>
+    <span class="live" id="liveBadge">실데이터</span>
+    <input type="date" id="dateSel">
+    <select id="coilSel"><option>불러오는 중…</option></select>
+  </div>
+</header>
+
+<div class="wrap">
+  <div id="coilbarWrap"></div>
+
+  <div id="overview">
+    <div id="ovBody"><div class="card"><div class="state">코일을 선택하세요.</div></div></div>
+  </div>
+
+  <div id="boxview">
+    <button class="back" onclick="showOverview()">‹ 전체 보기</button>
+    <div class="bhead"><span class="t" id="bvT"></span><span class="m" id="bvM"></span><span class="verdict" id="bvV" style="margin-left:auto"></span></div>
+    <div class="card"><div class="ct"><b>이 박스의 결함 위치</b><span class="tag">장 눈금 위 색 핀 = 결함 (누르면 아래 상세)</span></div>
+      <div class="ruler"><div class="strip" id="bvStrip"></div></div></div>
+    <div id="bvDefs"></div>
+  </div>
+
+  <div class="foot">
+    <div class="fl">
+      <b>데이터(레벨링, 실시간).</b> 결함 = <b>detection_alert</b>(camera_id 1=표면/2=편탄도, score, threshold, image_path, segment_id·video_ms) · 편탄도 좌·중·우 = <b>inference_score_log.edge_l·center·edge_r</b> · 박스·장수 = <b>LEVELING_DATA</b>(MOVELENSV 리셋) · 사진 = 38080 프록시(leveling-quality?mode=img). AI가 같은 결함을 매 프레임 올려서, <b>연속 프레임을 한 건으로 묶어</b> 보여줍니다.<br>
+      <b>참고.</b> 표면 roi 값은 현재 <b>고정 검사영역</b>이라 결함 위치가 아니에요 — 실제 결함은 사진으로 봅니다. 결함 종류 이름(스크레치 등)은 작업자 확인(human_label)으로 확정. 코일에 PLC 데이터가 있어야 박스·장 번호가 환산됩니다(없으면 '장 환산 대기').
+    </div>
+  </div>
+</div>
+
+<script>
+var API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-quality';
+var COL={sf:'#c62828',ew:'#d98324',cb:'#8a5cf6',fl:'#cf4b4b'};
+var KN={sf:'표면 흠집',ew:'편탄도 · 엣지 웨이브',cb:'편탄도 · 센터 버클',fl:'편탄도'};
+var KSHORT={sf:'표면',ew:'엣지웨이브',cb:'센터버클',fl:'편탄도'};
+var cur=null; // 현재 코일 상세 데이터
+
+function kstToday(){return new Date(Date.now()+9*3600000).toISOString().slice(0,10);}
+function fmtSpec(d){var s=[];if(d.thk!=null&&d.wd!=null)s.push(d.thk+'×'+d.wd);return s.join(' · ');}
+
+async function loadCoils(){
+  var date=document.getElementById('dateSel').value||kstToday();
+  var sel=document.getElementById('coilSel');
+  sel.innerHTML='<option>불러오는 중…</option>';
+  try{
+    var r=await fetch(API+'?mode=coils&date='+date);var j=await r.json();
+    if(!j.ok||!j.coils.length){sel.innerHTML='<option value="">작업 코일 없음</option>';document.getElementById('ovBody').innerHTML='<div class="card"><div class="state">'+date+' 에 검사 데이터가 없습니다. 날짜를 바꿔 보세요.</div></div>';return;}
+    j.coils.sort(function(a,b){return b.total-a.total;});
+    sel.innerHTML=j.coils.map(function(c){return '<option value="'+c.coil+'">'+c.coil+(c.company?(' · '+c.company):'')+' (결함 '+c.total+')</option>';}).join('');
+    loadCoil(j.coils[0].coil, date);
+  }catch(e){sel.innerHTML='<option value="">불러오기 실패</option>';document.getElementById('ovBody').innerHTML='<div class="card"><div class="state">서버에 연결하지 못했습니다.</div></div>';}
+}
+async function loadCoil(coil, date){
+  document.getElementById('ovBody').innerHTML='<div class="card"><div class="state">코일 '+coil+' 불러오는 중…</div></div>';
+  showOverviewPlain();
+  try{
+    var u=API+'?mode=coil&coil='+encodeURIComponent(coil);if(date)u+='&date='+date;
+    var r=await fetch(u);cur=await r.json();
+    if(!cur.ok){document.getElementById('ovBody').innerHTML='<div class="card"><div class="state">'+(cur.error||'불러오기 실패')+'</div></div>';return;}
+    renderCoilbar(cur); renderOverview(cur);
+  }catch(e){document.getElementById('ovBody').innerHTML='<div class="card"><div class="state">코일 상세를 불러오지 못했습니다.</div></div>';}
+}
+
+function renderCoilbar(d){
+  var spec=fmtSpec(d); var meta=[spec, d.company].filter(Boolean).join(' · ');
+  var hasDef=d.total>0;
+  document.getElementById('coilbarWrap').innerHTML=
+    '<div class="coilbar"><div><div class="cid">'+d.coil+'</div>'+
+      '<div class="spec">'+(meta||'규격 정보 없음')+' · '+(d.date||'')+'</div></div>'+
+      '<span class="chip">'+(d.boxesN?(d.boxesN+'박스 '+d.sheets+'장'):'PLC 장수 대기')+'</span>'+
+      '<span class="chip">표면 '+d.surf+'</span><span class="chip">편탄도 '+d.flat+'</span>'+
+      '<div class="verdict '+(hasDef?'':'ok')+'"><span class="dot"></span>'+(hasDef?('결함 '+d.total+'건'):'결함 없음')+
+        (d.rawAlerts&&d.rawAlerts!==d.total?(' <span style="font-size:14px;color:var(--mut);font-weight:700">(프레임 '+d.rawAlerts+'→'+d.clustered+'건)</span>'):'')+'</div></div>';
+}
+
+function starts(d){var s=[],a=0;(d.boxes||[]).forEach(function(b){s.push(a);a+=b.size;});return s;}
+function boxDefs(d,bn){return d.defects.filter(function(x){return x.box===bn;});}
+
+function renderOverview(d){
+  var ov=document.getElementById('ovBody');
+  if(!d.boxes||!d.boxes.length){
+    // 박스 없음(PLC 대기) → 결함 목록 평면 표시
+    var cards=d.defects.length?('<div id="bvDefs">'+d.defects.map(function(x){return defBlock(x,d);}).join('')+'</div>'):'<div class="state">결함 없음</div>';
+    ov.innerHTML='<div class="card"><div class="ct"><b>결함 목록</b><span class="tag">이 코일은 PLC 장수 데이터가 없어 박스·장 환산을 대기 중 — 결함은 그대로 표시</span></div>'+
+      '<div class="state" style="padding:16px 22px;text-align:left">검출 '+d.total+'건 (프레임 '+ (d.rawAlerts||d.total) +'건을 묶음)</div></div>'+cards;
+    bindFlagless();
+    return;
+  }
+  var legend='<span class="legend"><span><i style="background:var(--sf)"></i>표면 흠집</span><span><i style="background:var(--ew)"></i>엣지 웨이브</span><span><i style="background:var(--cb)"></i>센터 버클</span></span>';
+  var st=starts(d), total=d.sheets||1;
+  var segs=d.boxes.map(function(b,i){var hot=boxDefs(d,b.n).length>0;return '<div class="cseg'+(hot?' hot':'')+'" style="flex:'+b.size+'" onclick="showBox('+b.n+')">박스'+b.n+'</div>';}).join('');
+  var ticks=d.defects.filter(function(x){return x.abs;}).map(function(x){return '<div class="ctick" style="left:'+(x.abs/total*100)+'%"><div class="pin" style="background:'+COL[x.kind]+'"></div></div>';}).join('');
+  var sumCards=d.boxes.map(function(b,i){
+    var ds=boxDefs(d,b.n), s1=st[i]+1, s2=st[i]+b.size;
+    var body='<div class="bt"><span class="bn">박스 '+b.n+'</span><span class="sz">'+b.size+'장</span></div><div class="range">통장 '+s1+'~'+s2+'</div>';
+    if(ds.length){var cc={};ds.forEach(function(x){cc[x.kind]=(cc[x.kind]||0)+1;});
+      body+='<div class="dsum">'+Object.keys(cc).map(function(k){return '<span class="tych" style="background:'+COL[k]+'">'+KSHORT[k]+' '+cc[k]+'</span>';}).join('')+'</div><div class="more">자세히 보기 ›</div>';
+    } else body+='<div class="okb">정상 · 결함 없음</div>';
+    return '<div class="bcard'+(ds.length?' hot':'')+'" onclick="showBox('+b.n+')">'+body+'</div>';
+  }).join('');
+  ov.innerHTML=
+    '<div class="card"><div class="ct"><b>전체 코일 한눈에</b>'+legend+'</div>'+
+      '<div class="coilmap"><div style="position:relative"><div class="cbar">'+segs+'</div>'+
+      '<div style="position:absolute;left:0;right:0;top:0">'+ticks+'</div></div>'+
+      '<div class="coilaxis"><span>코일 선단</span><span>'+total+'장</span></div></div></div>'+
+    '<div class="card"><div class="ct"><b>박스별 요약</b><span class="tag">박스를 누르면 장별 상세</span></div><div class="summ">'+sumCards+'</div></div>';
+}
+
+function showOverviewPlain(){document.getElementById('boxview').style.display='none';document.getElementById('overview').style.display='block';}
+function showOverview(){showOverviewPlain();window.scrollTo(0,0);}
+function showBox(bn){
+  var d=cur; document.getElementById('overview').style.display='none';document.getElementById('boxview').style.display='block';
+  var b=d.boxes[bn-1], st=starts(d), ds=boxDefs(d,bn);
+  document.getElementById('bvT').textContent='박스 '+bn;
+  document.getElementById('bvM').textContent=b.size+'장 · 통장 '+(st[bn-1]+1)+'~'+(st[bn-1]+b.size);
+  var v=document.getElementById('bvV');v.className='verdict '+(ds.length?'':'ok');
+  v.innerHTML='<span class="dot"></span>'+(ds.length?('결함 '+ds.length+'건'):'결함 없음');
+  var strip=document.getElementById('bvStrip');
+  var sbg='<div class="sbg">';for(var g=1;g<10;g++)sbg+='<div class="g" style="left:'+g*10+'%"></div>';
+  sbg+='</div><div class="saxis"><span>1장</span><span>'+b.size+'장</span></div>';
+  strip.innerHTML=sbg;
+  ds.forEach(function(x){
+    if(x.sheet==null)return;
+    var f=document.createElement('div');f.className='flag';f.style.left=((x.sheet-0.5)/b.size*100)+'%';
+    f.innerHTML='<div class="n">'+x.sheet+'장</div><div class="stem" style="background:'+COL[x.kind]+'"></div><div class="pin" style="background:'+COL[x.kind]+'"></div>';
+    f.onclick=function(){var el=document.getElementById('def'+x.id);if(el)el.scrollIntoView({behavior:'smooth',block:'start'});};
+    strip.appendChild(f);
+  });
+  document.getElementById('bvDefs').innerHTML=ds.length?ds.map(function(x){return defBlock(x,d);}).join(''):'<div class="card"><div class="state">이 박스는 결함이 없습니다</div></div>';
+  bindFlagless(); window.scrollTo(0,0);
+}
+function bindFlagless(){} // (이미지 onerror 등은 인라인 처리)
+
+function imgUrl(x){return API+'?mode=img&id='+x.aid;}
+function locStr(x){
+  if(x.sheet!=null)return '박스 '+x.box+' · '+x.sheet+'장째'+(x.abs?(' (통장 '+x.abs+')'):'');
+  return (x.box!=null?('박스 '+x.box+' · '):'')+'장 환산 대기';
+}
+function defBlock(x,d){
+  return '<div class="defblock" id="def'+x.id+'">'+(x.cam===2?waveHTML(x):surfaceHTML(x))+'</div>';
+}
+function surfaceHTML(x){
+  var img=x.hasImg?('<img src="'+imgUrl(x)+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="ph" style="display:none">사진을 불러오지 못했습니다(장비·AI 서버 확인)</div>'):'<div class="ph">사진 없음</div>';
+  var roi=x.roi?('<div class="bbox" style="left:'+(x.roi.x*100)+'%;top:'+(x.roi.y*100)+'%;width:'+(x.roi.w*100)+'%;height:'+(x.roi.h*100)+'%"><b>검사 영역</b></div>'):'';
+  return '<div class="dhead"><span class="tdot" style="background:'+COL.sf+'"></span><span class="ttl">표면 흠집</span>'+
+    '<span class="loc">'+locStr(x)+'</span><span class="val bad">이상점수 '+(x.score!=null?x.score:'-')+'</span></div>'+
+    '<div class="sfbody"><div class="imgbox">'+img+roi+'</div>'+
+    '<div><div class="kv">'+
+      '<div class="r"><span class="k">위치</span><span class="v">'+locStr(x)+'</span></div>'+
+      '<div class="r"><span class="k">카메라</span><span class="v">카메라1 · 표면(흠집)</span></div>'+
+      '<div class="r"><span class="k">이상점수 / 기준</span><span class="v">'+(x.score!=null?x.score:'-')+' / '+(x.thr!=null?x.thr:'0.8')+'</span></div>'+
+      '<div class="r"><span class="k">검출 시각</span><span class="v">'+(x.at||'')+(x.n>1?(' · '+x.n+'프레임'):'')+'</span></div>'+
+      '<div class="r"><span class="k">종류 이름</span><span class="v" style="color:var(--mut)">작업자 확인 후</span></div>'+
+    '</div><div class="note2">표면 이상 탐지. 사진의 주황 네모는 검사 영역이며, 실제 결함은 사진에서 확인합니다.</div>'+
+    actsHTML(x)+'</div></div>';
+}
+function waveHTML(x){
+  var e=x.edge||[null,null,null];
+  var tilt=(e[0]!=null&&e[2]!=null)?Math.round(Math.abs(e[2]-e[0])*10)/10:null;
+  var typ=x.kind==='cb'?'센터 버클':'엣지 웨이브';
+  var reason=x.kind==='cb'?'가운데(중앙)가 가장 높아서':'좌·우 기울기가 커서';
+  var img=x.hasImg?('<img src="'+imgUrl(x)+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'"><div class="ph" style="display:none">사진을 불러오지 못했습니다</div>'):'<div class="ph">사진 없음</div>';
+  return '<div class="dhead"><span class="tdot" style="background:'+COL[x.kind]+'"></span><span class="ttl">편탄도 · '+typ+'</span>'+
+    '<span class="loc">'+locStr(x)+'</span><span class="val warn">최대 휨 '+(x.warp!=null?x.warp:'-')+'mm</span></div>'+
+    '<div class="wvbody"><div class="panel"><h4>검출 사진 · 폭 방향 단면</h4><div class="imgbox" style="aspect-ratio:16/9;margin-bottom:12px">'+img+'</div>'+
+      (e[0]!=null?crossSVG(e):'<div class="small">좌·중·우 단면값이 아직 매칭되지 않았습니다.</div>')+'</div>'+
+    '<div><div class="verd">● '+typ+' — '+reason+'</div><div class="metrics">'+
+      '<div class="metric bad"><div class="l">최대 휨</div><div class="v">'+(x.warp!=null?x.warp:'-')+'<small> mm</small></div>'+(x.warp!=null&&x.thr!=null?gauge(x.warp,x.thr):'')+'</div>'+
+      '<div class="metric"><div class="l">기준</div><div class="v">'+(x.thr!=null?x.thr:'-')+'<small> mm</small></div></div>'+
+      '<div class="metric"><div class="l">좌·우 기울기</div><div class="v">'+(tilt!=null?tilt:'-')+'<small> mm</small></div></div>'+
+      '<div class="metric"><div class="l">좌 / 중 / 우</div><div class="v" style="font-size:22px">'+(e[0]!=null?(e[0]+' / '+e[1]+' / '+e[2]):'-')+'</div></div>'+
+    '</div>'+actsHTML(x)+'</div></div>';
+}
+function actsHTML(x){
+  var dl=x.hasImg?('<a class="pri" href="'+imgUrl(x)+'" target="_blank" rel="noopener">⤓ 사진 원본</a>'):'';
+  var vid=x.seg?('<button onclick="alert(\'영상: '+x.seg+' / '+(x.vms||0)+'ms 지점\')">영상에서 보기</button>'):'';
+  return '<div class="acts">'+vid+dl+'</div>';
+}
+function crossSVG(e){
+  var vals=[e[0],e[1],e[2]], mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals), rng=(mx-mn)||1;
+  var y=function(v){return 74-(v-mn)/rng*52-6;};
+  var p=[[44,y(e[0])],[170,y(e[1])],[296,y(e[2])]];
+  var path='M'+p[0][0]+' '+p[0][1]+' Q 107 '+(p[0][1]+(p[1][1]-p[0][1])/2-11)+' '+p[1][0]+' '+p[1][1]+' T '+p[2][0]+' '+p[2][1];
+  return '<svg viewBox="0 0 340 104" width="100%" height="100"><line x1="22" y1="80" x2="318" y2="80" stroke="#cdd5e2"/>'+
+    '<path d="'+path+' L296 80 L44 80 Z" fill="'+COL.ew+'" opacity="0.12"/><path d="'+path+'" fill="none" stroke="#0f1e33" stroke-width="3"/>'+
+    '<circle cx="44" cy="'+p[0][1]+'" r="6" fill="'+COL.ew+'"/><circle cx="170" cy="'+p[1][1]+'" r="6" fill="'+COL.cb+'"/><circle cx="296" cy="'+p[2][1]+'" r="6" fill="'+COL.ew+'"/>'+
+    '<text x="44" y="98" font-size="15" fill="#4e5a72" text-anchor="middle" font-weight="800">좌 '+e[0]+'</text>'+
+    '<text x="170" y="98" font-size="15" fill="#4e5a72" text-anchor="middle" font-weight="800">중 '+e[1]+'</text>'+
+    '<text x="296" y="98" font-size="15" fill="#4e5a72" text-anchor="middle" font-weight="800">우 '+e[2]+'</text></svg>';
+}
+function gauge(v,thr){var pct=Math.min(100,v/(thr*1.6)*100),tp=Math.min(100,thr/(thr*1.6)*100);return '<div class="gauge"><div class="fill" style="width:'+pct+'%"></div><div class="thr" style="left:'+tp+'%"></div></div>';}
+
+document.getElementById('dateSel').value=kstToday();
+document.getElementById('dateSel').onchange=loadCoils;
+document.getElementById('coilSel').onchange=function(){loadCoil(this.value, document.getElementById('dateSel').value);};
+loadCoils();
+</script>
+</body>
+</html>
