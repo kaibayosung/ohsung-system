@@ -1,8 +1,24 @@
 {
   "rewrites": [
-    { "source": "/portal", "destination": "/portal.html" },
-    { "source": "/portal/(.*)", "destination": "/portal.html" },
-    { "source": "/separator", "destination": "/separator.html" },
-    { "source": "/separator/(.*)", "destination": "/separator.html" }
+    {
+      "source": "/portal",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/portal/(.*)",
+      "destination": "/portal.html"
+    },
+    {
+      "source": "/separator",
+      "destination": "/separator.html"
+    },
+    {
+      "source": "/separator/(.*)",
+      "destination": "/separator.html"
+    },
+    {
+      "source": "/leveler-cam",
+      "destination": "/leveler-live-cam.html"
+    }
   ]
 }

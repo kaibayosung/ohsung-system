@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레벨러 품질 측정 영상 · 오성철강</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;background:#fff;color:#0f1e33;font-family:'Pretendard','Noto Sans KR',system-ui,sans-serif;font-weight:500}
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #e3e8f0;flex-wrap:wrap}
+.logo{width:34px;height:34px;border-radius:9px;background:#0f1e33;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px}
+h1{margin:0;font-size:19px;font-weight:800}
+.sub{font-size:13px;color:#7d8ba1}
+.sp{flex:1}
+.ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+button,select,a.btn{font-family:inherit;font-size:13.5px;font-weight:700;height:36px;padding:0 14px;border-radius:9px;border:1px solid #d5dce6;background:#fff;color:#0f1e33;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
+button.pri{background:#0f1e33;border-color:#0f1e33;color:#fff}
+main{padding:16px 20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.cam{border:1px solid #e3e8f0;border-radius:14px;overflow:hidden;background:#fff}
+.ch{display:flex;align-items:center;gap:8px;padding:10px 14px}
+.ch b{font-size:15.5px}
+.ch .mut{font-size:12.5px;color:#7d8ba1}
+.st{margin-left:auto;font-size:12.5px;color:#5c6478;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.st i{width:9px;height:9px;border-radius:50%;background:#c3ccd9;display:inline-block}
+.st.live i{background:#17804f;box-shadow:0 0 0 3px #e3f4ea}
+.st.err i{background:#c62828}
+.view{position:relative;background:#0b1626;aspect-ratio:4096/3000;cursor:zoom-in}
+.view img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+.msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#aebbd0;font-size:14px;text-align:center;padding:20px}
+.foot{grid-column:1/-1;font-size:12.5px;color:#7d8ba1;line-height:1.6}
+.pause{position:fixed;inset:0;background:rgba(15,30,51,.55);display:none;align-items:center;justify-content:center;z-index:5}
+.pause div{background:#fff;border-radius:16px;padding:24px 28px;text-align:center;max-width:360px}
+.pause b{font-size:18px;display:block;margin-bottom:6px}
+.pause p{margin:0 0 16px;color:#5c6478;font-size:14px}
+.big{position:fixed;inset:0;background:#000;display:none;z-index:6;cursor:zoom-out}
+.big img{width:100%;height:100%;object-fit:contain}
+@media (max-width:860px){main{grid-template-columns:1fr;padding:12px}header{padding:12px}}
+</style>
+</head>
+<body>
+<header>
+<span class="logo">OS</span>
+<div><h1>레벨러 품질 측정 영상</h1><div class="sub">실시간 · 흠집검사(카메라1) · 편평도검사(카메라2)</div></div>
+<span class="sp"></span>
+<div class="ctl">
+<select id="q" title="화질"><option value="640">가볍게</option><option value="1024" selected>보통</option><option value="1600">선명</option></select>
+<button id="pp" class="pri">❚❚ 일시정지</button>
+<a class="btn" href="http://osungsteel.servehttp.com:38080/leveling-defect-live" target="_blank" rel="noopener">원본 대시보드 ↗</a>
+</div>
+</header>
+<main>
+<section class="cam" data-cam="1">
+<div class="ch"><b>흠집검사</b><span class="mut">카메라1 · 컬러</span><span class="st"><i></i><span>연결 중…</span></span></div>
+<div class="view"><img alt="카메라1 흠집검사 화면"><div class="msg">화면을 불러오는 중…</div></div>
+</section>
+<section class="cam" data-cam="2">
+<div class="ch"><b>편평도검사</b><span class="mut">카메라2 · 흑백 레이저</span><span class="st"><i></i><span>연결 중…</span></span></div>
+<div class="view"><img alt="카메라2 편평도검사 화면"><div class="msg">화면을 불러오는 중…</div></div>
+</section>
+<p class="foot">화면은 몇 초마다 새로 받아오는 사진입니다(동영상이 아님). 원본 4096×3000을 줄여서 보여 줍니다. 화면을 누르면 크게 보입니다. 10분이 지나면 자동으로 멈춥니다.</p>
+</main>
+<div class="pause" id="pause"><div><b>잠시 멈췄어요</b><p>10분 동안 계속 받아 왔어요. 계속 보려면 눌러 주세요.</p><button class="pri" id="resume">계속 보기</button></div></div>
+<div class="big" id="big"><img alt="크게 보기"></div>
+<script>
+(function () {
+  var API = 'https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-live-cam';
+  var GAP_MS = 1000, AUTO_PAUSE_MS = 10 * 60 * 1000;
+  var running = true, startedAt = Date.now(), width = 1024, bigCam = null;
+  var q = document.getElementById('q'), pp = document.getElementById('pp');
+  var pauseBox = document.getElementById('pause'), big = document.getElementById('big'), bigImg = big.querySelector('img');
+  try { var sq = localStorage.getItem('lvcam_q'); if (sq) { q.value = sq; width = Number(sq); } } catch (e) {}
+
+  function setRun(on) {
+    running = on;
+    pp.textContent = on ? '❚❚ 일시정지' : '▶ 다시 보기';
+    pp.className = on ? 'pri' : '';
+    if (on) { startedAt = Date.now(); pauseBox.style.display = 'none'; }
+  }
+  pp.onclick = function () { setRun(!running); };
+  document.getElementById('resume').onclick = function () { setRun(true); };
+  q.onchange = function () { width = Number(q.value); try { localStorage.setItem('lvcam_q', q.value); } catch (e) {} };
+  big.onclick = function () { big.style.display = 'none'; bigCam = null; };
+
+  document.querySelectorAll('.cam').forEach(function (el) {
+    var cam = el.getAttribute('data-cam'), img = el.querySelector('img'), msg = el.querySelector('.msg');
+    var st = el.querySelector('.st'), stText = st.querySelector('span'), lastUrl = null, fails = 0;
+    el.querySelector('.view').onclick = function () { if (img.src) { bigImg.src = img.src; bigCam = cam; big.style.display = 'block'; } };
+    function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+    async function loop() {
+      while (true) {
+        if (!running || document.hidden) { if (running) stText.textContent = '화면을 볼 때만 받아요'; else { st.className = 'st'; stText.textContent = '멈춤'; } await wait(800); continue; }
+        if (Date.now() - startedAt > AUTO_PAUSE_MS) { setRun(false); pauseBox.style.display = 'flex'; continue; }
+        try {
+          var r = await fetch(API + '?cam=' + cam + '&w=' + width + '&_=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          var b = await r.blob();
+          var u = URL.createObjectURL(b);
+          img.src = u; if (bigCam === cam) bigImg.src = u;
+          if (lastUrl) { var old = lastUrl; setTimeout(function () { URL.revokeObjectURL(old); }, 5000); }
+          lastUrl = u; fails = 0; msg.style.display = 'none';
+          st.className = 'st live'; stText.textContent = (r.headers.get('x-frame-at') || '') + ' 화면';
+          await wait(GAP_MS);
+        } catch (e) {
+          fails++; st.className = 'st err'; stText.textContent = '응답 없음 · 다시 시도 중';
+          if (!lastUrl) { msg.style.display = 'flex'; msg.textContent = '카메라 화면을 받지 못했어요. 장비·AI 서버가 꺼져 있을 수 있어요. 자동으로 다시 시도합니다.'; }
+          await wait(Math.min(15000, 2000 * fails));
+        }
+      }
+    }
+    loop();
+  });
+})();
+</script>
+</body>
+</html>
