@@ -45,15 +45,21 @@
   .gcard img{width:100%;height:118px;object-fit:cover;display:block;background:#161c28}
   .gcard .cap{padding:8px 10px;font-size:13px;background:#fff;display:flex;align-items:center;gap:6px}
   .gbadge{color:#fff;border-radius:6px;padding:2px 7px;font-size:12px}
-  .vrow{display:flex;align-items:center;gap:12px;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;margin-bottom:9px;font-size:15px}
+  .vrow{padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;margin-bottom:9px;font-size:15px}
   .vrow .b{font-weight:800;color:var(--ink)}
   .vrow.hot{border-color:#f0c89a;background:#fdf7ee}
-  .vcam{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap}
-  .vpill{background:#f0eefb;color:var(--accent);border-radius:999px;padding:6px 13px;font-size:14px}
+  .vhead{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .vcamrow{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:7px}
+  .vpill{background:#f0eefb;color:var(--accent);border-radius:999px;padding:6px 13px;font-size:14px;font-weight:700;min-width:142px}
+  .vbtn{border:1.5px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:7px 15px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px}
+  .vbtn.play{border-color:var(--accent);color:var(--accent);background:#f6f4fe}
+  .vbtn.play:hover{background:var(--accent);color:#fff}
+  .vbtn.dl:hover{background:#f3f5fe;border-color:#9aa3b2}
   .vnote{font-size:13px;color:var(--muted);margin-top:8px}
   .lb{position:fixed;inset:0;background:rgba(8,12,20,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:30px}
   .lb.on{display:flex}.lb-box{max-width:1100px;width:100%}
   .lb img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto}
+  .lb video{max-width:100%;max-height:80vh;background:#000;border-radius:12px;display:block;margin:0 auto}
   .lb .cap{color:#fff;text-align:center;margin-top:14px;font-size:18px}
   .lb .x{position:fixed;top:18px;right:30px;color:#fff;font-size:32px;cursor:pointer;line-height:1}
   .foot{margin-top:14px;font-size:13px;color:var(--muted);line-height:1.6}
@@ -133,7 +139,7 @@
 <!-- 결함 이미지 갤러리 -->
 <div class="panel">
   <h2>결함 이미지 — AI 검출 (13건)</h2>
-  <div class="ph-sub">실제 검출 이미지(SAIGE 레벨러) · 클릭하면 크게 보기</div>
+  <div class="ph-sub">실제 검출 이미지(한줌 레벨러) · 클릭하면 크게 보기</div>
   <div id="gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px"></div>
 </div>
 
@@ -142,7 +148,7 @@
   <h2>박스별 녹화 영상</h2>
   <div class="ph-sub">CAM1=흠집검사 · CAM2=편탄도검사 (레벨러 녹화 세그먼트, 실데이터)</div>
   <div id="vidCat"></div>
-  <div class="vnote">※ 영상 파일은 DB 카탈로그에 존재하며(총 약 0.7GB), 결함 구간 박스3(16:20~18:21)이 CAM1 179MB·CAM2 209MB로 녹화돼 있습니다. 재생/다운로드는 세이지 영상 재생 API 경로 확인 후 바로 연결됩니다.</div>
+  <div class="vnote">※ 결함 구간 박스3(16:20~18:21)이 CAM1 179MB·CAM2 209MB로 녹화돼 있습니다. 재생/다운로드는 한줌 레벨러 영상 서버에서 서명 URL을 받아 https로 안전 중계합니다(총 약 0.7GB).</div>
 </div>
 
 <div class="panel" style="background:#f7f6fd;border-color:#e0dbf3">
@@ -155,11 +161,16 @@
   </div>
 </div>
 
-<div class="foot">※ SAIGE 레벨러 AI 비전검사 실데이터(detection_alert · inference_score_log · recording_segment). 평탄도=카메라2, 표면=카메라1. 휨량/단면은 mm 단위. 이미지는 VIMS 서버를 https로 안전 중계.</div>
+<div class="foot">※ 한줌 레벨러 AI 비전검사 실데이터(detection_alert · inference_score_log · recording_segment). 평탄도=카메라2, 표면=카메라1. 휨량/단면은 mm 단위. 이미지·영상은 레벨러 서버를 https로 안전 중계.</div>
 
 <div class="lb" id="lb" onclick="if(event.target.id==='lb')closeLB()">
   <span class="x" onclick="closeLB()">✕</span>
   <div class="lb-box"><img id="lbImg" src=""><div class="cap" id="lbCap"></div></div>
+</div>
+
+<div class="lb" id="vlb" onclick="if(event.target.id==='vlb')closeVLB()">
+  <span class="x" onclick="closeVLB()">✕</span>
+  <div class="lb-box"><video id="vlbV" controls playsinline preload="metadata"></video><div class="cap" id="vlbCap"></div></div>
 </div>
 
 <script>
@@ -182,9 +193,9 @@ var DEF=[
  {id:14170,at:"17:42:05",box:3,sheet:144,abs:642,kind:"sf",score:0.91,edge:null}
 ];
 var SEGS=[
- {box:1,st:"11:58:46",en:"11:59:37",cam1:3,cam2:3},
- {box:2,st:"13:29:20",en:"14:10:39",cam1:174,cam2:131},
- {box:3,st:"16:20:55",en:"18:21:04",cam1:179,cam2:209}
+ {box:1,st:"11:58:46",en:"11:59:37",cam1:3,cam2:3,seg:"SEG-20261029-0002",f1:"20261029_115846_1_W642(일반)_0001.mp4",f2:"20261029_115846_2_W642(일반)_0001.mp4"},
+ {box:2,st:"13:29:20",en:"14:10:39",cam1:174,cam2:131,seg:"SEG-20261029-0003",f1:"20261029_132920_1_W642(일반)_0002.mp4",f2:"20261029_132920_2_W642(일반)_0002.mp4"},
+ {box:3,st:"16:20:55",en:"18:21:04",cam1:179,cam2:209,seg:"SEG-20261029-0004",f1:"20261029_162055_1_W642(일반)_0004.mp4",f2:"20261029_162055_2_W642(일반)_0004.mp4"}
 ];
 var SERIES=[{"t":"10:41","warp":23.1,"warpMax":23.1},{"t":"10:42","warp":22,"warpMax":23.4},{"t":"10:45","warp":22.1,"warpMax":23.5},{"t":"10:48","warp":21.8,"warpMax":23.5},{"t":"10:51","warp":22,"warpMax":23.5},{"t":"10:54","warp":22.1,"warpMax":23.5},{"t":"10:57","warp":22,"warpMax":23.5},{"t":"11:00","warp":22,"warpMax":23.5},{"t":"11:03","warp":22.2,"warpMax":23.5},{"t":"11:06","warp":22,"warpMax":23.5},{"t":"11:09","warp":22,"warpMax":23.5},{"t":"11:12","warp":22.3,"warpMax":23.5},{"t":"11:15","warp":22.1,"warpMax":23.4},{"t":"11:18","warp":22,"warpMax":23.5},{"t":"11:21","warp":22.1,"warpMax":23.5},{"t":"11:24","warp":22.1,"warpMax":23.4},{"t":"11:27","warp":22.1,"warpMax":23.5},{"t":"11:30","warp":21.9,"warpMax":23.4},{"t":"11:33","warp":21.8,"warpMax":23.4},{"t":"11:36","warp":21.7,"warpMax":23.4},{"t":"11:39","warp":22,"warpMax":23.4},{"t":"11:42","warp":22,"warpMax":23.5},{"t":"11:45","warp":22,"warpMax":23.5},{"t":"11:48","warp":21.7,"warpMax":23.3},{"t":"11:51","warp":22.1,"warpMax":23.4},{"t":"11:54","warp":22.1,"warpMax":23.4},{"t":"11:57","warp":22,"warpMax":23.5},{"t":"13:29","warp":22.1,"warpMax":23.3},{"t":"13:30","warp":22,"warpMax":23.5},{"t":"13:33","warp":22,"warpMax":23.4},{"t":"13:36","warp":22,"warpMax":23.4},{"t":"13:39","warp":22.1,"warpMax":23.5},{"t":"13:42","warp":22,"warpMax":23.4},{"t":"13:45","warp":22.1,"warpMax":23.5},{"t":"13:48","warp":22,"warpMax":23.3},{"t":"13:51","warp":22,"warpMax":23.4},{"t":"13:54","warp":22.1,"warpMax":23.5},{"t":"13:57","warp":22.1,"warpMax":23.5},{"t":"14:00","warp":21.9,"warpMax":23.4},{"t":"14:03","warp":21.9,"warpMax":23.5},{"t":"14:06","warp":22,"warpMax":23.5},{"t":"14:09","warp":21.9,"warpMax":23.3},{"t":"16:20","warp":22.3,"warpMax":22.3},{"t":"16:21","warp":22.7,"warpMax":48.4},{"t":"16:24","warp":22.5,"warpMax":46.5},{"t":"16:27","warp":23.1,"warpMax":48.5},{"t":"16:30","warp":21.9,"warpMax":23.4},{"t":"16:33","warp":22,"warpMax":23.5},{"t":"16:36","warp":22.2,"warpMax":23.5},{"t":"16:39","warp":21.9,"warpMax":23.4},{"t":"16:42","warp":22.2,"warpMax":23.5},{"t":"16:45","warp":22.1,"warpMax":23.5},{"t":"16:48","warp":22.2,"warpMax":23.5},{"t":"16:51","warp":21.9,"warpMax":23.3},{"t":"16:54","warp":22,"warpMax":23.5},{"t":"16:57","warp":22,"warpMax":23.5},{"t":"17:00","warp":21.9,"warpMax":23.4},{"t":"17:03","warp":21.7,"warpMax":23.4},{"t":"17:06","warp":22,"warpMax":23.5},{"t":"17:09","warp":21.9,"warpMax":23.4},{"t":"17:12","warp":21.8,"warpMax":23.5},{"t":"17:15","warp":21.6,"warpMax":23.4},{"t":"17:18","warp":21.9,"warpMax":23.4},{"t":"17:21","warp":21.9,"warpMax":23.5},{"t":"17:24","warp":21.8,"warpMax":23.4},{"t":"17:27","warp":22,"warpMax":23.4},{"t":"17:30","warp":22,"warpMax":23.5},{"t":"17:33","warp":22.5,"warpMax":48.9},{"t":"17:36","warp":22.6,"warpMax":47.4},{"t":"17:39","warp":21.9,"warpMax":23.4},{"t":"17:42","warp":22.1,"warpMax":23.4},{"t":"17:45","warp":22,"warpMax":23.4},{"t":"17:48","warp":21.8,"warpMax":23.3},{"t":"17:51","warp":22,"warpMax":23.5},{"t":"17:54","warp":22.1,"warpMax":23.4},{"t":"17:57","warp":22,"warpMax":23.4},{"t":"18:00","warp":21.9,"warpMax":23.5},{"t":"18:03","warp":21.9,"warpMax":23.4},{"t":"18:06","warp":21.8,"warpMax":23.5},{"t":"18:09","warp":21.8,"warpMax":23.4},{"t":"18:12","warp":21.8,"warpMax":23.4},{"t":"18:15","warp":21.9,"warpMax":23.5},{"t":"18:18","warp":22,"warpMax":23.4},{"t":"18:21","warp":21.1,"warpMax":21.1}];
 var COL={ew:"#F5AE52",sf:"#CC3F31"};
@@ -303,14 +314,27 @@ var TYP={ew:['평탄도(엣지웨이브)',COL.ew],sf:['표면 결함',COL.sf]};
   var v='';
   SEGS.forEach(function(s){
     var hot=s.box===3;
-    v+='<div class="vrow'+(hot?' hot':'')+'"><span class="b">박스'+s.box+(hot?' · 결함구간':'')+'</span><span style="color:var(--sec)">'+s.st.slice(0,5)+'~'+s.en.slice(0,5)+'</span>'
-      +'<span class="vcam"><span class="vpill">CAM1 흠집 '+s.cam1+'MB</span><span class="vpill">CAM2 평탄도 '+s.cam2+'MB</span></span></div>';
+    function cam(n,mb,fn){
+      var label=n===1?'CAM1 흠집':'CAM2 평탄도';
+      var cap='박스'+s.box+' · '+label+' · '+s.st.slice(0,5)+'~'+s.en.slice(0,5)+' ('+mb+'MB)';
+      var a="'"+s.seg+"','"+fn+"'";
+      return '<div class="vcamrow"><span class="vpill">'+label+' '+mb+'MB</span>'
+        +'<button class="vbtn play" onclick="playVid('+a+',\''+cap+'\')">▶ 재생</button>'
+        +'<button class="vbtn dl" onclick="dlVid('+a+')">⤓ 다운로드</button></div>';
+    }
+    v+='<div class="vrow'+(hot?' hot':'')+'">'
+      +'<div class="vhead"><span class="b">박스'+s.box+(hot?' · 결함구간':'')+'</span><span style="color:var(--sec)">'+s.st.slice(0,5)+'~'+s.en.slice(0,5)+'</span></div>'
+      +cam(1,s.cam1,s.f1)+cam(2,s.cam2,s.f2)+'</div>';
   });
   document.getElementById('vidCat').innerHTML=v;
 })();
 function openLB(i){var d=DEF[i],t=TYP[d.kind];document.getElementById('lbImg').src=API+'?mode=img&id='+d.id;document.getElementById('lbCap').textContent=t[0]+' · #'+d.id+' · '+d.at+' · 박스'+d.box+' '+d.sheet+'장 · '+(d.kind==='ew'?d.score+'mm':'점수 '+d.score);document.getElementById('lb').classList.add('on');}
 function closeLB(){document.getElementById('lb').classList.remove('on');}
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLB();});
+function vurl(seg,file,dl){return API+'?mode=levvid'+(dl?'&redirect=1':'')+'&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file);}
+function playVid(seg,file,cap){var v=document.getElementById('vlbV');v.src=vurl(seg,file,false);document.getElementById('vlbCap').textContent=cap;document.getElementById('vlb').classList.add('on');v.play().catch(function(){});}
+function closeVLB(){var v=document.getElementById('vlbV');v.pause();v.removeAttribute('src');v.load();document.getElementById('vlb').classList.remove('on');}
+function dlVid(seg,file){window.open(vurl(seg,file,true),'_blank');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeLB();closeVLB();}});
 </script>
 </body>
 </html>
