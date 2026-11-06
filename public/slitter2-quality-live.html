@@ -108,7 +108,7 @@
   </div>
   <div class="panel">
     <table>
-      <thead><tr><th>상태</th><th>코일번호</th><th class="hide">업체명</th><th class="hide">규격</th><th class="r hide">중량</th><th class="r hide">금액</th><th class="r">결함</th><th></th></tr></thead>
+      <thead><tr><th>상태</th><th>코일번호</th><th class="hide">업체명</th><th class="hide">가공 규격</th><th class="r hide">중량</th><th class="r">작업 시간</th><th class="r">결함</th><th></th></tr></thead>
       <tbody id="coilRows"><tr><td colspan="7"><div class="empty">불러오는 중…</div></td></tr></tbody>
     </table>
   </div>
@@ -194,7 +194,7 @@ function phSvg(r){ var c=colorOf(r); return '<svg class="ph-svg" viewBox="0 0 32
 var curDate=kstDate(0), curDefs=[], curSel=0, curMode='img', curOv='orig';
 
 function wTxt(kg){ return kg!=null?Number(kg).toLocaleString()+'kg':'—'; }
-function wMoney(a){ return a!=null?Number(a).toLocaleString()+'원':'—'; }
+function timeSpan(c){ if(c.t_start==null) return '<span style="color:var(--muted)">—</span>'; var a=kstHM(c.t_start),b=kstHM(c.t_end); return (a===b)?a:(a+'~'+b); }
 function statusCls(s){ if(!s) return 'rdy'; if(s.indexOf('완료')>=0) return 'done'; if(s.indexOf('진행')>=0) return 'run'; return 'rdy'; }
 function loadCoils(){
   document.getElementById('dvDate').textContent=curDate;
@@ -215,7 +215,7 @@ function loadCoils(){
         +'<td class="erp hide">'+esc(c.company||'—')+'</td>'
         +'<td class="erp hide" style="font-size:17px">'+esc(c.spec||'—')+'</td>'
         +'<td class="r wtime hide">'+wTxt(c.oweight)+'</td>'
-        +'<td class="r wtime hide">'+wMoney(c.amount)+'</td>'
+        +'<td class="r wtime">'+timeSpan(c)+'</td>'
         +'<td class="r"><span class="defn '+(c.ng>0?'b':'z')+'">'+(c.ng||0)+'<span class="u">건</span></span></td>'
         +'<td class="chev">›</td></tr>';
     });
