@@ -249,6 +249,7 @@ function loadCoils(){
   }).catch(function(e){ document.getElementById('coilRows').innerHTML='<tr><td colspan="8"><div class="empty">불러오기 실패: '+esc(e)+'</div></td></tr>'; });
 }
 function moveDate(off){ curDate=kstDateStr(curDate,off); loadCoils(); }
+function backToList(){ document.getElementById('detailView').classList.add('hidden'); document.getElementById('listView').classList.remove('hidden'); window.scrollTo(0,0); }
 
 function openDetail(key){
   document.getElementById('dCoil').textContent=key;
