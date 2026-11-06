@@ -35,7 +35,7 @@
   .erp{font-size:15px;color:var(--muted)}.wtime{font-size:17px;color:var(--sec)}.r{text-align:right}
   .defn{font-size:22px}.defn.z{color:var(--ok)}.defn.b{color:var(--scr)}.defn .u{font-size:14px;color:var(--muted)}
   .st{display:inline-flex;align-items:center;gap:7px;font-size:16px;padding:6px 14px;border-radius:999px}
-  .st.done{background:#e9f9e9;color:#1a8f12}.st.rev{background:#fff1ec;color:#c2451f}
+  .st.done{background:#e9f9e9;color:#1a8f12}.st.rev{background:#fff1ec;color:#c2451f}.st.run{background:#eef1ff;color:#4455cc}.st.rdy{background:#eef1f7;color:#5c6478}
   .chev{color:var(--muted);font-size:22px;text-align:right}
   .empty{padding:50px 20px;text-align:center;color:var(--muted);font-size:19px}
   .st-pill{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;font-size:17px}
@@ -108,11 +108,11 @@
   </div>
   <div class="panel">
     <table>
-      <thead><tr><th>상태</th><th>코일번호 (external_key)</th><th class="hide">업체 / 규격</th><th class="hide">작업 시간</th><th class="r">카메라</th><th class="r">결함</th><th></th></tr></thead>
+      <thead><tr><th>상태</th><th>코일번호</th><th class="hide">업체명</th><th class="hide">규격</th><th class="r hide">중량</th><th class="r hide">금액</th><th class="r">결함</th><th></th></tr></thead>
       <tbody id="coilRows"><tr><td colspan="7"><div class="empty">불러오는 중…</div></td></tr></tbody>
     </table>
   </div>
-  <div class="foot">※ 코일·결함·사진·영상·검사시간·카메라는 <b>VIMS 실데이터</b>(이미지는 VIMS 서버를 https로 안전하게 중계). 업체명·규격·중량은 그린ERP 작업지시와 연동 예정.</div>
+  <div class="foot">※ 원래 8095 대시보드와 동일하게 <b>작업지시(erp_data) 기준</b> 리스트입니다 — 업체명·규격·중량·금액·상태는 ERP(MariaDB), 결함 개수는 VIMS에서 조인. 코일번호 미지정 검출(0000000000)은 작업지시가 없어 표시되지 않습니다.</div>
 </div>
 
 <!-- DETAIL -->
@@ -193,30 +193,34 @@ function phSvg(r){ var c=colorOf(r); return '<svg class="ph-svg" viewBox="0 0 32
 
 var curDate=kstDate(0), curDefs=[], curSel=0, curMode='img', curOv='orig';
 
+function wTxt(kg){ return kg!=null?Number(kg).toLocaleString()+'kg':'—'; }
+function wMoney(a){ return a!=null?Number(a).toLocaleString()+'원':'—'; }
+function statusCls(s){ if(!s) return 'rdy'; if(s.indexOf('완료')>=0) return 'done'; if(s.indexOf('진행')>=0) return 'run'; return 'rdy'; }
 function loadCoils(){
   document.getElementById('dvDate').textContent=curDate;
-  document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">불러오는 중…</div></td></tr>';
-  fetch(API+'?mode=coils&date='+curDate).then(function(r){return r.json()}).then(function(d){
-    var coils=(d&&d.coils)||[]; var tC=coils.length,tNg=0,tUn=0;
-    coils.forEach(function(c){tNg+=c.ng||0;tUn+=c.unreviewed||0;});
-    document.getElementById('kCoil').textContent=tC;
+  document.getElementById('coilRows').innerHTML='<tr><td colspan="8"><div class="empty">불러오는 중…</div></td></tr>';
+  fetch(API+'?mode=worklist&date='+curDate).then(function(r){return r.json()}).then(function(d){
+    var coils=(d&&d.coils)||[]; var seen={},tNg=0,tUn=0;
+    coils.forEach(function(c){ var k=c.coil||''; if(seen[k])return; seen[k]=1; tNg+=c.ng||0; tUn+=c.unreviewed||0; });
+    document.getElementById('kCoil').textContent=Object.keys(seen).length;
     document.getElementById('kNg').textContent=tNg;
     document.getElementById('kUn').textContent=tUn;
-    if(!coils.length){ document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">이 날짜에 검사된 코일이 없습니다.</div></td></tr>'; return; }
+    if(!coils.length){ document.getElementById('coilRows').innerHTML='<tr><td colspan="8"><div class="empty">이 날짜에 슬리터2 작업지시가 없습니다.</div></td></tr>'; return; }
     var html='';
     coils.forEach(function(c){
-      var un=c.unreviewed>0, k=esc(c.external_key);
+      var k=esc(c.coil||''), scl=statusCls(c.status);
       html+='<tr onclick="openDetail(\''+k.replace(/'/g,"")+'\')">'
-        +'<td><span class="st '+(un?'rev':'done')+'">● '+(un?'미확인':'완료')+'</span></td>'
-        +'<td><div class="coilno">'+k+'<span class="tiny">슬리팅 이전/이후</span></div></td>'
-        +'<td class="erp hide">— (ERP 연동 예정)</td>'
-        +'<td class="wtime hide">'+kstHM(c.t_start)+' ~ '+kstHM(c.t_end)+'</td>'
-        +'<td class="r wtime">'+(c.cams||0)+'대</td>'
+        +'<td><span class="st '+scl+'">● '+esc(c.status||'준비')+'</span></td>'
+        +'<td><div class="coilno">'+k+'<span class="tiny">SLITTING2 가공</span></div></td>'
+        +'<td class="erp hide">'+esc(c.company||'—')+'</td>'
+        +'<td class="erp hide" style="font-size:17px">'+esc(c.spec||'—')+'</td>'
+        +'<td class="r wtime hide">'+wTxt(c.oweight)+'</td>'
+        +'<td class="r wtime hide">'+wMoney(c.amount)+'</td>'
         +'<td class="r"><span class="defn '+(c.ng>0?'b':'z')+'">'+(c.ng||0)+'<span class="u">건</span></span></td>'
         +'<td class="chev">›</td></tr>';
     });
     document.getElementById('coilRows').innerHTML=html;
-  }).catch(function(e){ document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">불러오기 실패: '+esc(e)+'</div></td></tr>'; });
+  }).catch(function(e){ document.getElementById('coilRows').innerHTML='<tr><td colspan="8"><div class="empty">불러오기 실패: '+esc(e)+'</div></td></tr>'; });
 }
 function moveDate(off){ curDate=kstDateStr(curDate,off); loadCoils(); }
 
@@ -227,7 +231,7 @@ function openDetail(key){
   document.getElementById('detailView').classList.remove('hidden');
   document.getElementById('defRows').innerHTML='<div class="empty">불러오는 중…</div>';
   window.scrollTo(0,0);
-  fetch(API+'?mode=coil&key='+encodeURIComponent(key)+'&ng=1').then(function(r){return r.json()}).then(function(d){
+  fetch(API+'?mode=coil&key='+encodeURIComponent(key)+'&ng=1&date='+curDate).then(function(r){return r.json()}).then(function(d){
     var rows=(d&&d.results)||[]; curDefs=rows;
     var cams={}; rows.forEach(function(r){cams[r.camera_id]=1;});
     document.getElementById('dCnt').textContent=rows.length;
