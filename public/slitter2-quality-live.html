@@ -174,9 +174,14 @@
   </div>
   <div class="panel" id="coilVidSect" style="margin-top:16px">
     <div class="ph"><h2>📹 검사 영상 다운로드</h2><span style="margin-left:auto;font-size:15px;color:var(--muted)" id="vidCount">—</span></div>
-    <div style="padding:16px 20px"><div class="vidlist" id="coilVids"></div></div>
+    <div style="padding:16px 20px">
+      <h4 style="font-size:16px;color:var(--sec);margin-bottom:10px">전체 영상 (채널별 · 전체 구간)</h4>
+      <div class="vidlist" id="fullVids"><div style="color:var(--muted);font-size:15px">불러오는 중…</div></div>
+      <h4 style="font-size:16px;color:var(--sec);margin:18px 0 10px">검출 구간 영상 (결함별 클립)</h4>
+      <div class="vidlist" id="coilVids"></div>
+    </div>
   </div>
-  <div class="foot">※ 각 영상은 검출 시점의 카메라 녹화본(원본 .mp4)입니다. 전체 연속 영상(병합본)은 VIMS 서버 <code>/saved/{코일}/{날짜}/</code>에 있으나 폴더 목록 조회가 막혀 있어, 그대로 받으려면 VIMS 영상목록 연동이 필요합니다.</div>
+  <div class="foot">※ <b>전체 영상</b>은 코일 전체 구간의 채널별 병합본(원래 8095 "검사 영상 다운로드"와 동일), <b>검출 구간 영상</b>은 결함 시점의 짧은 클립입니다. VIMS 서버 영상을 https로 안전하게 중계합니다.</div>
 </div>
 
 <!-- LIGHTBOX -->
@@ -258,17 +263,35 @@ function openDetail(key){
     renderDefList(); selectDef(0);
   }).catch(function(e){ document.getElementById('defRows').innerHTML='<div class="empty">불러오기 실패: '+esc(e)+'</div>'; });
 }
+function chanOf(name){ var m=String(name||'').match(/슬리팅 이[전후] *- *\d/); return m?m[0]:(name||'영상'); }
 function renderCoilVids(rows){
+  // 검출 구간 클립(결함별)
   var vids=rows.filter(function(r){return r.video_url;});
-  document.getElementById('vidCount').textContent=vids.length+'개 (채널·검출 시각별)';
-  if(!vids.length){ document.getElementById('coilVids').innerHTML='<div style="color:var(--muted);font-size:16px;padding:6px">이 코일의 검사 영상이 없습니다.</div>'; return; }
-  var html='';
-  vids.forEach(function(r){
-    html+='<a href="'+esc(API+r.video_url)+'" download><span>📹</span><span class="cam">'+esc(r.camera_name||'')+'</span>'
-      +'<span style="color:var(--muted)">· '+esc(typeOf(r))+'</span>'
-      +'<span class="meta">검출 '+kstTime(r.inspection_time)+' · 다운로드 ⬇</span></a>';
-  });
-  document.getElementById('coilVids').innerHTML=html;
+  if(!vids.length){ document.getElementById('coilVids').innerHTML='<div style="color:var(--muted);font-size:15px">검출 구간 영상이 없습니다.</div>'; }
+  else {
+    var html='';
+    vids.forEach(function(r){
+      html+='<a href="'+esc(API+r.video_url)+'" download><span>🎬</span><span class="cam">'+esc(r.camera_name||'')+'</span>'
+        +'<span style="color:var(--muted)">· '+esc(typeOf(r))+'</span>'
+        +'<span class="meta">검출 '+kstTime(r.inspection_time)+' · 다운로드 ⬇</span></a>';
+    });
+    document.getElementById('coilVids').innerHTML=html;
+  }
+  // 전체 영상(채널별 병합본) — 대시보드 API
+  var coil=document.getElementById('dCoil').textContent;
+  document.getElementById('fullVids').innerHTML='<div style="color:var(--muted);font-size:15px">불러오는 중…</div>';
+  fetch(API+'?mode=coilvideos&coil='+encodeURIComponent(coil)).then(function(r){return r.json()}).then(function(d){
+    var vs=(d&&d.videos)||[];
+    document.getElementById('vidCount').textContent=(vs.length?('전체 '+vs.length+'채널'):'')+' · 검출 '+vids.length+'건';
+    if(!vs.length){ document.getElementById('fullVids').innerHTML='<div style="color:var(--muted);font-size:15px">전체 영상이 아직 생성되지 않았습니다(작업 완료 후 병합본 생성).</div>'; return; }
+    var html='';
+    vs.forEach(function(v){ if(!v.proxy){return;}
+      html+='<a href="'+esc(API+v.proxy)+'" download="'+esc(v.name)+'"><span>📹</span><span class="cam">'+esc(chanOf(v.name))+'</span>'
+        +(v.merged?'<span style="color:var(--muted)">· 전체 구간</span>':'')
+        +'<span class="meta">전체 영상 다운로드 ⬇</span></a>';
+    });
+    document.getElementById('fullVids').innerHTML=html||'<div style="color:var(--muted);font-size:15px">전체 영상 경로를 변환할 수 없습니다.</div>';
+  }).catch(function(e){ document.getElementById('fullVids').innerHTML='<div style="color:var(--muted);font-size:15px">전체 영상 조회 실패: '+esc(e)+'</div>'; });
 }
 function scrollToVids(){ var el=document.getElementById('coilVidSect'); if(el) el.scrollIntoView({behavior:'smooth',block:'start'}); }
 
