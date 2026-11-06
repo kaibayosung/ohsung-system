@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>레벨링 품질 대시보드 — 2026-10-29</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--muted:#7d8ba1;--accent:#796cbf;--line:#e3e8f0;--line2:#eef1f7;--bg:#f3f5fe;--card:#fff;
+    --wave:#F5AE52;--surf:#CC3F31;--warp:#796cbf;--ok:#1DDB16;--grid:#eef1f7;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Pretendard",-apple-system,sans-serif;font-weight:700;-webkit-font-smoothing:antialiased}
+  body{padding:20px 20px 60px;max-width:1360px;margin:0 auto}
+  .hd{display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .hd .title{font-size:30px;letter-spacing:-.6px}
+  .hd .title b{color:var(--accent)}
+  .hd .sub{font-size:16px;color:var(--muted);margin-top:4px}
+  .hd .spec{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+  .chip{background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:8px 16px;font-size:16px;color:var(--sec)}
+  .chip b{color:var(--ink)}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:18px 20px}
+  .kpi .lab{font-size:15px;color:var(--muted);margin-bottom:8px}
+  .kpi .val{font-size:34px;letter-spacing:-1px}
+  .kpi .val .u{font-size:17px;color:var(--sec);margin-left:3px}
+  .kpi.alert .val{color:var(--surf)}
+  .kpi .sub{font-size:14px;color:var(--muted);margin-top:4px}
+  .grid2{display:grid;grid-template-columns:1.25fr .75fr;gap:16px;margin-bottom:16px}
+  .panel{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:16px}
+  .panel h2{font-size:19px;margin-bottom:4px}
+  .panel .ph-sub{font-size:14px;color:var(--muted);margin-bottom:14px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--sec);margin-top:10px}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tbl{width:100%;border-collapse:collapse}
+  .tbl th{font-size:14px;color:var(--muted);text-align:left;padding:11px 12px;border-bottom:1.5px solid var(--line);background:#fafbff}
+  .tbl th.r,.tbl td.r{text-align:right}
+  .tbl td{padding:12px;border-bottom:1.5px solid var(--line2);font-size:16px}
+  .tbl tr:hover{background:#f7f6fd}
+  .badge{color:#fff;border-radius:7px;padding:3px 10px;font-size:14px;display:inline-block}
+  .insight{background:#f7f6fd;border:1.5px solid #e0dbf3;border-radius:12px;padding:14px 16px;font-size:15px;color:var(--ink);line-height:1.6;margin-top:4px}
+  .insight b{color:var(--accent)}
+  .gcard{border:1.5px solid var(--line);border-radius:12px;overflow:hidden;cursor:zoom-in;background:#0f1420}
+  .gcard img{width:100%;height:118px;object-fit:cover;display:block;background:#161c28}
+  .gcard .cap{padding:8px 10px;font-size:13px;background:#fff;display:flex;align-items:center;gap:6px}
+  .gbadge{color:#fff;border-radius:6px;padding:2px 7px;font-size:12px}
+  .vrow{display:flex;align-items:center;gap:12px;padding:13px 15px;border:1.5px solid var(--line);border-radius:11px;margin-bottom:9px;font-size:15px}
+  .vrow .b{font-weight:800;color:var(--ink)}
+  .vrow.hot{border-color:#f0c89a;background:#fdf7ee}
+  .vcam{display:flex;gap:7px;margin-left:auto;flex-wrap:wrap}
+  .vpill{background:#f0eefb;color:var(--accent);border-radius:999px;padding:6px 13px;font-size:14px}
+  .vnote{font-size:13px;color:var(--muted);margin-top:8px}
+  .lb{position:fixed;inset:0;background:rgba(8,12,20,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:30px}
+  .lb.on{display:flex}.lb-box{max-width:1100px;width:100%}
+  .lb img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:12px;display:block;margin:0 auto}
+  .lb .cap{color:#fff;text-align:center;margin-top:14px;font-size:18px}
+  .lb .x{position:fixed;top:18px;right:30px;color:#fff;font-size:32px;cursor:pointer;line-height:1}
+  .foot{margin-top:14px;font-size:13px;color:var(--muted);line-height:1.6}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="hd">
+  <div>
+    <div class="title">레벨링 품질 · 코일 <b>W642(일반)</b></div>
+    <div class="sub">(주)유창 · 2026-10-29 · 10:41 ~ 17:10 · AI 비전검사(표면·평탄도)</div>
+  </div>
+  <div class="spec">
+    <span class="chip">두께 <b>0.6mm</b></span>
+    <span class="chip">폭 <b>1,255mm</b></span>
+    <span class="chip">총 <b>642장</b></span>
+    <span class="chip">박스 <b>3</b></span>
+  </div>
+</div>
+
+<div class="kpis">
+  <div class="kpi alert"><div class="lab">총 결함</div><div class="val">13<span class="u">건</span></div><div class="sub">표면 7 · 평탄도 6</div></div>
+  <div class="kpi"><div class="lab">불량률 (결함/장)</div><div class="val">2.0<span class="u">%</span></div><div class="sub">13 / 642장</div></div>
+  <div class="kpi alert"><div class="lab">최대 휨량</div><div class="val">48.9<span class="u">mm</span></div><div class="sub">평균 22.0mm · 기준 대비 ↑</div></div>
+  <div class="kpi"><div class="lab">결함 집중 박스</div><div class="val">박스3</div><div class="sub">13건 전부 (박스1·2 = 0)</div></div>
+</div>
+
+<!-- 결함 지도 -->
+<div class="panel">
+  <h2>결함 지도 — 코일 길이(장수)별 위치</h2>
+  <div class="ph-sub">박스1(278장) · 박스2(220장) · 박스3(144장) / 결함은 전부 마지막 박스3(499~642장)에 발생</div>
+  <div id="mapChart"></div>
+  <div class="legend">
+    <span><i style="background:var(--wave)"></i>평탄도(엣지웨이브)</span>
+    <span><i style="background:var(--surf)"></i>표면 결함</span>
+    <span><i style="background:#dfe4ee"></i>박스 경계</span>
+  </div>
+</div>
+
+<div class="grid2">
+  <!-- 휨량 추이 -->
+  <div class="panel" style="margin-bottom:0">
+    <h2>평탄도 휨량(warp) 추이</h2>
+    <div class="ph-sub">실시간 평균 휨량은 ~22mm로 일정, 순간 피크가 2구간에서 48mm까지 급등 → 평탄도 불량 알림</div>
+    <div id="warpChart"></div>
+    <div class="legend">
+      <span><i style="background:var(--warp)"></i>평균 휨량</span>
+      <span><i style="background:var(--wave)"></i>순간 최대(warpMax)</span>
+      <span><i style="background:var(--surf);border-radius:50%"></i>평탄도 불량 검출</span>
+    </div>
+  </div>
+  <!-- 단면 프로파일 -->
+  <div class="panel" style="margin-bottom:0">
+    <h2>판 단면 형상 (좌·중·우)</h2>
+    <div class="ph-sub">하루 종일 일정한 "우측 엣지 들림" 형상</div>
+    <div id="profChart"></div>
+    <div class="insight" style="margin-top:12px">
+      좌 <b>−1.35</b> · 중 <b>−2.4</b> · 우 <b>+3.0</b> mm<br>
+      좌우 기울기(tilt) <b>4.35mm</b> — 오른쪽 가장자리가 들리고 가운데가 가장 낮은 <b>비대칭 엣지웨이브</b>. (불량 기준 8mm 미만이나 형상이 지속)
+    </div>
+  </div>
+</div>
+
+<!-- 결함 목록 -->
+<div class="panel">
+  <h2>결함 목록 (13건)</h2>
+  <div class="ph-sub">검출 시각 순 · 전부 박스3</div>
+  <div style="overflow:auto">
+    <table class="tbl">
+      <thead><tr><th>시각</th><th>박스</th><th class="r">장</th><th>유형</th><th class="r">점수/휨량</th><th>단면(좌·중·우)</th></tr></thead>
+      <tbody id="defBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- 결함 이미지 갤러리 -->
+<div class="panel">
+  <h2>결함 이미지 — AI 검출 (13건)</h2>
+  <div class="ph-sub">실제 검출 이미지(SAIGE 레벨러) · 클릭하면 크게 보기</div>
+  <div id="gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px"></div>
+</div>
+
+<!-- 박스별 녹화 영상 -->
+<div class="panel">
+  <h2>박스별 녹화 영상</h2>
+  <div class="ph-sub">CAM1=흠집검사 · CAM2=편탄도검사 (레벨러 녹화 세그먼트, 실데이터)</div>
+  <div id="vidCat"></div>
+  <div class="vnote">※ 영상 파일은 DB 카탈로그에 존재하며(총 약 0.7GB), 결함 구간 박스3(16:20~18:21)이 CAM1 179MB·CAM2 209MB로 녹화돼 있습니다. 재생/다운로드는 세이지 영상 재생 API 경로 확인 후 바로 연결됩니다.</div>
+</div>
+
+<div class="panel" style="background:#f7f6fd;border-color:#e0dbf3">
+  <h2>한눈 요약</h2>
+  <div class="insight" style="background:#fff">
+    ① <b>박스1·2(498장)는 무결함</b>, 결함 13건이 <b>코일 끝 박스3(144장)에 100% 집중</b> — 코일 꼬리 품질 저하 전형.<br>
+    ② 평탄도 6건 전부 <b>우측 엣지웨이브</b>(휨량 44~49mm), 표면 7건(이상점수 0.91~0.94).<br>
+    ③ 검출 시각이 <b>16:22~17:42</b>에 몰림 — 작업 후반/코일 끝단 구간.<br>
+    ④ 조치 포인트: 박스3 구간 <b>장력·레벨러 설정 점검</b> 및 우측 엣지 형상 보정.
+  </div>
+</div>
+
+<div class="foot">※ SAIGE 레벨러 AI 비전검사 실데이터(detection_alert · inference_score_log · recording_segment). 평탄도=카메라2, 표면=카메라1. 휨량/단면은 mm 단위. 이미지는 VIMS 서버를 https로 안전 중계.</div>
+
+<div class="lb" id="lb" onclick="if(event.target.id==='lb')closeLB()">
+  <span class="x" onclick="closeLB()">✕</span>
+  <div class="lb-box"><img id="lbImg" src=""><div class="cap" id="lbCap"></div></div>
+</div>
+
+<script>
+var BOXES=[{n:1,size:278,s1:1,s2:278},{n:2,size:220,s1:279,s2:498},{n:3,size:144,s1:499,s2:642}];
+var TOTAL=642;
+var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-quality";
+var DEF=[
+ {id:14184,at:"16:22:00",box:3,sheet:6,abs:504,kind:"ew",score:48.4,edge:[-1.3,-2.2,2.7]},
+ {id:14176,at:"16:22:29",box:3,sheet:9,abs:507,kind:"sf",score:0.94,edge:null},
+ {id:14175,at:"16:25:25",box:3,sheet:29,abs:527,kind:"sf",score:0.92,edge:null},
+ {id:14183,at:"16:25:56",box:3,sheet:32,abs:530,kind:"ew",score:46.5,edge:[-1.3,-2.3,2.8]},
+ {id:14182,at:"16:28:53",box:3,sheet:52,abs:550,kind:"ew",score:48.5,edge:[-1.4,-2.2,2.8]},
+ {id:14181,at:"16:29:49",box:3,sheet:59,abs:557,kind:"ew",score:44.6,edge:[-1.3,-2.4,2.9]},
+ {id:14174,at:"16:32:21",box:3,sheet:76,abs:574,kind:"sf",score:0.91,edge:null},
+ {id:14173,at:"17:20:17",box:3,sheet:144,abs:642,kind:"sf",score:0.94,edge:null},
+ {id:14172,at:"17:22:13",box:3,sheet:144,abs:642,kind:"sf",score:0.93,edge:null},
+ {id:14171,at:"17:28:09",box:3,sheet:144,abs:642,kind:"sf",score:0.93,edge:null},
+ {id:14180,at:"17:35:45",box:3,sheet:144,abs:642,kind:"ew",score:48.9,edge:[-1.3,-2.5,2.9]},
+ {id:14179,at:"17:36:41",box:3,sheet:144,abs:642,kind:"ew",score:47.4,edge:[-1.5,-2.3,3.1]},
+ {id:14170,at:"17:42:05",box:3,sheet:144,abs:642,kind:"sf",score:0.91,edge:null}
+];
+var SEGS=[
+ {box:1,st:"11:58:46",en:"11:59:37",cam1:3,cam2:3},
+ {box:2,st:"13:29:20",en:"14:10:39",cam1:174,cam2:131},
+ {box:3,st:"16:20:55",en:"18:21:04",cam1:179,cam2:209}
+];
+var SERIES=[{"t":"10:41","warp":23.1,"warpMax":23.1},{"t":"10:42","warp":22,"warpMax":23.4},{"t":"10:45","warp":22.1,"warpMax":23.5},{"t":"10:48","warp":21.8,"warpMax":23.5},{"t":"10:51","warp":22,"warpMax":23.5},{"t":"10:54","warp":22.1,"warpMax":23.5},{"t":"10:57","warp":22,"warpMax":23.5},{"t":"11:00","warp":22,"warpMax":23.5},{"t":"11:03","warp":22.2,"warpMax":23.5},{"t":"11:06","warp":22,"warpMax":23.5},{"t":"11:09","warp":22,"warpMax":23.5},{"t":"11:12","warp":22.3,"warpMax":23.5},{"t":"11:15","warp":22.1,"warpMax":23.4},{"t":"11:18","warp":22,"warpMax":23.5},{"t":"11:21","warp":22.1,"warpMax":23.5},{"t":"11:24","warp":22.1,"warpMax":23.4},{"t":"11:27","warp":22.1,"warpMax":23.5},{"t":"11:30","warp":21.9,"warpMax":23.4},{"t":"11:33","warp":21.8,"warpMax":23.4},{"t":"11:36","warp":21.7,"warpMax":23.4},{"t":"11:39","warp":22,"warpMax":23.4},{"t":"11:42","warp":22,"warpMax":23.5},{"t":"11:45","warp":22,"warpMax":23.5},{"t":"11:48","warp":21.7,"warpMax":23.3},{"t":"11:51","warp":22.1,"warpMax":23.4},{"t":"11:54","warp":22.1,"warpMax":23.4},{"t":"11:57","warp":22,"warpMax":23.5},{"t":"13:29","warp":22.1,"warpMax":23.3},{"t":"13:30","warp":22,"warpMax":23.5},{"t":"13:33","warp":22,"warpMax":23.4},{"t":"13:36","warp":22,"warpMax":23.4},{"t":"13:39","warp":22.1,"warpMax":23.5},{"t":"13:42","warp":22,"warpMax":23.4},{"t":"13:45","warp":22.1,"warpMax":23.5},{"t":"13:48","warp":22,"warpMax":23.3},{"t":"13:51","warp":22,"warpMax":23.4},{"t":"13:54","warp":22.1,"warpMax":23.5},{"t":"13:57","warp":22.1,"warpMax":23.5},{"t":"14:00","warp":21.9,"warpMax":23.4},{"t":"14:03","warp":21.9,"warpMax":23.5},{"t":"14:06","warp":22,"warpMax":23.5},{"t":"14:09","warp":21.9,"warpMax":23.3},{"t":"16:20","warp":22.3,"warpMax":22.3},{"t":"16:21","warp":22.7,"warpMax":48.4},{"t":"16:24","warp":22.5,"warpMax":46.5},{"t":"16:27","warp":23.1,"warpMax":48.5},{"t":"16:30","warp":21.9,"warpMax":23.4},{"t":"16:33","warp":22,"warpMax":23.5},{"t":"16:36","warp":22.2,"warpMax":23.5},{"t":"16:39","warp":21.9,"warpMax":23.4},{"t":"16:42","warp":22.2,"warpMax":23.5},{"t":"16:45","warp":22.1,"warpMax":23.5},{"t":"16:48","warp":22.2,"warpMax":23.5},{"t":"16:51","warp":21.9,"warpMax":23.3},{"t":"16:54","warp":22,"warpMax":23.5},{"t":"16:57","warp":22,"warpMax":23.5},{"t":"17:00","warp":21.9,"warpMax":23.4},{"t":"17:03","warp":21.7,"warpMax":23.4},{"t":"17:06","warp":22,"warpMax":23.5},{"t":"17:09","warp":21.9,"warpMax":23.4},{"t":"17:12","warp":21.8,"warpMax":23.5},{"t":"17:15","warp":21.6,"warpMax":23.4},{"t":"17:18","warp":21.9,"warpMax":23.4},{"t":"17:21","warp":21.9,"warpMax":23.5},{"t":"17:24","warp":21.8,"warpMax":23.4},{"t":"17:27","warp":22,"warpMax":23.4},{"t":"17:30","warp":22,"warpMax":23.5},{"t":"17:33","warp":22.5,"warpMax":48.9},{"t":"17:36","warp":22.6,"warpMax":47.4},{"t":"17:39","warp":21.9,"warpMax":23.4},{"t":"17:42","warp":22.1,"warpMax":23.4},{"t":"17:45","warp":22,"warpMax":23.4},{"t":"17:48","warp":21.8,"warpMax":23.3},{"t":"17:51","warp":22,"warpMax":23.5},{"t":"17:54","warp":22.1,"warpMax":23.4},{"t":"17:57","warp":22,"warpMax":23.4},{"t":"18:00","warp":21.9,"warpMax":23.5},{"t":"18:03","warp":21.9,"warpMax":23.4},{"t":"18:06","warp":21.8,"warpMax":23.5},{"t":"18:09","warp":21.8,"warpMax":23.4},{"t":"18:12","warp":21.8,"warpMax":23.4},{"t":"18:15","warp":21.9,"warpMax":23.5},{"t":"18:18","warp":22,"warpMax":23.4},{"t":"18:21","warp":21.1,"warpMax":21.1}];
+var COL={ew:"#F5AE52",sf:"#CC3F31"};
+function esc(s){return String(s==null?'':s).replace(/</g,'&lt;')}
+
+// ---------- 결함 지도 ----------
+(function(){
+  var W=1240,H=150,padL=10,padR=10,bx=padL,bw=W-padL-padR,top=46,bh=46;
+  var s='<svg viewBox="0 0 '+W+' '+H+'">';
+  // box segments
+  var acc=0;
+  BOXES.forEach(function(b,i){
+    var x1=bx+bw*(acc/TOTAL), w=bw*(b.size/TOTAL); acc+=b.size;
+    var fill=i===2?'#fdf3e6':'#f2f5fb', stroke=i===2?'#f0c89a':'#e3e8f0';
+    s+='<rect x="'+x1+'" y="'+top+'" width="'+w+'" height="'+bh+'" rx="6" fill="'+fill+'" stroke="'+stroke+'" stroke-width="1.5"/>';
+    s+='<text x="'+(x1+w/2)+'" y="'+(top+bh/2+5)+'" text-anchor="middle" font-size="15" font-family="Pretendard" font-weight="800" fill="#5c6478">박스'+b.n+' · '+b.size+'장</text>';
+    s+='<text x="'+(x1+w/2)+'" y="'+(top-10)+'" text-anchor="middle" font-size="13" font-family="Pretendard" fill="'+(i===2?'#CC3F31':'#9aa3b2')+'">'+(i===2?'결함 13건':'0건')+'</text>';
+  });
+  // axis labels
+  s+='<text x="'+bx+'" y="'+(top+bh+24)+'" font-size="12" font-family="Pretendard" fill="#9aa3b2">1장</text>';
+  s+='<text x="'+(bx+bw)+'" y="'+(top+bh+24)+'" text-anchor="end" font-size="12" font-family="Pretendard" fill="#9aa3b2">642장</text>';
+  // defect markers
+  DEF.forEach(function(d){
+    var x=bx+bw*(d.abs/TOTAL);
+    var y=d.kind==='ew'?top-2:top+bh+2;
+    var c=COL[d.kind];
+    s+='<line x1="'+x+'" y1="'+top+'" x2="'+x+'" y2="'+(top+bh)+'" stroke="'+c+'" stroke-width="2" opacity=".45"/>';
+    s+='<circle cx="'+x+'" cy="'+y+'" r="6.5" fill="'+c+'" stroke="#fff" stroke-width="2"/>';
+  });
+  s+='</svg>';
+  document.getElementById('mapChart').innerHTML=s;
+})();
+
+// ---------- 휨량 추이 ----------
+(function(){
+  var W=720,H=300,padL=44,padR=14,padT=16,padB=34;
+  var iw=W-padL-padR, ih=H-padT-padB;
+  var n=SERIES.length, ymax=52;
+  var xAt=function(i){return padL+iw*(i/(n-1));};
+  var yAt=function(v){return padT+ih*(1-v/ymax);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'">';
+  // grid + y labels
+  [0,10,20,30,40,50].forEach(function(v){ var y=yAt(v);
+    s+='<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="#eef1f7" stroke-width="1"/>';
+    s+='<text x="'+(padL-8)+'" y="'+(y+4)+'" text-anchor="end" font-size="12" font-family="Pretendard" fill="#9aa3b2">'+v+'</text>';
+  });
+  // x labels (every ~12th)
+  for(var i=0;i<n;i+=12){ var x=xAt(i); s+='<text x="'+x+'" y="'+(H-12)+'" text-anchor="middle" font-size="12" font-family="Pretendard" fill="#9aa3b2">'+SERIES[i].t+'</text>'; }
+  // warpMax area/line
+  function path(key){ var d=''; for(var i=0;i<n;i++){ d+=(i?'L':'M')+xAt(i)+' '+yAt(SERIES[i][key]); } return d; }
+  s+='<path d="'+path('warpMax')+'" fill="none" stroke="#F5AE52" stroke-width="2" opacity=".9"/>';
+  s+='<path d="'+path('warp')+'" fill="none" stroke="#796cbf" stroke-width="2.5"/>';
+  // defect markers (ew only, at their time)
+  DEF.filter(function(d){return d.kind==='ew'}).forEach(function(d){
+    var hm=d.at.slice(0,5);
+    // find nearest series index by time
+    var bi=0,bg=1e9; for(var i=0;i<n;i++){ var g=Math.abs(toMin(SERIES[i].t)-toMin(hm)); if(g<bg){bg=g;bi=i;} }
+    var x=xAt(bi), y=yAt(d.score);
+    s+='<circle cx="'+x+'" cy="'+y+'" r="5" fill="#CC3F31" stroke="#fff" stroke-width="1.5"/>';
+  });
+  s+='</svg>';
+  function toMin(t){var p=t.split(':');return (+p[0])*60+(+p[1]);}
+  document.getElementById('warpChart').innerHTML=s;
+})();
+
+// ---------- 단면 프로파일 ----------
+(function(){
+  var W=420,H=240,cx=[90,210,330],padT=30;
+  var el=-1.35,ce=-2.4,er=3.0;
+  // map mm (-4..+4) to y (높을수록 위)
+  var ymid=H/2+8, scale=22;
+  var yOf=function(mm){return ymid - mm*scale;};
+  var s='<svg viewBox="0 0 '+W+' '+H+'">';
+  // baseline
+  s+='<line x1="40" y1="'+ymid+'" x2="'+(W-20)+'" y2="'+ymid+'" stroke="#e3e8f0" stroke-width="1.5" stroke-dasharray="4 4"/>';
+  s+='<text x="'+(W-20)+'" y="'+(ymid-8)+'" text-anchor="end" font-size="12" fill="#b4bccb" font-family="Pretendard">기준 0</text>';
+  // strip curve through 좌/중/우
+  var p=[[cx[0],yOf(el)],[cx[1],yOf(ce)],[cx[2],yOf(er)]];
+  var d='M40 '+ymid+' L'+p[0][0]+' '+p[0][1]+' Q'+((p[0][0]+p[1][0])/2)+' '+(p[0][1]+8)+' '+p[1][0]+' '+p[1][1]+' Q'+((p[1][0]+p[2][0])/2)+' '+(p[1][1]-6)+' '+p[2][0]+' '+p[2][1]+' L'+(W-20)+' '+yOf(er*0.6);
+  s+='<path d="'+d+'" fill="none" stroke="#F5AE52" stroke-width="5" stroke-linecap="round"/>';
+  var names=['좌 엣지','중앙','우 엣지'],vals=[el,ce,er];
+  p.forEach(function(pt,i){
+    s+='<circle cx="'+pt[0]+'" cy="'+pt[1]+'" r="7" fill="#F5AE52" stroke="#fff" stroke-width="2"/>';
+    s+='<text x="'+pt[0]+'" y="'+(H-26)+'" text-anchor="middle" font-size="14" font-family="Pretendard" font-weight="800" fill="#5c6478">'+names[i]+'</text>';
+    s+='<text x="'+pt[0]+'" y="'+(H-8)+'" text-anchor="middle" font-size="14" font-family="Pretendard" fill="'+(vals[i]>=0?'#CC3F31':'#5c6478')+'">'+(vals[i]>0?'+':'')+vals[i]+'mm</text>';
+  });
+  s+='</svg>';
+  document.getElementById('profChart').innerHTML=s;
+})();
+
+// ---------- 결함 테이블 ----------
+(function(){
+  var h='';
+  DEF.forEach(function(d){
+    var typ=d.kind==='ew'?'평탄도(엣지웨이브)':'표면 결함';
+    var col=COL[d.kind];
+    var sc=d.kind==='ew'?(d.score+'mm'):d.score;
+    var edge=d.edge?('좌 '+d.edge[0]+' · 중 '+d.edge[1]+' · 우 +'+d.edge[2]):'—';
+    h+='<tr><td>'+d.at+'</td><td>박스'+d.box+'</td><td class="r">'+d.sheet+'장</td>'
+      +'<td><span class="badge" style="background:'+col+'">'+typ+'</span></td>'
+      +'<td class="r">'+sc+'</td><td style="color:var(--sec);font-size:14px">'+edge+'</td></tr>';
+  });
+  document.getElementById('defBody').innerHTML=h;
+})();
+
+// ---------- 이미지 갤러리 + 영상 카탈로그 ----------
+var TYP={ew:['평탄도(엣지웨이브)',COL.ew],sf:['표면 결함',COL.sf]};
+(function(){
+  var g='';
+  DEF.forEach(function(d,i){
+    var t=TYP[d.kind];
+    g+='<div class="gcard" onclick="openLB('+i+')"><img loading="lazy" src="'+API+'?mode=img&id='+d.id+'" onerror="this.style.height=\'72px\';this.src=\'\'">'
+      +'<div class="cap"><span class="gbadge" style="background:'+t[1]+'">'+(d.kind==='ew'?'평탄도':'표면')+'</span>'+d.at.slice(0,5)+' · '+d.sheet+'장</div></div>';
+  });
+  document.getElementById('gallery').innerHTML=g;
+  var v='';
+  SEGS.forEach(function(s){
+    var hot=s.box===3;
+    v+='<div class="vrow'+(hot?' hot':'')+'"><span class="b">박스'+s.box+(hot?' · 결함구간':'')+'</span><span style="color:var(--sec)">'+s.st.slice(0,5)+'~'+s.en.slice(0,5)+'</span>'
+      +'<span class="vcam"><span class="vpill">CAM1 흠집 '+s.cam1+'MB</span><span class="vpill">CAM2 평탄도 '+s.cam2+'MB</span></span></div>';
+  });
+  document.getElementById('vidCat').innerHTML=v;
+})();
+function openLB(i){var d=DEF[i],t=TYP[d.kind];document.getElementById('lbImg').src=API+'?mode=img&id='+d.id;document.getElementById('lbCap').textContent=t[0]+' · #'+d.id+' · '+d.at+' · 박스'+d.box+' '+d.sheet+'장 · '+(d.kind==='ew'?d.score+'mm':'점수 '+d.score);document.getElementById('lb').classList.add('on');}
+function closeLB(){document.getElementById('lb').classList.remove('on');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLB();});
+</script>
+</body>
+</html>
