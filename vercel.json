@@ -27,6 +27,10 @@
     {
       "source": "/slitter2-quality",
       "destination": "/slitter2-quality.html"
+    },
+    {
+      "source": "/slitter2-quality-live",
+      "destination": "/slitter2-quality-live.html"
     }
   ]
 }
