@@ -258,10 +258,10 @@
       <div class="ch-bar hidden" id="chBar">
         <div class="lab">영상 채널 선택 — 한 번에 1개 채널만 재생됩니다</div>
         <div class="ch-row">
-          <div class="ch on" onclick="setCh(this,'슬리팅前 상단')">슬리팅前<br>상단<span class="cn">CH1 · cam01</span></div>
-          <div class="ch" onclick="setCh(this,'슬리팅前 측면')">슬리팅前<br>측면<span class="cn">CH2 · cam04</span></div>
-          <div class="ch" onclick="setCh(this,'슬리팅後 상단')">슬리팅後<br>상단<span class="cn">CH3 · cam02</span></div>
-          <div class="ch" onclick="setCh(this,'슬리팅後 측면')">슬리팅後<br>측면<span class="cn">CH4 · cam03</span></div>
+          <div class="ch on" onclick="setCh(this,'슬리팅 이전-1')">슬리팅 이전<br>1<span class="cn">CH1 · cam_id 2</span></div>
+          <div class="ch" onclick="setCh(this,'슬리팅 이전-2')">슬리팅 이전<br>2<span class="cn">CH2 · cam_id 3</span></div>
+          <div class="ch" onclick="setCh(this,'슬리팅 이후-1')">슬리팅 이후<br>1<span class="cn">CH3 · cam_id 12</span></div>
+          <div class="ch" onclick="setCh(this,'슬리팅 이후-2')">슬리팅 이후<br>2<span class="cn">CH4 · cam_id 13</span></div>
         </div>
       </div>
 
@@ -287,7 +287,7 @@
       </div>
     </div>
   </div>
-  <div class="foot">※ 영상 4채널은 상·측 / 슬리팅 전·후 카메라 구성 예시이며, 실제 채널명·개수는 VIMS 카메라 설정에 맞춰 연동됩니다. 기존 8095는 클릭 시 4채널이 동시 재생되지만, 본 설계는 <b>채널을 하나씩 선택</b>해 재생·다운로드합니다.</div>
+  <div class="foot">※ 영상 4채널 = 실제 VIMS 라이브 카메라 <b>슬리팅 이전-1 / 이전-2 / 이후-1 / 이후-2</b>(RTSP, 1920×1080·60fps). 기존 8095는 클릭 시 4채널이 동시 재생되지만, 본 설계는 <b>채널을 하나씩 선택</b>해 재생·다운로드합니다.</div>
 </div>
 
 <!-- ===== LIGHTBOX ===== -->
