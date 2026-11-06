@@ -7,51 +7,37 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
-  :root{
-    --ink:#0f1e33;--sec:#5c6478;--muted:#7d8ba1;--accent:#796cbf;
-    --line:#e3e8f0;--line2:#eef1f7;--bg:#f3f5fe;--card:#fff;
-    --ok:#1DDB16;--scr:#CC3F31;--hscr:#09A4DB;--dent:#878DEE;--wave:#F5AE52;--burr:#E8A33D;--zinc:#B0884E;
-  }
+  :root{--ink:#0f1e33;--sec:#5c6478;--muted:#7d8ba1;--accent:#796cbf;--line:#e3e8f0;--line2:#eef1f7;--bg:#f3f5fe;--card:#fff;--ok:#1DDB16;--scr:#CC3F31;}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{background:var(--bg);color:var(--ink);font-family:"Pretendard",-apple-system,sans-serif;font-weight:700;-webkit-font-smoothing:antialiased}
   body{padding:18px 18px 60px;max-width:1500px;margin:0 auto}
   .live-tag{display:inline-flex;align-items:center;gap:8px;background:#eafaef;color:#138a3e;border:1.5px solid #abe3c0;border-radius:999px;padding:5px 14px;font-size:14px;margin-bottom:14px}
   .live-tag .d{width:9px;height:9px;border-radius:50%;background:#1DDB16;box-shadow:0 0 0 4px rgba(29,219,22,.18)}
   .hidden{display:none !important}
-
   .hd{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
-  .hd .title{font-size:30px;letter-spacing:-.5px}
-  .hd .sub{font-size:16px;color:var(--muted);margin-top:2px}
+  .hd .title{font-size:30px;letter-spacing:-.5px}.hd .sub{font-size:16px;color:var(--muted);margin-top:2px}
   .back{display:flex;align-items:center;gap:8px;font-size:18px;color:var(--accent);background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 18px;cursor:pointer}
   .date-pick{margin-left:auto;display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:17px}
   .date-pick button{font-size:18px;border:none;background:#eef1f7;color:var(--sec);border-radius:8px;width:34px;height:34px;cursor:pointer}
   .date-pick .dv{min-width:120px;text-align:center}
-
   .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
   .kpi{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px 20px}
   .kpi .lab{font-size:15px;color:var(--muted);margin-bottom:7px}
-  .kpi .val{font-size:30px;letter-spacing:-1px}
-  .kpi .val .u{font-size:17px;color:var(--sec);margin-left:3px}
+  .kpi .val{font-size:30px;letter-spacing:-1px}.kpi .val .u{font-size:17px;color:var(--sec);margin-left:3px}
   .kpi.alert .val{color:var(--scr)}
-
   .panel{background:var(--card);border:1.5px solid var(--line);border-radius:16px;overflow:hidden}
   table{width:100%;border-collapse:collapse}
   thead th{font-size:15px;color:var(--muted);text-align:left;padding:15px 18px;border-bottom:1.5px solid var(--line);background:#fafbff}
   thead th.r{text-align:right}
   tbody td{padding:17px 18px;border-bottom:1.5px solid var(--line2);font-size:19px;vertical-align:middle}
-  tbody tr{cursor:pointer;transition:background .12s}
-  tbody tr:hover{background:#f7f6fd}
-  .coilno{font-size:20px;letter-spacing:-.3px}
-  .coilno .tiny{display:block;font-size:14px;color:var(--muted);margin-top:3px}
-  .erp{font-size:15px;color:var(--muted)}
-  .wtime{font-size:17px;color:var(--sec)}
-  .r{text-align:right}
+  tbody tr{cursor:pointer;transition:background .12s}tbody tr:hover{background:#f7f6fd}
+  .coilno{font-size:20px;letter-spacing:-.3px}.coilno .tiny{display:block;font-size:14px;color:var(--muted);margin-top:3px}
+  .erp{font-size:15px;color:var(--muted)}.wtime{font-size:17px;color:var(--sec)}.r{text-align:right}
   .defn{font-size:22px}.defn.z{color:var(--ok)}.defn.b{color:var(--scr)}.defn .u{font-size:14px;color:var(--muted)}
   .st{display:inline-flex;align-items:center;gap:7px;font-size:16px;padding:6px 14px;border-radius:999px}
   .st.done{background:#e9f9e9;color:#1a8f12}.st.rev{background:#fff1ec;color:#c2451f}
   .chev{color:var(--muted);font-size:22px;text-align:right}
   .empty{padding:50px 20px;text-align:center;color:var(--muted);font-size:19px}
-
   .st-pill{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;font-size:17px}
   .dot{width:11px;height:11px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(29,219,22,.16)}
   .coil-title{font-size:28px;letter-spacing:-.5px}.coil-title b{color:var(--accent)}
@@ -59,73 +45,59 @@
   .tab{font-size:19px;padding:12px 26px;border-radius:12px 12px 0 0;border:1.5px solid var(--line);border-bottom:none;background:#eef1f7;color:var(--sec)}
   .tab.on{background:var(--card);color:var(--ink);box-shadow:0 -2px 0 var(--accent) inset}
   .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;align-items:start}
-  .ph{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1.5px solid var(--line2)}
-  .ph h2{font-size:21px}
+  .ph{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1.5px solid var(--line2)}.ph h2{font-size:21px}
   .count-badge{background:#f0eefb;color:var(--accent);border-radius:999px;padding:4px 13px;font-size:16px}
-  .list{max-height:740px;overflow:auto}
-  .drow{display:grid;grid-template-columns:96px 1fr auto;gap:14px;align-items:center;padding:14px 20px;border-bottom:1.5px solid var(--line2);cursor:pointer}
+  .list{max-height:760px;overflow:auto}
+  .drow{display:grid;grid-template-columns:100px 1fr auto;gap:14px;align-items:center;padding:14px 20px;border-bottom:1.5px solid var(--line2);cursor:pointer}
   .drow.sel{background:#f7f6fd;box-shadow:3px 0 0 var(--accent) inset}
-  .thumb{width:96px;height:72px;border-radius:10px;border:1.5px solid var(--line);position:relative;overflow:hidden;cursor:zoom-in;display:flex;align-items:center;justify-content:center;background:#2a3242}
+  .thumb{width:100px;height:74px;border-radius:10px;border:1.5px solid var(--line);position:relative;overflow:hidden;cursor:zoom-in;background:#2a3242}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
   .thumb .zoomico{position:absolute;right:5px;bottom:5px;background:rgba(15,20,32,.72);color:#fff;font-size:12px;border-radius:6px;padding:2px 6px}
   .rtype{font-size:19px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
   .badge{color:#fff;border-radius:7px;padding:4px 11px;font-size:15px}
   .rmeta{font-size:15px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}.rmeta b{color:var(--sec)}
-  .rpos{text-align:right}.rpos .m{font-size:23px}.rpos .m .u{font-size:14px;color:var(--muted)}
+  .rpos{text-align:right}.rpos .m{font-size:23px}.rpos .m .u{font-size:13px;color:var(--muted)}
   .rev{font-size:14px;margin-top:6px;padding:3px 10px;border-radius:999px;display:inline-block}
   .rev.un{background:#fff1ec;color:#c2451f}.rev.ok{background:#e9f9e9;color:#1a8f12}
-
-  .media{position:relative;background:#0f1420;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;cursor:zoom-in}
-  .media svg{width:100%;height:100%}
+  .media{position:relative;background:#0f1420;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;overflow:hidden}
+  .media img,.media video{width:100%;height:100%;object-fit:contain;display:block}
+  .media .ph-svg{width:100%;height:100%}
   .mode-toggle{position:absolute;top:12px;left:12px;display:flex;gap:6px;background:rgba(15,20,32,.6);border-radius:10px;padding:4px;z-index:3}
-  .mt{font-size:15px;color:#cdd4e3;padding:7px 15px;border-radius:7px;cursor:pointer}
-  .mt.on{background:#fff;color:var(--ink)}
-  .overlay-tag{position:absolute;top:12px;right:12px;background:rgba(121,108,191,.92);color:#fff;font-size:13px;padding:6px 12px;border-radius:999px;z-index:3}
+  .mt{font-size:15px;color:#cdd4e3;padding:7px 15px;border-radius:7px;cursor:pointer}.mt.on{background:#fff;color:var(--ink)}
+  .ov-toggle{position:absolute;top:12px;right:12px;display:flex;gap:6px;background:rgba(15,20,32,.6);border-radius:10px;padding:4px;z-index:3}
+  .ot{font-size:14px;color:#cdd4e3;padding:6px 12px;border-radius:7px;cursor:pointer}.ot.on{background:#796cbf;color:#fff}
   .zoom-hint{position:absolute;right:12px;bottom:12px;background:rgba(15,20,32,.72);color:#fff;font-size:13px;padding:5px 11px;border-radius:7px;z-index:3}
-  .play-badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;z-index:2}
-  .play-badge::before{content:"";border-left:24px solid var(--ink);border-top:14px solid transparent;border-bottom:14px solid transparent;margin-left:6px}
-  .ch-bar{padding:12px 16px;border-top:1.5px solid var(--line2);border-bottom:1.5px solid var(--line2);background:#fafbff}
-  .ch-bar .lab{font-size:13px;color:var(--muted);margin-bottom:9px}
-  .ch-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .ch{display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px 6px;border-radius:11px;border:1.5px solid var(--line);background:#fff;color:var(--sec);font-size:15px;cursor:pointer;text-align:center}
-  .ch .cn{font-size:12px;color:var(--muted)}
-  .ch.on{background:#1a2234;color:#fff;border-color:#1a2234}.ch.on .cn{color:#aeb7cc}
   .dlrow{display:flex;gap:10px;margin:14px 16px 4px}
-  .dl{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border:1.5px dashed var(--accent);border-radius:12px;color:var(--accent);font-size:16px;cursor:pointer}
-  .dl.alt{border-style:solid;background:#f0eefb}
-  .sect{padding:16px 20px;border-top:1.5px solid var(--line2)}
-  .sect h3{font-size:15px;color:var(--muted);margin-bottom:12px}
+  .dl{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border:1.5px dashed var(--accent);border-radius:12px;color:var(--accent);font-size:16px;cursor:pointer;text-decoration:none}
+  .chinfo{margin:12px 16px 0;padding:11px 15px;background:#f4f6fb;border:1.5px solid var(--line);border-radius:11px;font-size:15px;color:var(--sec)}
+  .chinfo b{color:var(--ink)}
+  .sect{padding:16px 20px;border-top:1.5px solid var(--line2)}.sect h3{font-size:15px;color:var(--muted);margin-bottom:12px}
   .kv{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:18px;gap:12px}
   .kv + .kv{border-top:1px solid var(--line2)}.kv .k{color:var(--sec);white-space:nowrap}.kv .v{text-align:right}
   .seg{background:#f0eefb;color:var(--accent);border-radius:7px;padding:3px 10px;font-size:15px}
-
-  .lb{position:fixed;inset:0;background:rgba(8,12,20,.86);display:none;align-items:center;justify-content:center;z-index:50;padding:30px}
+  .lb{position:fixed;inset:0;background:rgba(8,12,20,.9);display:none;align-items:center;justify-content:center;z-index:50;padding:28px}
   .lb.on{display:flex}
-  .lb-box{background:#0f1420;border-radius:18px;max-width:1000px;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
-  .lb-top{display:flex;align-items:center;gap:12px;padding:16px 22px;color:#fff}
-  .lb-top .t{font-size:22px}
+  .lb-box{background:#0f1420;border-radius:18px;max-width:1150px;width:100%;max-height:94vh;overflow:hidden;display:flex;flex-direction:column}
+  .lb-top{display:flex;align-items:center;gap:12px;padding:16px 22px;color:#fff}.lb-top .t{font-size:22px}
+  .lb-ov{display:flex;gap:6px;margin-left:10px}
+  .lb-ov .ot{font-size:14px}
   .lb-close{margin-left:auto;font-size:26px;color:#cdd4e3;cursor:pointer;line-height:1;padding:4px 8px}
-  .lb-img{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#060a12;padding:10px}
-  .lb-img svg{width:100%;height:100%;max-height:66vh}
-  .lb-fn{padding:8px 22px;color:#8893a8;font-size:13px;word-break:break-all;border-top:1px solid #1e2636}
-  .lb-meta{display:flex;gap:26px;flex-wrap:wrap;padding:14px 22px;color:#cdd4e3;font-size:17px}
-  .lb-meta b{color:#fff}
-  .lb-dl{margin-left:auto;background:#796cbf;color:#fff;border-radius:10px;padding:10px 18px;font-size:16px;cursor:pointer}
-
-  .note{margin:14px 16px 0;padding:12px 15px;background:#fff8ec;border:1.5px solid #f0d9a8;border-radius:11px;color:#8a6a1e;font-size:14px;line-height:1.5}
+  .lb-img{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#060a12}
+  .lb-img img{max-width:100%;max-height:74vh;object-fit:contain}
+  .lb-meta{display:flex;gap:26px;flex-wrap:wrap;padding:14px 22px;color:#cdd4e3;font-size:17px;border-top:1px solid #1e2636}
+  .lb-meta b{color:#fff}.lb-dl{margin-left:auto;background:#796cbf;color:#fff;border-radius:10px;padding:10px 18px;font-size:16px;cursor:pointer;text-decoration:none}
   .foot{margin-top:18px;font-size:14px;color:var(--muted);line-height:1.6}
-  @media(max-width:1040px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}
-    thead th.hide,tbody td.hide{display:none}}
+  @media(max-width:1040px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}thead th.hide,tbody td.hide{display:none}}
 </style>
 </head>
 <body>
+<div class="live-tag"><span class="d"></span> 실데이터 — SAIGE VIMS 연동 (이미지·영상 포함)</div>
 
-<div class="live-tag"><span class="d"></span> 실데이터 — SAIGE VIMS 연동</div>
-
-<!-- ===== LIST ===== -->
+<!-- LIST -->
 <div id="listView">
   <div class="hd">
     <div><div class="title">슬리터2 품질측정 · 작업 리스트</div>
-      <div class="sub">SAIGE VIMS 외관검사(vm_inspection_result2) 실시간 · 코일 선택 시 결함 상세</div></div>
+      <div class="sub">SAIGE VIMS 외관검사 실시간 · 코일 선택 시 결함 상세·사진·영상</div></div>
     <div class="date-pick"><button onclick="moveDate(-1)">‹</button><span class="dv" id="dvDate">—</span><button onclick="moveDate(1)">›</button></div>
   </div>
   <div class="kpis">
@@ -137,60 +109,44 @@
   <div class="panel">
     <table>
       <thead><tr><th>상태</th><th>코일번호 (external_key)</th><th class="hide">업체 / 규격</th><th class="hide">작업 시간</th><th class="r">카메라</th><th class="r">결함</th><th></th></tr></thead>
-      <tbody id="coilRows"><tr><td colspan="7"><div class="empty" id="listMsg">불러오는 중…</div></td></tr></tbody>
+      <tbody id="coilRows"><tr><td colspan="7"><div class="empty">불러오는 중…</div></td></tr></tbody>
     </table>
   </div>
-  <div class="foot">※ 코일·결함·검사시간·카메라는 <b>VIMS 실데이터</b>. 업체명·규격·중량은 VIMS에 없어 그린ERP 작업지시와 연동 예정(코일번호 매칭 확정 후). 불량 이미지·영상은 VIMS 서버 로컬 파일이라 https 서빙 경로 확정 후 연결됩니다.</div>
+  <div class="foot">※ 코일·결함·사진·영상·검사시간·카메라는 <b>VIMS 실데이터</b>(이미지는 VIMS 서버를 https로 안전하게 중계). 업체명·규격·중량은 그린ERP 작업지시와 연동 예정.</div>
 </div>
 
-<!-- ===== DETAIL ===== -->
+<!-- DETAIL -->
 <div id="detailView" class="hidden">
   <div class="hd">
     <div class="back" onclick="backToList()">‹ 작업 리스트</div>
     <div style="margin-left:4px"><div class="sub" id="dSub">슬리터2 · 외관검사(SAIGE VIMS)</div>
       <div class="coil-title">코일 <b id="dCoil">—</b></div></div>
-    <div class="st-pill" style="margin-left:auto"><span class="dot"></span> <span id="dStatus">검사 수신</span></div>
+    <div class="st-pill" style="margin-left:auto"><span class="dot"></span> 검사 수신</div>
   </div>
   <div class="kpis">
     <div class="kpi alert"><div class="lab">총 결함(NG)</div><div class="val"><span id="dCnt">—</span><span class="u">건</span></div></div>
-    <div class="kpi"><div class="lab">검사 건수</div><div class="val"><span id="dTot">—</span><span class="u">건</span></div></div>
     <div class="kpi"><div class="lab">검사 카메라</div><div class="val"><span id="dCams">—</span><span class="u">대</span></div></div>
     <div class="kpi"><div class="lab">작업 시간</div><div class="val" style="font-size:20px" id="dSpan">—</div></div>
+    <div class="kpi"><div class="lab">모델</div><div class="val" style="font-size:18px">VCLS_SEG</div></div>
   </div>
   <div class="tabs"><div class="tab on">외관 검사</div><div class="tab">두께 측정</div></div>
-
   <div class="grid">
     <div class="panel">
       <div class="ph"><h2>외관 검사 결과</h2><span class="count-badge" id="dBadge">—</span></div>
       <div class="list" id="defRows"></div>
     </div>
-
     <div class="panel">
       <div class="ph"><h2>결함 상세</h2><span style="margin-left:auto;font-size:15px;color:var(--muted)" id="dRid">—</span></div>
-      <div class="media" id="mediaBox" onclick="openLBfromDetail()">
+      <div class="media" id="mediaBox">
         <div class="mode-toggle" onclick="event.stopPropagation()"><span class="mt on" id="mImg" onclick="setMode('img')">이미지</span><span class="mt" id="mVid" onclick="setMode('vid')">동영상</span></div>
-        <span class="overlay-tag">AI 검출 (히트맵)</span>
+        <div class="ov-toggle" id="ovToggle" onclick="event.stopPropagation()"><span class="ot on" id="ovOrig" onclick="setOv('orig')">원본</span><span class="ot" id="ovHeat" onclick="setOv('heat')">AI 히트맵</span></div>
         <span class="zoom-hint" id="zoomHint">🔍 클릭하면 크게 보기</span>
-        <div class="play-badge hidden" id="playBadge"></div>
-        <div id="mediaSvg" style="width:100%;height:100%"></div>
+        <div id="mediaInner" style="width:100%;height:100%"></div>
       </div>
-      <div class="ch-bar hidden" id="chBar">
-        <div class="lab">영상 채널 선택 — 한 번에 1개 채널만 재생됩니다</div>
-        <div class="ch-row">
-          <div class="ch on" onclick="setCh(this,'슬리팅 이전-1')">슬리팅 이전<br>1<span class="cn">CH1 · cam_id 2</span></div>
-          <div class="ch" onclick="setCh(this,'슬리팅 이전-2')">슬리팅 이전<br>2<span class="cn">CH2 · cam_id 3</span></div>
-          <div class="ch" onclick="setCh(this,'슬리팅 이후-1')">슬리팅 이후<br>1<span class="cn">CH3 · cam_id 12</span></div>
-          <div class="ch" onclick="setCh(this,'슬리팅 이후-2')">슬리팅 이후<br>2<span class="cn">CH4 · cam_id 13</span></div>
-        </div>
-      </div>
-      <div class="dlrow">
-        <div class="dl" id="dlCh">⬇ <span id="dlChTxt">이미지 다운로드</span></div>
-        <div class="dl alt hidden" id="dlAll">⬇ 전체 채널 ZIP</div>
-      </div>
-      <div class="note" id="mediaNote">※ 이미지·영상은 VIMS 서버 로컬 파일 경로만 수신된 상태입니다. https 서빙 경로가 정해지면 실제 사진/영상이 여기에 표시됩니다.</div>
-
+      <div class="dlrow" id="dlrow"></div>
+      <div class="chinfo" id="chinfo"></div>
       <div class="sect"><h3>검사 정보</h3>
-        <div class="kv"><span class="k">발생 위치(distance)</span><span class="v" id="iPos">—</span></div>
+        <div class="kv"><span class="k">발생 위치</span><span class="v" id="iPos">—</span></div>
         <div class="kv"><span class="k">결함 유형</span><span class="v" id="iType">—</span></div>
         <div class="kv"><span class="k">이상점수(max_score)</span><span class="v" id="iScore">—</span></div>
         <div class="kv"><span class="k">리뷰 상태</span><span class="v" id="iRev">—</span></div>
@@ -200,69 +156,59 @@
         <div class="kv"><span class="k">검출 시각</span><span class="v" id="iTime">—</span></div>
       </div>
       <div class="sect"><h3>모델 정보</h3>
-        <div class="kv"><span class="k">모델명</span><span class="v" id="iModel" style="font-size:15px">—</span></div>
-        <div class="kv"><span class="k">모델 유형</span><span class="v"><span class="seg">Segmentation (VCLS_SEG)</span></span></div>
+        <div class="kv"><span class="k">모델명</span><span class="v" id="iModel" style="font-size:14px">—</span></div>
+        <div class="kv"><span class="k">모델 유형</span><span class="v"><span class="seg" id="iMtype">Segmentation</span></span></div>
+        <div class="kv"><span class="k">GPU</span><span class="v" id="iGpu" style="font-size:15px">—</span></div>
       </div>
     </div>
   </div>
-  <div class="foot">※ 영상 4채널 = 실제 VIMS 라이브 카메라(슬리팅 이전-1/2·이후-1/2, RTSP 1920×1080·60fps). 기존 8095는 4채널 동시 재생, 본 화면은 채널을 하나씩 선택해 재생·다운로드.</div>
+  <div class="foot">※ 결함마다 <b>검출된 그 카메라의 영상 1개</b>만 재생됩니다(기존 8095는 4채널 동시 재생). 라이브 카메라 4채널: 슬리팅 이전-1/2·이후-1/2.</div>
 </div>
 
-<!-- ===== LIGHTBOX ===== -->
+<!-- LIGHTBOX -->
 <div class="lb" id="lb" onclick="if(event.target.id==='lb')closeLB()">
   <div class="lb-box">
-    <div class="lb-top"><span class="t" id="lbTitle">결함 이미지</span><span class="lb-close" onclick="closeLB()">✕</span></div>
+    <div class="lb-top"><span class="t" id="lbTitle">결함 이미지</span>
+      <span class="lb-ov"><span class="ot on" id="lbOrig" onclick="lbSet('orig')">원본</span><span class="ot" id="lbHeat" onclick="lbSet('heat')">AI 히트맵</span></span>
+      <span class="lb-close" onclick="closeLB()">✕</span></div>
     <div class="lb-img" id="lbImg"></div>
-    <div class="lb-fn" id="lbFn"></div>
-    <div class="lb-meta">
-      <span>위치 <b id="lbPos">—</b></span>
-      <span>점수 <b id="lbScore">—</b></span>
-      <span>카메라 <b id="lbCam">—</b></span>
-      <span class="lb-dl">⬇ 원본 이미지 다운로드</span>
-    </div>
+    <div class="lb-meta"><span>위치 <b id="lbPos">—</b></span><span>점수 <b id="lbScore">—</b></span><span>카메라 <b id="lbCam">—</b></span><a class="lb-dl" id="lbDl" download>⬇ 원본 이미지 다운로드</a></div>
   </div>
 </div>
 
 <script>
 var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/vims";
 var COLORS={"스크래치":"#CC3F31","가로스크레치":"#09A4DB","찌그러짐":"#878DEE","우글우글":"#F5AE52","에지웨이브":"#F5AE52","burr":"#E8A33D","버":"#E8A33D","아연도금벗겨짐":"#B0884E","OK":"#1DDB16"};
-function colorOf(t){ if(!t) return "#7d8ba1"; for(var k in COLORS){ if(t.indexOf(k)>=0) return COLORS[k]; } return "#7d8ba1"; }
+function colorFallback(t){ if(!t) return "#7d8ba1"; for(var k in COLORS){ if(t.indexOf(k)>=0) return COLORS[k]; } return "#7d8ba1"; }
 function kstDate(off){ var n=new Date(Date.now()+9*3600000); n.setUTCDate(n.getUTCDate()+(off||0)); return n.toISOString().slice(0,10); }
-function kstTime(ms){ if(!ms) return "—"; var d=new Date(Number(ms)+9*3600000); return d.toISOString().slice(11,19); }
+function kstDateStr(s,off){ var d=new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+off); return d.toISOString().slice(0,10); }
+function kstTime(ms){ if(!ms) return "—"; return new Date(Number(ms)+9*3600000).toISOString().slice(11,19); }
 function kstHM(ms){ return kstTime(ms).slice(0,5); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function typeOf(r){ if(r.class_name && r.class_name!=='iad') return r.class_name; var m=(r.image_path||"").match(/NG_([^_.]+)\./); return m?m[1]:(r.is_ng?"불량":"OK"); }
+function colorOf(r){ return r.class_color || colorFallback(typeOf(r)); }
+function imgSrc(r,heat){ var u=heat?r.heatmap_url:r.image_url; return u?(API+u):""; }
+function vidSrc(r){ return r.video_url?(API+r.video_url):""; }
+function phSvg(r){ var c=colorOf(r); return '<svg class="ph-svg" viewBox="0 0 320 200"><rect width="320" height="200" fill="#161c28"/><text x="160" y="104" fill="#56607a" font-size="14" font-family="Pretendard" text-anchor="middle">이미지 불러오는 중…</text><rect x="12" y="12" width="90" height="26" rx="6" fill="'+c+'"/></svg>'; }
 
-var curDate=kstDate(0), curDefs=[], curClasses={}, curSel=0;
-
-function shapeSvg(type,big){
-  var c=colorOf(type); var w=big?640:96, h=big?480:72, sw=big?10:4;
-  var inner="";
-  if(type&&(type.indexOf("우글")>=0||type.indexOf("에지")>=0)) inner='<path d="M'+(w*0.08)+' '+(h*0.6)+' Q'+(w*0.22)+' '+(h*0.4)+' '+(w*0.36)+' '+(h*0.6)+' T'+(w*0.64)+' '+(h*0.6)+' T'+(w*0.92)+' '+(h*0.6)+'" stroke="'+c+'" stroke-width="'+sw+'" fill="none"/>';
-  else if(type&&type.indexOf("가로")>=0) inner='<line x1="'+(w*0.1)+'" y1="'+(h*0.5)+'" x2="'+(w*0.9)+'" y2="'+(h*0.48)+'" stroke="'+c+'" stroke-width="'+(sw*1.2)+'" stroke-linecap="round"/>';
-  else if(type&&type.indexOf("스크")>=0) inner='<path d="M'+(w*0.2)+' '+(h*0.25)+' L'+(w*0.7)+' '+(h*0.75)+'" stroke="'+c+'" stroke-width="'+sw+'" stroke-linecap="round"/>';
-  else if(type&&type.indexOf("찌그")>=0) inner='<ellipse cx="'+(w*0.5)+'" cy="'+(h*0.5)+'" rx="'+(w*0.22)+'" ry="'+(h*0.22)+'" fill="none" stroke="'+c+'" stroke-width="'+sw+'"/>';
-  else inner='<circle cx="'+(w*0.5)+'" cy="'+(h*0.5)+'" r="'+(h*0.18)+'" fill="none" stroke="'+c+'" stroke-width="'+sw+'"/>';
-  var box=big?'<rect x="'+(w*0.28)+'" y="'+(h*0.3)+'" width="'+(w*0.44)+'" height="'+(h*0.4)+'" fill="none" stroke="'+c+'" stroke-width="5" rx="8"/>':'';
-  return '<svg viewBox="0 0 '+w+' '+h+'"><rect width="'+w+'" height="'+h+'" fill="#'+(big?'101521':'2a3242')+'"/>'+inner+box+'</svg>';
-}
+var curDate=kstDate(0), curDefs=[], curSel=0, curMode='img', curOv='orig';
 
 function loadCoils(){
   document.getElementById('dvDate').textContent=curDate;
-  document.getElementById('listMsg').textContent='불러오는 중…';
   document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">불러오는 중…</div></td></tr>';
   fetch(API+'?mode=coils&date='+curDate).then(function(r){return r.json()}).then(function(d){
-    var coils=(d&&d.coils)||[];
-    var tC=coils.length, tNg=0, tUn=0;
-    coils.forEach(function(c){tNg+=c.ng||0; tUn+=c.unreviewed||0;});
+    var coils=(d&&d.coils)||[]; var tC=coils.length,tNg=0,tUn=0;
+    coils.forEach(function(c){tNg+=c.ng||0;tUn+=c.unreviewed||0;});
     document.getElementById('kCoil').textContent=tC;
-    document.getElementById('kNg').innerHTML=tNg;
-    document.getElementById('kUn').innerHTML=tUn;
+    document.getElementById('kNg').textContent=tNg;
+    document.getElementById('kUn').textContent=tUn;
     if(!coils.length){ document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">이 날짜에 검사된 코일이 없습니다.</div></td></tr>'; return; }
     var html='';
     coils.forEach(function(c){
-      var un=c.unreviewed>0;
-      html+='<tr onclick="openDetail(\''+c.external_key.replace(/'/g,"")+'\')">'
+      var un=c.unreviewed>0, k=esc(c.external_key);
+      html+='<tr onclick="openDetail(\''+k.replace(/'/g,"")+'\')">'
         +'<td><span class="st '+(un?'rev':'done')+'">● '+(un?'미확인':'완료')+'</span></td>'
-        +'<td><div class="coilno">'+c.external_key+'<span class="tiny">슬리팅 이전/이후</span></div></td>'
+        +'<td><div class="coilno">'+k+'<span class="tiny">슬리팅 이전/이후</span></div></td>'
         +'<td class="erp hide">— (ERP 연동 예정)</td>'
         +'<td class="wtime hide">'+kstHM(c.t_start)+' ~ '+kstHM(c.t_end)+'</td>'
         +'<td class="r wtime">'+(c.cams||0)+'대</td>'
@@ -270,12 +216,9 @@ function loadCoils(){
         +'<td class="chev">›</td></tr>';
     });
     document.getElementById('coilRows').innerHTML=html;
-  }).catch(function(e){
-    document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">불러오기 실패: '+e+'</div></td></tr>';
-  });
+  }).catch(function(e){ document.getElementById('coilRows').innerHTML='<tr><td colspan="7"><div class="empty">불러오기 실패: '+esc(e)+'</div></td></tr>'; });
 }
-function moveDate(off){ curDate=kstDate_fromStr(curDate,off); loadCoils(); }
-function kstDate_fromStr(s,off){ var d=new Date(s+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+off); return d.toISOString().slice(0,10); }
+function moveDate(off){ curDate=kstDateStr(curDate,off); loadCoils(); }
 
 function openDetail(key){
   document.getElementById('dCoil').textContent=key;
@@ -283,75 +226,109 @@ function openDetail(key){
   document.getElementById('listView').classList.add('hidden');
   document.getElementById('detailView').classList.remove('hidden');
   document.getElementById('defRows').innerHTML='<div class="empty">불러오는 중…</div>';
-  window.scrollTo(0,0); setMode('img');
+  window.scrollTo(0,0);
   fetch(API+'?mode=coil&key='+encodeURIComponent(key)+'&ng=1').then(function(r){return r.json()}).then(function(d){
-    var rows=(d&&d.results)||[]; curClasses=(d&&d.classes)||{}; curDefs=rows;
-    var cams={}; (d.results||[]).forEach(function(r){cams[r.camera_id]=1;});
+    var rows=(d&&d.results)||[]; curDefs=rows;
+    var cams={}; rows.forEach(function(r){cams[r.camera_id]=1;});
     document.getElementById('dCnt').textContent=rows.length;
-    document.getElementById('dTot').textContent=rows.length;
     document.getElementById('dCams').textContent=Object.keys(cams).length;
     var ts=rows.length?rows[0].inspection_time:0, te=rows.length?rows[rows.length-1].inspection_time:0;
     document.getElementById('dSpan').textContent=rows.length?(kstHM(ts)+' ~ '+kstHM(te)):'—';
     document.getElementById('dBadge').textContent=rows.length+'건';
-    if(!rows.length){ document.getElementById('defRows').innerHTML='<div class="empty">NG 결함이 없습니다 (양품).</div>'; clearDetail(); return; }
+    if(!rows.length){ document.getElementById('defRows').innerHTML='<div class="empty">NG 결함이 없습니다 (양품).</div>'; return; }
     renderDefList(); selectDef(0);
-  }).catch(function(e){ document.getElementById('defRows').innerHTML='<div class="empty">불러오기 실패: '+e+'</div>'; });
+  }).catch(function(e){ document.getElementById('defRows').innerHTML='<div class="empty">불러오기 실패: '+esc(e)+'</div>'; });
 }
-function typeOf(r){ var c=curClasses[String(r.result_id)]; if(c&&c.length) return c[0]; // from detected_object
-  var m=(r.image_path||"").match(/NG_([^_.]+)\./); return m?m[1]:(r.is_ng?"불량":"OK"); }
+
 function renderDefList(){
   var html='';
   curDefs.forEach(function(r,i){
-    var t=typeOf(r), col=colorOf(t);
+    var t=typeOf(r), col=colorOf(r), src=imgSrc(r,false);
+    var thumb='<div class="thumb" onclick="event.stopPropagation();selectDef('+i+');openLB()">'
+      +(src?'<img src="'+esc(src)+'" loading="lazy" onerror="this.style.display=\'none\'">':'')
+      +'<span class="zoomico">🔍</span></div>';
     html+='<div class="drow'+(i===curSel?' sel':'')+'" onclick="selectDef('+i+')">'
-      +'<div class="thumb" onclick="event.stopPropagation();selectDef('+i+');openLB()">'+shapeSvg(t,false)+'<span class="zoomico">🔍</span></div>'
-      +'<div><div class="rtype"><span class="badge" style="background:'+col+'">'+t+'</span><span style="font-size:14px;color:var(--muted)">#'+r.result_id+'</span></div>'
-      +'<div class="rmeta"><span>⏱ <b>'+kstTime(r.inspection_time)+'</b></span><span>📷 <b>'+(r.camera_name||'')+'</b></span></div></div>'
-      +'<div class="rpos"><div class="m">'+(r.distance!=null?r.distance:'—')+'</div>'
+      +thumb
+      +'<div><div class="rtype"><span class="badge" style="background:'+col+'">'+esc(t)+'</span><span style="font-size:14px;color:var(--muted)">#'+r.result_id+'</span></div>'
+      +'<div class="rmeta"><span>⏱ <b>'+kstTime(r.inspection_time)+'</b></span><span>📷 <b>'+esc(r.camera_name||'')+'</b></span></div></div>'
+      +'<div class="rpos"><div class="m">'+(r.distance!=null?r.distance:'—')+'<span class="u"> m</span></div>'
       +'<span class="rev '+(r.review_status==='UNREVIEWED'?'un':'ok')+'">'+(r.review_status==='UNREVIEWED'?'미확인':'확인')+'</span></div></div>';
   });
   document.getElementById('defRows').innerHTML=html;
 }
+
 function selectDef(i){
   curSel=i; renderDefList();
   var r=curDefs[i]; if(!r) return;
-  var t=typeOf(r), col=colorOf(t);
+  var t=typeOf(r), col=colorOf(r);
   document.getElementById('dRid').textContent='#'+r.result_id;
-  document.getElementById('mediaSvg').innerHTML=shapeSvg(t,true);
-  document.getElementById('iPos').textContent=(r.distance!=null?r.distance:'—');
-  document.getElementById('iType').innerHTML='<span class="badge" style="background:'+col+'">'+t+'</span>';
-  document.getElementById('iScore').textContent=(r.max_score!=null?Number(r.max_score).toFixed(1):'—')+(r.anomaly_threshold!=null?(' / 임계 '+r.anomaly_threshold):'');
-  document.getElementById('iRev').innerHTML='<span class="rev '+(r.review_status==='UNREVIEWED'?'un':'ok')+'">'+(r.review_status==='UNREVIEWED'?'미확인':r.review_status)+'</span>';
+  document.getElementById('iPos').textContent=(r.distance!=null?r.distance+' m':'—');
+  document.getElementById('iType').innerHTML='<span class="badge" style="background:'+col+'">'+esc(t)+'</span>';
+  document.getElementById('iScore').textContent=(r.max_score!=null?Number(r.max_score).toFixed(1):'—');
+  document.getElementById('iRev').innerHTML='<span class="rev '+(r.review_status==='UNREVIEWED'?'un':'ok')+'">'+(r.review_status==='UNREVIEWED'?'미확인':esc(r.review_status))+'</span>';
   document.getElementById('iCam').textContent=r.camera_name||'—';
   document.getElementById('iTime').textContent=curDate+' '+kstTime(r.inspection_time);
   document.getElementById('iModel').textContent=r.model_name||'—';
+  document.getElementById('iMtype').textContent=r.model_type||'Segmentation';
+  document.getElementById('iGpu').textContent=r.gpu_name||'—';
+  renderMedia();
 }
-function clearDetail(){ ['dRid','iPos','iType','iScore','iRev','iCam','iTime','iModel'].forEach(function(id){document.getElementById(id).textContent='—';}); document.getElementById('mediaSvg').innerHTML=''; }
-function backToList(){ document.getElementById('detailView').classList.add('hidden'); document.getElementById('listView').classList.remove('hidden'); window.scrollTo(0,0); }
 
+function renderMedia(){
+  var r=curDefs[curSel]; if(!r) return;
+  var inner=document.getElementById('mediaInner');
+  var hasHeat=!!r.heatmap_url;
+  document.getElementById('ovToggle').style.display=(curMode==='img'&&hasHeat)?'flex':'none';
+  if(curMode==='vid'){
+    document.getElementById('zoomHint').style.display='none';
+    document.getElementById('mediaBox').style.cursor='default';
+    var vs=vidSrc(r);
+    inner.innerHTML=vs?('<video src="'+esc(vs)+'" controls preload="metadata" playsinline></video>'):'<div style="color:#8893a8;font-size:16px;padding:20px;text-align:center">이 결함의 영상이 없습니다.</div>';
+  } else {
+    document.getElementById('zoomHint').style.display='block';
+    document.getElementById('mediaBox').style.cursor='zoom-in';
+    var src=imgSrc(r,curOv==='heat');
+    inner.innerHTML=src?('<img src="'+esc(src)+'" onclick="openLB()" onerror="this.parentNode.innerHTML=&quot;<div style=\\&quot;color:#8893a8;font-size:15px;padding:24px;text-align:center\\&quot;>이미지를 불러올 수 없습니다.<br>'+esc((r.image_path||'').split('\\\\').pop())+'</div>&quot;">'):phSvg(r);
+  }
+  renderDl();
+}
+function renderDl(){
+  var r=curDefs[curSel]; if(!r) return;
+  var dl=document.getElementById('dlrow');
+  if(curMode==='vid'){
+    var vs=vidSrc(r);
+    dl.innerHTML=vs?('<a class="dl" href="'+esc(vs)+'" download>⬇ 이 결함 영상 다운로드 — '+esc(r.camera_name||'')+'</a>'):'';
+  } else {
+    var isrc=imgSrc(r,curOv==='heat');
+    dl.innerHTML=isrc?('<a class="dl" href="'+esc(isrc)+'" download>⬇ '+(curOv==='heat'?'히트맵':'원본')+' 이미지 다운로드</a>'):'';
+  }
+  document.getElementById('chinfo').innerHTML='검출 카메라: <b>'+esc(r.camera_name||'—')+'</b> · 결함별 해당 카메라 영상 1개만 재생 (4채널 동시 재생 아님)';
+}
 function setMode(m){
-  var isV=(m==='vid');
-  document.getElementById('mImg').classList.toggle('on',!isV);
-  document.getElementById('mVid').classList.toggle('on',isV);
-  document.getElementById('chBar').classList.toggle('hidden',!isV);
-  document.getElementById('dlAll').classList.toggle('hidden',!isV);
-  document.getElementById('playBadge').classList.toggle('hidden',!isV);
-  document.getElementById('dlChTxt').textContent=isV?'선택 채널 영상 다운로드':'이미지 다운로드';
-  document.getElementById('zoomHint').textContent=isV?'▶ 선택 채널만 재생':'🔍 클릭하면 크게 보기';
-  document.getElementById('mediaBox').style.cursor=isV?'pointer':'zoom-in';
+  curMode=m;
+  document.getElementById('mImg').classList.toggle('on',m==='img');
+  document.getElementById('mVid').classList.toggle('on',m==='vid');
+  document.getElementById('zoomHint').textContent = m==='vid' ? '' : '🔍 클릭하면 크게 보기';
+  renderMedia();
 }
-function setCh(el,name){ document.querySelectorAll('.ch').forEach(function(c){c.classList.remove('on')}); el.classList.add('on'); document.getElementById('dlChTxt').textContent='영상 다운로드 — '+name; }
+function setOv(o){ curOv=o; document.getElementById('ovOrig').classList.toggle('on',o==='orig'); document.getElementById('ovHeat').classList.toggle('on',o==='heat'); renderMedia(); }
 
-function openLBfromDetail(){ if(document.getElementById('mVid').classList.contains('on')) return; openLB(); }
+var lbOv='orig';
 function openLB(){
-  var r=curDefs[curSel]; if(!r) return; var t=typeOf(r);
-  document.getElementById('lbTitle').textContent=t+'  #'+r.result_id;
-  document.getElementById('lbImg').innerHTML=shapeSvg(t,true);
-  document.getElementById('lbFn').textContent='파일: '+(r.image_path||'—');
-  document.getElementById('lbPos').textContent=(r.distance!=null?r.distance:'—');
+  var r=curDefs[curSel]; if(!r) return; lbOv='orig';
+  document.getElementById('lbTitle').textContent=typeOf(r)+'  #'+r.result_id;
+  document.getElementById('lbHeat').style.display=r.heatmap_url?'inline-block':'none';
+  document.getElementById('lbPos').textContent=(r.distance!=null?r.distance+' m':'—');
   document.getElementById('lbScore').textContent=(r.max_score!=null?Number(r.max_score).toFixed(1):'—');
   document.getElementById('lbCam').textContent=r.camera_name||'—';
+  lbRender();
   document.getElementById('lb').classList.add('on');
+}
+function lbSet(o){ lbOv=o; document.getElementById('lbOrig').classList.toggle('on',o==='orig'); document.getElementById('lbHeat').classList.toggle('on',o==='heat'); lbRender(); }
+function lbRender(){
+  var r=curDefs[curSel]; if(!r) return; var src=imgSrc(r,lbOv==='heat');
+  document.getElementById('lbImg').innerHTML=src?('<img src="'+esc(src)+'" onerror="this.parentNode.innerHTML=&quot;<div style=\\&quot;color:#8893a8;padding:40px\\&quot;>이미지를 불러올 수 없습니다.</div>&quot;">'):'<div style="color:#8893a8;padding:40px">이미지 없음</div>';
+  document.getElementById('lbDl').setAttribute('href',src||'#');
 }
 function closeLB(){ document.getElementById('lb').classList.remove('on'); }
 document.addEventListener('keydown',function(e){ if(e.key==='Escape')closeLB(); });
