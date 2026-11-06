@@ -119,7 +119,7 @@
       <tbody id="coilRows"><tr><td colspan="7"><div class="empty">불러오는 중…</div></td></tr></tbody>
     </table>
   </div>
-  <div class="foot">※ 원래 8095 대시보드와 동일하게 <b>작업지시(erp_data) 기준</b> 리스트입니다 — 업체명·가공 규격·중량·상태는 ERP(MariaDB), 결함 개수·작업 시간은 VIMS에서 조인. 코일번호 미지정 검출(0000000000)은 작업지시가 없어 표시되지 않습니다.</div>
+  <div class="foot">※ 원래 8095 대시보드와 동일하게 <b>작업지시(erp_data) 기준</b> 리스트입니다 — 업체명·가공 규격·중량·상태는 ERP(MariaDB), 작업 시간(시작~끝)은 슬리터 PLC(plc_data), 결함 개수는 VIMS에서 조인. 코일번호 미지정 검출(0000000000)은 작업지시가 없어 표시되지 않습니다.</div>
 </div>
 
 <!-- DETAIL -->
@@ -213,7 +213,11 @@ function phSvg(r){ var c=colorOf(r); return '<svg class="ph-svg" viewBox="0 0 32
 var curDate=kstDate(0), curDefs=[], curSel=0, curMode='img', curOv='orig';
 
 function wTxt(kg){ return kg!=null?Number(kg).toLocaleString()+'kg':'—'; }
-function timeSpan(c){ if(c.t_start==null) return '<span style="color:var(--muted)">—</span>'; var a=kstHM(c.t_start),b=kstHM(c.t_end); return (a===b)?a:(a+'~'+b); }
+function timeSpan(c){
+  if(c.work_start && c.work_end) return (c.work_start===c.work_end)?c.work_start:(c.work_start+'~'+c.work_end);
+  if(c.t_start!=null){ var a=kstHM(c.t_start),b=kstHM(c.t_end); return (a===b)?a:(a+'~'+b); }
+  return '<span style="color:var(--muted)">—</span>';
+}
 function statusCls(s){ if(!s) return 'rdy'; if(s.indexOf('완료')>=0) return 'done'; if(s.indexOf('진행')>=0) return 'run'; return 'rdy'; }
 function statusRank(s){ s=s||''; if(s.indexOf('완료')>=0) return 3; if(s.indexOf('진행')>=0) return 2; if(s.indexOf('준비')>=0) return 1; return 0; }
 function dedupeCoils(coils){
