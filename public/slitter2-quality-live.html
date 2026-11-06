@@ -215,11 +215,18 @@ var curDate=kstDate(0), curDefs=[], curSel=0, curMode='img', curOv='orig';
 function wTxt(kg){ return kg!=null?Number(kg).toLocaleString()+'kg':'—'; }
 function timeSpan(c){ if(c.t_start==null) return '<span style="color:var(--muted)">—</span>'; var a=kstHM(c.t_start),b=kstHM(c.t_end); return (a===b)?a:(a+'~'+b); }
 function statusCls(s){ if(!s) return 'rdy'; if(s.indexOf('완료')>=0) return 'done'; if(s.indexOf('진행')>=0) return 'run'; return 'rdy'; }
+function statusRank(s){ s=s||''; if(s.indexOf('완료')>=0) return 3; if(s.indexOf('진행')>=0) return 2; if(s.indexOf('준비')>=0) return 1; return 0; }
+function dedupeCoils(coils){
+  // 이월/재발행 중복 정리: 코일별 가장 진행된 상태(완료>진행중>준비) 1건만
+  var by={};
+  coils.forEach(function(c){ var k=c.coil||''; if(!by[k] || statusRank(c.status)>statusRank(by[k].status)) by[k]=c; });
+  return Object.keys(by).map(function(k){return by[k];});
+}
 function loadCoils(){
   document.getElementById('dvDate').textContent=curDate;
   document.getElementById('coilRows').innerHTML='<tr><td colspan="8"><div class="empty">불러오는 중…</div></td></tr>';
   fetch(API+'?mode=worklist&date='+curDate).then(function(r){return r.json()}).then(function(d){
-    var coils=(d&&d.coils)||[]; var seen={},tNg=0,tUn=0;
+    var coils=dedupeCoils((d&&d.coils)||[]); var seen={},tNg=0,tUn=0;
     coils.forEach(function(c){ var k=c.coil||''; if(seen[k])return; seen[k]=1; tNg+=c.ng||0; tUn+=c.unreviewed||0; });
     document.getElementById('kCoil').textContent=Object.keys(seen).length;
     document.getElementById('kNg').textContent=tNg;
@@ -271,7 +278,7 @@ function renderCoilVids(rows){
   else {
     var html='';
     vids.forEach(function(r){
-      html+='<a href="'+esc(API+r.video_url)+'" download><span>🎬</span><span class="cam">'+esc(r.camera_name||'')+'</span>'
+      html+='<a href="'+esc(API+(r.video_dl||r.video_url))+'" target="_blank" rel="noopener"><span>🎬</span><span class="cam">'+esc(r.camera_name||'')+'</span>'
         +'<span style="color:var(--muted)">· '+esc(typeOf(r))+'</span>'
         +'<span class="meta">검출 '+kstTime(r.inspection_time)+' · 다운로드 ⬇</span></a>';
     });
@@ -285,8 +292,8 @@ function renderCoilVids(rows){
     document.getElementById('vidCount').textContent=(vs.length?('전체 '+vs.length+'채널'):'')+' · 검출 '+vids.length+'건';
     if(!vs.length){ document.getElementById('fullVids').innerHTML='<div style="color:var(--muted);font-size:15px">전체 영상이 아직 생성되지 않았습니다(작업 완료 후 병합본 생성).</div>'; return; }
     var html='';
-    vs.forEach(function(v){ if(!v.proxy){return;}
-      html+='<a href="'+esc(API+v.proxy)+'" download="'+esc(v.name)+'"><span>📹</span><span class="cam">'+esc(chanOf(v.name))+'</span>'
+    vs.forEach(function(v){ var link=v.redirect?(API+v.redirect):v.direct; if(!link){return;}
+      html+='<a href="'+esc(link)+'" target="_blank" rel="noopener"><span>📹</span><span class="cam">'+esc(chanOf(v.name))+'</span>'
         +(v.merged?'<span style="color:var(--muted)">· 전체 구간</span>':'')
         +'<span class="meta">전체 영상 다운로드 ⬇</span></a>';
     });
