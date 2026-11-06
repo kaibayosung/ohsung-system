@@ -23,6 +23,10 @@
     {
       "source": "/leveler-quality",
       "destination": "/leveling-defect-map.html"
+    },
+    {
+      "source": "/slitter2-quality",
+      "destination": "/slitter2-quality.html"
     }
   ]
 }

@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>슬리터2 품질측정 — 최종 목업</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f1e33; --sec:#5c6478; --muted:#7d8ba1; --accent:#796cbf;
+    --line:#e3e8f0; --line2:#eef1f7; --bg:#f3f5fe; --card:#fff;
+    --ok:#1DDB16; --scr:#CC3F31; --hscr:#09A4DB; --dent:#878DEE; --wave:#F5AE52; --burr:#E8A33D;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink);font-family:"Pretendard",-apple-system,sans-serif;font-weight:700;-webkit-font-smoothing:antialiased}
+  body{padding:18px 18px 60px;max-width:1500px;margin:0 auto}
+  .mock-tag{display:inline-block;background:#fff3e6;color:#b35a16;border:1.5px solid #f0c89a;border-radius:999px;padding:5px 14px;font-size:14px;margin-bottom:14px}
+  .hidden{display:none !important}
+
+  .hd{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  .hd .title{font-size:30px;letter-spacing:-.5px}
+  .hd .sub{font-size:16px;color:var(--muted);margin-top:2px}
+  .back{display:flex;align-items:center;gap:8px;font-size:18px;color:var(--accent);background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 18px;cursor:pointer}
+  .date-pick{margin-left:auto;display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px 18px;font-size:17px}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1.5px solid var(--line);border-radius:16px;padding:16px 20px}
+  .kpi .lab{font-size:15px;color:var(--muted);margin-bottom:7px}
+  .kpi .val{font-size:30px;letter-spacing:-1px}
+  .kpi .val .u{font-size:17px;color:var(--sec);margin-left:3px}
+  .kpi.alert .val{color:var(--scr)}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .search{flex:1;min-width:220px;display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:12px 18px;font-size:17px;color:var(--muted)}
+  .seg-filter{display:flex;gap:7px}
+  .sf{font-size:16px;padding:11px 18px;border-radius:12px;border:1.5px solid var(--line);background:#fff;color:var(--sec);cursor:pointer}
+  .sf.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .panel{background:var(--card);border:1.5px solid var(--line);border-radius:16px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:15px;color:var(--muted);text-align:left;padding:16px 18px;border-bottom:1.5px solid var(--line);background:#fafbff}
+  thead th.r{text-align:right}
+  tbody td{padding:18px;border-bottom:1.5px solid var(--line2);font-size:19px;vertical-align:middle}
+  tbody tr{cursor:pointer;transition:background .12s}
+  tbody tr:hover{background:#f7f6fd}
+  .coilno{font-size:20px;letter-spacing:-.3px}
+  .coilno .tiny{display:block;font-size:14px;color:var(--muted);margin-top:3px}
+  .comp{font-size:19px}
+  .spec{font-size:18px;color:var(--sec)}
+  .wtime{font-size:18px;color:var(--sec)}
+  .wtime .d{color:var(--muted);font-size:14px}
+  .r{text-align:right}
+  .defn{font-size:22px}.defn.z{color:var(--ok)}.defn.b{color:var(--scr)}.defn .u{font-size:14px;color:var(--muted)}
+  .st{display:inline-flex;align-items:center;gap:7px;font-size:16px;padding:6px 14px;border-radius:999px}
+  .st.done{background:#e9f9e9;color:#1a8f12}.st.run{background:#eef1ff;color:#4455cc}.st.rev{background:#fff1ec;color:#c2451f}
+  .chev{color:var(--muted);font-size:22px;text-align:right}
+
+  /* detail */
+  .st-pill{display:flex;align-items:center;gap:9px;background:#fff;border:1.5px solid var(--line);border-radius:999px;padding:9px 18px;font-size:17px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 4px rgba(29,219,22,.16)}
+  .coil-title{font-size:28px;letter-spacing:-.5px}.coil-title b{color:var(--accent)}
+  .tabs{display:flex;gap:10px;margin:14px 0 16px}
+  .tab{font-size:19px;padding:12px 26px;border-radius:12px 12px 0 0;border:1.5px solid var(--line);border-bottom:none;background:#eef1f7;color:var(--sec)}
+  .tab.on{background:var(--card);color:var(--ink);box-shadow:0 -2px 0 var(--accent) inset}
+  .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;align-items:start}
+  .ph{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1.5px solid var(--line2)}
+  .ph h2{font-size:21px}
+  .count-badge{background:#f0eefb;color:var(--accent);border-radius:999px;padding:4px 13px;font-size:16px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;border-bottom:1.5px solid var(--line2)}
+  .chip{font-size:16px;padding:8px 15px;border-radius:999px;border:1.5px solid var(--line);background:#fff;color:var(--sec);display:flex;align-items:center;gap:7px}
+  .chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .chip .sw{width:12px;height:12px;border-radius:3px}.chip .n{opacity:.8;font-size:14px}
+  .list{max-height:720px;overflow:auto}
+  .drow{display:grid;grid-template-columns:96px 1fr auto;gap:14px;align-items:center;padding:14px 20px;border-bottom:1.5px solid var(--line2)}
+  .drow.sel{background:#f7f6fd;box-shadow:3px 0 0 var(--accent) inset}
+  .thumb{width:96px;height:72px;border-radius:10px;border:1.5px solid var(--line);background:#dfe4ee;cursor:zoom-in;position:relative}
+  .thumb .zoomico{position:absolute;right:5px;bottom:5px;background:rgba(15,20,32,.72);color:#fff;font-size:12px;border-radius:6px;padding:2px 6px}
+  .rtype{font-size:19px;display:flex;align-items:center;gap:9px;margin-bottom:5px}
+  .badge{color:#fff;border-radius:7px;padding:4px 11px;font-size:15px}
+  .rmeta{font-size:15px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap}.rmeta b{color:var(--sec)}
+  .rpos{text-align:right}.rpos .m{font-size:24px}.rpos .m .u{font-size:14px;color:var(--muted)}
+  .rev{font-size:14px;margin-top:6px;padding:3px 10px;border-radius:999px;display:inline-block}
+  .rev.un{background:#fff1ec;color:#c2451f}.rev.ok{background:#e9f9e9;color:#1a8f12}
+
+  /* media with channel selector */
+  .media{position:relative;background:#0f1420;aspect-ratio:16/10;display:flex;align-items:center;justify-content:center;cursor:zoom-in}
+  .media svg{width:100%;height:100%}
+  .mode-toggle{position:absolute;top:12px;left:12px;display:flex;gap:6px;background:rgba(15,20,32,.6);border-radius:10px;padding:4px;z-index:3}
+  .mt{font-size:15px;color:#cdd4e3;padding:7px 15px;border-radius:7px;cursor:pointer}
+  .mt.on{background:#fff;color:var(--ink)}
+  .overlay-tag{position:absolute;top:12px;right:12px;background:rgba(121,108,191,.92);color:#fff;font-size:14px;padding:6px 13px;border-radius:999px;z-index:3}
+  .zoom-hint{position:absolute;right:12px;bottom:12px;background:rgba(15,20,32,.72);color:#fff;font-size:13px;padding:5px 11px;border-radius:7px;z-index:3}
+  .play-badge{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:70px;height:70px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;z-index:2}
+  .play-badge::before{content:"";border-left:24px solid var(--ink);border-top:14px solid transparent;border-bottom:14px solid transparent;margin-left:6px}
+
+  .ch-bar{padding:12px 16px;border-top:1.5px solid var(--line2);border-bottom:1.5px solid var(--line2);background:#fafbff}
+  .ch-bar .lab{font-size:13px;color:var(--muted);margin-bottom:9px}
+  .ch-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .ch{display:flex;flex-direction:column;align-items:center;gap:4px;padding:11px 6px;border-radius:11px;border:1.5px solid var(--line);background:#fff;color:var(--sec);font-size:15px;cursor:pointer;text-align:center}
+  .ch .cn{font-size:13px;color:var(--muted)}
+  .ch.on{background:#1a2234;color:#fff;border-color:#1a2234}
+  .ch.on .cn{color:#aeb7cc}
+  .dlrow{display:flex;gap:10px;margin:14px 16px 4px}
+  .dl{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:14px;border:1.5px dashed var(--accent);border-radius:12px;color:var(--accent);font-size:16px;cursor:pointer}
+  .dl.alt{border-style:solid;background:#f0eefb}
+
+  .sect{padding:16px 20px;border-top:1.5px solid var(--line2)}
+  .sect h3{font-size:15px;color:var(--muted);margin-bottom:12px}
+  .kv{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:18px}
+  .kv + .kv{border-top:1px solid var(--line2)}.kv .k{color:var(--sec)}
+  .seg{background:#f0eefb;color:var(--accent);border-radius:7px;padding:3px 10px;font-size:15px}
+
+  /* lightbox */
+  .lb{position:fixed;inset:0;background:rgba(8,12,20,.86);display:none;align-items:center;justify-content:center;z-index:50;padding:30px}
+  .lb.on{display:flex}
+  .lb-box{background:#0f1420;border-radius:18px;max-width:1100px;width:100%;max-height:92vh;overflow:hidden;display:flex;flex-direction:column}
+  .lb-top{display:flex;align-items:center;gap:12px;padding:16px 22px;color:#fff}
+  .lb-top .t{font-size:22px}
+  .lb-top .badge{font-size:16px}
+  .lb-close{margin-left:auto;font-size:26px;color:#cdd4e3;cursor:pointer;line-height:1;padding:4px 8px}
+  .lb-img{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#060a12}
+  .lb-img svg{width:100%;height:100%;max-height:70vh}
+  .lb-meta{display:flex;gap:26px;flex-wrap:wrap;padding:16px 22px;color:#cdd4e3;font-size:17px;border-top:1px solid #1e2636}
+  .lb-meta b{color:#fff}
+  .lb-dl{margin-left:auto;background:#796cbf;color:#fff;border-radius:10px;padding:10px 18px;font-size:16px;cursor:pointer}
+
+  .foot{margin-top:18px;font-size:14px;color:var(--muted);line-height:1.6}
+  @media(max-width:1040px){.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}
+    thead th.hide,tbody td.hide{display:none}}
+</style>
+</head>
+<body>
+
+<div class="mock-tag">● 최종 목업 — 샘플 데이터 (VIMS 실데이터 연동 전)</div>
+
+<!-- ===== LIST ===== -->
+<div id="listView">
+  <div class="hd">
+    <div><div class="title">슬리터2 품질측정 · 작업 리스트</div>
+      <div class="sub">SAIGE VIMS 외관검사 수신 기준 · 코일을 선택하면 품질 상세가 열립니다</div></div>
+    <div class="date-pick">📅 2026-11-06 ▾</div>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><div class="lab">금일 작업 코일</div><div class="val">8<span class="u">건</span></div></div>
+    <div class="kpi"><div class="lab">검사 완료</div><div class="val">6<span class="u">건</span></div></div>
+    <div class="kpi alert"><div class="lab">미확인 결함</div><div class="val">27<span class="u">건</span></div></div>
+    <div class="kpi"><div class="lab">총 검사 길이</div><div class="val">13.4<span class="u">km</span></div></div>
+  </div>
+  <div class="toolbar">
+    <div class="search">🔍 코일번호 · 업체명 · 규격 검색</div>
+    <div class="seg-filter"><span class="sf on">전체</span><span class="sf">결함有</span><span class="sf">미확인</span><span class="sf">작업중</span></div>
+  </div>
+  <div class="panel">
+    <table>
+      <thead><tr><th>상태</th><th>코일번호</th><th>업체명</th><th class="hide">규격 (두께×폭×재질)</th><th class="hide">작업 시간</th><th class="r">중량</th><th class="r">결함</th><th></th></tr></thead>
+      <tbody>
+        <tr onclick="openDetail('T161109637802','대한제강','1.6×1100','14')">
+          <td><span class="st rev">● 미확인</span></td><td><div class="coilno">T161109637802<span class="tiny">슬리팅 이전 1·2</span></div></td>
+          <td class="comp">대한제강</td><td class="spec hide">1.6 × 1100 × SGCC</td><td class="wtime hide">09:12 ~ 10:41<span class="d"> · 89분</span></td>
+          <td class="r wtime">12.4 t</td><td class="r"><span class="defn b">14<span class="u">건</span></span></td><td class="chev">›</td></tr>
+        <tr onclick="openDetail('C32600820310','세아제강','2.0×1250','6')">
+          <td><span class="st done">● 완료</span></td><td><div class="coilno">C32600820310<span class="tiny">슬리팅 이전 1·2</span></div></td>
+          <td class="comp">세아제강</td><td class="spec hide">2.0 × 1250 × SPHC</td><td class="wtime hide">08:03 ~ 09:08<span class="d"> · 65분</span></td>
+          <td class="r wtime">15.1 t</td><td class="r"><span class="defn b">6<span class="u">건</span></span></td><td class="chev">›</td></tr>
+        <tr onclick="openDetail('T161109640021','현대제철','1.2×914','3')">
+          <td><span class="st run">● 작업중</span></td><td><div class="coilno">T161109640021<span class="tiny">슬리팅 이전 1·2</span></div></td>
+          <td class="comp">현대제철</td><td class="spec hide">1.2 × 914 × SGCC</td><td class="wtime hide">10:45 ~ 진행중</td>
+          <td class="r wtime">10.8 t</td><td class="r"><span class="defn b">3<span class="u">건</span></span></td><td class="chev">›</td></tr>
+        <tr onclick="openDetail('C32600820298','동국제강','0.8×1000','0')">
+          <td><span class="st done">● 완료</span></td><td><div class="coilno">C32600820298<span class="tiny">슬리팅 이전 1·2</span></div></td>
+          <td class="comp">동국제강</td><td class="spec hide">0.8 × 1000 × SGCC</td><td class="wtime hide">07:10 ~ 07:58<span class="d"> · 48분</span></td>
+          <td class="r wtime">8.6 t</td><td class="r"><span class="defn z">0<span class="u">건</span></span></td><td class="chev">›</td></tr>
+        <tr onclick="openDetail('T161109639877','포스코','1.6×1219','9')">
+          <td><span class="st rev">● 미확인</span></td><td><div class="coilno">T161109639877<span class="tiny">슬리팅 이전 1·2</span></div></td>
+          <td class="comp">포스코</td><td class="spec hide">1.6 × 1219 × SPHC</td><td class="wtime hide">06:02 ~ 06:55<span class="d"> · 53분</span></td>
+          <td class="r wtime">13.9 t</td><td class="r"><span class="defn b">9<span class="u">건</span></span></td><td class="chev">›</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="foot">※ 코일번호·결함수·상태·검사시간 → SAIGE VIMS / 업체명·규격·중량 → 그린ERP 작업지시 데이터 연동.</div>
+</div>
+
+<!-- ===== DETAIL ===== -->
+<div id="detailView" class="hidden">
+  <div class="hd">
+    <div class="back" onclick="backToList()">‹ 작업 리스트</div>
+    <div style="margin-left:4px"><div class="sub">슬리터2 · 외관검사(SAIGE VIMS) · 2026-11-06</div>
+      <div class="coil-title">코일 <b id="dCoil">T161109637802</b></div></div>
+    <div class="st-pill" style="margin-left:auto"><span class="dot"></span> 작업 완료 · 검사 수신됨</div>
+  </div>
+  <div class="kpis">
+    <div class="kpi alert"><div class="lab">총 결함 수</div><div class="val"><span id="dCnt">14</span><span class="u">건</span></div></div>
+    <div class="kpi"><div class="lab">검사 길이</div><div class="val">1,842<span class="u">m</span></div></div>
+    <div class="kpi"><div class="lab">업체 / 규격</div><div class="val" style="font-size:22px"><span id="dSpec">대한제강 · 1.6×1100</span></div></div>
+    <div class="kpi"><div class="lab">검출 카메라</div><div class="val">4<span class="u">채널</span></div></div>
+  </div>
+  <div class="tabs"><div class="tab on">외관 검사</div><div class="tab">두께 측정</div></div>
+
+  <div class="grid">
+    <!-- left: list -->
+    <div class="panel">
+      <div class="ph"><h2>외관 검사 결과</h2><span class="count-badge">14건</span></div>
+      <div class="filters">
+        <span class="chip on">전체 <span class="n">14</span></span>
+        <span class="chip"><span class="sw" style="background:var(--scr)"></span>스크래치 <span class="n">3</span></span>
+        <span class="chip"><span class="sw" style="background:var(--hscr)"></span>가로스크레치 <span class="n">4</span></span>
+        <span class="chip"><span class="sw" style="background:var(--dent)"></span>찌그러짐 <span class="n">2</span></span>
+        <span class="chip"><span class="sw" style="background:var(--wave)"></span>우글우글 <span class="n">4</span></span>
+        <span class="chip"><span class="sw" style="background:var(--burr)"></span>버 <span class="n">1</span></span>
+      </div>
+      <div class="list">
+        <div class="drow sel">
+          <div class="thumb" onclick="openLB('우글우글','var(--wave)','#VR-002241','612','0.93','슬리팅 이전-1 (상단)','wave')"><svg viewBox="0 0 96 72"><rect width="96" height="72" fill="#2a3242"/><path d="M12 42 Q26 28 40 42 T68 42 T92 42" stroke="#F5AE52" stroke-width="4" fill="none"/><rect x="36" y="20" width="30" height="26" fill="none" stroke="#fff" stroke-width="2" rx="3"/></svg><span class="zoomico">🔍 확대</span></div>
+          <div><div class="rtype"><span class="badge" style="background:var(--wave)">우글우글</span><span style="font-size:15px;color:var(--muted)">#VR-002241</span></div>
+          <div class="rmeta"><span>⏱ <b>10:18:42</b></span><span>📷 <b>슬리팅 이전-1 (상단)</b></span></div></div>
+          <div class="rpos"><div class="m">612<span class="u"> m</span></div><span class="rev un">미확인</span></div>
+        </div>
+        <div class="drow">
+          <div class="thumb" onclick="openLB('가로스크레치','var(--hscr)','#VR-002238','218','0.88','슬리팅 이전-2 (측면)','hscr')"><svg viewBox="0 0 96 72"><rect width="96" height="72" fill="#2a3242"/><line x1="10" y1="37" x2="86" y2="35" stroke="#09A4DB" stroke-width="5" stroke-linecap="round"/></svg><span class="zoomico">🔍 확대</span></div>
+          <div><div class="rtype"><span class="badge" style="background:var(--hscr)">가로스크레치</span><span style="font-size:15px;color:var(--muted)">#VR-002238</span></div>
+          <div class="rmeta"><span>⏱ <b>09:51:07</b></span><span>📷 <b>슬리팅 이전-2 (측면)</b></span></div></div>
+          <div class="rpos"><div class="m">218<span class="u"> m</span></div><span class="rev un">미확인</span></div>
+        </div>
+        <div class="drow">
+          <div class="thumb" onclick="openLB('스크래치','var(--scr)','#VR-002235','151','0.91','슬리팅 이전-1 (상단)','scr')"><svg viewBox="0 0 96 72"><rect width="96" height="72" fill="#2a3242"/><path d="M22 20 L70 54" stroke="#CC3F31" stroke-width="4" stroke-linecap="round"/></svg><span class="zoomico">🔍 확대</span></div>
+          <div><div class="rtype"><span class="badge" style="background:var(--scr)">스크래치</span><span style="font-size:15px;color:var(--muted)">#VR-002235</span></div>
+          <div class="rmeta"><span>⏱ <b>09:44:19</b></span><span>📷 <b>슬리팅 이전-1 (상단)</b></span></div></div>
+          <div class="rpos"><div class="m">151<span class="u"> m</span></div><span class="rev ok">확인완료</span></div>
+        </div>
+        <div class="drow">
+          <div class="thumb" onclick="openLB('찌그러짐','var(--dent)','#VR-002230','88','0.85','슬리팅 이전-2 (측면)','dent')"><svg viewBox="0 0 96 72"><rect width="96" height="72" fill="#2a3242"/><ellipse cx="48" cy="36" rx="21" ry="13" fill="none" stroke="#878DEE" stroke-width="4"/></svg><span class="zoomico">🔍 확대</span></div>
+          <div><div class="rtype"><span class="badge" style="background:var(--dent)">찌그러짐</span><span style="font-size:15px;color:var(--muted)">#VR-002230</span></div>
+          <div class="rmeta"><span>⏱ <b>09:33:55</b></span><span>📷 <b>슬리팅 이전-2 (측면)</b></span></div></div>
+          <div class="rpos"><div class="m">88<span class="u"> m</span></div><span class="rev un">미확인</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- right: detail -->
+    <div class="panel">
+      <div class="ph"><h2>결함 상세</h2><span style="margin-left:auto;font-size:15px;color:var(--muted)">#VR-002241</span></div>
+
+      <!-- media -->
+      <div class="media" id="mediaBox" onclick="openLB('우글우글','var(--wave)','#VR-002241','612','0.93','슬리팅 이전-1 (상단)','wave')">
+        <div class="mode-toggle" onclick="event.stopPropagation()"><span class="mt on" id="mImg" onclick="setMode('img')">이미지</span><span class="mt" id="mVid" onclick="setMode('vid')">동영상</span></div>
+        <span class="overlay-tag">AI 검출 오버레이 ON</span>
+        <span class="zoom-hint" id="zoomHint">🔍 클릭하면 크게 보기</span>
+        <div class="play-badge hidden" id="playBadge"></div>
+        <svg id="mediaSvg" viewBox="0 0 320 200"><rect width="320" height="200" fill="#161c28"/>
+          <path d="M30 150 Q70 110 110 150 T190 150 T270 150" stroke="#F5AE52" stroke-width="7" fill="none" opacity=".9"/>
+          <rect x="96" y="112" width="120" height="58" fill="none" stroke="#F5AE52" stroke-width="3" rx="5"/>
+          <rect x="96" y="96" width="112" height="18" fill="#F5AE52"/>
+          <text x="102" y="110" fill="#161c28" font-size="12" font-family="Pretendard">우글우글 0.93</text></svg>
+      </div>
+
+      <!-- channel selector (shown in video mode) -->
+      <div class="ch-bar hidden" id="chBar">
+        <div class="lab">영상 채널 선택 — 한 번에 1개 채널만 재생됩니다</div>
+        <div class="ch-row">
+          <div class="ch on" onclick="setCh(this,'슬리팅前 상단')">슬리팅前<br>상단<span class="cn">CH1 · cam01</span></div>
+          <div class="ch" onclick="setCh(this,'슬리팅前 측면')">슬리팅前<br>측면<span class="cn">CH2 · cam04</span></div>
+          <div class="ch" onclick="setCh(this,'슬리팅後 상단')">슬리팅後<br>상단<span class="cn">CH3 · cam02</span></div>
+          <div class="ch" onclick="setCh(this,'슬리팅後 측면')">슬리팅後<br>측면<span class="cn">CH4 · cam03</span></div>
+        </div>
+      </div>
+
+      <div class="dlrow">
+        <div class="dl" id="dlCh">⬇ <span id="dlChTxt">이미지 다운로드</span></div>
+        <div class="dl alt hidden" id="dlAll">⬇ 전체 채널 ZIP</div>
+      </div>
+
+      <div class="sect"><h3>검사 정보</h3>
+        <div class="kv"><span class="k">발생 위치</span><span>612 m</span></div>
+        <div class="kv"><span class="k">결함 유형</span><span><span class="badge" style="background:var(--wave)">우글우글(에지웨이브)</span></span></div>
+        <div class="kv"><span class="k">신뢰도(score)</span><span>0.93</span></div>
+        <div class="kv"><span class="k">리뷰 상태</span><span><span class="rev un">미확인</span></span></div>
+      </div>
+      <div class="sect"><h3>공정 정보</h3>
+        <div class="kv"><span class="k">검출 카메라</span><span>슬리팅 이전-1 (상단)</span></div>
+        <div class="kv"><span class="k">검출 시각</span><span>2026-11-06 10:18:42</span></div>
+      </div>
+      <div class="sect"><h3>모델 정보</h3>
+        <div class="kv"><span class="k">모델명</span><span>VCLS_SEG_cam01</span></div>
+        <div class="kv"><span class="k">모델 유형</span><span><span class="seg">Segmentation (SEG)</span></span></div>
+        <div class="kv"><span class="k">GPU</span><span>RTX 3090</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot">※ 영상 4채널은 상·측 / 슬리팅 전·후 카메라 구성 예시이며, 실제 채널명·개수는 VIMS 카메라 설정에 맞춰 연동됩니다. 기존 8095는 클릭 시 4채널이 동시 재생되지만, 본 설계는 <b>채널을 하나씩 선택</b>해 재생·다운로드합니다.</div>
+</div>
+
+<!-- ===== LIGHTBOX ===== -->
+<div class="lb" id="lb" onclick="if(event.target.id==='lb')closeLB()">
+  <div class="lb-box">
+    <div class="lb-top"><span class="t" id="lbTitle">결함 이미지</span><span class="badge" id="lbBadge"></span><span class="lb-close" onclick="closeLB()">✕</span></div>
+    <div class="lb-img" id="lbImg"></div>
+    <div class="lb-meta">
+      <span>발생 위치 <b id="lbPos">—</b></span>
+      <span>신뢰도 <b id="lbScore">—</b></span>
+      <span>카메라 <b id="lbCam">—</b></span>
+      <span class="lb-dl">⬇ 원본 이미지 다운로드</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openDetail(coil,comp,spec,cnt){
+    document.getElementById('dCoil').textContent=coil;
+    document.getElementById('dSpec').textContent=comp+' · '+spec;
+    document.getElementById('dCnt').textContent=cnt;
+    document.getElementById('listView').classList.add('hidden');
+    document.getElementById('detailView').classList.remove('hidden');
+    setMode('img'); window.scrollTo(0,0);
+  }
+  function backToList(){
+    document.getElementById('detailView').classList.add('hidden');
+    document.getElementById('listView').classList.remove('hidden');
+    window.scrollTo(0,0);
+  }
+  function setMode(m){
+    var isV=(m==='vid');
+    document.getElementById('mImg').classList.toggle('on',!isV);
+    document.getElementById('mVid').classList.toggle('on',isV);
+    document.getElementById('chBar').classList.toggle('hidden',!isV);
+    document.getElementById('dlAll').classList.toggle('hidden',!isV);
+    document.getElementById('playBadge').classList.toggle('hidden',!isV);
+    document.getElementById('dlChTxt').textContent = isV ? '선택 채널 영상 다운로드' : '이미지 다운로드';
+    document.getElementById('zoomHint').textContent = isV ? '▶ 선택 채널만 재생' : '🔍 클릭하면 크게 보기';
+    document.getElementById('mediaBox').style.cursor = isV ? 'pointer' : 'zoom-in';
+  }
+  function setCh(el,name){
+    document.querySelectorAll('.ch').forEach(function(c){c.classList.remove('on')});
+    el.classList.add('on');
+    document.getElementById('dlChTxt').textContent='영상 다운로드 — '+name;
+  }
+  var SHAPES={
+    wave:'<path d="M60 300 Q140 210 220 300 T380 300 T540 300" stroke="#F5AE52" stroke-width="12" fill="none"/><rect x="190" y="228" width="240" height="118" fill="none" stroke="#F5AE52" stroke-width="5" rx="8"/>',
+    hscr:'<line x1="40" y1="250" x2="600" y2="240" stroke="#09A4DB" stroke-width="10" stroke-linecap="round"/><rect x="40" y="218" width="560" height="54" fill="none" stroke="#09A4DB" stroke-width="5" rx="8"/>',
+    scr:'<path d="M120 120 L420 360" stroke="#CC3F31" stroke-width="9" stroke-linecap="round"/><rect x="110" y="110" width="320" height="260" fill="none" stroke="#CC3F31" stroke-width="5" rx="8"/>',
+    dent:'<ellipse cx="320" cy="250" rx="130" ry="80" fill="none" stroke="#878DEE" stroke-width="9"/><rect x="175" y="158" width="290" height="184" fill="none" stroke="#878DEE" stroke-width="5" rx="8"/>'
+  };
+  function openLB(type,color,id,pos,score,cam,shape){
+    document.getElementById('lbTitle').textContent=type+'  '+id;
+    var b=document.getElementById('lbBadge'); b.textContent=type; b.style.background=color.replace('var(--wave)','#F5AE52').replace('var(--hscr)','#09A4DB').replace('var(--scr)','#CC3F31').replace('var(--dent)','#878DEE'); b.style.color='#fff'; b.style.borderRadius='7px'; b.style.padding='4px 12px';
+    document.getElementById('lbPos').textContent=pos+' m';
+    document.getElementById('lbScore').textContent=score;
+    document.getElementById('lbCam').textContent=cam;
+    document.getElementById('lbImg').innerHTML='<svg viewBox="0 0 640 500"><rect width="640" height="500" fill="#101521"/>'+(SHAPES[shape]||'')+'<rect x="16" y="16" width="150" height="34" rx="6" fill="rgba(121,108,191,.9)"/><text x="30" y="39" fill="#fff" font-size="18" font-family="Pretendard">AI 오버레이</text></svg>';
+    document.getElementById('lb').classList.add('on');
+  }
+  function closeLB(){document.getElementById('lb').classList.remove('on')}
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeLB()});
+</script>
+</body>
+</html>
