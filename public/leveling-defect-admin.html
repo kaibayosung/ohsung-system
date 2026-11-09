@@ -35,7 +35,8 @@
   .thwrap{position:relative;width:54px}
   .thn{position:absolute;right:-4px;bottom:-4px;background:var(--accent);color:#fff;font-size:10px;font-weight:800;border-radius:7px;padding:1px 5px}
   .badge{font-size:11.5px;font-weight:800;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
-  .b-scr{background:var(--scr)} .b-flat{background:var(--flat)}
+  .b-scr{background:var(--scr)} .b-flat{background:var(--flat)} .b-thk{background:#09A4DB}
+  .lbadge{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
   .plc{color:var(--accent);font-weight:800;white-space:nowrap}
   .plc.none{color:var(--muted);font-weight:600}
   .coil{font-weight:800}
@@ -54,13 +55,16 @@
 </style>
 </head>
 <body>
-<h1>레벨링 불량 조회 <span style="font-size:14px;color:var(--muted)">· 관리자</span></h1>
-<div class="sub">현장에서 등록한 레벨링 불량 · 코일·박스·유형으로 검색 · 등록 시각으로 PLC 연계</div>
+<h1>불량 이미지 조회 <span style="font-size:14px;color:var(--muted)">· 관리자</span></h1>
+<div class="sub">현장에서 등록한 불량(레벨링·슬리터1·슬리터2) · 라인·코일·유형으로 검색 · 등록 시각으로 PLC 연계</div>
 
 <div class="panel">
   <div class="filt">
+    <div class="fg"><span class="fl">라인</span><div class="chips" id="fline">
+      <div class="chip on" data-v="전체">전체</div><div class="chip" data-v="레벨링">레벨링</div><div class="chip" data-v="슬리터1">슬리터1</div><div class="chip" data-v="슬리터2">슬리터2</div>
+    </div></div>
     <div class="fg"><span class="fl">불량 유형</span><div class="chips" id="ftype">
-      <div class="chip on" data-v="전체">전체</div><div class="chip" data-v="scratch">화면 스크래치</div><div class="chip" data-v="flatness">평탄도 불량</div>
+      <div class="chip on" data-v="전체">전체</div><div class="chip" data-v="scratch">표면 불량</div><div class="chip" data-v="flatness">웨이브</div><div class="chip" data-v="thickness">두께측정</div>
     </div></div>
     <div class="fg"><span class="fl">박스</span><select class="sel" id="fbox"><option value="">전체</option><option>1</option><option>2</option><option>3</option><option>4</option></select></div>
     <div class="fg"><span class="fl">코일 검색</span><input class="search" id="fsearch" placeholder="코일번호"></div>
@@ -72,7 +76,7 @@
 
 <div class="panel">
   <table>
-    <thead><tr><th>사진</th><th>코일</th><th>박스</th><th>유형</th><th>등록시각</th><th>PLC 연계 (길이·장수)</th><th class="hidecol">등록자</th></tr></thead>
+    <thead><tr><th>사진</th><th>라인</th><th>코일</th><th>박스</th><th>유형</th><th>등록시각</th><th>PLC 연계 (길이·장수)</th><th class="hidecol">등록자</th></tr></thead>
     <tbody id="tb"></tbody>
   </table>
   <div class="foot" id="empty" style="display:none">조건에 맞는 등록 건이 없습니다.</div>
@@ -88,8 +92,10 @@
 <script>
 var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/defect-images";
 var OCR_BASE="https://desktop-tdp9hrt.tail8d1b48.ts.net";
-var TY={scratch:['화면 스크래치','b-scr','#CC3F31'],flatness:['평탄도 불량','b-flat','#d9821f']};
-var ALL=[], F={type:'전체',box:'',q:''};
+var TY={scratch:['표면 불량','b-scr','#CC3F31'],flatness:['웨이브','b-flat','#d9821f'],thickness:['두께측정','b-thk','#09A4DB']};
+var LCOL={'레벨링':'#2b2550','슬리터1':'#1d4d5c','슬리터2':'#143a4f'};
+function lineBadge(l){return '<span class="lbadge" style="background:'+(LCOL[l]||'#7d8ba1')+'">'+esc(l)+'</span>';}
+var ALL=[], F={line:'전체',type:'전체',box:'',q:''};
 
 function imgUrl(d,n){ return OCR_BASE+'/img/'+d.file_path+'/'+(n||1)+'.jpg'; }
 function esc(s){return String(s==null?'':s).replace(/</g,'&lt;');}
@@ -100,6 +106,8 @@ function plcTxt(d){
   return '<span class="plc">'+[len,bx].filter(Boolean).join(' · ')+'</span>';
 }
 
+document.querySelectorAll('#fline .chip').forEach(function(c){c.onclick=function(){
+  document.querySelectorAll('#fline .chip').forEach(function(x){x.classList.remove('on');});c.classList.add('on');F.line=c.dataset.v;render();};});
 document.querySelectorAll('#ftype .chip').forEach(function(c){c.onclick=function(){
   document.querySelectorAll('#ftype .chip').forEach(function(x){x.classList.remove('on');});c.classList.add('on');F.type=c.dataset.v;render();};});
 document.getElementById('fbox').onchange=function(){F.box=this.value;render();};
@@ -117,6 +125,7 @@ async function load(){
   render();
 }
 function filt(){ return ALL.filter(function(d){
+  if(F.line!=='전체'&&d.line!==F.line) return false;
   if(F.type!=='전체'&&d.defect_type!==F.type) return false;
   if(F.box&&String(d.box)!==String(F.box)) return false;
   if(F.q&&String(d.coil_id||'').toLowerCase().indexOf(F.q.toLowerCase())<0) return false;
@@ -127,14 +136,17 @@ function render(){
   var img=list.reduce(function(a,d){return a+(d.file_count||0);},0);
   var scr=list.filter(function(d){return d.defect_type==='scratch';}).length;
   var fl=list.filter(function(d){return d.defect_type==='flatness';}).length;
+  var th=list.filter(function(d){return d.defect_type==='thickness';}).length;
   document.getElementById('sum').innerHTML=
     '<div class="sb"><div class="k">검색 결과</div><div class="v">'+list.length+'<span class="u">건</span></div></div>'
     +'<div class="sb"><div class="k">이미지</div><div class="v">'+img+'<span class="u">장</span></div></div>'
-    +'<div class="sb"><div class="k">화면 스크래치</div><div class="v">'+scr+'<span class="u">건</span></div></div>'
-    +'<div class="sb"><div class="k">평탄도 불량</div><div class="v">'+fl+'<span class="u">건</span></div></div>';
+    +'<div class="sb"><div class="k">표면 불량</div><div class="v">'+scr+'<span class="u">건</span></div></div>'
+    +'<div class="sb"><div class="k">웨이브</div><div class="v">'+fl+'<span class="u">건</span></div></div>'
+    +'<div class="sb"><div class="k">두께측정</div><div class="v">'+th+'<span class="u">건</span></div></div>';
   document.getElementById('tb').innerHTML=list.map(function(d){var t=TY[d.defect_type]||['기타','b-scr','#7d8ba1'];
     return '<tr onclick="openLB('+d.id+')"><td><div class="thwrap"><img class="th" loading="lazy" src="'+imgUrl(d,1)+'" onerror="this.style.visibility=\'hidden\'">'
       +(d.file_count>1?'<span class="thn">'+d.file_count+'</span>':'')+'</div></td>'
+      +'<td>'+lineBadge(d.line)+'</td>'
       +'<td class="coil">'+esc(d.coil_id)+'</td><td>'+(d.box!=null?'박스'+d.box:'—')+'</td>'
       +'<td><span class="badge '+t[1]+'">'+t[0]+'</span></td>'
       +'<td>'+esc(d.cap)+'</td><td>'+plcTxt(d)+'</td><td class="hidecol">'+esc(d.uploader||'—')+'</td></tr>';
@@ -145,6 +157,7 @@ function openLB(id){var d=ALL.find(function(x){return x.id===id;}); if(!d)return
   var imgs=''; for(var n=1;n<=(d.file_count||1);n++){ imgs+='<img src="'+imgUrl(d,n)+'" onclick="window.open(this.src)" onerror="this.style.display=\'none\'">'; }
   document.getElementById('lbimgs').innerHTML=imgs||'<div style="color:#fff;padding:20px">이미지 없음</div>';
   document.getElementById('linfo').innerHTML='<h3>#'+d.id+' · '+esc(d.coil_id)+' · '+t[0]+'</h3><table class="m">'
+    +'<tr><td class="k">라인</td><td class="vv">'+lineBadge(d.line)+'</td></tr>'
     +'<tr><td class="k">코일</td><td class="vv">'+esc(d.coil_id)+'</td></tr>'
     +'<tr><td class="k">박스</td><td class="vv">'+(d.box!=null?'박스'+d.box:'—')+'</td></tr>'
     +'<tr><td class="k">유형</td><td class="vv"><span class="badge '+t[1]+'">'+t[0]+'</span></td></tr>'

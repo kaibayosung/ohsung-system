@@ -3,234 +3,169 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>레벨링 불량 등록 / Leveling Defect Upload</title>
+<title>레벨링 불량 등록 / Leveling Defect</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
-  :root{--ink:#0f1e33;--sec:#5c6478;--muted:#9aa3b2;--line:#e3e8f0;--accent:#796cbf;
-        --ok:#2e9e6b;--okbg:#e8f6ee;--scr:#CC3F31;--flat:#F5AE52}
+  :root{--ink:#0f1e33;--sec:#5c6478;--muted:#9aa3b2;--line:#e3e8f0;--accent:#796cbf;--bg:#eef0fb;--ok:#2e9e6b;--okbg:#e8f6ee}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-  body{font-family:Pretendard,system-ui,sans-serif;font-weight:700;background:#eef0fb;color:var(--ink);-webkit-font-smoothing:antialiased}
-  .phone{max-width:440px;margin:0 auto;min-height:100vh;background:#f6f7fd;display:flex;flex-direction:column}
-  .top{background:var(--ink);color:#fff;padding:18px 20px 16px;position:sticky;top:0;z-index:5}
-  .top .t{font-size:21px;letter-spacing:-.4px}
-  .top .t .en{font-size:14px;color:#aeb6cf;font-weight:600;margin-left:6px}
-  .top .s{font-size:12.5px;color:#8f98b5;font-weight:600;margin-top:3px}
-  .body{padding:16px 16px 118px;flex:1}
-  .sec{margin-bottom:20px}
-  .lbl{font-size:16px;font-weight:800;margin-bottom:10px;display:flex;align-items:baseline;gap:7px}
-  .lbl .en{font-size:12.5px;color:var(--muted);font-weight:700}
-  .lbl .req{color:var(--scr);font-size:14px}
-
-  select.field,input.field{width:100%;border:2px solid var(--line);border-radius:14px;padding:15px;font-size:17px;font-weight:700;font-family:inherit;background:#fff;color:var(--ink);appearance:none}
-  select.field{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='%237d8ba1' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 14px center}
-
-  .boxes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .box-btn{border:2px solid var(--line);background:#fff;border-radius:13px;padding:15px 4px;font-size:16px;font-weight:800;color:var(--sec);text-align:center;cursor:pointer}
-  .box-btn.on{border-color:var(--accent);background:#f1effb;color:var(--accent)}
-  .box-btn.dim{opacity:.4;pointer-events:none}
-
-  .types{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .type-btn{border:2px solid var(--line);background:#fff;border-radius:16px;padding:18px 10px;text-align:center;cursor:pointer}
-  .type-btn .ic{font-size:30px;line-height:1;margin-bottom:8px}
-  .type-btn .kr{font-size:17px;font-weight:800;color:var(--ink)}
-  .type-btn .en{font-size:12.5px;font-weight:700;color:var(--muted);margin-top:2px}
-  .type-btn.on.scr{border-color:var(--scr);background:#fdeeec}
-  .type-btn.on.scr .kr{color:var(--scr)}
-  .type-btn.on.flat{border-color:#d9821f;background:#fdf5ea}
-  .type-btn.on.flat .kr{color:#d9821f}
-
-  .photos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
-  .addph{border:2px dashed #c3b9ea;background:#f6f4fe;border-radius:16px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;color:var(--accent)}
-  .addph .ic{font-size:28px}.addph .tx{font-size:12px;font-weight:800;text-align:center;line-height:1.3}
+  body{font-family:Pretendard,system-ui,sans-serif;font-weight:700;background:#f6f7fd;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .phone{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  .top{color:#fff;padding:20px 22px 18px;position:sticky;top:0;z-index:5}
+  .top.lv{background:#2b2550}.top.s1{background:#1d4d5c}.top.s2{background:#143a4f}
+  .top .bar{display:flex;align-items:flex-start;gap:10px}
+  .top .t{font-size:28px;letter-spacing:-.5px;line-height:1.1;flex:1}
+  .top .s{font-size:14px;color:rgba(255,255,255,.72);font-weight:600;margin-top:8px}
+  .lang{display:flex;gap:6px}
+  .lang button{border:1.5px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+  .lang button.on{background:#fff;color:var(--ink);border-color:#fff}
+  .body{padding:20px 20px 120px;flex:1}
+  .sec{margin-bottom:22px}
+  .lbl{font-size:19px;font-weight:800;margin-bottom:12px}
+  .req{color:#CC3F31}
+  select.field{width:100%;border:2.5px solid var(--line);border-radius:16px;padding:18px;font-size:20px;font-weight:800;font-family:inherit;background:#fff;color:var(--ink);appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none' stroke='%237d8ba1' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 16px center}
+  .types{display:flex;flex-direction:column;gap:12px}
+  .type-btn{border:2.5px solid var(--line);background:#fff;border-radius:18px;padding:22px 20px;display:flex;align-items:center;gap:16px;cursor:pointer}
+  .type-btn .ic{font-size:34px;line-height:1;width:44px;text-align:center}
+  .type-btn .nm{flex:1;font-size:23px;font-weight:800;color:var(--ink);line-height:1.15}
+  .type-btn .chk{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line);flex-shrink:0}
+  .type-btn.on .nm{color:#fff}
+  .type-btn.on .chk{border-color:#fff;background:#fff}
+  .type-btn.on .chk::after{content:"✓";display:block;text-align:center;line-height:24px;font-size:18px;font-weight:900}
+  .photos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .addph{border:2.5px dashed #c3b9ea;background:#f6f4fe;border-radius:18px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:var(--accent)}
+  .addph .ic{font-size:32px}.addph .tx{font-size:13px;font-weight:800;text-align:center;line-height:1.2}
   .thumb{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:1;background:#1a1f2b;border:1px solid var(--line)}
   .thumb img{width:100%;height:100%;object-fit:cover;display:block}
-  .thumb .del{position:absolute;top:5px;right:5px;width:26px;height:26px;border-radius:50%;background:rgba(10,14,22,.78);color:#fff;border:none;font-size:14px;cursor:pointer}
-  .hint{font-size:12px;color:var(--muted);font-weight:600;margin-top:8px;line-height:1.5}
-
-  .foot{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;padding:14px 16px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(246,247,253,0),#f6f7fd 28%)}
-  .submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:16px;padding:18px;font-size:18px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(121,108,191,.35)}
-  .submit .en{font-size:13px;opacity:.8;font-weight:700;margin-left:5px}
+  .thumb .del{position:absolute;top:5px;right:5px;width:28px;height:28px;border-radius:50%;background:rgba(10,14,22,.78);color:#fff;border:none;font-size:15px;cursor:pointer}
+  .hint{font-size:13px;color:var(--muted);font-weight:600;margin-top:9px;line-height:1.5}
+  .foot{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;padding:14px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(246,247,253,0),#f6f7fd 28%)}
+  .submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:18px;padding:22px;font-size:23px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(121,108,191,.35)}
   .submit:disabled{background:#c7ccdb;box-shadow:none}
-
   .done{position:fixed;inset:0;background:rgba(14,18,30,.5);display:none;align-items:center;justify-content:center;padding:24px;z-index:20}
   .done.on{display:flex}
-  .done .card{background:#fff;border-radius:22px;padding:28px 24px;max-width:360px;width:100%;text-align:center}
-  .done .ck{width:66px;height:66px;border-radius:50%;background:var(--okbg);color:var(--ok);font-size:36px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
-  .done h3{font-size:20px}.done h3 .en{font-size:13px;color:var(--muted);font-weight:700}
-  .done .sum{font-size:14px;color:var(--sec);font-weight:600;margin-top:12px;line-height:1.8;text-align:left;background:#f7f8fc;border-radius:12px;padding:14px 16px}
-  .done .sum b{color:var(--ink)} .done .sum .plc{color:var(--accent)}
-  .done .again{margin-top:16px;width:100%;background:var(--ink);color:#fff;border:none;border-radius:14px;padding:15px;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit}
+  .done .card{background:#fff;border-radius:22px;padding:30px 26px;max-width:360px;width:100%;text-align:center}
+  .done .ck{width:72px;height:72px;border-radius:50%;background:var(--okbg);color:var(--ok);font-size:40px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .done h3{font-size:22px}
+  .done .sum{font-size:15px;color:var(--sec);font-weight:600;margin-top:14px;line-height:1.9;text-align:left;background:#f7f8fc;border-radius:12px;padding:16px 18px}
+  .done .sum b{color:var(--ink)}
+  .done .again{margin-top:18px;width:100%;background:var(--ink);color:#fff;border:none;border-radius:14px;padding:16px;font-size:17px;font-weight:800;cursor:pointer;font-family:inherit}
   input[type=file]{display:none}
 </style>
 </head>
 <body>
 <div class="phone">
-  <div class="top">
-    <div class="t">레벨링 불량 등록 <span class="en">Leveling Defect Upload</span></div>
-    <div class="s">현장에서 사진 등록 · Register defect photo on site</div>
+  <div class="top lv">
+    <div class="bar">
+      <div class="t">레벨링</div>
+      <div class="lang"><button data-lang="kr" class="on">한</button><button data-lang="en">EN</button></div>
+    </div>
+    <div class="s" data-kr="현장 불량 등록" data-en="Register defect on site">현장 불량 등록</div>
   </div>
   <div class="body">
-
     <div class="sec">
-      <div class="lbl">코일 선택 <span class="en">Coil</span> <span class="req">*</span></div>
-      <select class="field" id="coil">
-        <option value="">— 오늘 작업 코일 선택 / Select today's coil —</option>
-        <option value="W642(일반)">W642(일반) · (주)유창</option>
-        <option value="W701">W701 · 대한특수강</option>
-        <option value="K8842">K8842 · 동부제철</option>
-      </select>
+      <div class="lbl"><span data-kr="코일" data-en="Coil">코일</span> <span class="req">*</span></div>
+      <select class="field" id="coil"><option value="" data-kr="코일 선택" data-en="Select coil">코일 선택</option><option>W642(일반)</option><option>W701</option><option>K8842</option></select>
     </div>
-
     <div class="sec">
-      <div class="lbl">박스 선택 <span class="en">Box</span> <span class="req">*</span></div>
-      <div class="boxes" id="boxes">
-        <div class="box-btn dim" data-v="1">박스1</div>
-        <div class="box-btn dim" data-v="2">박스2</div>
-        <div class="box-btn dim" data-v="3">박스3</div>
-        <div class="box-btn dim" data-v="4">박스4</div>
-      </div>
-      <div class="hint" id="boxhint">먼저 코일을 선택하세요 / Select a coil first</div>
-    </div>
-
-    <div class="sec">
-      <div class="lbl">불량 유형 <span class="en">Defect Type</span> <span class="req">*</span></div>
-      <div class="types">
-        <div class="type-btn scr" data-v="scr"><div class="ic">🔍</div><div class="kr">화면 스크래치</div><div class="en">Surface Scratch</div></div>
-        <div class="type-btn flat" data-v="flat"><div class="ic">〰️</div><div class="kr">평탄도 불량</div><div class="en">Flatness Defect</div></div>
+      <div class="lbl"><span data-kr="불량 유형" data-en="Defect Type">불량 유형</span> <span class="req">*</span></div>
+      <div class="types" id="types">
+        <div class="type-btn" data-i="0" data-dt="scratch" data-c="#CC3F31">
+          <span class="ic">🔍</span>
+          <span class="nm" data-kr="표면 불량" data-en="Surface Defect">표면 불량</span>
+          <span class="chk"></span>
+        </div>
+        <div class="type-btn" data-i="1" data-dt="flatness" data-c="#F5AE52">
+          <span class="ic">〰️</span>
+          <span class="nm" data-kr="웨이브" data-en="Wave">웨이브</span>
+          <span class="chk"></span>
+        </div>
       </div>
     </div>
-
     <div class="sec">
-      <div class="lbl">사진 <span class="en">Photo</span> <span class="req">*</span></div>
+      <div class="lbl"><span data-kr="사진" data-en="Photo">사진</span> <span class="req">*</span></div>
       <div class="photos" id="photos">
-        <label class="addph" for="cam"><span class="ic">📷</span><span class="tx">사진 촬영<br>Take Photo</span></label>
+        <label class="addph" for="cam"><span class="ic">📷</span><span class="tx" data-kr="사진 촬영" data-en="Take Photo">사진 촬영</span></label>
       </div>
       <input type="file" id="cam" accept="image/*" capture="environment" multiple>
-      <div class="hint">⏱ 등록 시각이 자동 기록되어 그 순간 PLC 길이·장수와 연결됩니다.<br>Time is auto-logged &amp; linked to PLC length/sheet at that moment.</div>
+      <div class="hint" data-kr="촬영 시 자동 압축 · 시각 기준 PLC 연계" data-en="Auto-compressed · linked to PLC by time">촬영 시 자동 압축 · 시각 기준 PLC 연계</div>
     </div>
-
   </div>
-  <div class="foot"><button class="submit" id="submit" disabled>등록하기 <span class="en">Submit</span></button></div>
+  <div class="foot"><button class="submit" id="submit" disabled data-kr="등록하기" data-en="Submit">등록하기</button></div>
 </div>
-
 <div class="done" id="done">
   <div class="card">
     <div class="ck">✓</div>
-    <h3>등록 완료 <span class="en">Saved</span></h3>
+    <h3 data-kr="등록 완료" data-en="Saved">등록 완료</h3>
     <div class="sum" id="sum"></div>
-    <button class="again" onclick="resetAll()">다음 등록 / Next</button>
+    <button class="again" onclick="resetAll()" data-kr="다음 등록" data-en="Next">다음 등록</button>
   </div>
 </div>
-
 <script>
-// 코일 → 박스 수 (실제론 작업목록/PLC에서)
-var COILBOX={'W642(일반)':3,'W701':4,'K8842':2};
-var state={coil:'',box:null,type:null};
-
-document.getElementById('coil').onchange=function(){
-  state.coil=this.value; state.box=null;
-  var nb=COILBOX[this.value]||0;
-  document.querySelectorAll('#boxes .box-btn').forEach(function(b){
-    var n=+b.dataset.v; b.classList.remove('on');
-    if(this.value && n<=nb) b.classList.remove('dim'); else b.classList.add('dim');
-  }.bind(this));
-  document.getElementById('boxhint').textContent = this.value? ('박스 '+nb+'개 / '+nb+' boxes') : '먼저 코일을 선택하세요 / Select a coil first';
-  check();
-};
-document.querySelectorAll('#boxes .box-btn').forEach(function(b){
-  b.onclick=function(){ if(b.classList.contains('dim'))return;
-    document.querySelectorAll('#boxes .box-btn').forEach(function(x){x.classList.remove('on');});
-    b.classList.add('on'); state.box=b.dataset.v; check(); };
-});
-document.querySelectorAll('.type-btn').forEach(function(t){
-  t.onclick=function(){ document.querySelectorAll('.type-btn').forEach(function(x){x.classList.remove('on');});
-    t.classList.add('on'); state.type=t.dataset.v; check(); };
-});
-
-// ── 연결 설정 ──
-var OCR_BASE="https://desktop-tdp9hrt.tail8d1b48.ts.net";               // OCR 개발서버 (Tailscale Funnel)
-var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/defect-images"; // Edge Function → 상용 MariaDB
+var OCR_BASE="https://desktop-tdp9hrt.tail8d1b48.ts.net";
+var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/defect-images";
 var LINE="레벨링";
-var TYPEMAP={scr:"scratch",flat:"flatness"};
-var submitting=false;
+var LANG="kr", submitting=false;
+var state={coil:"",ti:null,dt:null}, photos=[];
 
-var photos=[]; // 압축된 dataURL 목록
+function setLang(l){ LANG=l;
+  document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('on',b.dataset.lang===l);});
+  document.querySelectorAll('[data-kr]').forEach(function(e){ var v=e.getAttribute('data-'+l); if(v!=null){ if(e.tagName==='OPTION') e.textContent=v; else e.textContent=v; } });
+}
+document.querySelectorAll('[data-lang]').forEach(function(b){ b.onclick=function(){ setLang(b.dataset.lang); }; });
+
+document.getElementById('coil').onchange=function(){ state.coil=this.value; check(); };
+document.querySelectorAll('#types .type-btn').forEach(function(b){
+  b.onclick=function(){ document.querySelectorAll('#types .type-btn').forEach(function(x){x.classList.remove('on');x.style.background='';x.style.borderColor='';});
+    b.classList.add('on'); b.style.background=b.dataset.c; b.style.borderColor=b.dataset.c; state.ti=b.dataset.i; state.dt=b.dataset.dt; check(); };
+});
 document.getElementById('cam').onchange=function(e){
-  [].slice.call(e.target.files).forEach(function(f){
-    var r=new FileReader();
-    r.onload=function(ev){ compress(ev.target.result,function(d){ photos.push(d); renderPhotos(); check(); }); };
-    r.readAsDataURL(f);
-  });
+  [].slice.call(e.target.files).forEach(function(f){ var r=new FileReader(); r.onload=function(ev){ compress(ev.target.result,function(d){ photos.push(d); renderPhotos(); check(); }); }; r.readAsDataURL(f); });
   e.target.value='';
 };
-function compress(dataUrl,cb){
-  var img=new Image();
-  img.onload=function(){
-    var max=1600,w=img.width,h=img.height;
+function compress(dataUrl,cb){ var img=new Image();
+  img.onload=function(){ var max=1600,w=img.width,h=img.height;
     if(w>h&&w>max){ h=Math.round(h*max/w); w=max; } else if(h>=w&&h>max){ w=Math.round(w*max/h); h=max; }
-    var c=document.createElement('canvas'); c.width=w; c.height=h;
-    c.getContext('2d').drawImage(img,0,0,w,h);
-    try{ cb(c.toDataURL('image/jpeg',0.8)); }catch(_e){ cb(dataUrl); }
-  };
-  img.onerror=function(){ cb(dataUrl); };
-  img.src=dataUrl;
+    var c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+    try{ cb(c.toDataURL('image/jpeg',0.8)); }catch(_e){ cb(dataUrl); } };
+  img.onerror=function(){ cb(dataUrl); }; img.src=dataUrl;
 }
-function renderPhotos(){
-  var box=document.getElementById('photos');
-  var add='<label class="addph" for="cam"><span class="ic">📷</span><span class="tx">사진 촬영<br>Take Photo</span></label>';
+function renderPhotos(){ var box=document.getElementById('photos');
+  var t=LANG==='kr'?'사진 촬영':'Take Photo';
+  var add='<label class="addph" for="cam"><span class="ic">📷</span><span class="tx" data-kr="사진 촬영" data-en="Take Photo">'+t+'</span></label>';
   box.innerHTML=add+photos.map(function(s,i){return '<div class="thumb"><img src="'+s+'"><button class="del" onclick="delP('+i+')">✕</button></div>';}).join('');
 }
-function delP(i){photos.splice(i,1);renderPhotos();check();}
-function check(){document.getElementById('submit').disabled=submitting||!(state.coil&&state.box&&state.type&&photos.length);}
-
-function dataUrlToBlob(d){
-  var parts=d.split(','),mime=((parts[0].match(/:(.*?);/))||[])[1]||'image/jpeg';
-  var bin=atob(parts[1]),u=new Uint8Array(bin.length);
-  for(var i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
-  return new Blob([u],{type:mime});
-}
-function nowKST(){ var n=new Date(),p=function(x){return ('0'+x).slice(-2);};
-  return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate())+' '+p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds()); }
+function delP(i){ photos.splice(i,1); renderPhotos(); check(); }
+function check(){ document.getElementById('submit').disabled=submitting||!(state.coil&&state.dt&&photos.length); }
+function dataUrlToBlob(d){ var p=d.split(','),m=((p[0].match(/:(.*?);/))||[])[1]||'image/jpeg',b=atob(p[1]),u=new Uint8Array(b.length); for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return new Blob([u],{type:m}); }
+function nowKST(){ var n=new Date(),p=function(x){return ('0'+x).slice(-2);}; return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate())+' '+p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds()); }
 
 document.getElementById('submit').onclick=async function(){
-  if(submitting) return;
-  submitting=true;
-  var btn=document.getElementById('submit'),old=btn.innerHTML;
-  btn.disabled=true; btn.textContent='등록 중... / Uploading...';
+  if(submitting) return; submitting=true;
+  var btn=this, old=btn.textContent; btn.disabled=true; btn.textContent=LANG==='kr'?'등록 중...':'Uploading...';
   try{
-    // ① 사진 → OCR 개발서버 업로드
-    var fd=new FormData();
-    photos.forEach(function(d,i){ fd.append('files',dataUrlToBlob(d),(i+1)+'.jpg'); });
+    var fd=new FormData(); photos.forEach(function(d,i){ fd.append('files',dataUrlToBlob(d),(i+1)+'.jpg'); });
     var up=await fetch(OCR_BASE+'/upload',{method:'POST',body:fd});
-    if(!up.ok) throw new Error('사진 업로드 실패 ('+up.status+') / upload failed');
-    var uj=await up.json();
-    if(!uj.ok) throw new Error('업로드: '+(uj.error||'?'));
-    // ② 메타데이터 → Edge Function → 상용 MariaDB
+    if(!up.ok) throw new Error((LANG==='kr'?'사진 업로드 실패 ':'Upload failed ')+'('+up.status+')');
+    var uj=await up.json(); if(!uj.ok) throw new Error('upload: '+(uj.error||'?'));
     var cap=nowKST();
-    var body={line:LINE,coil_id:state.coil,box:state.box,defect_type:TYPEMAP[state.type],captured_at:cap,file_path:uj.file_path,file_count:uj.file_count};
+    var body={line:LINE,coil_id:state.coil,defect_type:state.dt,captured_at:cap,file_path:uj.file_path,file_count:uj.file_count};
     var rg=await fetch(API+'?mode=register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    var rj=await rg.json();
-    if(!rj.ok) throw new Error('저장: '+(rj.error||'?'));
-    // 완료
-    var tnm=state.type==='scr'?'화면 스크래치 / Surface Scratch':'평탄도 불량 / Flatness Defect';
+    var rj=await rg.json(); if(!rj.ok) throw new Error('save: '+(rj.error||'?'));
+    var tnm=document.querySelector('#types .type-btn.on .nm').textContent;
+    var K=LANG==='kr';
     document.getElementById('sum').innerHTML=
-      '등록번호 / ID <b>#'+rj.id+'</b><br>코일 / Coil <b>'+state.coil+'</b><br>박스 / Box <b>'+state.box+'</b><br>'
-      +'유형 / Type <b>'+tnm+'</b><br>사진 / Photo <b>'+uj.file_count+'장</b><br>시각 / Time <b>'+cap.slice(11,16)+'</b><br>'
-      +'<span class="plc">↳ 상용 DB 저장 완료 · 시각 기준 PLC 연계</span>';
+      (K?'등록번호':'ID')+' <b>#'+rj.id+'</b><br>'+(K?'라인':'Line')+' <b>'+LINE+'</b><br>'+(K?'코일':'Coil')+' <b>'+state.coil+'</b><br>'
+      +(K?'유형':'Type')+' <b>'+tnm+'</b><br>'+(K?'사진':'Photo')+' <b>'+uj.file_count+(K?'장':'')+'</b><br>'+(K?'시각':'Time')+' <b>'+cap.slice(11,16)+'</b>';
     document.getElementById('done').classList.add('on');
-  }catch(err){
-    alert('등록 실패 / Error:\n'+(err&&err.message?err.message:err));
-  }finally{
-    submitting=false; btn.innerHTML=old; check();
-  }
+  }catch(err){ alert((LANG==='kr'?'등록 실패':'Error')+':\n'+(err&&err.message?err.message:err)); }
+  finally{ submitting=false; btn.textContent=old; check(); }
 };
 function resetAll(){
-  state={coil:'',box:null,type:null};photos=[];
+  state={coil:"",ti:null,dt:null}; photos=[];
   document.getElementById('coil').value='';
-  document.querySelectorAll('#boxes .box-btn').forEach(function(x){x.classList.remove('on');x.classList.add('dim');});
-  document.querySelectorAll('.type-btn').forEach(function(x){x.classList.remove('on');});
-  document.getElementById('boxhint').textContent='먼저 코일을 선택하세요 / Select a coil first';
-  renderPhotos();check();document.getElementById('done').classList.remove('on');window.scrollTo(0,0);
+  document.querySelectorAll('#types .type-btn').forEach(function(x){x.classList.remove('on');x.style.background='';x.style.borderColor='';});
+  renderPhotos(); check(); document.getElementById('done').classList.remove('on'); window.scrollTo(0,0);
 }
 renderPhotos();
 </script>

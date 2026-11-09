@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>슬리터 2 불량 등록 / Slitter 2 Defect</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--muted:#9aa3b2;--line:#e3e8f0;--accent:#796cbf;--bg:#eef0fb;--ok:#2e9e6b;--okbg:#e8f6ee}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:Pretendard,system-ui,sans-serif;font-weight:700;background:#f6f7fd;color:var(--ink);-webkit-font-smoothing:antialiased}
+  .phone{max-width:440px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
+  .top{color:#fff;padding:20px 22px 18px;position:sticky;top:0;z-index:5}
+  .top.lv{background:#2b2550}.top.s1{background:#1d4d5c}.top.s2{background:#143a4f}
+  .top .bar{display:flex;align-items:flex-start;gap:10px}
+  .top .t{font-size:28px;letter-spacing:-.5px;line-height:1.1;flex:1}
+  .top .s{font-size:14px;color:rgba(255,255,255,.72);font-weight:600;margin-top:8px}
+  .lang{display:flex;gap:6px}
+  .lang button{border:1.5px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:999px;padding:6px 13px;font-size:13px;font-weight:800;cursor:pointer;font-family:inherit}
+  .lang button.on{background:#fff;color:var(--ink);border-color:#fff}
+  .body{padding:20px 20px 120px;flex:1}
+  .sec{margin-bottom:22px}
+  .lbl{font-size:19px;font-weight:800;margin-bottom:12px}
+  .req{color:#CC3F31}
+  select.field{width:100%;border:2.5px solid var(--line);border-radius:16px;padding:18px;font-size:20px;font-weight:800;font-family:inherit;background:#fff;color:var(--ink);appearance:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='26' height='26' viewBox='0 0 24 24' fill='none' stroke='%237d8ba1' stroke-width='2.5'><path d='M6 9l6 6 6-6'/></svg>");background-repeat:no-repeat;background-position:right 16px center}
+  .types{display:flex;flex-direction:column;gap:12px}
+  .type-btn{border:2.5px solid var(--line);background:#fff;border-radius:18px;padding:22px 20px;display:flex;align-items:center;gap:16px;cursor:pointer}
+  .type-btn .ic{font-size:34px;line-height:1;width:44px;text-align:center}
+  .type-btn .nm{flex:1;font-size:23px;font-weight:800;color:var(--ink);line-height:1.15}
+  .type-btn .chk{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line);flex-shrink:0}
+  .type-btn.on .nm{color:#fff}
+  .type-btn.on .chk{border-color:#fff;background:#fff}
+  .type-btn.on .chk::after{content:"✓";display:block;text-align:center;line-height:24px;font-size:18px;font-weight:900}
+  .photos{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .addph{border:2.5px dashed #c3b9ea;background:#f6f4fe;border-radius:18px;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:var(--accent)}
+  .addph .ic{font-size:32px}.addph .tx{font-size:13px;font-weight:800;text-align:center;line-height:1.2}
+  .thumb{position:relative;border-radius:16px;overflow:hidden;aspect-ratio:1;background:#1a1f2b;border:1px solid var(--line)}
+  .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .thumb .del{position:absolute;top:5px;right:5px;width:28px;height:28px;border-radius:50%;background:rgba(10,14,22,.78);color:#fff;border:none;font-size:15px;cursor:pointer}
+  .hint{font-size:13px;color:var(--muted);font-weight:600;margin-top:9px;line-height:1.5}
+  .foot{position:fixed;left:0;right:0;bottom:0;max-width:440px;margin:0 auto;padding:14px 20px calc(14px + env(safe-area-inset-bottom));background:linear-gradient(180deg,rgba(246,247,253,0),#f6f7fd 28%)}
+  .submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:18px;padding:22px;font-size:23px;font-weight:800;font-family:inherit;cursor:pointer;box-shadow:0 6px 18px rgba(121,108,191,.35)}
+  .submit:disabled{background:#c7ccdb;box-shadow:none}
+  .done{position:fixed;inset:0;background:rgba(14,18,30,.5);display:none;align-items:center;justify-content:center;padding:24px;z-index:20}
+  .done.on{display:flex}
+  .done .card{background:#fff;border-radius:22px;padding:30px 26px;max-width:360px;width:100%;text-align:center}
+  .done .ck{width:72px;height:72px;border-radius:50%;background:var(--okbg);color:var(--ok);font-size:40px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+  .done h3{font-size:22px}
+  .done .sum{font-size:15px;color:var(--sec);font-weight:600;margin-top:14px;line-height:1.9;text-align:left;background:#f7f8fc;border-radius:12px;padding:16px 18px}
+  .done .sum b{color:var(--ink)}
+  .done .again{margin-top:18px;width:100%;background:var(--ink);color:#fff;border:none;border-radius:14px;padding:16px;font-size:17px;font-weight:800;cursor:pointer;font-family:inherit}
+  input[type=file]{display:none}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="top s2">
+    <div class="bar">
+      <div class="t">슬리터 2</div>
+      <div class="lang"><button data-lang="kr" class="on">한</button><button data-lang="en">EN</button></div>
+    </div>
+    <div class="s" data-kr="현장 불량 등록" data-en="Register defect on site">현장 불량 등록</div>
+  </div>
+  <div class="body">
+    <div class="sec">
+      <div class="lbl"><span data-kr="코일" data-en="Coil">코일</span> <span class="req">*</span></div>
+      <select class="field" id="coil"><option value="" data-kr="코일 선택" data-en="Select coil">코일 선택</option><option>T1611096</option><option>G26J150</option><option>H2210</option></select>
+    </div>
+    <div class="sec">
+      <div class="lbl"><span data-kr="불량 유형" data-en="Defect Type">불량 유형</span> <span class="req">*</span></div>
+      <div class="types" id="types">
+        <div class="type-btn" data-i="0" data-dt="thickness" data-c="#09A4DB">
+          <span class="ic">📏</span>
+          <span class="nm" data-kr="두께측정" data-en="Thickness Check">두께측정</span>
+          <span class="chk"></span>
+        </div>
+        <div class="type-btn" data-i="1" data-dt="scratch" data-c="#CC3F31">
+          <span class="ic">🔍</span>
+          <span class="nm" data-kr="표면 불량" data-en="Surface Defect">표면 불량</span>
+          <span class="chk"></span>
+        </div>
+      </div>
+    </div>
+    <div class="sec">
+      <div class="lbl"><span data-kr="사진" data-en="Photo">사진</span> <span class="req">*</span></div>
+      <div class="photos" id="photos">
+        <label class="addph" for="cam"><span class="ic">📷</span><span class="tx" data-kr="사진 촬영" data-en="Take Photo">사진 촬영</span></label>
+      </div>
+      <input type="file" id="cam" accept="image/*" capture="environment" multiple>
+      <div class="hint" data-kr="촬영 시 자동 압축 · 시각 기준 PLC 연계" data-en="Auto-compressed · linked to PLC by time">촬영 시 자동 압축 · 시각 기준 PLC 연계</div>
+    </div>
+  </div>
+  <div class="foot"><button class="submit" id="submit" disabled data-kr="등록하기" data-en="Submit">등록하기</button></div>
+</div>
+<div class="done" id="done">
+  <div class="card">
+    <div class="ck">✓</div>
+    <h3 data-kr="등록 완료" data-en="Saved">등록 완료</h3>
+    <div class="sum" id="sum"></div>
+    <button class="again" onclick="resetAll()" data-kr="다음 등록" data-en="Next">다음 등록</button>
+  </div>
+</div>
+<script>
+var OCR_BASE="https://desktop-tdp9hrt.tail8d1b48.ts.net";
+var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/defect-images";
+var LINE="슬리터2";
+var LANG="kr", submitting=false;
+var state={coil:"",ti:null,dt:null}, photos=[];
+
+function setLang(l){ LANG=l;
+  document.querySelectorAll('[data-lang]').forEach(function(b){b.classList.toggle('on',b.dataset.lang===l);});
+  document.querySelectorAll('[data-kr]').forEach(function(e){ var v=e.getAttribute('data-'+l); if(v!=null){ if(e.tagName==='OPTION') e.textContent=v; else e.textContent=v; } });
+}
+document.querySelectorAll('[data-lang]').forEach(function(b){ b.onclick=function(){ setLang(b.dataset.lang); }; });
+
+document.getElementById('coil').onchange=function(){ state.coil=this.value; check(); };
+document.querySelectorAll('#types .type-btn').forEach(function(b){
+  b.onclick=function(){ document.querySelectorAll('#types .type-btn').forEach(function(x){x.classList.remove('on');x.style.background='';x.style.borderColor='';});
+    b.classList.add('on'); b.style.background=b.dataset.c; b.style.borderColor=b.dataset.c; state.ti=b.dataset.i; state.dt=b.dataset.dt; check(); };
+});
+document.getElementById('cam').onchange=function(e){
+  [].slice.call(e.target.files).forEach(function(f){ var r=new FileReader(); r.onload=function(ev){ compress(ev.target.result,function(d){ photos.push(d); renderPhotos(); check(); }); }; r.readAsDataURL(f); });
+  e.target.value='';
+};
+function compress(dataUrl,cb){ var img=new Image();
+  img.onload=function(){ var max=1600,w=img.width,h=img.height;
+    if(w>h&&w>max){ h=Math.round(h*max/w); w=max; } else if(h>=w&&h>max){ w=Math.round(w*max/h); h=max; }
+    var c=document.createElement('canvas'); c.width=w; c.height=h; c.getContext('2d').drawImage(img,0,0,w,h);
+    try{ cb(c.toDataURL('image/jpeg',0.8)); }catch(_e){ cb(dataUrl); } };
+  img.onerror=function(){ cb(dataUrl); }; img.src=dataUrl;
+}
+function renderPhotos(){ var box=document.getElementById('photos');
+  var t=LANG==='kr'?'사진 촬영':'Take Photo';
+  var add='<label class="addph" for="cam"><span class="ic">📷</span><span class="tx" data-kr="사진 촬영" data-en="Take Photo">'+t+'</span></label>';
+  box.innerHTML=add+photos.map(function(s,i){return '<div class="thumb"><img src="'+s+'"><button class="del" onclick="delP('+i+')">✕</button></div>';}).join('');
+}
+function delP(i){ photos.splice(i,1); renderPhotos(); check(); }
+function check(){ document.getElementById('submit').disabled=submitting||!(state.coil&&state.dt&&photos.length); }
+function dataUrlToBlob(d){ var p=d.split(','),m=((p[0].match(/:(.*?);/))||[])[1]||'image/jpeg',b=atob(p[1]),u=new Uint8Array(b.length); for(var i=0;i<b.length;i++)u[i]=b.charCodeAt(i); return new Blob([u],{type:m}); }
+function nowKST(){ var n=new Date(),p=function(x){return ('0'+x).slice(-2);}; return n.getFullYear()+'-'+p(n.getMonth()+1)+'-'+p(n.getDate())+' '+p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds()); }
+
+document.getElementById('submit').onclick=async function(){
+  if(submitting) return; submitting=true;
+  var btn=this, old=btn.textContent; btn.disabled=true; btn.textContent=LANG==='kr'?'등록 중...':'Uploading...';
+  try{
+    var fd=new FormData(); photos.forEach(function(d,i){ fd.append('files',dataUrlToBlob(d),(i+1)+'.jpg'); });
+    var up=await fetch(OCR_BASE+'/upload',{method:'POST',body:fd});
+    if(!up.ok) throw new Error((LANG==='kr'?'사진 업로드 실패 ':'Upload failed ')+'('+up.status+')');
+    var uj=await up.json(); if(!uj.ok) throw new Error('upload: '+(uj.error||'?'));
+    var cap=nowKST();
+    var body={line:LINE,coil_id:state.coil,defect_type:state.dt,captured_at:cap,file_path:uj.file_path,file_count:uj.file_count};
+    var rg=await fetch(API+'?mode=register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var rj=await rg.json(); if(!rj.ok) throw new Error('save: '+(rj.error||'?'));
+    var tnm=document.querySelector('#types .type-btn.on .nm').textContent;
+    var K=LANG==='kr';
+    document.getElementById('sum').innerHTML=
+      (K?'등록번호':'ID')+' <b>#'+rj.id+'</b><br>'+(K?'라인':'Line')+' <b>'+LINE+'</b><br>'+(K?'코일':'Coil')+' <b>'+state.coil+'</b><br>'
+      +(K?'유형':'Type')+' <b>'+tnm+'</b><br>'+(K?'사진':'Photo')+' <b>'+uj.file_count+(K?'장':'')+'</b><br>'+(K?'시각':'Time')+' <b>'+cap.slice(11,16)+'</b>';
+    document.getElementById('done').classList.add('on');
+  }catch(err){ alert((LANG==='kr'?'등록 실패':'Error')+':\n'+(err&&err.message?err.message:err)); }
+  finally{ submitting=false; btn.textContent=old; check(); }
+};
+function resetAll(){
+  state={coil:"",ti:null,dt:null}; photos=[];
+  document.getElementById('coil').value='';
+  document.querySelectorAll('#types .type-btn').forEach(function(x){x.classList.remove('on');x.style.background='';x.style.borderColor='';});
+  renderPhotos(); check(); document.getElementById('done').classList.remove('on'); window.scrollTo(0,0);
+}
+renderPhotos();
+</script>
+</body>
+</html>
