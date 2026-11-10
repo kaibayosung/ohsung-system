@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레벨러 작업 현황</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--mut:#9aa3b2;--line:#e3e8f0;--acc:#796cbf;--bg:#f3f5fe;
+    --ok:#2e9e6b;--warn:#d9821f;--run:#2e9e6b;--A:#58b887;--C:#F5AE52;--D:#CC3F31}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Pretendard,system-ui,sans-serif;font-weight:700;background:var(--bg);color:var(--ink);padding:16px;max-width:1120px;margin:0 auto;-webkit-font-smoothing:antialiased}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:21px;letter-spacing:-.4px}
+  .datepick{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--sec)}
+  .datepick input{font-family:inherit;font-weight:700;font-size:13px;border:1.5px solid var(--line);border-radius:9px;padding:6px 10px;color:var(--ink)}
+  .crumb{font-size:13px;color:var(--mut);font-weight:700;margin:4px 0 2px}
+  .crumb a{color:var(--acc);cursor:pointer}.crumb .sep{margin:0 7px;color:#c7cedb}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-top:13px}
+  h2{font-size:16px}
+  .src{font-size:12px;color:var(--mut);font-weight:600;margin-top:2px}
+  .srctag{display:inline-block;font-size:10.5px;color:#8a93a6;font-weight:700;background:#f2f4f9;border:1px solid #e6eaf1;border-radius:6px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+  .view{display:none}.view.on{display:block}
+  .loading{color:var(--mut);font-size:14px;font-weight:700;padding:30px;text-align:center}
+  .empty{color:var(--mut);font-size:13px;font-weight:700;padding:16px;text-align:center}
+
+  /* 현재 작업 */
+  .runmeta{font-size:15px;font-weight:800;margin-bottom:2px}
+  .runspec{font-size:13px;color:var(--sec);font-weight:700;margin-bottom:12px}.runspec b{color:var(--ink)}
+  .ringrow{display:flex;align-items:center;gap:16px}
+  .big{font-size:34px;letter-spacing:-1px;line-height:1}
+  .lb{font-size:12px;color:var(--mut);font-weight:700;margin-top:3px}
+  .curbox{margin-top:8px;display:inline-flex;align-items:center;gap:7px;background:#eefaf3;color:var(--run);border-radius:9px;padding:6px 12px;font-size:13.5px;font-weight:800;white-space:nowrap}
+  .curbox .n{background:var(--run);color:#fff;border-radius:6px;padding:1px 8px;font-size:12px}
+  .livebadge{display:inline-flex;align-items:center;gap:6px;background:#eefaf3;color:var(--run);border-radius:999px;padding:4px 12px;font-size:12.5px;font-weight:800}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--run);animation:pulse 1.4s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{text-align:left;font-size:11.5px;color:var(--mut);font-weight:700;padding:8px 10px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+  td{padding:11px 10px;border-bottom:1px solid #eef1f6;font-weight:700;vertical-align:middle}
+  tr.clk{cursor:pointer}tr.clk:hover td{background:#f7f6fe}
+  .num{text-align:right;font-variant-numeric:tabular-nums}
+  .badge{font-size:11px;font-weight:800;border-radius:6px;padding:2px 8px;color:#fff;white-space:nowrap}
+  .b-done{background:#7d8ba1}.b-run{background:var(--run)}.b-wait{background:#b9c0cd}
+  .mut{color:var(--mut);font-weight:600}
+  .q{display:inline-flex;align-items:center;gap:5px}
+  .pdot{width:9px;height:9px;border-radius:50%;display:inline-block}
+  .sectl{font-size:12.5px;color:var(--sec);font-weight:800;margin:2px 0 9px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+  .sectl .n{background:var(--ink);color:#fff;border-radius:6px;font-size:11px;padding:1px 8px}
+
+  .sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
+  @media(max-width:760px){.sgrid{grid-template-columns:repeat(2,1fr)}}
+  .scard{border:1px solid var(--line);border-radius:12px;padding:11px 13px;background:#fafbfe}
+  .scard .k{font-size:11.5px;color:var(--mut);font-weight:700}
+  .scard .v{font-size:18px;margin-top:3px;letter-spacing:-.4px}.scard .v .u{font-size:11px;color:var(--mut)}
+  .btn{display:inline-flex;align-items:center;gap:8px;background:var(--acc);color:#fff;border:none;border-radius:11px;padding:12px 18px;font-size:14px;font-weight:800;cursor:pointer;font-family:inherit}
+  svg{display:block;width:100%;height:auto}
+
+  .speedsum{display:flex;align-items:baseline;gap:9px;background:#fafbfe;border:1px solid var(--line);border-radius:12px;padding:12px 15px;margin-bottom:13px;flex-wrap:wrap;font-size:13.5px;font-weight:700}
+  .speedsum .big{font-size:23px;font-weight:800}
+  .spd-row{display:flex;align-items:center;gap:12px;margin:14px 0}
+  .spd-row .lab{width:48px;font-size:13px;color:var(--sec);flex:none}
+  .spd-row .track{flex:1;height:30px;background:#f2f4f9;border-radius:8px;position:relative}
+  .spd-row .fill{height:100%;border-radius:8px;display:flex;align-items:center;padding-left:11px;color:#fff;font-size:12.5px;font-weight:800;white-space:nowrap}
+  .spd-row .base{position:absolute;top:-5px;bottom:-5px;width:2px;background:#5c6478;border-radius:2px}
+  .spd-row .pct{width:112px;text-align:right;font-size:13px;font-weight:800;flex:none}
+  .fast{color:var(--ok)}.slow{color:var(--D)}
+  .m3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:760px){.m3{grid-template-columns:1fr}}
+  .eq{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fafbfe}
+  .eq .t{font-size:13.5px;font-weight:800}.eq .t .u{font-size:11px;color:var(--mut);font-weight:700}
+  .qbox{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:760px){.qbox{grid-template-columns:1fr}}
+  .qc{border:1.5px solid var(--line);border-radius:13px;padding:13px 15px}
+  .qc .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .qc .bx{font-size:14px;font-weight:800}
+  .qc .qrow{display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding:5px 0;border-top:1px solid #eef1f6}
+  .qc .qrow .v{font-variant-numeric:tabular-nums}
+  .insight{background:#f6f4fe;border:1px solid #ddd6f5}
+  .insight .t{font-size:14px;font-weight:800;color:var(--acc);margin-bottom:6px;display:flex;gap:7px}
+  .insight p{font-size:13.5px;color:var(--ink);font-weight:700;line-height:1.65;margin:0}
+  .insight b.bad{color:var(--D)}
+
+  /* 품질 상세 */
+  .qg{display:grid;grid-template-columns:1fr 1fr;gap:13px}@media(max-width:760px){.qg{grid-template-columns:1fr}}
+  .dcard{border:1.5px solid var(--line);border-radius:13px;overflow:hidden;background:#fff}
+  .dcard .img{aspect-ratio:4/3;background:#11151e;display:flex;align-items:center;justify-content:center;color:#6b7488;position:relative}
+  .dcard img{width:100%;height:100%;object-fit:cover;display:block}
+  .dcard .noimg{color:#6b7488;font-size:12px;font-weight:700}
+  .dcard .meta{padding:11px 13px}
+  .dcard .hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+  .dcard .kind{font-size:12px;font-weight:800;border-radius:6px;padding:2px 9px;color:#fff}
+  .dcard .pos{font-size:12px;color:var(--mut);font-weight:700}
+  .dcard .val{font-size:13px;font-weight:700;margin-top:3px}
+  .foot{color:var(--mut);font-size:11.5px;font-weight:600;margin-top:14px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>레벨러 작업 현황</h1>
+  <div class="datepick">작업일 <input type="date" id="dpick"></div>
+</div>
+<div class="crumb" id="crumb"></div>
+
+<!-- A. 현황 -->
+<div class="view on" id="vList">
+  <div class="panel" id="pRun" style="display:none"></div>
+  <div class="panel">
+    <div class="sectl"><span class="n">완료</span>완료된 작업<span class="srctag">leveler_jobs · LEVELING_DATA · inference_score_log · detection_alert</span></div>
+    <div id="doneWrap"><div class="loading">불러오는 중…</div></div>
+  </div>
+  <div class="panel" id="pWait" style="display:none">
+    <div class="sectl"><span class="n">대기</span>남은 작업 (지시 대기)<span class="srctag">leveler_jobs</span></div>
+    <div id="waitWrap"></div>
+  </div>
+  <div class="foot">상용 데이터 연동 — 규격·단가·금액·상태: leveler_jobs / 시간·박스·속도·부하·텐션: LEVELING_DATA(PLC)·ai_tension_readings / 평탄 휨·표면 결함·이미지: inference_score_log·detection_alert.</div>
+</div>
+
+<!-- B. 상세 -->
+<div class="view" id="vDetail"><div class="loading">불러오는 중…</div></div>
+
+<!-- C. 품질 -->
+<div class="view" id="vQual"><div class="loading">불러오는 중…</div></div>
+
+<script>
+var API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1';
+var STATUS=API+'/leveling-status', QUALITY=API+'/leveling-quality';
+var IMG=function(id){return QUALITY+'?mode=img&id='+id;};
+var state={date:null, detail:null, qual:null, coil:null};
+
+function kstToday(){return new Date(Date.now()+9*3600000).toISOString().slice(0,10);}
+function tmin(hhmm){if(!hhmm)return 0;var p=hhmm.split(':');return +p[0]*60+ +p[1];}
+function won(v){return v==null?'—':Number(v).toLocaleString();}
+function show(v){['vList','vDetail','vQual'].forEach(function(id){document.getElementById(id).classList.toggle('on',id===v);});window.scrollTo(0,0);crumb(v);}
+function crumb(v){var c='<a onclick="goList()">작업 현황</a>';
+  if(v==='vDetail')c+='<span class="sep">›</span><span>'+state.coil+' 상세</span>';
+  if(v==='vQual')c+='<span class="sep">›</span><a onclick="backDetail()">'+state.coil+' 상세</a><span class="sep">›</span><span>품질 상세</span>';
+  document.getElementById('crumb').innerHTML=c;}
+function goList(){show('vList');}
+function backDetail(){show('vDetail');}
+
+// ====== 현황 ======
+async function loadList(date){
+  state.date=date; document.getElementById('dpick').value=date;
+  document.getElementById('doneWrap').innerHTML='<div class="loading">불러오는 중…</div>';
+  document.getElementById('pRun').style.display='none'; document.getElementById('pWait').style.display='none';
+  crumb('vList');
+  var d; try{ d=await fetch(STATUS+'?mode=list&date='+date).then(r=>r.json()); }catch(e){ d={ok:false}; }
+  if(!d||!d.ok){ document.getElementById('doneWrap').innerHTML='<div class="empty">데이터를 불러오지 못했습니다.</div>'; return; }
+  // 진행중
+  if(d.running){ renderRun(d.running); document.getElementById('pRun').style.display='block'; }
+  // 완료
+  if(!d.done||!d.done.length){ document.getElementById('doneWrap').innerHTML='<div class="empty">이 날짜에 완료된 레벨링 작업이 없습니다.</div>'; }
+  else{
+    document.getElementById('doneWrap').innerHTML='<div style="overflow-x:auto"><table><thead><tr>'
+      +'<th>코일 / 거래처</th><th>규격</th><th>시작</th><th>종료</th><th>소요</th><th class="num">단가</th><th class="num">금액</th><th>최대 휨</th><th>결함</th><th>상태</th>'
+      +'</tr></thead><tbody>'+d.done.map(rowHtml).join('')+'</tbody></table></div>'
+      +'<div class="src" style="margin-top:9px">행을 누르면 작업 상세로 이동</div>';
+  }
+  // 대기
+  if(d.waiting&&d.waiting.length){ document.getElementById('pWait').style.display='block';
+    document.getElementById('waitWrap').innerHTML='<div style="overflow-x:auto"><table><thead><tr><th>순번</th><th>코일 / 거래처</th><th>규격</th><th class="num">중량</th><th class="num">단가</th><th>상태</th></tr></thead><tbody>'
+      +d.waiting.map(function(w,i){return '<tr><td>'+(i+1)+'</td><td><b>'+w.coil+'</b> <span class="mut">'+(w.company||'')+'</span></td><td>'+(w.spec||'—')+'</td><td class="num">'+won(w.weight)+'kg</td><td class="num">'+(w.unit==null?'—':w.unit+'<span class="mut">원/kg</span>')+'</td><td><span class="badge b-wait">'+(w.status||'대기')+'</span></td></tr>';}).join('')
+      +'</tbody></table></div>';
+  }
+}
+function statusBadge(s){var cls=s==='완료'?'b-done':s==='준비'?'b-wait':'b-run';return '<span class="badge '+cls+'">'+(s||'완료')+'</span>';}
+function defCell(surf,flat){var t=(surf||0)+(flat||0);if(!t)return '<span class="mut">없음</span>';
+  return '<span class="q"><span class="pdot" style="background:#CC3F31"></span>'+t+'건</span>';}
+function warpCell(w){if(w==null)return '<span class="mut">—</span>';var c=w>=25?'var(--D)':'var(--ink)';return '<b style="color:'+c+'">'+w+'<span class="mut" style="font-size:11px">mm</span></b>';}
+function rowHtml(j){
+  return '<tr class="clk" onclick="openDetail(\''+encodeURIComponent(j.coil)+'\')">'
+    +'<td><b>'+j.coil+'</b><div class="mut" style="font-size:12px">'+(j.company||'')+'</div></td>'
+    +'<td>'+(j.spec||'—')+'</td><td>'+(j.start||'—')+'</td><td>'+(j.end||'—')+'</td>'
+    +'<td>'+(j.durMin!=null?Math.floor(j.durMin/60)+'h '+(j.durMin%60)+'m':'—')+'</td>'
+    +'<td class="num">'+(j.unit==null?'—':j.unit+'<span class="mut">원/kg</span>')+'</td>'
+    +'<td class="num">'+won(j.amount)+'</td>'
+    +'<td>'+warpCell(j.warpMax)+'</td>'
+    +'<td>'+defCell(j.surf,j.flatDef)+'</td>'
+    +'<td>'+statusBadge(j.status)+'</td></tr>';
+}
+function renderRun(r){
+  var pct=r.pct, planned=r.planned;
+  document.getElementById('pRun').innerHTML=
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h2>작업 중인 공정</h2><span class="livebadge"><span class="dot"></span>실시간 · 가동중</span></div>'
+    +'<div class="src">현재 가동 코일의 진행 상황 <span class="srctag">LEVELING_DATA · leveler_jobs</span></div>'
+    +'<div class="runmeta" style="margin-top:12px">현재 작업 · '+r.coil+' · '+(r.company||'')+'</div>'
+    +'<div class="runspec">가공 규격 <b>'+(r.spec||'—')+'</b> &nbsp;·&nbsp; 절단장 <b>'+(r.cut||'—')+'mm</b>'+(r.weight?' &nbsp;·&nbsp; '+won(r.weight)+'kg':'')+'</div>'
+    +'<div class="ringrow"><svg width="96" height="96" viewBox="0 0 96 96" style="width:96px;flex:none">'
+    +'<circle cx="48" cy="48" r="40" fill="none" stroke="#eef0f6" stroke-width="12"/>'
+    +(pct!=null?'<circle cx="48" cy="48" r="40" fill="none" stroke="#796cbf" stroke-width="12" stroke-linecap="round" transform="rotate(-90 48 48)" stroke-dasharray="'+(251.3*pct/100)+' 251.3"/>':'')
+    +'</svg><div><div class="big">'+(pct!=null?pct+'%':r.sheets+'장')+'</div>'
+    +'<div class="lb">'+(planned?'총 '+planned+'장 중 '+r.sheets+'장 절단':r.sheets+'장 절단 (예상 장수 산출 불가)')+'</div>'
+    +'<div class="curbox"><span class="n">박스 '+(r.curBox||1)+'</span> 자르는 중</div></div></div>';
+}
+
+// ====== 상세 ======
+async function openDetail(coilEnc){
+  var coil=decodeURIComponent(coilEnc); state.coil=coil;
+  document.getElementById('vDetail').innerHTML='<div class="loading">불러오는 중…</div>'; show('vDetail');
+  var date=state.date;
+  var dd,qq; try{ [dd,qq]=await Promise.all([
+    fetch(STATUS+'?mode=detail&coil='+encodeURIComponent(coil)+'&date='+date).then(r=>r.json()),
+    fetch(QUALITY+'?mode=coil&coil='+encodeURIComponent(coil)+'&date='+date).then(r=>r.json())
+  ]); }catch(e){ dd={ok:false}; }
+  if(!dd||!dd.ok){ document.getElementById('vDetail').innerHTML='<div class="panel"><div class="empty">상세 데이터를 불러오지 못했습니다.</div></div>'; return; }
+  state.detail=dd; state.qual=(qq&&qq.ok)?qq:null;
+  // 박스별 결함 수를 품질 데이터로 보정(정확)
+  if(state.qual&&state.qual.defects){ dd.boxes.forEach(function(b){ var ds=state.qual.defects.filter(function(x){return x.box===b.n;}); b.flatDef=ds.filter(x=>x.cam===2).length; b.scratch=ds.filter(x=>x.cam!==2).length; var ws=ds.filter(x=>x.cam===2&&x.warp!=null).map(x=>x.warp); b.warp=ws.length?Math.max.apply(0,ws):b.warp; }); }
+  renderDetail(dd);
+}
+function sc(k,v,u){return '<div class="scard"><div class="k">'+k+'</div><div class="v">'+v+(u?'<span class="u"> '+u+'</span>':'')+'</div></div>';}
+function qcol(warp,def){ if(warp!=null&&warp>=40||def>=3)return{bg:'#fdf0ee',bd:'#eeb3a9',tx:'#b23a2c',g:'불량'};
+  if(warp!=null&&warp>=25||def>0)return{bg:'#fdf6e9',bd:'#f0cf93',tx:'#9a6616',g:'주의'};
+  return{bg:'#eafaf1',bd:'#9fdcbb',tx:'#1f7a4d',g:'양호'}; }
+function renderDetail(j){
+  var base={spm:j.baseSpm,load:j.baseLoad,cycle:j.baseCycle,tension:j.baseTension,thk:j.baseThkMatched};
+  var baseLbl=j.baseThkMatched?'동일 두께 과거 평균':'라인 과거 평균';
+  var wm=j.boxes.reduce((a,b)=>a+b.workMin,0), work=(wm/60|0)+'h '+(wm%60)+'m';
+  var ts=j.boxes.reduce((a,b)=>a+b.sheets,0), avg=ts/Math.max(1,wm);
+  var dp=base.spm?Math.round((avg/base.spm-1)*100):null, fast=dp>=0;
+  var h='<h1 style="font-size:21px">'+j.coil+' 작업 상세</h1>'
+    +'<div class="src" style="margin-top:3px">'+(j.company||'')+' · '+(j.spec||'')+(j.weight?' · '+won(j.weight)+'kg':'')+' · '+(j.start||'')+'~'+(j.end||'')+'</div>';
+  // 개요
+  h+='<div class="panel"><div class="sectl">작업 개요<span class="srctag">leveler_jobs · LEVELING_DATA</span></div><div class="sgrid">'
+    +sc('거래처',j.company||'—','')+sc('규격',j.spec||'—','')+sc('중량',won(j.weight),'kg')+sc('총 장수',ts,'장')
+    +sc('작업 시간',(j.start||'')+'~'+(j.end||''),'')+sc('실가공 시간',work,'')+sc('단가',j.unit==null?'—':j.unit,'원/kg')+sc('금액',won(j.amount),'원')
+    +'</div></div>';
+  // 박스 흐름
+  h+='<div class="panel"><div class="sectl">박스별 작업 흐름<span class="srctag">LEVELING_DATA (BOXIDX·TIMESTAMP)</span></div>'
+    +'<div class="src">각 박스가 언제·몇 장·어떤 속도로 가공됐는지. 막대 위 화살표 = '+baseLbl+' 대비 속도, 막대 색 = 품질.</div>'
+    +'<div style="margin-top:10px">'+gantt(j,base)+'</div></div>';
+  // 속도
+  h+='<div class="panel"><div class="sectl">작업 속도 — '+baseLbl+' 대비<span class="srctag">LEVELING_DATA · leveling_job_cache</span></div>';
+  if(base.spm){ h+='<div class="speedsum"><span class="big">'+avg.toFixed(1)+' 장/분</span><span class="mut">전체 평균</span><span>· '+baseLbl+' '+base.spm+' 장/분 대비</span> <b class="'+(fast?'fast':'slow')+'">'+(fast?'▲ '+dp+'% 빠름':'▼ '+Math.abs(dp)+'% 느림')+'</b></div>'; }
+  h+=speedBars(j,base)+'<div class="src" style="margin-top:4px">│ 세로선 = '+baseLbl+(base.spm?' '+base.spm+' 장/분':'')+'</div></div>';
+  // 장비
+  h+='<div class="panel"><div class="sectl">그때 장비 상태 (박스별)<span class="srctag">LEVELING_DATA · ai_tension_readings</span></div>'
+    +'<div class="src">속도가 느렸던 구간에서 부하·사이클·텐션이 어땠는지. 점선 = '+baseLbl+' · 빨강 = 박스 간 편차가 두드러진 값.</div>'
+    +'<div class="m3" style="margin-top:10px">'+equip(j,base)+'</div></div>';
+  // 박스 품질
+  h+='<div class="panel"><div class="sectl">박스별 품질<span class="srctag">inference_score_log · detection_alert</span></div><div class="qbox">'+qboxCards(j)+'</div></div>';
+  // 인사이트
+  h+='<div class="panel insight">'+insight(j,base)+'</div>';
+  // 셋팅
+  h+='<div class="panel"><div class="sectl">장비 셋팅<span class="srctag">LEVELING_DATA</span></div><div class="sgrid">'
+    +sc('절단 설정장',j.setup&&j.setup.cut?j.setup.cut:'—','mm')+sc('속도 설정',j.setup&&j.setup.speedset!=null?j.setup.speedset:'—','')
+    +sc('평균 텐션',j.tenAvg==null?'—':j.tenAvg,'%')+sc('박스 수',j.boxes.length,'개')
+    +'</div></div>';
+  // 품질 상세 버튼
+  var qn=state.qual?state.qual.total:0;
+  h+='<div class="panel" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">'
+    +'<div><div style="font-size:15px">품질 상세 — 평탄 휨 · 표면 스크래치 · 결함 이미지 · 영상</div>'
+    +'<div class="src">이 코일의 결함 '+qn+'건, 검출 이미지와 단면 형상을 봅니다.</div></div>'
+    +'<button class="btn" onclick="openQual()">품질 상세 보기 →</button></div>';
+  document.getElementById('vDetail').innerHTML=h;
+}
+function gantt(j,base){
+  var all=j.boxes; if(!all.length)return '<div class="empty">박스 데이터 없음</div>';
+  var t0=tmin(all[0].s)-12, t1=tmin(all[all.length-1].e)+12; if(t1<=t0)t1=t0+60;
+  var W=1060,padL=8,padR=8,bw=W-padL-padR,rowY=48,barH=40,axisY=rowY+barH+8,H=axisY+20;
+  var x=function(t){return padL+bw*(t-t0)/(t1-t0);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'"><defs><pattern id="hatch" width="9" height="9" patternTransform="rotate(45)" patternUnits="userSpaceOnUse"><rect width="9" height="9" fill="#f4f6fa"/><line x1="0" y1="0" x2="0" y2="9" stroke="#d7dde8" stroke-width="3"/></pattern></defs>';
+  for(var hh=Math.ceil(t0/60)*60;hh<=t1;hh+=60){s+='<line x1="'+x(hh)+'" y1="20" x2="'+x(hh)+'" y2="'+axisY+'" stroke="#eef0f6"/>';s+='<text x="'+x(hh)+'" y="'+(axisY+14)+'" text-anchor="middle" font-size="11" font-family="Pretendard" font-weight="700" fill="#9aa3b2">'+(hh/60|0)+':00</text>';}
+  for(var i=0;i<all.length-1;i++){var gx1=x(tmin(all[i].e)),gx2=x(tmin(all[i+1].s));if(gx2-gx1>3){s+='<rect x="'+gx1+'" y="'+rowY+'" width="'+(gx2-gx1)+'" height="'+barH+'" fill="url(#hatch)"/>';var gm=tmin(all[i+1].s)-tmin(all[i].e);s+='<text x="'+((gx1+gx2)/2)+'" y="'+(rowY+barH/2+4)+'" text-anchor="middle" font-size="10.5" font-family="Pretendard" font-weight="700" fill="#9aa3b2">교체·대기 '+gm+'분</text>';}}
+  all.forEach(function(b){var bx1=x(tmin(b.s)),bx2=x(tmin(b.e)),c=qcol(b.warp,b.flatDef+b.scratch),mid=(bx1+bx2)/2;
+    s+='<rect x="'+bx1+'" y="'+rowY+'" width="'+Math.max(2,bx2-bx1)+'" height="'+barH+'" rx="8" fill="'+c.bg+'" stroke="'+c.bd+'" stroke-width="1.6"/>';
+    s+='<text x="'+mid+'" y="'+(rowY+17)+'" text-anchor="middle" font-size="12.5" font-weight="800" font-family="Pretendard" fill="'+c.tx+'">박스'+b.n+'</text>';
+    s+='<text x="'+mid+'" y="'+(rowY+32)+'" text-anchor="middle" font-size="10.5" font-weight="700" font-family="Pretendard" fill="'+c.tx+'">'+b.sheets+'장 · '+b.workMin+'분</text>';
+    if(base.spm){var pct=Math.round((b.spm/base.spm-1)*100),fa=pct>=0;s+='<text x="'+mid+'" y="'+(rowY-9)+'" text-anchor="middle" font-size="11" font-weight="800" font-family="Pretendard" fill="'+(fa?'#2e9e6b':'#CC3F31')+'">'+(fa?'▲ '+pct+'% 빠름':'▼ '+Math.abs(pct)+'% 느림')+'</text>';}});
+  s+='</svg>';return s;
+}
+function speedBars(j,base){
+  var bs=base.spm||Math.max.apply(0,j.boxes.map(b=>b.spm));
+  var maxS=Math.max(bs,Math.max.apply(0,j.boxes.map(b=>b.spm)))*1.18;
+  return j.boxes.map(function(b){var pct=base.spm?Math.round((b.spm/base.spm-1)*100):null,fa=pct>=0;var w=b.spm/maxS*100,bp=bs/maxS*100;
+    return '<div class="spd-row"><span class="lab">박스'+b.n+'</span><span class="track"><span class="fill" style="width:'+w+'%;background:'+(fa?'#58b887':'#d98b7d')+'">'+b.spm.toFixed(1)+' 장/분</span><span class="base" style="left:'+bp+'%"></span></span>'
+      +'<span class="pct '+(fa?'fast':'slow')+'">'+(pct==null?'':(fa?'▲ '+pct+'% 빠름':'▼ '+Math.abs(pct)+'% 느림'))+'</span></div>';}).join('');
+}
+function equip(j,base){
+  var defs=[{k:'부하율',u:'%',f:'load',base:base.load,max:100,inv:true},{k:'사이클타임',u:'초/장',f:'cycle',base:base.cycle,max:Math.max(16,Math.max.apply(0,j.boxes.map(b=>b.cycle||0))*1.2),inv:true},{k:'텐션',u:'%',f:'tension',base:base.tension,max:100,inv:false}];
+  return defs.map(function(d){return '<div class="eq"><div class="t">'+d.k+' <span class="u">('+d.u+')</span></div>'+mini(j,d)+'</div>';}).join('');
+}
+function mini(j,d){
+  var W=300,H=100,padB=20,padT=14,bw=58,gap=22,x0=28;
+  var vals=j.boxes.map(b=>b[d.f]).filter(v=>v!=null);
+  var sorted=vals.slice().sort((a,b)=>a-b), med=sorted.length?sorted[Math.floor(sorted.length/2)]:null;
+  var y=function(v){return padT+(H-padB-padT)*(1-v/d.max);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'">';
+  if(d.base!=null){var by=y(d.base);s+='<line x1="6" y1="'+by+'" x2="'+(W-6)+'" y2="'+by+'" stroke="#5c6478" stroke-width="1.3" stroke-dasharray="4 3"/><text x="'+(W-6)+'" y="'+(by-4)+'" text-anchor="end" font-size="9.5" fill="#5c6478" font-weight="700" font-family="Pretendard">평소 '+d.base+'</text>';}
+  j.boxes.forEach(function(b,i){var v=b[d.f];if(v==null)return;var bx=x0+i*(bw+gap),yv=y(v),bh=Math.max(2,(H-padB)-yv);
+    var worse=med==null?false:(d.inv?v>med*1.25:v<med*0.7),c=worse?'#CC3F31':'#aeb6c4';
+    s+='<rect x="'+bx+'" y="'+yv+'" width="'+bw+'" height="'+bh+'" rx="4" fill="'+c+'"/>';
+    s+='<text x="'+(bx+bw/2)+'" y="'+(yv-4)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="'+(worse?'#CC3F31':'#5c6478')+'" font-family="Pretendard">'+v+'</text>';
+    s+='<text x="'+(bx+bw/2)+'" y="'+(H-5)+'" text-anchor="middle" font-size="10" fill="#9aa3b2" font-weight="700" font-family="Pretendard">박스'+b.n+'</text>';});
+  s+='</svg>';return s;
+}
+function qboxCards(j){
+  return j.boxes.map(function(b){var c=qcol(b.warp,b.flatDef+b.scratch);
+    return '<div class="qc" style="border-color:'+c.bd+'"><div class="hd"><span class="bx">박스'+b.n+'</span><span class="badge" style="background:'+c.tx+'">'+c.g+'</span></div>'
+      +'<div class="qrow"><span class="mut">최대 휨</span><span class="v" style="color:'+(b.warp!=null&&b.warp>=25?'#CC3F31':'var(--ink)')+'">'+(b.warp!=null?b.warp+'mm':'—')+'</span></div>'
+      +'<div class="qrow"><span class="mut">평탄 결함</span><span class="v">'+(b.flatDef?'<span style="color:#CC3F31">'+b.flatDef+'건</span>':'없음')+'</span></div>'
+      +'<div class="qrow"><span class="mut">표면 스크래치</span><span class="v">'+(b.scratch?'<span style="color:#CC3F31">'+b.scratch+'건</span>':'없음')+'</span></div></div>';}).join('');
+}
+function insight(j,base){
+  var bx=j.boxes.slice();
+  var worstQ=bx.slice().sort((a,b)=>((b.warp||0)+(b.flatDef+b.scratch)*5)-((a.warp||0)+(a.flatDef+a.scratch)*5))[0];
+  var slow=base.spm?bx.slice().sort((a,b)=>a.spm-b.spm)[0]:null;
+  var parts=[];
+  if(worstQ&&((worstQ.warp||0)>=25||worstQ.flatDef+worstQ.scratch>0)){
+    var eq=[]; if(base.tension&&worstQ.tension!=null&&worstQ.tension<base.tension*0.8)eq.push('텐션 '+worstQ.tension+'%(↓)');
+    if(base.load&&worstQ.load!=null&&worstQ.load>base.load*1.1)eq.push('부하 '+worstQ.load+'%(↑)');
+    parts.push('<b>박스'+worstQ.n+'</b>에 결함이 집중됐습니다 (최대 휨 '+(worstQ.warp||0)+'mm · 평탄 '+worstQ.flatDef+'건 · 표면 '+worstQ.scratch+'건)'+(eq.length?', 그 구간 '+eq.join(' · '):'')+'.');
+  }
+  if(slow&&base.spm&&slow.spm<base.spm){ parts.push('속도는 <b>박스'+slow.n+'</b>이 가장 느렸습니다('+slow.spm.toFixed(1)+' 장/분, 평소 '+base.spm+' 대비 <b class="bad">'+Math.round((1-slow.spm/base.spm)*100)+'% 느림</b>, 사이클 '+slow.cycle+'초/장).'); }
+  if(!parts.length)parts.push('전 박스가 평소 수준에서 안정적으로 가공됐고, 결함과 장비 상태 모두 기준 내였습니다.');
+  return '<div class="t">⚡ 자동 분석</div><p>'+parts.join(' ')+'</p>';
+}
+
+// ====== 품질 상세 ======
+function openQual(){
+  if(!state.qual){ document.getElementById('vQual').innerHTML='<div class="panel"><div class="empty">품질 데이터가 없습니다.</div></div>'; show('vQual'); return; }
+  var q=state.qual, defs=q.defects||[];
+  var flat=defs.filter(d=>d.cam===2), surf=defs.filter(d=>d.cam!==2);
+  var h='<h1 style="font-size:21px">'+state.coil+' 품질 상세</h1>'
+    +'<div class="src" style="margin-top:3px">'+(q.company||'')+' · 결함 '+q.total+'건 (평탄 '+flat.length+' · 표면 '+surf.length+')</div>';
+  // 평탄
+  h+='<div class="panel"><div class="sectl">평탄 결함 (웨이브·버클)<span class="srctag">inference_score_log(CAM2)·detection_alert · 기준 휨 25mm</span></div>';
+  h+=flat.length?'<div class="qg">'+flat.map(defCard).join('')+'</div>':'<div class="empty">평탄 결함 없음</div>';
+  h+='</div>';
+  // 표면
+  h+='<div class="panel"><div class="sectl">표면 스크래치<span class="srctag">detection_alert(CAM1) · 기준 0.8</span></div>';
+  h+=surf.length?'<div class="qg">'+surf.map(defCard).join('')+'</div>':'<div class="empty">표면 결함 없음</div>';
+  h+='</div>';
+  h+='<div class="foot">검출 이미지는 OCR 개발서버(비전)에서 실시간 중계. 단면 형상은 좌·중·우 편차(mm). 영상 구간이 있는 결함은 영상 보기 제공.</div>';
+  document.getElementById('vQual').innerHTML=h; show('vQual');
+}
+var KIND={ew:['웨이브','#d9821f'],cb:['센터버클','#b06a1f'],fl:['평탄','#d9821f'],sf:['표면 스크래치','#CC3F31']};
+function defCard(d){
+  var k=KIND[d.kind]||['결함','#CC3F31'];
+  var img=d.hasImg?'<img src="'+IMG(d.id)+'" loading="lazy" onerror="this.parentNode.innerHTML=\'<div class=noimg>이미지 없음</div>\'">':'<div class="noimg">이미지 없음</div>';
+  var val=d.cam===2?('휨 <b style="color:'+(d.warp>=25?'#CC3F31':'#0f1e33')+'">'+(d.warp!=null?d.warp+'mm':'—')+'</b>'+(d.edge?' · 단면 '+d.edge[0]+'/'+d.edge[1]+'/'+d.edge[2]:'')):('이상점수 <b style="color:#CC3F31">'+(d.score!=null?d.score:'—')+'</b>');
+  var vid=d.hasVid?' · <a style="color:var(--acc);cursor:pointer" onclick="playVid('+ "'"+(d.seg||'')+"'"+','+(d.vms||0)+')">▶ 영상</a>':'';
+  return '<div class="dcard"><div class="img">'+img+'</div><div class="meta"><div class="hd"><span class="kind" style="background:'+k[1]+'">'+k[0]+'</span>'
+    +'<span class="pos">박스'+(d.box||'?')+' · '+(d.abs!=null?d.abs+'장':(d.sheet!=null?d.sheet+'장':''))+'</span></div>'
+    +'<div class="val">'+val+'</div><div class="src">'+(d.at||'')+vid+'</div></div></div>';
+}
+function playVid(seg,vms){ if(!seg){alert('이 결함은 저장된 영상 구간이 없습니다.');return;} window.open(QUALITY+'?mode=levvid&redirect=1&seg='+encodeURIComponent(seg),'_blank'); }
+
+// init
+document.getElementById('dpick').addEventListener('change',function(e){ if(e.target.value) loadList(e.target.value); });
+loadList(kstToday());
+</script>
+</body>
+</html>
