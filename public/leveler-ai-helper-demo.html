@@ -1,0 +1,711 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>레벨러 AI 헬퍼 · 시연 (실데이터)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+html,body{margin:0;height:100%;background:#FFFFFF;overflow:hidden}
+#stage{position:absolute;left:50%;top:50%;width:1280px;height:800px;transform-origin:center center}
+</style>
+</head>
+<body>
+<!-- 레벨러 AI 헬퍼 실데이터판. API: supabase/functions/leveler-helper (leveling-floor live + 추천 셋팅 + 헬퍼 기록). 샘플판: leveler-ai-helper-en.html -->
+<div id="stage"></div>
+
+<template id="tpl">
+<div style="width: 1280px; height: 800px; box-sizing: border-box; background: #FFFFFF; color: #0B1626; font-family: 'Noto Sans KR', system-ui, sans-serif; display: flex; flex-direction: column; position: relative; overflow: hidden; border: {{frame}}">
+
+<!-- TOP BAR -->
+<div style="height: 92px; flex: 0 0 92px; display: flex; align-items: center; gap: 18px; padding: 0 24px; background: {{barBg}}; color: #FFFFFF; box-sizing: border-box">
+<b style="font-size: 40px; font-weight: 900; white-space: nowrap"><span style="font-size: 32px; color: #AFC0D6; margin-right: 12px">{{stepNo}}/6</span>{{stepName}}</b>
+<div style="display: flex; gap: 10px; align-items: center; margin-left: 14px">
+<sc-for list="{{dots}}" as="d" hint-placeholder-count="6">
+<button type="button" onClick="{{d.go}}" aria-label="{{d.label}}" style="width: {{d.w}}px; height: 22px; border-radius: 11px; border: 0; padding: 0; background: {{d.c}}; cursor: pointer"></button>
+</sc-for>
+</div>
+<span style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; height: 54px; padding: 0 18px; border-radius: 999px; background: {{pill.bg}}; color: {{pill.fg}}; font-size: 26px; font-weight: 900; white-space: nowrap"><span style="width: 16px; height: 16px; border-radius: 50%; background: {{pill.dot}}"></span>{{pill.text}}</span>
+<button type="button" onClick="{{openNotes}}" style="height: 66px; padding: 0 24px; border-radius: 14px; border: 0; background: {{notesBtnBg}}; color: #0B1626; font-size: 32px; font-weight: 900; font-family: inherit; cursor: pointer; white-space: nowrap">{{t.notes}}{{notesBadge}}</button>
+<button type="button" onClick="{{toggleLang}}" style="height: 66px; padding: 0 18px; border-radius: 14px; border: 2px solid #6F86A6; background: transparent; color: #FFFFFF; font-size: 28px; font-weight: 700; font-family: inherit; cursor: pointer">{{t.langBtn}}</button>
+</div>
+
+<!-- BODY -->
+<div style="flex: 1 1 auto; min-height: 0; padding: 18px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+
+<sc-if value="{{loading}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1 1 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; color: #4A5568"><b style="font-size: 56px; font-weight: 900; color: #0B1626">{{loadTitle}}</b><span style="font-size: 32px">{{loadBody}}</span></div>
+</sc-if>
+
+<!-- STEP 1 : COIL -->
+<sc-if value="{{is1}}" hint-placeholder-val="{{ true }}">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s1Title}} <span style="font-size: 34px; color: #4A5568; font-weight: 700">{{dateLbl}}</span></b>
+<sc-if value="{{noCoils}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1 1 auto; background: #F3F5F9; border: 4px solid #D5DCE6; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px"><b style="font-size: 56px; font-weight: 900">{{t.noJobs}}</b><span style="font-size: 32px; color: #4A5568">{{noJobsSub}}</span></div>
+</sc-if>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<sc-for list="{{coils}}" as="c" hint-placeholder-count="3">
+<button type="button" onClick="{{c.pick}}" style="flex: 1 1 0; max-width: 620px; background: {{c.bg}}; border: 4px solid {{c.bd}}; border-radius: 24px; padding: 20px 26px; color: #0B1626; text-align: left; display: flex; flex-direction: column; gap: 10px; font-family: inherit; cursor: pointer">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568">{{c.cust}}</span>
+<b style="font-size: {{c.fs}}px; line-height: 1.05; font-family: 'IBM Plex Mono', monospace; word-break: break-all">{{c.short}}</b>
+<b style="font-size: 46px; font-weight: 900; white-space: nowrap">{{c.spec}}</b>
+<span style="font-size: 32px; color: #4A5568">{{c.boxes}}</span>
+<span style="margin-top: auto; font-size: 34px; font-weight: 900; color: {{c.stC}}">{{c.st}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<!-- STEP 2 : BOX -->
+<sc-if value="{{is2}}" hint-placeholder-val="{{ false }}">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s2Title}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<sc-for list="{{boxes}}" as="b" hint-placeholder-count="4">
+<button type="button" onClick="{{b.pick}}" style="flex: 1 1 0; background: {{b.bg}}; border: 4px solid {{b.bd}}; border-radius: 24px; color: #0B1626; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-family: inherit; cursor: pointer">
+<b style="font-size: 170px; line-height: 1; font-family: 'IBM Plex Mono', monospace">{{b.no}}</b>
+<span style="font-size: 44px; font-weight: 900; color: {{b.stC}}; white-space: nowrap">{{b.st}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+
+<!-- STEP 3 : ORDER -->
+<sc-if value="{{is3}}" hint-placeholder-val="{{ false }}">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s3Title}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<div style="flex: 1.1 1 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+<sc-for list="{{orderChecks}}" as="o" hint-placeholder-count="4">
+<button type="button" onClick="{{o.toggle}}" style="background: {{o.bg}}; border: 4px solid {{o.bd}}; border-radius: 24px; padding: 16px 22px; color: #0B1626; text-align: left; display: flex; flex-direction: column; justify-content: center; gap: 4px; font-family: inherit; cursor: pointer; min-width: 0">
+<span style="font-size: 32px; font-weight: 700; color: {{o.kc}}">{{o.k}} {{o.mark}}</span>
+<b style="font-size: {{o.fs}}px; line-height: 1.1; font-family: 'IBM Plex Mono', monospace; white-space: nowrap">{{o.v}}</b>
+</button>
+</sc-for>
+</div>
+<div style="flex: 1 1 0; background: #FFF6E0; border: 4px solid #E8A317; border-radius: 24px; padding: 18px 26px; display: flex; flex-direction: column; gap: 14px">
+<b style="font-size: 38px; font-weight: 900; color: #B45F00">{{t.notes}}</b>
+<sc-for list="{{notesShort}}" as="n" hint-placeholder-count="4">
+<div style="font-size: 34px; line-height: 1.3"><b style="color: #B45F00">{{n.i}}</b> {{n.text}}</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<!-- STEP 4 : SETUP -->
+<sc-if value="{{is4}}" hint-placeholder-val="{{ false }}">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2; color: {{setupTitleC}}">{{setupTitle}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<sc-for list="{{setupCards}}" as="s" hint-placeholder-count="3">
+<button type="button" onClick="{{s.fix}}" style="flex: 1 1 0; min-width: 0; background: {{s.bg}}; border: 4px solid {{s.bd}}; border-radius: 24px; padding: 16px 24px; color: #0B1626; text-align: left; display: flex; flex-direction: column; gap: 2px; font-family: inherit; cursor: pointer">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568; white-space: nowrap">{{s.k}}{{s.us}}</span>
+<span style="font-size: 36px; font-weight: 900; color: #0B1626; margin-top: 4px">{{t.nowLbl}}</span>
+<b style="font-size: 104px; line-height: 1.02; font-family: 'IBM Plex Mono', monospace; color: {{s.curC}}; white-space: nowrap">{{s.cur}}</b>
+<span style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-top: 8px; color: {{s.vC}}"><span style="font-size: 30px; font-weight: 900">{{t.aiLbl}}</span><b style="font-size: 56px; line-height: 1; font-family: 'IBM Plex Mono', monospace; white-space: nowrap">{{s.v}}</b><span style="font-size: 26px; font-weight: 700">{{s.note}}</span></span>
+<span style="margin-top: auto; font-size: 30px; font-weight: 900; line-height: 1.25; color: {{s.vC}}">{{s.hint}}</span>
+</button>
+</sc-for>
+</div>
+<div style="flex: 0 0 auto; background: #F3F5F9; border: 4px solid #D5DCE6; border-radius: 24px; padding: 12px 24px; display: flex; align-items: center; gap: 20px">
+<span style="font-size: 32px; font-weight: 900; color: #17804F; background: #E3F4EA; border-radius: 999px; padding: 6px 20px; white-space: nowrap">✓ {{okCount}} {{t.match}}</span>
+<span style="font-size: 32px; color: #4A5568; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{okLine}}</span>
+</div>
+</sc-if>
+
+<!-- STEP 5 : RUNNING -->
+<sc-if value="{{is5}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 18px; flex: 0 0 236px">
+<div style="flex: 1.25 1 0; background: {{run.bg}}; border-radius: 24px; padding: 18px 28px; display: flex; flex-direction: column; justify-content: center; gap: 6px; color: {{run.fg}}">
+<b style="font-size: 70px; font-weight: 900; line-height: 1.1">{{run.icon}} {{run.title}}</b>
+<span style="font-size: 34px; line-height: 1.25">{{run.body}}</span>
+</div>
+<div style="flex: 1 1 0; background: #F3F5F9; border: 4px solid #D5DCE6; border-radius: 24px; padding: 16px 26px; display: flex; flex-direction: column; justify-content: center; gap: 4px">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568">{{countLabel}}</span>
+<span style="white-space: nowrap"><b style="font-size: 128px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #B45F00">{{count}}</b><b style="font-size: 60px; font-family: 'IBM Plex Mono', monospace; color: #4A5568"> / {{target}}</b></span>
+<span style="font-size: 30px; color: #4A5568">{{coilLine}}</span>
+</div>
+</div>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<sc-for list="{{run3}}" as="g" hint-placeholder-count="3">
+<div style="flex: 1 1 0; background: #F3F5F9; border: 4px solid #D5DCE6; border-top: 12px solid {{g.c}}; border-radius: 24px; padding: 12px 26px; display: flex; flex-direction: column; justify-content: center; gap: 4px">
+<span style="font-size: 32px; font-weight: 700; color: #4A5568">{{g.k}}</span>
+<b style="font-size: 96px; line-height: 1; font-family: 'IBM Plex Mono', monospace; white-space: nowrap">{{g.v}}<span style="font-size: 40px">{{g.u}}</span></b>
+<span style="font-size: 32px; font-weight: 700; color: {{g.c}}; white-space: nowrap">{{g.s}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<!-- STEP 6 : COUNT -->
+<sc-if value="{{is6}}" hint-placeholder-val="{{ false }}">
+<b style="font-size: 52px; font-weight: 900; line-height: 1.2">{{t.s6Ask}}</b>
+<div style="display: flex; gap: 18px; flex: 1 1 auto; min-height: 0">
+<div style="flex: 1.3 1 0; background: #FFF6E0; border: 4px solid #E8A317; border-radius: 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px">
+<div style="display: flex; align-items: center; gap: 40px">
+<button type="button" onClick="{{minus}}" aria-label="-1" style="width: 120px; height: 120px; border-radius: 24px; border: 0; background: #E3E8F0; color: #0B1626; font-size: 80px; font-weight: 900; font-family: inherit; cursor: pointer">−</button>
+<b style="font-size: 170px; line-height: 1; font-family: 'IBM Plex Mono', monospace; min-width: 230px; text-align: center">{{packed}}</b>
+<button type="button" onClick="{{plus}}" aria-label="+1" style="width: 120px; height: 120px; border-radius: 24px; border: 0; background: #E3E8F0; color: #0B1626; font-size: 80px; font-weight: 900; font-family: inherit; cursor: pointer">+</button>
+</div>
+<span style="font-size: 34px; color: #4A5568">{{machineLine}}</span>
+</div>
+<div style="flex: 1 1 0; background: {{verdict.bg}}; border: 4px solid {{verdict.bd}}; border-radius: 24px; padding: 20px 28px; display: flex; flex-direction: column; justify-content: center; gap: 12px">
+<b style="font-size: 72px; font-weight: 900; line-height: 1.1; color: {{verdict.fg}}">{{verdict.title}}</b>
+<span style="font-size: 34px; line-height: 1.35">{{t.target}} {{target}}. {{verdict.body}}</span>
+<sc-if value="{{hasLog}}" hint-placeholder-val="{{ false }}"><span style="font-size: 30px; font-weight: 700; color: #C62828">⚠ {{logText}}</span></sc-if>
+</div>
+</div>
+</sc-if>
+
+</div>
+
+<!-- PREV / NEXT -->
+<div style="height: 118px; flex: 0 0 118px; display: flex; align-items: center; gap: 16px; padding: 0 28px; border-top: 3px solid #E3E8F0; box-sizing: border-box">
+<button type="button" onClick="{{prev}}" style="height: 90px; padding: 0 36px; border-radius: 18px; border: 3px solid #9AA8BC; background: #FFFFFF; color: #4A5568; font-size: 36px; font-weight: 700; font-family: inherit; cursor: pointer; opacity: {{prevOp}}">{{t.prev}}</button>
+<span style="font-size: 24px; color: #6B778A; margin-left: 8px; white-space: nowrap">{{footNote}}</span>
+<span style="flex: 1 1 auto"></span>
+<button type="button" onClick="{{next}}" style="height: 94px; padding: 0 48px; border-radius: 18px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 44px; font-weight: 900; font-family: inherit; cursor: pointer; white-space: nowrap; opacity: {{nextOp}}">{{nextLabel}}</button>
+</div>
+
+<!-- NOTES SHEET -->
+<sc-if value="{{notesOpen}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(11,22,38,0.55); display: flex; justify-content: flex-end">
+<div style="width: 700px; height: 100%; background: #FFFFFF; border-left: 6px solid #E8A317; padding: 26px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; align-items: center"><b style="font-size: 44px; font-weight: 900; color: #B45F00">{{t.notesTitle}}</b><button type="button" onClick="{{closeNotes}}" aria-label="close" style="width: 72px; height: 72px; border-radius: 16px; border: 0; background: #E3E8F0; color: #0B1626; font-size: 44px; cursor: pointer">×</button></div>
+<sc-for list="{{notes}}" as="n" hint-placeholder-count="4">
+<div style="display: flex; gap: 14px; font-size: 32px; line-height: 1.35; background: #FFF6E0; border-radius: 16px; padding: 14px 18px"><b style="color: #B45F00">{{n.i}}</b><span>{{n.text}}</span></div>
+</sc-for>
+<button type="button" onClick="{{readNotesClose}}" style="margin-top: auto; height: 96px; border-radius: 18px; border: 0; background: #0F1E33; color: #FFFFFF; font-size: 40px; font-weight: 900; font-family: inherit; cursor: pointer">{{readLabel}}</button>
+</div>
+</div>
+</sc-if>
+
+<!-- ALARM MODAL -->
+<sc-if value="{{alarmOn}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 0; right: 0; top: 92px; bottom: 0; background: rgba(120,10,20,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; box-sizing: border-box">
+<div style="width: 1220px; background: #FFFFFF; border: 8px solid #C62828; border-radius: 24px; padding: 22px; display: flex; gap: 22px; box-sizing: border-box">
+<sc-if value="{{alarm.hasImg}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 0 0 400px; position: relative; border-radius: 16px; overflow: hidden; background: #000000; height: 520px">
+<img src="{{alarm.img}}" alt="{{alarm.title}}" style="width: 100%; height: 100%; object-fit: cover; display: block">
+<sc-if value="{{alarm.hasRoi}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: {{alarm.rx}}%; top: {{alarm.ry}}%; width: {{alarm.rw}}%; height: {{alarm.rh}}%; transform: translate(-50%, -50%); border: 6px solid #F04438; border-radius: 8px"></div>
+</sc-if>
+</div>
+</sc-if>
+<sc-if value="{{alarm.noImg}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 0 0 400px; height: 480px; border-radius: 16px; background: #FDECEC; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; text-align: center; padding: 12px; box-sizing: border-box"><span style="font-size: 30px; font-weight: 900; color: #C62828">{{alarm.bigLbl}}</span><b style="font-size: 92px; line-height: 1; font-family: 'IBM Plex Mono', monospace; color: #C62828; white-space: nowrap">{{alarm.big}}</b><span style="font-size: 32px; font-weight: 700; color: #4A5568">{{alarm.big2}}</span></div>
+</sc-if>
+<div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 14px; color: #0B1626; min-width: 0">
+<span style="align-self: flex-start; font-size: 30px; font-weight: 900; color: #FFFFFF; background: #C62828; border-radius: 999px; padding: 6px 20px">⚠ {{alarm.cam}}</span>
+<b style="font-size: 56px; font-weight: 900; line-height: 1.1; color: #C62828">{{alarm.title}}</b>
+<span style="font-size: 34px; font-weight: 700">{{alarm.where}}</span>
+<span style="font-size: 32px; line-height: 1.4; color: #4A5568">{{alarm.tip}}</span>
+<div style="margin-top: auto; display: grid; grid-template-columns: repeat({{alarm.cols}}, minmax(0, 1fr)); gap: 12px">
+<sc-for list="{{alarm.btns}}" as="a" hint-placeholder-count="2">
+<button type="button" onClick="{{a.act}}" style="height: 120px; border-radius: 18px; border: 0; background: {{a.bg}}; color: {{a.fg}}; font-size: 32px; font-weight: 900; line-height: 1.15; font-family: inherit; cursor: pointer">{{a.label}}<br><span style="font-size: 21px; font-weight: 700">{{a.sub}}</span></button>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+
+</template>
+<script>
+
+(function(){
+  function get(scope, path){ var p=path.trim().split('.'), v=scope; for(var i=0;i<p.length;i++){ if(v==null) return undefined; v=v[p[i]]; } return v; }
+  function sub(str, scope){ return str.replace(/\{\{([^}]+)\}\}/g, function(_,k){ var v=get(scope,k); return v==null?'':String(v); }); }
+  function hole(str){ var m=/^\s*\{\{([^}]+)\}\}\s*$/.exec(str||''); return m?m[1]:null; }
+  function render(node, scope, out){
+    if(node.nodeType===3){ out.push(document.createTextNode(sub(node.nodeValue,scope))); return; }
+    if(node.nodeType!==1) return;
+    var tag=node.localName;
+    if(tag==='sc-for'){
+      var list=get(scope,hole(node.getAttribute('list')))||[], as=node.getAttribute('as');
+      for(var i=0;i<list.length;i++){ var s=Object.create(scope); s[as]=list[i]; kids(node,s,out); }
+      return;
+    }
+    if(tag==='sc-if'){ if(get(scope,hole(node.getAttribute('value')))) kids(node,scope,out); return; }
+    var el=document.createElementNS(node.namespaceURI, tag);
+    for(var a=0;a<node.attributes.length;a++){
+      var at=node.attributes[a], n=at.name;
+      if(n.indexOf('hint-')===0) continue;
+      if(n.toLowerCase()==='onclick'){ var fn=get(scope,hole(at.value)); if(typeof fn==='function') el.addEventListener('click',fn); continue; }
+      el.setAttribute(n, sub(at.value,scope));
+    }
+    var c=[]; kids(node,scope,c); c.forEach(function(x){el.appendChild(x);});
+    out.push(el);
+  }
+  function kids(node,scope,out){ for(var ch=node.firstChild; ch; ch=ch.nextSibling) render(ch,scope,out); }
+  window.DCLogic=function(props){ this.props=props||{}; this.state={}; };
+  DCLogic.prototype.setState=function(p){ Object.assign(this.state,p); this.__render(); };
+  window.__mount=function(Comp, props, root, tplEl){
+    var c=new Comp(props);
+    c.__render=function(){ var out=[]; kids(tplEl.content, c.renderVals(), out); root.replaceChildren.apply(root,out); };
+    c.__render(); return c;
+  };
+})();
+
+// ---- 레벨러 AI 헬퍼 · 실데이터 ----
+// API: leveler-helper Edge Function (?mode=state 15초마다, ?mode=event 누른 기록 저장)
+// ?asof=YYYY-MM-DD HH:MM:SS 를 붙이면 그 시각으로 재생(점검·교육용, 기록은 test 로 저장)
+var API = 'https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
+var Q = new URLSearchParams(location.search);
+var ASOF = Q.get('asof') || '2026-11-10 17:28:00'; // 시연 기본: 실제 작업 재생
+var POLL_MS = 15000;
+function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* ignore */ } }
+var DEV = lsGet('lvh_dev'); if (!DEV) { DEV = 'tab-' + Math.random().toString(36).slice(2, 8); lsSet('lvh_dev', DEV); }
+function postEvent(ev) {
+  ev.device = DEV; if (ASOF) ev.asof = ASOF;
+  return fetch(API + '?mode=event', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(ev) })
+    .then(function (r) { return r.json(); }).catch(function () { return { ok: false }; });
+}
+function fmt(v, d) {
+  if (v == null || v === '' || !isFinite(v)) return '—';
+  var n = Number(v), s = (d != null ? n.toFixed(d) : (Math.round(n * 10) / 10).toString()).split('.');
+  s[0] = s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return s.join('.');
+}
+var HANGUL = /[가-힣]/;
+// 비고 영어 번역: 자주 쓰는 문구만. 못 바꾸면 원문(한국어) 그대로 보여 준다.
+var GLOSS = [
+  [/평판도\s*(특히\s*)?주의/g, 'Watch flatness'], [/대각\s*칫수\s*(정확요?|주의)/g, 'Exact diagonal size'], [/대각\s*주의/g, 'Watch the diagonal'],
+  [/다이\s*놓으시요/g, 'Place the die'], [/다이놓으시요/g, 'Place the die'], [/기름\s*(절대\s*X|묻지\s*않게\s*주의)/g, 'Keep oil off'],
+  [/스크레치\s*주의/g, 'Watch for scratches'], [/밑면\s*스크레치\s*나는지\s*확인요?/g, 'Check the bottom for scratches'],
+  [/종이포장\s*X/g, 'No paper packing'], [/깨끗한\s*(종이|포장지)(로|\s*사용해서)\s*포장(하시요)?/g, 'Pack with clean paper'],
+  [/철\s*밴딩\s*끈에다\s*두께\s*SIZE\s*(매직으로\s*)?적어\s*주세요/g, 'Write thickness/size on the steel band'], [/철끈에다\s*두께\s*SIZE\s*적어\s*주세요/g, 'Write thickness/size on the steel band'],
+  [/십자밴딩/g, 'Cross banding'], [/한묶음/g, 'One bundle'], [/장갑\s*깨끗한\s*것\s*끼고\s*작업할것/g, 'Wear clean gloves'],
+  [/방화문용/g, 'For fire doors'], [/필름\s*부치면서\s*작업/g, 'Apply film while running'], [/마지막\s*상태가\s*좋지\s*않으면\s*연락\s*하고\s*작업/g, 'If the coil end looks bad, call before running']
+];
+function trNote(s) { var o = s; GLOSS.forEach(function (g) { o = o.replace(g[0], g[1]); }); return HANGUL.test(o) ? s + ' (KR)' : o; }
+function splitNotes(s) { return String(s || '').split(/,|\s{2,}|\n/).map(function (x) { return x.trim(); }).filter(function (x) { return x.length > 1; }); }
+var WD_KO = ['일', '월', '화', '수', '목', '금', '토'], WD_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 1, coil: null, box: 1, chk: {}, acked: {}, packed: {}, notesOpen: false, notesRead: {}, lang: lsGet('lvh_lang'),
+      data: null, err: null, lastOk: null, alarm: null, seen: {}, lastBox: {}, saved: {}, defBase: {}, auto: false };
+    var self = this;
+    setTimeout(function () { self.poll(); }, 0);
+    setInterval(function () { self.poll(); }, POLL_MS);
+  }
+  poll() {
+    var self = this;
+    fetch(API + '?mode=state' + (ASOF ? '&asof=' + encodeURIComponent(ASOF) : ''), { cache: 'no-store' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d || d.ok === false && !d.floor) throw new Error(d && d.error || 'error');
+        var S = self.state, patch = { data: d, err: null, lastOk: Date.now() };
+        var M = self.model(Object.assign({}, S, patch));
+        // 처음 열었을 때 장비가 이 코일로 돌고 있으면 바로 작업 화면
+        if (!S.auto) {
+          patch.auto = true;
+          var lc = M.liveEntry;
+          if (lc && !S.coil) { patch.coil = lc.coil; patch.box = M.boxOf(lc).box; patch.step = d.floor.live && d.floor.live.moving ? 5 : 1; }
+        }
+        // 작업 중인 코일 박스가 바뀌면 '박스 완료' 알람
+        var M2 = self.model(Object.assign({}, S, patch));
+        if (M2.sel && M2.sel.live) {
+          var b = M2.boxOf(M2.sel).box, prev = S.lastBox[M2.sel.coil];
+          var lb = Object.assign({}, S.lastBox); lb[M2.sel.coil] = b; patch.lastBox = lb;
+          if (prev != null && b > prev && !S.alarm) { patch.alarm = { kind: 'box', box: prev }; patch.box = b; }
+          else if (S.step === 5 && S.box !== b && !S.alarm && prev == null) patch.box = b;
+          // 실시간 불량 검출 → 빨간 알람 (작업 중 step5, 라이브 코일에 새 불량이 들어올 때만)
+          var defs = d.defects || [];
+          if (defs.length && !patch.alarm && !S.alarm) {
+            var dMax = defs[0].id, dBase = (S.defBase || {})[M2.sel.coil], ndb = Object.assign({}, S.defBase);
+            if (dBase == null || S.step !== 5) { ndb[M2.sel.coil] = dMax; patch.defBase = ndb; }
+            else if (dMax > dBase) { patch.alarm = { kind: 'defect', defect: defs[0], key: 'def|' + defs[0].id, box: defs[0].box }; ndb[M2.sel.coil] = dMax; patch.defBase = ndb; }
+          }
+          var cutA = M2.cutAlarm;
+          var key = 'cut|' + M2.sel.coil + '|' + b;
+          if (!patch.alarm && !S.alarm && cutA && !S.seen[key] && (S.step === 5)) patch.alarm = { kind: 'cut', key: key, box: b };
+        }
+        self.setState(patch);
+      })
+      .catch(function (e) { self.setState({ err: String(e && e.message || e) }); });
+  }
+  // 화면에 필요한 값 계산(poll 과 render 가 같이 씀)
+  model(S) {
+    var d = S.data || {}, F = d.floor || {}, live = F.live || null, liveCoil = F.liveCoil || null, events = d.events || [];
+    var entries = [];
+    (F.jobs || []).forEach(function (j) {
+      entries.push({ coil: j.coil, cu: j.cu || '', thk: j.thk, wd: j.wd, kg: j.kg, notes: j.notes || '', planBoxes: j.planBoxes || [], boxes: j.boxes || [],
+        sPlc: j.sPlc || 0, sPlan: j.sPlan, hist: j.hist || {}, src: 'job', live: j.coil === liveCoil, end: j.end, st: j.st });
+    });
+    (F.waiting || []).forEach(function (w) {
+      entries.push({ coil: w.coil, cu: w.cu || '', thk: w.thk, wd: w.wd, kg: w.kg, notes: w.notes || '', planBoxes: w.planBoxes || [], boxes: [],
+        sPlc: 0, sPlan: w.sPlan, hist: {}, src: 'wait', live: false, estStart: w.estStart });
+    });
+    entries.sort(function (a, b) { var r = function (e) { return e.live ? 0 : (e.src === 'wait' ? 1 : 2); }; return r(a) - r(b); });
+    var saved = {};
+    events.forEach(function (e) { if (e.kind === 'box_count') saved[e.coil + '|' + e.box] = e.data || {}; });
+    Object.keys(S.saved || {}).forEach(function (k) { saved[k] = S.saved[k]; });
+    var notesRead = {};
+    events.forEach(function (e) { if (e.kind === 'notes_read') notesRead[e.coil] = true; });
+    Object.keys(S.notesRead || {}).forEach(function (k) { if (S.notesRead[k]) notesRead[k] = true; });
+    function plans(e) { return e.planBoxes.length ? e.planBoxes : [{ len: null, plan: e.sPlan || null, rest: false }]; }
+    // 지금 몇 번째 박스인지: PLC 박스 번호를 쓰면 그대로, 아니면 계획 장수(저장한 박스는 실제 장수)로 누적해 계산
+    function boxOf(e) {
+      var pb = plans(e), done = e.live && live ? live.done : e.sPlc;
+      if (e.live && live && live.idx > 0 && live.box <= pb.length) {
+        var pl = pb[live.box - 1].plan;
+        if (pl == null || live.s <= pl * 1.05) return { box: live.box, s: live.s, plan: pl, byPlc: true, done: done };
+      }
+      var cum = 0;
+      for (var i = 0; i < pb.length; i++) {
+        var sv = saved[e.coil + '|' + (i + 1)], size = sv && sv.machine != null ? sv.machine : pb[i].plan;
+        if (size == null || i === pb.length - 1 || done < cum + size) return { box: i + 1, s: Math.max(0, done - cum), plan: pb[i].plan, byPlc: false, done: done, cum: cum };
+        cum += size;
+      }
+      return { box: 1, s: done, plan: pb[0].plan, done: done, cum: 0 };
+    }
+    function machineCount(e, b) {
+      var cur = boxOf(e);
+      if (b === cur.box) return cur.s;
+      var g = e.boxes.filter(function (x) { return x.idx === b; })[0];
+      if (g && g.plc != null) return g.plc;
+      var sv = saved[e.coil + '|' + b]; if (sv && sv.machine != null) return sv.machine;
+      var pb = plans(e)[b - 1]; return b < cur.box ? (pb && pb.plan) : 0;
+    }
+    var sel = entries.filter(function (e) { return e.coil === S.coil; })[0] || null;
+    var liveEntry = entries.filter(function (e) { return e.live; })[0] || null;
+    var m = d.machine && !d.machine.error ? d.machine : null;
+    var ratio = d.cut && d.cut.ratio ? d.cut.ratio : null;
+    function recCutFor(len) { return len ? (ratio ? Math.round(len * ratio * 2) / 2 : len) : null; }
+    var cutAlarm = false;
+    if (sel && sel.live && m && live && live.moving) {
+      var pbx = plans(sel)[boxOf(sel).box - 1], rc = recCutFor(pbx && pbx.len);
+      cutAlarm = rc != null && m.cut != null && Math.abs(m.cut - rc) > 3;
+    }
+    return { F: F, live: live, liveCoil: liveCoil, entries: entries, sel: sel, liveEntry: liveEntry, saved: saved, notesRead: notesRead,
+      plans: plans, boxOf: boxOf, machineCount: machineCount, m: m, ratio: ratio, recCutFor: recCutFor, cutAlarm: cutAlarm, rec: d.rec || {} };
+  }
+  renderVals() {
+    var self = this, S = this.state;
+    var L = S.lang || this.props.lang || 'ko', EN = L === 'en';
+    var KO = {
+      langBtn: 'EN', notes: '비고', notesTitle: '비고 — 꼭 읽으세요', read: '읽었어요', readDone: '✓ 읽음',
+      steps: ['코일', '박스', '지시서', '장비 셋팅', '작업 중', '장수 확인'], box: '박스',
+      s1Title: '오늘 작업할 코일', s2Title: '몇 번 박스?', s3Title: '지시서 확인', s6Ask: '박스에 담은 장수는?',
+      noJobs: '오늘 작업지시가 없어요', noJobsSub: '마지막 장비 기록 {t}', loading: '불러오는 중…', loadingB: '장비와 작업지시서를 읽고 있어요',
+      offT: '연결이 안 돼요', offB: '와이파이를 확인하세요 · 15초마다 다시 시도',
+      pillLive: '실시간 {t}', pillIdle: '장비 대기 {t}', pillOff: '장비 꺼짐 · 마지막 {t}', pillErr: '연결 끊김', pillReplay: '재생 {t}',
+      stLive: '▶ 작업 중 {s}/{p}', stWait: '대기 · 예상 {t}', stWait0: '대기', stDone: '오늘 작업 {n}장', boxesFmt: '{n}박스', boxesSheets: '{n}박스 · {s}장', box1: '1박스',
+      boxDone: '완료 {n}장', boxEnded: '끝남 · 장수 확인', boxNow: '작업 중 {s}/{p}', boxRest: '나머지', sheets: '장',
+      ocK: ['규격', '절단 길이', '박스 {b} 장수', '업체'], noNotes: '비고 없음',
+      st: ['절단 길이', '속도 설정', '가속 / 감속', '저속 구간'], stShort: ['절단', '속도', '가감속', '저속'],
+      nowLbl: '지금 장비', lastLbl: '마지막 장비 값', aiLbl: 'AI 추천', match: '맞음', order: '지시서 {v}',
+      sameCut: '✓ 지난 작업과 같은 보정', sameHist: '✓ 지난 작업과 같음', tapDone: '확인하고 누르세요', acked: '✓ 확인함 — 그대로 진행', longer: '지시서보다 {v}mm 김', noRec: '추천 없음',
+      chgFmt: '{n}개 확인하세요', chgOne: '1개 확인하세요', allSet: '모두 맞음 — 시작하세요',
+      basis: '근거: 지난 {n}건 ({t}t, 최근 {d})', basisNear: '근거: 비슷한 두께 {n}건 ({t}t)', noBasis: '같은 두께 기록 없음 — 지금 값 유지', cutBasis: '절단 보정 ×{r}',
+      keepT: '이대로 계속', keepB: '모두 정상', stopT: '멈춤 {n}분', stopB: '다시 시작하면 자동으로 이어서 셉니다', endT: '코일 끝 — 판 자주 보기', endB: '남은 {n}장 · 5장마다 판 확인',
+      fullT: '박스 {b} 다 찼어요', fullB: '박스 바꾸고 장수 확인 →', plcBoxT: 'PLC 박스 번호 확인', plcBoxB: 'PLC {a}번 → 지금 {b}번 박스',
+      waitT: '아직 시작 전', waitB: 'PLC 작업선택에서 {c} 입력 후 시작하세요', otherT: '다른 코일 작업 중', otherB: 'PLC 코일: {c}',
+      offRunT: '장비 꺼짐', offRunB: '마지막 기록 {t}', cutT: '절단 길이 확인', cutB: '장비 {a} · AI 추천 {b}',
+      countFmt: '박스 {b} · 자른 장수', coilEnds: '전체 {p}% · 종료 {t}', coilNo: '전체 {p}%',
+      sig: ['이송 속도', '부하', '텐션 (OCR)'], setFmt: '설정 {v}', rangeFmt: '평소 {a}–{b}', ocrOff: 'OCR 꺼짐', ocrAge: '{n}분 전',
+      machine: '기계', target: '목표', machineLine: '기계가 센 장수 {n}', machineNo: '기계 장수 없음', vOkT: '맞아요 ✓', vLessT: '{n}장 부족해요', vMoreT: '{n}장 많아요', vLessB2: '다음 박스에서 채우거나 관리자에게 알리세요.', vMoreB2: '다시 세어 주세요.', savedFmt: '저장됨 {n}장',
+      prev: '← 이전', nextFmt: ['코일 선택 →', '다음 →', '읽었어요 · 셋팅 →', '작업 시작 →', '박스 완료 →', '저장 · 박스 {b} →'], saveEnd: '저장 · 코일 끝',
+      foot: ['', '', '', 'AI 추천과 달라도 진행할 수 있어요', '', ''],
+      aBoxCam: 'PLC', aBoxT: '박스 {b} 목표 장수 도달', aBoxW: '박스를 바꾸고 장수를 확인하세요', aBoxTip: 'PLC 박스 번호도 다음 번호로 넘겨 주세요.', aBoxBig: '{n}장', aBoxLbl: '박스 {b}',
+      aCutT: '절단 길이가 추천과 달라요', aCutW: '박스 {b} · 지시서 {o}mm', aCutTip: '지난 작업들은 지시서보다 약 {r}mm 짧게 넣었어요. 일부러 바꾼 거면 “확인”을 누르세요.', aCutLbl: '지금 장비', aCutBig2: 'AI 추천 {v}',
+      bCount: '장수 확인 →', bCountS: '박스 완료', bLater: '나중에', bLaterS: '계속 작업', bOk: '확인', bOkS: '일부러 바꿈 · 계속', bStop: '멈춤', bStopS: '관리자 호출',
+      aDefSurf: '표면 불량(흠집) 발견', aDefFlat: '평탄도 불량 발견',
+      aDefCamS: '카메라1 · 표면검사', aDefCamF: '카메라2 · 평탄도검사', aDefWhere: '박스 {b} · {v}',
+      aDefTip: '작업을 멈추고 확인하세요. 필요하면 사진을 찍어 저장하세요.',
+      bDefOk: '확인', bDefOkS: '계속 작업', bDefSave: '사진 저장', bDefSaveS: '불량 등록 열기', bDefStop: '멈춤', bDefStopS: '관리자 호출'
+    };
+    var ENd = {
+      langBtn: '한국어', notes: 'Notes', notesTitle: 'Notes — please read', read: 'I read it', readDone: '✓ Read',
+      steps: ['Coil', 'Box', 'Order', 'Setup', 'Running', 'Count'], box: 'Box',
+      s1Title: "Today's coils", s2Title: 'Which box?', s3Title: 'Check the order', s6Ask: 'Sheets in the box?',
+      noJobs: 'No work orders today', noJobsSub: 'Last machine record {t}', loading: 'Loading…', loadingB: 'Reading the machine and work orders',
+      offT: 'No connection', offB: 'Check the Wi-Fi · retrying every 15 s',
+      pillLive: 'Live {t}', pillIdle: 'Idle {t}', pillOff: 'Machine off · last {t}', pillErr: 'Offline', pillReplay: 'Replay {t}',
+      stLive: '▶ Running {s}/{p}', stWait: 'Waiting · ~{t}', stWait0: 'Waiting', stDone: 'Done today · {n}', boxesFmt: '{n} boxes', boxesSheets: '{n} boxes · {s} sheets', box1: '1 box',
+      boxDone: 'Done · {n}', boxEnded: 'Ended · count it', boxNow: 'Running {s}/{p}', boxRest: 'Rest', sheets: '',
+      ocK: ['Size', 'Cut length', 'Box {b} sheets', 'Customer'], noNotes: 'No notes',
+      st: ['Cut length', 'Speed set', 'Accel / Decel', 'Slow zone'], stShort: ['Cut', 'Speed', 'Accel', 'Slow'],
+      nowLbl: 'Now on machine', lastLbl: 'Last machine value', aiLbl: 'AI says', match: 'OK', order: 'Order {v}',
+      sameCut: '✓ Same offset as past jobs', sameHist: '✓ Same as past jobs', tapDone: 'Check, then tap', acked: '✓ Checked — go ahead', longer: '{v} mm longer than order', noRec: 'No suggestion',
+      chgFmt: 'Check {n} settings', chgOne: 'Check 1 setting', allSet: 'All set — press Start',
+      basis: 'Based on {n} past job(s) ({t} mm, latest {d})', basisNear: 'Based on {n} similar job(s) ({t} mm)', noBasis: 'No past job at this thickness — keep current', cutBasis: 'cut offset ×{r}',
+      keepT: 'Keep going', keepB: 'All normal', stopT: 'Stopped {n} min', stopB: 'Counting resumes when you restart', endT: 'Coil end — check sheets', endB: '{n} sheets left · check every 5th',
+      fullT: 'Box {b} is full', fullB: 'Change the box, then count →', plcBoxT: 'Check the PLC box no.', plcBoxB: 'PLC {a} → now box {b}',
+      waitT: 'Not started', waitB: 'Enter {c} on the PLC job pad, then start', otherT: 'Another coil running', otherB: 'PLC coil: {c}',
+      offRunT: 'Machine off', offRunB: 'Last record {t}', cutT: 'Check cut', cutB: 'Machine {a} · AI {b}',
+      countFmt: 'Box {b} · sheets cut', coilEnds: 'Coil {p}% · ends {t}', coilNo: 'Coil {p}%',
+      sig: ['Feed speed', 'Load', 'Tension (OCR)'], setFmt: 'set {v}', rangeFmt: 'usual {a}–{b}', ocrOff: 'OCR off', ocrAge: '{n} min ago',
+      machine: 'Machine', target: 'Target', machineLine: 'Machine count {n}', machineNo: 'No machine count', vOkT: 'Correct ✓', vLessT: '{n} short', vMoreT: '{n} too many', vLessB2: 'Fill from the next box or tell the supervisor.', vMoreB2: 'Please count again.', savedFmt: 'Saved {n}',
+      prev: '← Back', nextFmt: ['Pick coil →', 'Next →', 'I read it · Setup →', 'Start →', 'Box done →', 'Save · Box {b} →'], saveEnd: 'Save · coil done',
+      foot: ['', '', '', 'You can go ahead even if it differs from AI', '', ''],
+      aBoxCam: 'PLC', aBoxT: 'Box {b} reached its target', aBoxW: 'Change the box and count the sheets', aBoxTip: 'Also move the PLC box number to the next one.', aBoxBig: '{n}', aBoxLbl: 'Box {b}',
+      aCutT: 'Cut length differs from AI', aCutW: 'Box {b} · order {o} mm', aCutTip: 'Past jobs were set about {r} mm shorter than the order. If you changed it on purpose, press OK.', aCutLbl: 'Now on machine', aCutBig2: 'AI says {v}',
+      bCount: 'Count →', bCountS: 'Box done', bLater: 'Later', bLaterS: 'Keep running', bOk: 'OK', bOkS: 'On purpose · continue', bStop: 'Stop', bStopS: 'Call supervisor',
+      aDefSurf: 'Surface defect (scratch)', aDefFlat: 'Flatness defect',
+      aDefCamS: 'Camera 1 · Surface', aDefCamF: 'Camera 2 · Flatness', aDefWhere: 'Box {b} · {v}',
+      aDefTip: 'Stop and check. Take a photo and save it if needed.',
+      bDefOk: 'OK', bDefOkS: 'Keep running', bDefSave: 'Save photo', bDefSaveS: 'Open defect register', bDefStop: 'Stop', bDefStopS: 'Call supervisor'
+    };
+    var T = EN ? ENd : KO;
+    function f(s, o) { return String(s).replace(/\{(\w)\}/g, function (_, k) { return o[k] == null ? '' : o[k]; }); }
+    var M = this.model(S), d = S.data || {}, F = M.F, live = M.live, m = M.m;
+    var loading = !S.data;
+    var hhmm = function (ts) { return ts ? String(ts).slice(11, 16) : '—'; };
+    var dateStr = d.today || '';
+    var dateLbl = '';
+    if (dateStr) { var dt = new Date(dateStr + 'T00:00:00Z'); dateLbl = dateStr.slice(5).replace('-', '/') + ' (' + (EN ? WD_EN : WD_KO)[dt.getUTCDay()] + ')'; }
+    // 상태 표시
+    var pill;
+    if (S.err && (!S.lastOk || Date.now() - S.lastOk > 60000)) pill = { text: T.pillErr, bg: '#C62828', fg: '#FFFFFF', dot: '#FFFFFF' };
+    else if (ASOF) pill = { text: f(T.pillReplay, { t: (d.now || '').slice(0, 5) }), bg: '#E6E0FA', fg: '#4B3B9A', dot: '#796CBF' };
+    else if (F.online && live && live.moving) pill = { text: f(T.pillLive, { t: (d.now || '').slice(0, 5) }), bg: '#E3F4EA', fg: '#17804F', dot: '#17804F' };
+    else if (F.online) pill = { text: f(T.pillIdle, { t: (d.now || '').slice(0, 5) }), bg: '#FFF6E0', fg: '#B45F00', dot: '#E8A317' };
+    else pill = { text: f(T.pillOff, { t: m ? (m.ts.slice(5, 10).replace('-', '/') + ' ' + hhmm(m.ts)) : '—' }), bg: '#2A3B55', fg: '#DCE3EE', dot: '#8FA3BF' };
+
+    function go(n) { return function () { self.setState({ step: n, notesOpen: false }); }; }
+    var sel = M.sel;
+    var step = loading || (!sel && S.step > 1) ? 1 : S.step;
+    var dots = T.steps.map(function (l, i) { var n = i + 1; return { label: l, go: sel || n === 1 ? go(n) : function () {}, w: n === step ? 48 : 22, c: n === step ? '#F5B547' : (n < step ? '#3FAE6A' : '#3A5375') }; });
+
+    // ---- STEP 1 ----
+    var coils = M.entries.slice(0, 4).map(function (e) {
+      var pb = M.plans(e), bo = M.boxOf(e), on = sel && sel.coil === e.coil;
+      var st, stC;
+      if (e.live) { st = f(T.stLive, { s: fmt(bo.done), p: e.sPlan != null ? fmt(e.sPlan) : '?' }); stC = '#17804F'; }
+      else if (e.src === 'wait') { st = e.estStart ? f(T.stWait, { t: e.estStart }) : T.stWait0; stC = '#B45F00'; }
+      else { st = f(T.stDone, { n: fmt(e.sPlc) }); stC = '#6B778A'; }
+      var nb = e.planBoxes.length || 1;
+      var boxesTxt = e.sPlan != null ? f(T.boxesSheets, { n: nb, s: fmt(e.sPlan) }) : (nb === 1 ? T.box1 : f(T.boxesFmt, { n: nb }));
+      var short = e.coil, fs = short.length > 11 ? 40 : short.length > 8 ? 50 : 62;
+      return { coil: e.coil, short: short, fs: fs, cust: e.cu, spec: (e.thk != null ? e.thk.toFixed(2) : '?') + ' × ' + (e.wd || '?'), boxes: boxesTxt, st: st, stC: stC,
+        bg: on || (!sel && e === M.entries[0]) ? '#FFF6E0' : '#F3F5F9', bd: on || (!sel && e === M.entries[0]) ? '#E8A317' : '#D5DCE6',
+        pick: function () { var b = M.boxOf(e).box; self.setState({ coil: e.coil, box: b, step: 2, chk: {}, acked: {} }); postEvent({ coil: e.coil, box: b, kind: 'coil_pick', data: { live: e.live, src: e.src } }); } };
+    });
+
+    // ---- selected coil values ----
+    var pb = sel ? M.plans(sel) : [{ len: null, plan: null }];
+    var box = Math.min(Math.max(1, S.box), pb.length);
+    var bo = sel ? M.boxOf(sel) : { box: 1, s: 0, plan: null, done: 0 };
+    var curPb = pb[box - 1] || {};
+    var target = curPb.plan;
+    var boxesX = pb.map(function (p, i) {
+      var n = i + 1, sv = sel && M.saved[sel.coil + '|' + n], on = n === box;
+      var st, stC;
+      if (sv) { st = f(T.boxDone, { n: sv.packed }); stC = '#17804F'; }
+      else if (sel && (sel.live || sel.src === 'job') && n < bo.box) { st = T.boxEnded; stC = '#B45F00'; }
+      else if (sel && sel.live && n === bo.box) { st = f(T.boxNow, { s: bo.s, p: p.plan != null ? p.plan : '?' }); stC = '#17804F'; }
+      else { st = p.rest ? T.boxRest + ' ' + (p.plan != null ? p.plan : '') : (p.plan != null ? p.plan + T.sheets : '—'); stC = '#6B778A'; }
+      return { no: n, st: st, stC: stC, bg: on ? '#FFF6E0' : '#F3F5F9', bd: on ? '#E8A317' : '#D5DCE6', pick: function () { self.setState({ box: n, step: 3 }); } };
+    });
+
+    // ---- STEP 3 ----
+    var notesArr = sel ? splitNotes(sel.notes).map(function (x) { return EN ? trNote(x) : x; }) : [];
+    var oVal = [sel ? (sel.thk != null ? sel.thk.toFixed(2) : '?') + '×' + (sel.wd || '?') : '—', curPb.len ? fmt(curPb.len) : '—', target != null ? String(target) : (curPb.rest ? T.boxRest : '—'), sel ? sel.cu || '—' : '—'];
+    var orderX = oVal.map(function (v, j) {
+      var on = !!S.chk[j];
+      var w = v.length + (v.match(/[\uac00-\ud7a3]/g) || []).length;
+      return { k: f(T.ocK[j], { b: box }), v: v, fs: w > 9 ? 40 : w > 7 ? 46 : 56, mark: on ? '✓' : '', kc: on ? '#17804F' : '#4A5568', bg: on ? '#E3F4EA' : '#F3F5F9', bd: on ? '#17804F' : '#D5DCE6',
+        toggle: function () { var c = Object.assign({}, S.chk); c[j] = !c[j]; self.setState({ chk: c }); } };
+    });
+    var notesShort = (notesArr.length ? notesArr : [T.noNotes]).slice(0, 5).map(function (t, i) { return { i: notesArr.length ? i + 1 + '.' : '', text: t }; });
+    var notes = (notesArr.length ? notesArr : [T.noNotes]).map(function (t, i) { return { i: i + 1, text: t }; });
+    var isRead = sel && M.notesRead[sel.coil];
+
+    // ---- STEP 4 : setup ----
+    var rec = sel ? (M.rec[sel.coil] || { n: 0 }) : { n: 0 };
+    var recCut = M.recCutFor(curPb.len);
+    var machineFresh = F.online;
+    var items = [
+      { key: 'cut', cur: m && m.cut, ai: recCut, u: 'mm', show: function (v) { return fmt(v); }, tol: 2, order: curPb.len },
+      { key: 'ss', cur: m && m.ss, ai: rec.ss && rec.ss.v, u: '', show: function (v) { return fmt(v); }, tol: 0 },
+      { key: 'ad', cur: m ? m.acc + ' / ' + m.dec : null, ai: rec.acc && rec.dec ? rec.acc.v + ' / ' + rec.dec.v : null, u: 's', show: function (v) { return v == null ? '—' : String(v); }, str: true },
+      { key: 'slow', cur: m && m.slow, ai: rec.slow && rec.slow.v, u: 'mm', show: function (v) { return fmt(v); }, tol: 0 }
+    ];
+    var setupCards = [], okParts = [], okCount = 0, remain = 0;
+    items.forEach(function (x, i) {
+      var noAi = x.ai == null, noCur = x.cur == null;
+      var same = noAi || noCur ? false : (x.str ? x.cur === x.ai : Math.abs(x.cur - x.ai) <= x.tol);
+      var ak = !!S.acked[x.key];
+      if ((same || noAi) && i !== 0) { okCount += same ? 1 : 0; okParts.push(T.stShort[i] + ' ' + x.show(x.cur) + (noAi ? ' (' + T.noRec + ')' : '')); return; }
+      if (!same && !ak && !noAi) remain++;
+      var good = same || ak || noAi;
+      var longer = x.key === 'cut' && x.order && x.cur != null && x.cur > x.order + 1;
+      var hint = same ? (x.key === 'cut' ? T.sameCut : T.sameHist) : (ak ? T.acked : (noAi ? T.noRec : (longer ? f(T.longer, { v: fmt(x.cur - x.order) }) : T.tapDone)));
+      setupCards.push({ k: T.st[i], us: x.u ? ' · ' + x.u : '', cur: x.show(x.cur), v: x.show(x.ai),
+        curC: good ? '#0B1626' : '#C62828', vC: good ? '#17804F' : '#B45F00',
+        note: x.key === 'cut' && x.order ? f(T.order, { v: fmt(x.order) }) : '',
+        hint: hint, bg: good ? '#E3F4EA' : '#FFF6E0', bd: good ? '#17804F' : '#E8A317',
+        fix: same || noAi ? function () {} : function () {
+          var c = Object.assign({}, S.acked); c[x.key] = !c[x.key]; self.setState({ acked: c });
+          if (c[x.key]) postEvent({ coil: sel.coil, box: box, kind: 'setting_ack', data: { key: x.key, cur: x.cur, ai: x.ai } });
+        } });
+    });
+    var basis = rec.n ? f(rec.basis === 'near' ? T.basisNear : T.basis, { n: rec.n, t: (rec.thks || []).map(function (v) { return Number(v).toFixed(2); }).join('/'), d: rec.last ? rec.last.date.slice(5).replace('-', '/') : '' }) : T.noBasis;
+    var okLine = (machineFresh ? '' : T.lastLbl + ' ' + (m ? hhmm(m.ts) : '—') + ' · ') + okParts.join(' · ') + (okParts.length ? ' · ' : '') + basis;
+
+    // ---- STEP 5 : running ----
+    var count = sel && sel.live && box === bo.box ? bo.s : (sel ? M.machineCount(sel, box) || 0 : 0);
+    var run;
+    if (!sel) run = { icon: '·', title: T.waitT, body: '', bg: '#E3E8F0', fg: '#0B1626' };
+    else if (!F.online) run = { icon: '■', title: T.offRunT, body: f(T.offRunB, { t: m ? hhmm(m.ts) : '—' }), bg: '#E3E8F0', fg: '#0B1626' };
+    else if (!sel.live) run = M.liveCoil ? { icon: '!', title: T.otherT, body: f(T.otherB, { c: M.liveCoil }), bg: '#E8A317', fg: '#0B1626' }
+      : { icon: '!', title: T.waitT, body: f(T.waitB, { c: sel.coil }), bg: '#E8A317', fg: '#0B1626' };
+    else if (M.cutAlarm && !S.seen['cut|' + sel.coil + '|' + bo.box]) run = { icon: '⚠', title: T.cutT, body: f(T.cutB, { a: fmt(m.cut), b: fmt(recCut) }), bg: '#C62828', fg: '#FFFFFF' };
+    else if (target != null && count >= target && box === bo.box && box < pb.length) run = { icon: '!', title: f(T.fullT, { b: box }), body: T.fullB, bg: '#E8A317', fg: '#0B1626' };
+    else if (live && !live.moving && live.idleSec > 120) run = { icon: '■', title: f(T.stopT, { n: Math.round(live.idleSec / 60) }), body: T.stopB, bg: '#E8A317', fg: '#0B1626' };
+    else if (live && live.idx > 0 && live.idx !== bo.box) run = { icon: '!', title: T.plcBoxT, body: f(T.plcBoxB, { a: live.idx, b: bo.box }), bg: '#E8A317', fg: '#0B1626' };
+    else if (live && live.remainSheets != null && live.planTotal && live.remainSheets <= live.planTotal * 0.1) run = { icon: '!', title: T.endT, body: f(T.endB, { n: live.remainSheets }), bg: '#E8A317', fg: '#0B1626' };
+    else run = { icon: '✓', title: T.keepT, body: T.keepB, bg: '#17804F', fg: '#FFFFFF' };
+    var tot = sel ? (sel.sPlan || null) : null;
+    var pct = tot ? Math.min(100, Math.round(bo.done / tot * 100)) : 0;
+    var coilLine = sel && sel.live && live && live.endEst ? f(T.coilEnds, { p: pct, t: live.endEst }) : f(T.coilNo, { p: pct });
+    var hist = sel ? sel.hist || {} : {};
+    var ten = d.tension, tenFresh = ten && ten.ageMin != null && ten.ageMin <= 15 && ten.out > 0;
+    var G = '#17804F', Y = '#B45F00', N = '#6B778A';
+    var loadV = live && live.moving ? live.load : null;
+    var loadOk = loadV != null && hist.ldMean != null && hist.ldSd != null ? Math.abs(loadV - hist.ldMean) <= 2 * Math.max(3, hist.ldSd) : null;
+    var run3 = [
+      { k: T.sig[0], v: live && live.moving ? fmt(live.feed) : '—', u: live && live.moving ? 'm/min' : '', c: live && live.moving ? G : N, s: f(T.setFmt, { v: m ? fmt(m.ss) : '—' }) },
+      { k: T.sig[1], v: loadV != null ? fmt(loadV) : '—', u: loadV != null ? '%' : '', c: loadOk === false ? Y : (loadV != null ? G : N),
+        s: hist.ldMean != null ? f(T.rangeFmt, { a: fmt(Math.max(0, hist.ldMean - 2 * Math.max(3, hist.ldSd || 0)), 0), b: fmt(hist.ldMean + 2 * Math.max(3, hist.ldSd || 0), 0) }) : (live && live.ppm ? fmt(live.ppm) + (EN ? ' sheets/min' : ' 장/분') : '') },
+      { k: T.sig[2], v: tenFresh ? fmt(ten.out) : '—', u: tenFresh ? '%' : '', c: tenFresh ? G : N, s: tenFresh ? f(T.ocrAge, { n: Math.round(ten.ageMin) }) : T.ocrOff }
+    ];
+
+    // ---- STEP 6 : count ----
+    var mc = sel ? M.machineCount(sel, box) : null;
+    var pk = S.packed[box] != null ? S.packed[box] : (mc != null ? mc : (target || 0));
+    var tgt = target != null ? target : mc;
+    var verdictX = tgt == null ? { title: '—', body: '', bg: '#F3F5F9', bd: '#D5DCE6', fg: '#0B1626' }
+      : pk === tgt ? { title: T.vOkT, body: '', bg: '#E3F4EA', bd: '#17804F', fg: '#17804F' }
+        : (pk < tgt ? { title: f(T.vLessT, { n: tgt - pk }), body: T.vLessB2, bg: '#FFF6E0', bd: '#E8A317', fg: '#C62828' }
+          : { title: f(T.vMoreT, { n: pk - tgt }), body: T.vMoreB2, bg: '#FFF6E0', bd: '#E8A317', fg: '#C62828' });
+    function setPacked(v) { var c = Object.assign({}, S.packed); c[box] = Math.max(0, v); self.setState({ packed: c }); }
+    function saveBox() {
+      if (!sel) return;
+      var rec2 = { target: target, machine: mc, packed: pk, plan_len: curPb.len || null, byPlc: !!bo.byPlc };
+      var sv = Object.assign({}, S.saved); sv[sel.coil + '|' + box] = rec2;
+      var nb = Math.min(pb.length, box + 1);
+      self.setState({ saved: sv, box: nb, step: box >= pb.length ? 2 : 5 });
+      postEvent({ coil: sel.coil, box: box, kind: 'box_count', data: rec2 });
+    }
+
+    // ---- alarm ----
+    var A = S.alarm, alarm = { cam: '', title: '', where: '', tip: '', img: '', hasImg: false, noImg: true, big: '', big2: '', bigLbl: '', btns: [], cols: 2 };
+    function closeAlarm(kind, extra) {
+      return function () {
+        var seen = Object.assign({}, S.seen); if (A.key) seen[A.key] = true;
+        var patch = Object.assign({ alarm: null, seen: seen }, extra || {});
+        self.setState(patch);
+        if (sel) postEvent({ coil: sel.coil, box: A.box || box, kind: 'alarm_ack', data: { alarm: A.kind, action: kind, cut: m && m.cut, ai: recCut } });
+      };
+    }
+    if (A && sel) {
+      if (A.kind === 'box') {
+        var bp = pb[A.box - 1] || {};
+        alarm = Object.assign(alarm, { cam: T.aBoxCam, title: f(T.aBoxT, { b: A.box }), where: T.aBoxW, tip: T.aBoxTip, bigLbl: f(T.aBoxLbl, { b: A.box }), big: f(T.aBoxBig, { n: bp.plan != null ? bp.plan : M.machineCount(sel, A.box) }), big2: '',
+          btns: [{ label: T.bCount, sub: T.bCountS, bg: '#17804F', fg: '#FFFFFF', act: closeAlarm('count', { step: 6, box: A.box }) }, { label: T.bLater, sub: T.bLaterS, bg: '#E3E8F0', fg: '#0B1626', act: closeAlarm('later') }] });
+      } else if (A.kind === 'cut') {
+        alarm = Object.assign(alarm, { cam: 'PLC', title: T.aCutT, where: f(T.aCutW, { b: A.box || box, o: fmt(curPb.len) }), tip: f(T.aCutTip, { r: fmt(curPb.len && M.ratio ? curPb.len * (1 - M.ratio) : 0) }), bigLbl: T.aCutLbl, big: m ? fmt(m.cut) : '—', big2: f(T.aCutBig2, { v: fmt(recCut) }),
+          btns: [{ label: T.bOk, sub: T.bOkS, bg: '#17804F', fg: '#FFFFFF', act: closeAlarm('ok') }, { label: T.bStop, sub: T.bStopS, bg: '#C62828', fg: '#FFFFFF', act: closeAlarm('stop') }] });
+      } else if (A.kind === 'defect') {
+        var dm = A.defect || {};
+        var isSurf = dm.metric === 'anomaly_score';
+        var vText = isSurf ? (EN ? 'score ' : '점수 ') + (dm.score != null ? Number(dm.score).toFixed(2) : '—') : (dm.score != null ? fmt(dm.score) : '—') + 'mm';
+        var dRoi = dm.roi;
+        alarm = Object.assign(alarm, {
+          cam: isSurf ? T.aDefCamS : T.aDefCamF, title: isSurf ? T.aDefSurf : T.aDefFlat,
+          where: f(T.aDefWhere, { b: dm.box != null ? dm.box : (A.box || box), v: vText }), tip: T.aDefTip,
+          img: dm.img || '', hasImg: !!dm.img, noImg: !dm.img, hasRoi: !!dRoi,
+          rx: dRoi ? dRoi.cx : 50, ry: dRoi ? dRoi.cy : 50, rw: dRoi ? dRoi.w : 0, rh: dRoi ? dRoi.h : 0,
+          bigLbl: isSurf ? T.aDefCamS : T.aDefCamF, big: vText, big2: '', cols: 3,
+          btns: [
+            { label: T.bDefOk, sub: T.bDefOkS, bg: '#17804F', fg: '#FFFFFF', act: closeAlarm('def_ok') },
+            { label: T.bDefSave, sub: T.bDefSaveS, bg: '#2F8FD0', fg: '#FFFFFF', act: function () { try { window.open('/leveling-defect-register.html', '_blank'); } catch (e) { /* ignore */ } closeAlarm('def_save')(); } },
+            { label: T.bDefStop, sub: T.bDefStopS, bg: '#C62828', fg: '#FFFFFF', act: closeAlarm('def_stop') }
+          ]
+        });
+      }
+    }
+    var alarmOn = !!(A && sel);
+
+    function next() {
+      if (step === 1) { var e = sel || M.entries[0]; if (!e) return; if (!sel) self.setState({ coil: e.coil, box: M.boxOf(e).box, step: 2 }); else self.setState({ step: 2 }); return; }
+      if (step === 3) {
+        var nr = Object.assign({}, S.notesRead); nr[sel.coil] = true; self.setState({ step: 4, notesRead: nr });
+        if (!isRead) postEvent({ coil: sel.coil, box: box, kind: 'notes_read', data: { n: notesArr.length } });
+        postEvent({ coil: sel.coil, box: box, kind: 'order_check', data: { checked: Object.keys(S.chk).filter(function (k) { return S.chk[k]; }).map(Number) } });
+        return;
+      }
+      if (step === 5) { self.setState({ step: 6 }); return; }
+      if (step === 6) { saveBox(); return; }
+      self.setState({ step: step + 1 });
+    }
+    var nextLabel = step === 6 && box >= pb.length ? T.saveEnd : f(T.nextFmt[step - 1], { b: Math.min(pb.length, box + 1) });
+    var loadTitle = S.err && !S.data ? T.offT : T.loading, loadBody = S.err && !S.data ? T.offB : T.loadingB;
+
+    return {
+      t: Object.assign({}, T, { notes: T.notes, langBtn: T.langBtn, prev: T.prev, match: T.match }),
+      stepNo: step, stepName: T.steps[step - 1] + (step >= 5 && sel ? ' · ' + T.box + ' ' + box : ''), dots: dots, pill: pill,
+      loading: loading, loadTitle: loadTitle, loadBody: loadBody,
+      is1: !loading && step === 1, is2: !loading && step === 2, is3: !loading && step === 3, is4: !loading && step === 4, is5: !loading && step === 5, is6: !loading && step === 6,
+      dateLbl: dateLbl, coils: coils, noCoils: !loading && !M.entries.length, noJobsSub: f(T.noJobsSub, { t: m ? m.ts.slice(5, 16).replace('-', '/') : '—' }),
+      boxes: boxesX, orderChecks: orderX, notesShort: notesShort, notes: notes,
+      setupCards: setupCards, okCount: okCount, okLine: okLine,
+      setupTitle: remain ? (remain === 1 ? T.chgOne : f(T.chgFmt, { n: remain })) : T.allSet, setupTitleC: remain ? '#0B1626' : '#17804F',
+      run: run, run3: run3, countLabel: f(T.countFmt, { b: box }), count: fmt(count), target: target != null ? target : '—', coilPct: pct, endsAt: '', coilLine: coilLine,
+      packed: pk, minus: function () { setPacked(pk - 1); }, plus: function () { setPacked(pk + 1); }, verdict: verdictX,
+      machineLine: mc != null ? f(T.machineLine, { n: fmt(mc) }) : T.machineNo, hasLog: false, logText: '',
+      alarmOn: alarmOn, alarm: alarm,
+      prev: function () { self.setState({ step: Math.max(1, step - 1) }); }, prevOp: step === 1 ? '0.35' : '1',
+      next: next, nextLabel: nextLabel, nextOp: step === 1 && !M.entries.length ? '0.35' : '1', footNote: T.foot[step - 1] || '',
+      notesOpen: S.notesOpen, openNotes: function () { if (sel) self.setState({ notesOpen: true }); }, closeNotes: function () { self.setState({ notesOpen: false }); },
+      readNotesClose: function () {
+        var nr = Object.assign({}, S.notesRead); nr[sel.coil] = true; self.setState({ notesRead: nr, notesOpen: false });
+        if (!isRead) postEvent({ coil: sel.coil, box: box, kind: 'notes_read', data: { n: notesArr.length } });
+      },
+      readLabel: isRead ? T.readDone : T.read,
+      notesBadge: sel ? (isRead ? ' ✓' : ' ' + notesArr.length) : '', notesBtnBg: isRead || !notesArr.length ? '#A6F4C5' : '#F5B547',
+      toggleLang: function () { var nl = EN ? 'ko' : 'en'; lsSet('lvh_lang', nl); self.setState({ lang: nl }); },
+      barBg: alarmOn ? '#C62828' : '#0F1E33', frame: alarmOn ? '8px solid #C62828' : '0'
+    };
+  }
+}
+
+(function(){
+  var stage=document.getElementById('stage');
+  function fit(){ var s=Math.min(window.innerWidth/1280, window.innerHeight/800); stage.style.transform='translate(-50%,-50%) scale('+s+')'; }
+  window.addEventListener('resize',fit); fit();
+  window.__lvh = window.__mount(Component, {lang:'ko'}, stage, document.getElementById('tpl'));
+})();
+</script>
+
+<div id="demobar" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;display:flex;gap:12px;align-items:center;font-family:Pretendard,system-ui,sans-serif">
+  <span style="background:#0F1E33;color:#fff;font-weight:800;font-size:15px;padding:9px 15px;border-radius:999px">시연 모드 · 실데이터</span>
+  <button id="demoBtn" style="background:#C62828;color:#fff;border:0;border-radius:14px;padding:14px 26px;font-size:20px;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(198,40,40,.45)">🔴 불량 발생 (시연)</button>
+  <button id="demoClear" style="background:#E3E8F0;color:#0B1626;border:0;border-radius:14px;padding:14px 18px;font-size:18px;font-weight:800;font-family:inherit;cursor:pointer">알람 닫기</button>
+</div>
+<script>
+(function(){
+  var idx=0;
+  function app(){ return window.__lvh; }
+  document.getElementById('demoBtn').addEventListener('click',function(){
+    var a=app(); if(!a||!a.state){ return; }
+    var d=a.state.data||{}; var defs=d.defects||[];
+    if(!defs.length){ alert('재생 시각에 불량 데이터가 없습니다. 주소 뒤 ?asof=YYYY-MM-DD HH:MM:SS 로 작업 시각을 지정하세요.'); return; }
+    var coil=(d.floor&&d.floor.liveCoil)||a.state.coil||null;
+    var surf=defs.filter(function(x){return x.metric==='anomaly_score';});
+    var flat=defs.filter(function(x){return x.metric!=='anomaly_score';});
+    var pick=(idx++%2===0)?(surf[0]||defs[0]):(flat[0]||surf[0]||defs[0]);
+    a.setState({ coil:coil, box:(pick.box||a.state.box), step:5, alarm:{kind:'defect', defect:pick, box:pick.box} });
+  });
+  document.getElementById('demoClear').addEventListener('click',function(){ var a=app(); if(a){ a.setState({alarm:null}); } });
+})();
+</script>
+
+</body>
+</html>
