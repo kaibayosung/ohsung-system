@@ -200,14 +200,18 @@ async function openDetail(coilEnc){
   var coil=decodeURIComponent(coilEnc); state.coil=coil;
   document.getElementById('vDetail').innerHTML='<div class="loading">불러오는 중…</div>'; show('vDetail');
   var date=state.date;
-  var dd,qq; try{ [dd,qq]=await Promise.all([
+  var dd,qq,ss; try{ [dd,qq,ss]=await Promise.all([
     fetch(STATUS+'?mode=detail&coil='+encodeURIComponent(coil)+'&date='+date).then(r=>r.json()),
-    fetch(QUALITY+'?mode=coil&coil='+encodeURIComponent(coil)+'&date='+date).then(r=>r.json())
+    fetch(QUALITY+'?mode=coil&coil='+encodeURIComponent(coil)+'&date='+date).then(r=>r.json()),
+    fetch(QUALITY+'?mode=segments&coil='+encodeURIComponent(coil)+'&date='+date).then(r=>r.json()).catch(function(){return null;})
   ]); }catch(e){ dd={ok:false}; }
   if(!dd||!dd.ok){ document.getElementById('vDetail').innerHTML='<div class="panel"><div class="empty">상세 데이터를 불러오지 못했습니다.</div></div>'; return; }
   state.detail=dd; state.qual=(qq&&qq.ok)?qq:null;
-  // 박스별 결함 수를 품질 데이터로 보정(정확)
-  if(state.qual&&state.qual.defects){ dd.boxes.forEach(function(b){ var ds=state.qual.defects.filter(function(x){return x.box===b.n;}); b.flatDef=ds.filter(x=>x.cam===2).length; b.scratch=ds.filter(x=>x.cam!==2).length; var ws=ds.filter(x=>x.cam===2&&x.warp!=null).map(x=>x.warp); b.warp=ws.length?Math.max.apply(0,ws):b.warp; }); }
+  // 박스별 결함 수를 품질 데이터(metric 기준)로 보정
+  if(state.qual&&state.qual.defects){ state.qual.segs=(ss&&ss.ok)?ss.segments:[];
+    dd.boxes.forEach(function(b){ var ds=state.qual.defects.filter(function(x){return x.box===b.n;});
+      b.flatDef=ds.filter(x=>x.cam===2).length; b.scratch=ds.filter(x=>x.cam!==2).length;
+      var ws=ds.filter(x=>x.metric==='max_warp_mm'&&x.warp!=null).map(x=>x.warp); b.warp=ws.length?Math.max.apply(0,ws):b.warp; }); }
   renderDetail(dd);
 }
 function sc(k,v,u){return '<div class="scard"><div class="k">'+k+'</div><div class="v">'+v+(u?'<span class="u"> '+u+'</span>':'')+'</div></div>';}
@@ -319,34 +323,48 @@ function insight(j,base){
 }
 
 // ====== 품질 상세 ======
+var METRICS=[
+  {m:'anomaly_score', title:'흠집검사', sub:'CAM1 · 이상점수 기준 0.8', color:'#CC3F31'},
+  {m:'max_warp_mm', title:'평탄도검사', sub:'CAM2 · 휨 기준 25mm', color:'#d9821f'},
+  {m:'flatness_v2', title:'평탄도 v2', sub:'CAM2(신규) · 영상 연결', color:'#796cbf'}
+];
 function openQual(){
   if(!state.qual){ document.getElementById('vQual').innerHTML='<div class="panel"><div class="empty">품질 데이터가 없습니다.</div></div>'; show('vQual'); return; }
   var q=state.qual, defs=q.defects||[];
-  var flat=defs.filter(d=>d.cam===2), surf=defs.filter(d=>d.cam!==2);
+  var counts=METRICS.map(function(g){return g.title+' '+defs.filter(d=>d.metric===g.m).length;}).join(' · ');
   var h='<h1 style="font-size:21px">'+state.coil+' 품질 상세</h1>'
-    +'<div class="src" style="margin-top:3px">'+(q.company||'')+' · 결함 '+q.total+'건 (평탄 '+flat.length+' · 표면 '+surf.length+')</div>';
-  // 평탄
-  h+='<div class="panel"><div class="sectl">평탄 결함 (웨이브·버클)<span class="srctag">inference_score_log(CAM2)·detection_alert · 기준 휨 25mm</span></div>';
-  h+=flat.length?'<div class="qg">'+flat.map(defCard).join('')+'</div>':'<div class="empty">평탄 결함 없음</div>';
-  h+='</div>';
-  // 표면
-  h+='<div class="panel"><div class="sectl">표면 스크래치<span class="srctag">detection_alert(CAM1) · 기준 0.8</span></div>';
-  h+=surf.length?'<div class="qg">'+surf.map(defCard).join('')+'</div>':'<div class="empty">표면 결함 없음</div>';
-  h+='</div>';
-  h+='<div class="foot">검출 이미지는 OCR 개발서버(비전)에서 실시간 중계. 단면 형상은 좌·중·우 편차(mm). 영상 구간이 있는 결함은 영상 보기 제공.</div>';
+    +'<div class="src" style="margin-top:3px">'+(q.company||'')+' · 결함 '+q.total+'건 ('+counts+')</div>';
+  var CAP=15;
+  METRICS.forEach(function(g){
+    var arr=defs.filter(d=>d.metric===g.m).sort((a,b)=>(b.score||0)-(a.score||0));
+    h+='<div class="panel"><div class="sectl">'+g.title+' <span style="color:#9aa3b2;font-weight:700">'+arr.length+'건</span><span class="srctag">'+g.sub+'</span></div>';
+    if(!arr.length){ h+='<div class="empty">없음</div>'; }
+    else { h+='<div class="qg">'+arr.slice(0,CAP).map(function(d){return defCard(d,g);}).join('')+'</div>';
+      if(arr.length>CAP)h+='<div class="src" style="margin-top:9px">심각도 상위 '+CAP+'건 표시 · 전체 '+arr.length+'건</div>'; }
+    h+='</div>';
+  });
+  h+='<div class="foot">검출 이미지·영상은 OCR 개발서버(비전, 38080/detections)에서 https로 실시간 중계. 평탄도는 좌·중·우 단면 편차(mm). 평탄도v2는 구간 영상 재생 지원.</div>';
   document.getElementById('vQual').innerHTML=h; show('vQual');
 }
-var KIND={ew:['웨이브','#d9821f'],cb:['센터버클','#b06a1f'],fl:['평탄','#d9821f'],sf:['표면 스크래치','#CC3F31']};
-function defCard(d){
-  var k=KIND[d.kind]||['결함','#CC3F31'];
+function defCard(d,g){
   var img=d.hasImg?'<img src="'+IMG(d.id)+'" loading="lazy" onerror="this.parentNode.innerHTML=\'<div class=noimg>이미지 없음</div>\'">':'<div class="noimg">이미지 없음</div>';
-  var val=d.cam===2?('휨 <b style="color:'+(d.warp>=25?'#CC3F31':'#0f1e33')+'">'+(d.warp!=null?d.warp+'mm':'—')+'</b>'+(d.edge?' · 단면 '+d.edge[0]+'/'+d.edge[1]+'/'+d.edge[2]:'')):('이상점수 <b style="color:#CC3F31">'+(d.score!=null?d.score:'—')+'</b>');
-  var vid=d.hasVid?' · <a style="color:var(--acc);cursor:pointer" onclick="playVid('+ "'"+(d.seg||'')+"'"+','+(d.vms||0)+')">▶ 영상</a>':'';
-  return '<div class="dcard"><div class="img">'+img+'</div><div class="meta"><div class="hd"><span class="kind" style="background:'+k[1]+'">'+k[0]+'</span>'
+  var val=d.metric==='anomaly_score'
+    ? '이상점수 <b style="color:#CC3F31">'+(d.score!=null?d.score:'—')+'</b>'
+    : '휨/지표 <b style="color:'+((d.warp||0)>=25?'#CC3F31':'#0f1e33')+'">'+(d.warp!=null?d.warp+'mm':(d.score!=null?d.score:'—'))+'</b>'+(d.edge?' · 단면 '+d.edge[0]+'/'+d.edge[1]+'/'+d.edge[2]:'');
+  var vid=(d.seg)?' · <a style="color:var(--acc);cursor:pointer" onclick="playSeg(\''+d.seg+'\','+d.cam+')">▶ 영상</a>':'';
+  return '<div class="dcard"><div class="img">'+img+'</div><div class="meta"><div class="hd"><span class="kind" style="background:'+g.color+'">'+g.title+'</span>'
     +'<span class="pos">박스'+(d.box||'?')+' · '+(d.abs!=null?d.abs+'장':(d.sheet!=null?d.sheet+'장':''))+'</span></div>'
     +'<div class="val">'+val+'</div><div class="src">'+(d.at||'')+vid+'</div></div></div>';
 }
-function playVid(seg,vms){ if(!seg){alert('이 결함은 저장된 영상 구간이 없습니다.');return;} window.open(QUALITY+'?mode=levvid&redirect=1&seg='+encodeURIComponent(seg),'_blank'); }
+function playSeg(seg,cam){
+  var segs=(state.qual&&state.qual.segs)||[];
+  var s=segs.find(function(x){return x.segment_id===seg;});
+  if(!s){alert('영상 세그먼트 정보를 찾지 못했습니다.');return;}
+  var files=[]; try{files=JSON.parse(s.files);}catch(e){}
+  var f=files.find(function(x){return x.camera===cam;})||files[0];
+  if(!f){alert('영상 파일이 없습니다.');return;}
+  window.open(QUALITY+'?mode=levvid&redirect=1&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(f.name),'_blank');
+}
 
 // init
 document.getElementById('dpick').addEventListener('change',function(e){ if(e.target.value) loadList(e.target.value); });
