@@ -170,7 +170,7 @@ async function openCoil(i){
     fetch(DEFECTIMG+'?mode=list&line='+encodeURIComponent('레벨링')+'&coil='+encodeURIComponent(c.coil)).then(r=>r.json()).catch(()=>null)
   ]); }catch(e){ d={ok:false}; }
   if(!d||!d.ok){ document.getElementById('pCoil').innerHTML='<div class="panel"><div class="empty">코일 데이터를 불러오지 못했습니다.</div></div>'; return; }
-  S.detail=d; S.qual=(q&&q.ok)?q:{defects:[],boxes:[]}; S.qual.segs=(s&&s.ok)?s.segments:[];
+  S.detail=d; S.qual=(q&&q.ok)?q:{defects:[],boxes:[]}; S.qual.segs=dedupeSegs((s&&s.ok)?s.segments:[]);
   S.field=((f&&f.ok&&f.rows)||[]).filter(function(r){ return String(r.cap||'').slice(0,10)===S.date && (r.defect_type==='scratch'); });
   renderCoil();
 }
@@ -251,6 +251,8 @@ function mapSVG(){
 }
 
 // 박스별 영상 — 큰 파일(수십분~2시간)은 프록시 임베드가 느려, 직접 단일 홉으로 새 창 재생
+// 같은 녹화 파일을 가리키는 중복 세그먼트 제거(일부 코일은 실제 파일 없는 중복 구간이 섞여 404) — 첫 파일명 기준
+function dedupeSegs(segs){ var seen={}, out=[]; (segs||[]).forEach(function(sg){ var f=[]; try{f=JSON.parse(sg.files);}catch(e){} var key=(f[0]&&f[0].name)||sg.segment_id; if(seen[key])return; seen[key]=1; out.push(sg); }); return out; }
 function segForBox(n){ var segs=S.qual.segs||[]; return segs.find(function(x){ return String(x.box_id).replace(/^0+/,'')===String(n) || Number(x.box_id)===n; })||segs[n-1]||null; }
 function fsize(f){ return f&&f.sizeBytes?' ('+(f.sizeBytes/1048576|0)+'MB)':''; }
 function videoCards(){
