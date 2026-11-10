@@ -180,6 +180,12 @@ function renderCoil(){
   document.getElementById('map').innerHTML=mapSVG();
   document.getElementById('vids').innerHTML=videoCards();
   document.getElementById('reports').innerHTML=reports();
+  prefetchImgs();
+}
+function prefetchImgs(){
+  var defs=(S.qual.defects||[]).filter(d=>d.hasImg).sort((a,b)=>(b.score||0)-(a.score||0)).slice(0,8);
+  var i=0; function next(){ if(i>=defs.length)return; var d=defs[i++]; var im=new Image(); im.onload=im.onerror=next; im.src=IMG(d.id); }
+  next(); next();
 }
 
 // 길이 지도 (위 표면 / 아래 평탄)
@@ -217,25 +223,21 @@ function mapSVG(){
   s+='</svg>'; return s;
 }
 
-// 박스별 영상
+// 박스별 영상 — 큰 파일(수십분~2시간)은 프록시 임베드가 느려, 직접 단일 홉으로 새 창 재생
 function segForBox(n){ var segs=S.qual.segs||[]; return segs.find(function(x){ return String(x.box_id).replace(/^0+/,'')===String(n) || Number(x.box_id)===n; })||segs[n-1]||null; }
+function fsize(f){ return f&&f.sizeBytes?' ('+(f.sizeBytes/1048576|0)+'MB)':''; }
 function videoCards(){
-  var out=S.detail.boxes.map(function(b){ var seg=segForBox(b.n); var files=[]; if(seg){ try{files=JSON.parse(seg.files);}catch(e){} }
+  return S.detail.boxes.map(function(b){ var seg=segForBox(b.n); var files=[]; if(seg){ try{files=JSON.parse(seg.files);}catch(e){} }
     var cam2=files.find(f=>f.camera===2), cam1=files.find(f=>f.camera===1);
     if(!seg||(!cam1&&!cam2)) return '<div class="vcard"><div class="vt">박스'+b.n+'</div><div class="vph novid">영상 없음</div></div>';
-    var vid='v'+b.n;
-    var def=cam2||cam1, defcam=cam2?2:1;
-    return '<div class="vcard"><div class="vt">박스'+b.n+' 영상</div>'
-      +'<video id="'+vid+'" controls preload="none" poster=""></video>'
-      +'<div class="camtoggle">'
-      +(cam2?'<button class="on" id="'+vid+'-c2" onclick="setCam(\''+vid+'\',\''+seg.segment_id+'\',\''+cam2.name+'\',2)">평탄도 CAM2</button>':'')
-      +(cam1?'<button id="'+vid+'-c1" class="'+(cam2?'':'on')+'" onclick="setCam(\''+vid+'\',\''+seg.segment_id+'\',\''+cam1.name+'\',1)">흠집 CAM1</button>':'')
-      +'</div><div style="margin-top:9px"><button class="btn" style="width:100%" onclick="loadCam(\''+vid+'\',\''+seg.segment_id+'\',\''+def.name+'\','+defcam+')">▶ 재생</button></div></div>';
+    var btns='';
+    if(cam2) btns+='<button class="btn" style="width:100%;margin-bottom:9px" onclick="openVid(\''+seg.segment_id+'\',\''+cam2.name+'\')">▶ 평탄도 CAM2 영상 열기'+fsize(cam2)+'</button>';
+    if(cam1) btns+='<button class="btn ghost" style="width:100%" onclick="openVid(\''+seg.segment_id+'\',\''+cam1.name+'\')">▶ 흠집 CAM1 영상 열기'+fsize(cam1)+'</button>';
+    return '<div class="vcard"><div class="vt">박스'+b.n+' 영상 <span style="font-size:14px;color:var(--mut)">'+(seg.st||'')+'~'+(seg.en||'')+'</span></div>'+btns
+      +'<div style="font-size:14px;color:var(--mut);font-weight:700;margin-top:9px">새 창에서 재생 · 대용량(수백 MB) 영상은 처음 로딩이 걸릴 수 있어요.</div></div>';
   }).join('');
-  return out;
 }
-function setCam(vid,seg,file,cam){ document.getElementById(vid+'-c1')&&document.getElementById(vid+'-c1').classList.toggle('on',cam===1); document.getElementById(vid+'-c2')&&document.getElementById(vid+'-c2').classList.toggle('on',cam===2); loadCam(vid,seg,file,cam); }
-function loadCam(vid,seg,file,cam){ var v=document.getElementById(vid); v.src=LEVVID(seg,file); v.play&&v.play().catch(function(){}); }
+function openVid(seg,file,sec){ var t=(sec!=null&&sec>0)?'#t='+Math.floor(sec):''; window.open(QUALITY+'?mode=levvid&redirect=1&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file)+t,'_blank'); }
 
 // 박스별 보고서
 function reports(){
@@ -266,8 +268,8 @@ function openDef(id){
   var posM=dd.abs!=null?Math.round((box.cut||2500)*dd.abs/1000):null;
   var h='<div class="dh">'+ml[0]+'</div><div class="dsub">박스 '+(dd.box||'?')+' · '+(dd.abs!=null?dd.abs+'번째 장':'')+(posM!=null?' · 약 '+posM+'m 지점':'')+'</div>'
     +'<span class="dbadge" style="background:'+ml[1]+'">'+(dd.at||'')+'</span>';
-  h+=dd.hasImg?'<img class="dimg" src="'+IMG(dd.id)+'" onerror="this.outerHTML=\'<div class=\\\'dimg dimg-ph\\\'>이미지 없음</div>\'">':'<div class="dimg dimg-ph">이미지 없음</div>';
-  if(dd.seg) h+='<button class="playbtn" onclick="playSeg(\''+dd.seg+'\','+dd.cam+')">▶ 이 구간 영상 보기</button>';
+  h+=dd.hasImg?'<div class="dimg dimg-ph" id="dimgph">⏳ 이미지 불러오는 중…</div><img src="'+IMG(dd.id)+'" class="dimg" style="display:none" onload="this.style.display=\'block\';var p=document.getElementById(\'dimgph\');p&&p.remove();" onerror="var p=document.getElementById(\'dimgph\');p&&(p.textContent=\'이미지 없음\');this.remove();">':'<div class="dimg dimg-ph">이미지 없음</div>';
+  if(dd.seg) h+='<button class="playbtn" onclick="playSeg(\''+dd.seg+'\','+dd.cam+','+(dd.vms||0)+')">▶ 이 구간 영상 보기 (결함 지점)</button>';
   if(dd.cam===2 && dd.edge){ h+='<div class="sect">철판이 어떻게 굽었나 (단면)</div><div class="wavebox">'+waveType(dd.edge)+waveSVG(dd.edge)+'</div>'; }
   else { h+='<div class="sect">측정값</div><div class="opt"><div class="k">'+(dd.cam===2?'휨/지표':'이상점수')+'</div><div class="v" style="color:#d5331f">'+(dd.cam===2?(dd.warp!=null?dd.warp+'mm':(dd.score!=null?dd.score:'—')):(dd.score!=null?dd.score:'—'))+'</div></div>'; }
   h+='<div class="sect">이 작업 당시 운영 상태 <span style="font-size:14px;color:#8a93a6">(박스'+(dd.box||'?')+' 구간)</span></div><div class="optiles">'
@@ -300,9 +302,9 @@ function waveSVG(e){
     s+='<text x="'+pt[0]+'" y="'+clampY(up?Y(pt[1])-14:Y(pt[1])+band+28)+'" text-anchor="middle" font-size="22" font-weight="900" font-family="Pretendard" fill="'+c+'">'+(pt[1]>0?'+':'')+pt[1]+'</text>';
     s+='<text x="'+pt[0]+'" y="'+(H-10)+'" text-anchor="middle" font-size="17" font-weight="800" font-family="Pretendard" fill="#8a93a6">'+lab[i]+'</text>'; });
   s+='</svg>'; return s; }
-function playSeg(seg,cam){ var segs=S.qual.segs||[]; var sg=segs.find(x=>x.segment_id===seg); if(!sg){alert('영상 정보를 찾지 못했습니다.');return;}
+function playSeg(seg,cam,vms){ var segs=S.qual.segs||[]; var sg=segs.find(x=>x.segment_id===seg); if(!sg){alert('영상 정보를 찾지 못했습니다.');return;}
   var files=[]; try{files=JSON.parse(sg.files);}catch(e){} var f=files.find(x=>x.camera===cam)||files[0]; if(!f){alert('영상 파일이 없습니다.');return;}
-  window.open(QUALITY+'?mode=levvid&redirect=1&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(f.name),'_blank'); }
+  openVid(seg,f.name, vms?vms/1000:0); }
 
 document.getElementById('dpick').addEventListener('change',e=>{ if(e.target.value)loadList(e.target.value); });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape')closeD(); });
