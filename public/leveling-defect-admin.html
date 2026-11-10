@@ -97,7 +97,7 @@ var LCOL={'레벨링':'#2b2550','슬리터1':'#1d4d5c','슬리터2':'#143a4f'};
 function lineBadge(l){return '<span class="lbadge" style="background:'+(LCOL[l]||'#7d8ba1')+'">'+esc(l)+'</span>';}
 var ALL=[], F={line:'전체',type:'전체',box:'',q:''};
 
-function imgUrl(d,n){ return OCR_BASE+'/img/'+d.file_path+'/'+(n||1)+'.jpg'; }
+function imgUrl(d,n){ var fp=d.file_path||''; if(/^https?:\/\//.test(fp)) return fp; return OCR_BASE+'/img/'+fp+'/'+(n||1)+'.jpg'; }
 function esc(s){return String(s==null?'':s).replace(/</g,'&lt;');}
 function plcTxt(d){
   if(d.cut_len==null && d.plc_box==null) return '<span class="plc none">—</span>';

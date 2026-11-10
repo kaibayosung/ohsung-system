@@ -91,6 +91,19 @@
   .opt.hot{border-color:#f0bdb3;background:#fdf1ef}.opt.hot .v{color:var(--bad)}
   .wavebox{border:2px solid var(--line);border-radius:16px;background:#fbfcff;padding:14px;margin-top:6px}
   .wavetype{font-size:20px;font-weight:900;text-align:center;margin-bottom:4px}
+
+  /* 현장 등록 불량 사진 */
+  .fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:14px;margin-top:4px}
+  .fcard{border:2px solid var(--line);border-radius:16px;overflow:hidden;background:#fafbff;cursor:pointer;transition:border-color .15s}
+  .fcard:hover{border-color:#0ea5a0}
+  .fthumb{aspect-ratio:4/3;background:#11151e;display:flex;align-items:center;justify-content:center}
+  .fthumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .fthumb.noimg::after{content:'사진 없음';color:#6b7488;font-size:15px;font-weight:800}
+  .fmeta{padding:12px 14px}
+  .ftype{font-size:18px;font-weight:900;color:#0e8f8a}
+  .fsub{font-size:14px;color:var(--mut);font-weight:800;margin-top:2px}
+  .fmemo{font-size:16px;color:var(--sec);font-weight:800;margin-top:7px}
+  .fup{font-size:13px;color:var(--mut);font-weight:700;margin-top:6px}
   @media print{.top,.crumb,#pList,.novid,.btn{display:none}.panel{break-inside:avoid}}
 </style>
 </head>
@@ -112,7 +125,10 @@ var API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1';
 var STATUS=API+'/leveling-status', QUALITY=API+'/leveling-quality';
 var IMG=function(id){return QUALITY+'?mode=img&id='+id;};
 var LEVVID=function(seg,file){return QUALITY+'?mode=levvid&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file);};
-var S={date:null,coil:null,list:null,detail:null,qual:null,coils:null};
+var DEFECTIMG=API+'/defect-images';
+var OCR_BASE='https://desktop-tdp9hrt.tail8d1b48.ts.net';
+function fieldImg(fp){ fp=fp||''; return /^https?:\/\//.test(fp)?fp:OCR_BASE+'/img/'+fp+'/1.jpg'; }
+var S={date:null,coil:null,list:null,detail:null,qual:null,coils:null,field:null};
 function kstToday(){return new Date(Date.now()+9*3600000).toISOString().slice(0,10);}
 function won(v){return v==null?'—':Number(v).toLocaleString();}
 function show(v){['vList','vCoil'].forEach(function(id){document.getElementById(id).classList.toggle('on',id===v);});window.scrollTo(0,0);crumb(v);}
@@ -147,13 +163,15 @@ function qVerdictLite(c){ var w=c.warpMax||0,def=(c.surf||0)+(c.flatDef||0); if(
 async function openCoil(i){
   var c=S.coils[i]; S.coil=c.coil;
   document.getElementById('pCoil').innerHTML='<div class="panel"><div class="loading">코일 데이터 불러오는 중…</div></div>'; show('vCoil');
-  var d,q,s; try{ [d,q,s]=await Promise.all([
+  var d,q,s,f; try{ [d,q,s,f]=await Promise.all([
     fetch(STATUS+'?mode=detail&coil='+encodeURIComponent(c.coil)+'&date='+S.date).then(r=>r.json()),
     fetch(QUALITY+'?mode=coil&coil='+encodeURIComponent(c.coil)+'&date='+S.date).then(r=>r.json()),
-    fetch(QUALITY+'?mode=segments&coil='+encodeURIComponent(c.coil)+'&date='+S.date).then(r=>r.json()).catch(()=>null)
+    fetch(QUALITY+'?mode=segments&coil='+encodeURIComponent(c.coil)+'&date='+S.date).then(r=>r.json()).catch(()=>null),
+    fetch(DEFECTIMG+'?mode=list&line='+encodeURIComponent('레벨링')+'&coil='+encodeURIComponent(c.coil)).then(r=>r.json()).catch(()=>null)
   ]); }catch(e){ d={ok:false}; }
   if(!d||!d.ok){ document.getElementById('pCoil').innerHTML='<div class="panel"><div class="empty">코일 데이터를 불러오지 못했습니다.</div></div>'; return; }
   S.detail=d; S.qual=(q&&q.ok)?q:{defects:[],boxes:[]}; S.qual.segs=(s&&s.ok)?s.segments:[];
+  S.field=((f&&f.ok&&f.rows)||[]).filter(function(r){ return String(r.cap||'').slice(0,10)===S.date && (r.defect_type==='scratch'); });
   renderCoil();
 }
 function spmVerdict(d){ if(!d.baseSpm)return null; var avg=d.boxes.reduce((a,b)=>a+b.sheets,0)/Math.max(1,d.boxes.reduce((a,b)=>a+b.workMin,0)); var p=Math.round((avg/d.baseSpm-1)*100); return {p:p,label:p>=10?'빠름':p<=-10?'느림':'보통',cls:p>=10?'v':'',avg:avg,color:p>=10?'#1f9d57':p<=-10?'#d5331f':'#e07b1a'}; }
@@ -166,12 +184,15 @@ function renderCoil(){
     +'<div class="scard"><div class="k">코일 / 거래처 / 규격</div><div class="big" style="font-size:25px">'+d.coil+'</div><div class="sub">'+(d.company||'')+' · '+(d.spec||'')+'</div></div>'
     +'<div class="scard"><div class="k">작업량 · 비용</div><div class="big">'+d.sheets+'<span style="font-size:17px">장</span></div><div class="sub">'+(d.amount?won(d.amount)+'원 · ':'')+(d.start||'')+'~'+(d.end||'')+'</div></div>'
     +'<div class="scard"><div class="k">작업 속도</div>'+(sv?'<span class="verdict" style="background:'+sv.color+'">'+sv.label+'</span><div class="sub">'+sv.avg.toFixed(1)+' 장/분 · 평소 '+d.baseSpm:'<div class="big" style="font-size:22px">—')+'</div></div>'
-    +'<div class="scard"><div class="k">품질</div><span class="verdict" style="background:'+qv.c+'">'+qv.label+'</span><div class="sub">불량 '+(q.total||0)+'건 · 최대 휨 '+((d.flat&&d.flat.warpMax)||0)+'mm</div></div>'
+    +'<div class="scard"><div class="k">품질</div><span class="verdict" style="background:'+qv.c+'">'+qv.label+'</span><div class="sub">불량 '+(q.total||0)+'건 · 최대 휨 '+((d.flat&&d.flat.warpMax)||0)+'mm'+((S.field&&S.field.length)?' · <b style="color:#0e8f8a">현장 '+S.field.length+'건</b>':'')+'</div></div>'
     +'</div></div>';
   // 코일 지도 (위 표면 / 아래 평탄)
   h+='<div class="panel"><h2>코일 길이 지도</h2><div class="hint">코일을 펼친 그림 · 박스 구분 · <b style="color:var(--surf)">위쪽 = 표면 결함</b> / <b style="color:var(--flat)">아래쪽 = 평탄도 결함</b>. 결함을 누르면 이미지·정보를 봅니다.</div>'
     +'<div id="map"></div><div class="legend"><span><i style="background:var(--surf)"></i>표면(흠집) — 위</span><span><span class="tri"></span>평탄도 — 아래</span><span><span class="dia"></span>평탄도v2 — 아래</span>'
+    +'<span><i style="background:#0ea5a0"></i>현장 등록(사진)</span>'
     +'<span style="margin-left:auto"><i style="background:#1f9d57"></i>양호 <i style="background:#e07b1a;margin-left:6px"></i>주의 <i style="background:#d5331f;margin-left:6px"></i>불량</span></div></div>';
+  // 현장 등록 불량 사진
+  h+=fieldPanel();
   // 박스별 영상
   h+='<div class="panel"><h2>박스별 영상 재생</h2><div class="hint">박스별 녹화 영상(평탄도 CAM2 / 흠집 CAM1). ▶ 눌러 재생.</div><div class="vids" id="vids"></div></div>';
   // 박스별 결과 보고서
@@ -216,6 +237,12 @@ function mapSVG(){
       if(dd.metric==='flatness_v2'){ s+='<rect x="'+(xx-8)+'" y="'+(yy2-8)+'" width="16" height="16" rx="2" transform="rotate(45 '+xx+' '+yy2+')" fill="#796cbf" style="cursor:pointer" onclick="openDef('+dd.id+')"/>'; }
       else { s+='<polygon points="'+xx+','+(yy2+10)+' '+(xx-10)+','+(yy2-9)+' '+(xx+10)+','+(yy2-9)+'" fill="#e07b1a" style="cursor:pointer" onclick="openDef('+dd.id+')"/>'; }
       s+='<line x1="'+xx+'" y1="'+(barY+barH)+'" x2="'+xx+'" y2="'+(yy2-9)+'" stroke="#e07b1a" stroke-width="1.5" opacity="0.3"/>'; } });
+  // 현장 등록 불량(표면 사진) — 위쪽, 청록 📷 표식
+  (S.field||[]).forEach(function(fd){ var bm=bs.find(function(b){return b.n===(fd.box||fd.plc_box);}); var sheet=bm?((bm.s1+bm.s2)/2):N/2; var xx=x(sheet);
+    var key=Math.round(xx/18); upCount[key]=(upCount[key]||0); var row=upCount[key]++; var yy=barY-13-row*20; if(yy<26)yy=26;
+    s+='<line x1="'+xx+'" y1="'+(yy+12)+'" x2="'+xx+'" y2="'+barY+'" stroke="#0ea5a0" stroke-width="1.5" opacity="0.35"/>';
+    s+='<circle cx="'+xx+'" cy="'+yy+'" r="12" fill="#0ea5a0" stroke="#fff" stroke-width="3" style="cursor:pointer" onclick="openFieldDef('+fd.id+')"/>';
+    s+='<text x="'+xx+'" y="'+(yy+5)+'" text-anchor="middle" font-size="13" font-family="Pretendard" style="pointer-events:none">📷</text>'; });
   // 축
   var lenM=d.boxes.reduce((a,b)=>a+(b.sheets*(b.cut||0)/1000),0);
   s+='<text x="'+padL+'" y="'+(H-5)+'" font-size="15" font-weight="800" font-family="Pretendard" fill="#8a93a6">1장 · 0m</text>';
@@ -282,6 +309,36 @@ function openDef(id){
 }
 function opt(k,v,u,hot){return '<div class="opt'+(hot?' hot':'')+'"><div class="k">'+k+'</div><div class="v">'+v+'<span class="u"> '+u+'</span></div></div>';}
 function closeD(){ document.getElementById('drawer').classList.remove('on'); document.getElementById('scrim').classList.remove('on'); }
+
+// ===== 현장 등록 불량(표면 사진) =====
+function fieldPanel(){
+  var fs=S.field||[]; if(!fs.length)return '';
+  var cards=fs.map(function(fd){ var box=fd.box||fd.plc_box||'?';
+    return '<div class="fcard" onclick="openFieldDef('+fd.id+')">'
+      +'<div class="fthumb"><img src="'+fieldImg(fd.file_path)+'" loading="lazy" onerror="this.parentNode.classList.add(\'noimg\');this.remove();"></div>'
+      +'<div class="fmeta"><div class="ftype">표면 스크래치</div><div class="fsub">박스 '+box+' · '+(fd.cap||'').slice(11)+'</div>'
+      +'<div class="fmemo">'+(fd.memo||'')+'</div><div class="fup">📷 '+(fd.uploader||'현장')+' 등록</div></div></div>';
+  }).join('');
+  return '<div class="panel"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px"><h2>현장 등록 불량 (사진)</h2><span class="qbadge q-bad">표면 '+fs.length+'건</span></div>'
+    +'<div class="hint">현장에서 휴대폰으로 올린 <b>표면 스크래치</b> 사진입니다. 카드를 누르면 사진·위치·당시 운영을 봅니다. 지도 위 <b style="color:#0ea5a0">📷 청록 표식</b>과 같은 불량입니다.</div>'
+    +'<div class="fgrid">'+cards+'</div></div>';
+}
+function openFieldDef(id){
+  var fd=(S.field||[]).find(function(x){return x.id===id;}); if(!fd)return;
+  var bn=fd.box||fd.plc_box; var box=S.detail.boxes.find(function(b){return b.n===bn;})||{};
+  var h='<div class="dh">표면 스크래치 <span style="font-size:16px;color:#0e8f8a">· 현장 등록</span></div>'
+    +'<div class="dsub">박스 '+(bn||'?')+' · '+(fd.cap||'')+(fd.cut_len?' · 절단 '+fd.cut_len+'mm':'')+'</div>'
+    +'<span class="dbadge" style="background:#0ea5a0">📷 '+(fd.uploader||'현장')+' 등록 사진</span>';
+  h+='<div class="dimg dimg-ph" id="fimgph">⏳ 사진 불러오는 중…</div><img src="'+fieldImg(fd.file_path)+'" class="dimg" style="display:none" onload="this.style.display=\'block\';var p=document.getElementById(\'fimgph\');p&&p.remove();" onerror="var p=document.getElementById(\'fimgph\');p&&(p.textContent=\'사진 없음\');this.remove();">';
+  if(fd.memo) h+='<div class="sect">현장 메모</div><div class="opt"><div class="v" style="font-size:21px;color:var(--ink)">'+fd.memo+'</div></div>';
+  h+='<div class="sect">이 작업 당시 운영 상태 <span style="font-size:14px;color:#8a93a6">(박스'+(bn||'?')+' 구간)</span></div><div class="optiles">'
+    +opt('절단 속도',box.spm!=null?box.spm:'—','장/분')+opt('사이클',box.cycle!=null?box.cycle:'—','초/장')
+    +opt('부하율',box.load!=null?box.load:'—','%')+opt('텐션',box.tension!=null?box.tension:'—','%',box.tension!=null&&S.detail.baseTension&&box.tension<S.detail.baseTension*0.7)
+    +opt('절단 설정장',box.cut!=null?box.cut:'—','mm')+opt('최대 휨(박스)',box.warp!=null?box.warp:'—','mm',box.warp>=25)
+    +'</div>';
+  document.getElementById('dContent').innerHTML=h;
+  document.getElementById('drawer').classList.add('on'); document.getElementById('scrim').classList.add('on');
+}
 function waveType(e){ var el=e[0],ce=e[1],er=e[2],tilt=Math.abs(er-el),label;
   if(tilt>=8)label='좌우 기울기 (한쪽으로 쏠림)'; else if(ce<=el&&ce<=er&&(el-ce>1||er-ce>1))label='센터 버클 (가운데가 내려감)';
   else if(ce>=el&&ce>=er&&(ce-el>1||ce-er>1))label='센터 솟음 (가운데가 올라옴)'; else label='엣지 웨이브 (가장자리 물결)';
