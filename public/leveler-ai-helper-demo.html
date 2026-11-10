@@ -414,7 +414,7 @@ class Component extends DCLogic {
       aBoxCam: 'PLC', aBoxT: '박스 {b} 목표 장수 도달', aBoxW: '박스를 바꾸고 장수를 확인하세요', aBoxTip: 'PLC 박스 번호도 다음 번호로 넘겨 주세요.', aBoxBig: '{n}장', aBoxLbl: '박스 {b}',
       aCutT: '절단 길이가 추천과 달라요', aCutW: '박스 {b} · 지시서 {o}mm', aCutTip: '지난 작업들은 지시서보다 약 {r}mm 짧게 넣었어요. 일부러 바꾼 거면 “확인”을 누르세요.', aCutLbl: '지금 장비', aCutBig2: 'AI 추천 {v}',
       bCount: '장수 확인 →', bCountS: '박스 완료', bLater: '나중에', bLaterS: '계속 작업', bOk: '확인', bOkS: '일부러 바꿈 · 계속', bStop: '멈춤', bStopS: '관리자 호출',
-      aDefSurf: '표면 불량(흠집) 발견', aDefFlat: '평탄도 불량 발견',
+      aDefSurf: '표면 스크래치 불량 발견', aDefFlat: '평탄도 불량 발견',
       aDefCamS: '카메라1 · 표면검사', aDefCamF: '카메라2 · 평탄도검사', aDefWhere: '박스 {b} · {v}',
       aDefTip: '작업을 멈추고 확인하세요. 필요하면 사진을 찍어 저장하세요.',
       bDefOk: '확인', bDefOkS: '계속 작업', bDefSave: '사진 저장', bDefSaveS: '불량 등록 열기', bDefStop: '멈춤', bDefStopS: '관리자 호출'
@@ -446,7 +446,7 @@ class Component extends DCLogic {
       aBoxCam: 'PLC', aBoxT: 'Box {b} reached its target', aBoxW: 'Change the box and count the sheets', aBoxTip: 'Also move the PLC box number to the next one.', aBoxBig: '{n}', aBoxLbl: 'Box {b}',
       aCutT: 'Cut length differs from AI', aCutW: 'Box {b} · order {o} mm', aCutTip: 'Past jobs were set about {r} mm shorter than the order. If you changed it on purpose, press OK.', aCutLbl: 'Now on machine', aCutBig2: 'AI says {v}',
       bCount: 'Count →', bCountS: 'Box done', bLater: 'Later', bLaterS: 'Keep running', bOk: 'OK', bOkS: 'On purpose · continue', bStop: 'Stop', bStopS: 'Call supervisor',
-      aDefSurf: 'Surface defect (scratch)', aDefFlat: 'Flatness defect',
+      aDefSurf: 'Surface scratch defect', aDefFlat: 'Flatness defect',
       aDefCamS: 'Camera 1 · Surface', aDefCamF: 'Camera 2 · Flatness', aDefWhere: 'Box {b} · {v}',
       aDefTip: 'Stop and check. Take a photo and save it if needed.',
       bDefOk: 'OK', bDefOkS: 'Keep running', bDefSave: 'Save photo', bDefSaveS: 'Open defect register', bDefStop: 'Stop', bDefStopS: 'Call supervisor'
@@ -619,8 +619,8 @@ class Component extends DCLogic {
         var dRoi = dm.roi;
         alarm = Object.assign(alarm, {
           cam: isSurf ? T.aDefCamS : T.aDefCamF, title: isSurf ? T.aDefSurf : T.aDefFlat,
-          where: f(T.aDefWhere, { b: dm.box != null ? dm.box : (A.box || box), v: vText }), tip: T.aDefTip,
-          img: dm.img || '', hasImg: !!dm.img, noImg: !dm.img, hasRoi: !!dRoi,
+          where: dm.noImage ? ((EN ? 'Box ' : '박스 ') + (dm.box != null ? dm.box : (A.box || box))) : f(T.aDefWhere, { b: dm.box != null ? dm.box : (A.box || box), v: vText }), tip: T.aDefTip,
+          img: dm.noImage ? '' : (dm.img || ''), hasImg: dm.noImage ? false : !!dm.img, noImg: dm.noImage ? false : !dm.img, hasRoi: dm.noImage ? false : !!dRoi,
           rx: dRoi ? dRoi.cx : 50, ry: dRoi ? dRoi.cy : 50, rw: dRoi ? dRoi.w : 0, rh: dRoi ? dRoi.h : 0,
           bigLbl: isSurf ? T.aDefCamS : T.aDefCamF, big: vText, big2: '', cols: 3,
           btns: [
@@ -684,26 +684,28 @@ class Component extends DCLogic {
 })();
 </script>
 
-<div id="demobar" style="position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:9999;display:flex;gap:12px;align-items:center;font-family:Pretendard,system-ui,sans-serif">
-  <span style="background:#0F1E33;color:#fff;font-weight:800;font-size:15px;padding:9px 15px;border-radius:999px">시연 모드 · 실데이터</span>
-  <button id="demoBtn" style="background:#C62828;color:#fff;border:0;border-radius:14px;padding:14px 26px;font-size:20px;font-weight:900;font-family:inherit;cursor:pointer;box-shadow:0 8px 24px rgba(198,40,40,.45)">🔴 불량 발생 (시연)</button>
-  <button id="demoClear" style="background:#E3E8F0;color:#0B1626;border:0;border-radius:14px;padding:14px 18px;font-size:18px;font-weight:800;font-family:inherit;cursor:pointer">알람 닫기</button>
-</div>
+<div id="demobar" style="position:fixed;left:50%;bottom:14px;transform:translateX(-50%);z-index:9999;background:#0F1E33;color:#fff;font-weight:800;font-size:14px;padding:7px 14px;border-radius:999px;font-family:Pretendard,system-ui,sans-serif">시연 모드 · '불량 발생' 페이지에서 조작</div>
 <script>
 (function(){
-  var idx=0;
-  function app(){ return window.__lvh; }
-  document.getElementById('demoBtn').addEventListener('click',function(){
-    var a=app(); if(!a||!a.state){ return; }
-    var d=a.state.data||{}; var defs=d.defects||[];
-    if(!defs.length){ alert('재생 시각에 불량 데이터가 없습니다. 주소 뒤 ?asof=YYYY-MM-DD HH:MM:SS 로 작업 시각을 지정하세요.'); return; }
-    var coil=(d.floor&&d.floor.liveCoil)||a.state.coil||null;
-    var surf=defs.filter(function(x){return x.metric==='anomaly_score';});
-    var flat=defs.filter(function(x){return x.metric!=='anomaly_score';});
-    var pick=(idx++%2===0)?(surf[0]||defs[0]):(flat[0]||surf[0]||defs[0]);
-    a.setState({ coil:coil, box:(pick.box||a.state.box), step:5, alarm:{kind:'defect', defect:pick, box:pick.box} });
-  });
-  document.getElementById('demoClear').addEventListener('click',function(){ var a=app(); if(a){ a.setState({alarm:null}); } });
+  var DEMOAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
+  var lastId=null;
+  function fire(metric, box){
+    var a=window.__lvh; if(!a||!a.state) return;
+    if(metric==='clear'){ a.setState({alarm:null}); return; }
+    var isFlat = metric==='max_warp_mm' || metric==='flatness';
+    var d=a.state.data||{}; var coil=(d.floor&&d.floor.liveCoil)||a.state.coil||null;
+    var def={ metric: isFlat?'max_warp_mm':'anomaly_score', score: isFlat?42.5:0.84, box: box||a.state.box||2, img:'', roi:null, noImage:true };
+    a.setState({ coil:coil, step:5, alarm:{kind:'defect', defect:def, box:def.box} });
+  }
+  try { var ch=new BroadcastChannel('lvh-demo'); ch.onmessage=function(e){ if(e&&e.data&&e.data.metric) fire(e.data.metric, e.data.box); }; } catch(e){}
+  function poll(){
+    fetch(DEMOAPI+'?mode=demo-poll',{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+      var t=j&&j.trigger; if(!t) return;
+      if(lastId===null){ lastId=t.id; return; }
+      if(t.id>lastId){ lastId=t.id; fire(t.metric, t.box); }
+    }).catch(function(){});
+  }
+  setInterval(poll,1500); poll();
 })();
 </script>
 
