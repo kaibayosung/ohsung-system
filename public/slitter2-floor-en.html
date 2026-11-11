@@ -647,7 +647,7 @@ function renderCtrl(){
  h+= '<div class="cbact"><button type="button" class="cbtn reset" id="cReset">'+t('길이 리셋','Reset length')+'</button>'
     +'<button type="button" class="cbtn done" id="cDone"'+(isIdle?' disabled':'')+'>'+t('작업 완료','Complete')+'</button></div>';
  h+='</div>';
- h+='<div class="chint">'+t('길이 리셋은 현장 태블릿에서만 전송됩니다(인터넷 서버 경유 불가). 리셋 후 위 「현재 길이」가 0으로 떨어지는지 확인하세요.','Reset is sent from this floor tablet only (not via the cloud). After reset, check that Length above drops to 0.')+'</div>';
+ h+='<div class="chint">'+t('길이 리셋은 현장 태블릿에서 직접 전송됩니다. 리셋 후 위 「현재 길이」가 0으로 떨어지면 성공. 안 되면 → ','Reset is sent directly from this floor tablet. Success = Length above drops to 0. If it fails → ')+'<a href="http://osungsteel.servehttp.com:38080/pad/sliting2" target="_blank" style="color:#2a5bd7;font-weight:900;text-decoration:underline">'+t('한줌 PAD로 리셋','reset via Hanjum PAD')+'</a>'+t(' (폴백).','.')+'</div>';
  h+='<div class="clist">';
  if(!CTRL.list.length)h+='<div class="empty"><b>'+(CTRL.loaded?t('오늘 슬리터2 작업이 없습니다','No Slitter 2 jobs today'):t('불러오는 중…','Loading…'))+'</b></div>';
  CTRL.list.forEach(function(r){
@@ -660,7 +660,7 @@ function renderCtrl(){
  });
  h+='</div>';
  $('pgCtrl').innerHTML=h;
- var rb=$('cReset');if(rb)rb.onclick=function(){confirmBox(t('길이를 0으로 리셋할까요?','Reset length to 0?'),t('가동 중에는 누르지 마세요. 코일 교체 후에만 누릅니다.','Do not press while running. Only after a coil change.'),function(){doReset()})};
+ var rb=$('cReset');if(rb)rb.onclick=function(){confirmBox(t('길이를 0으로 리셋할까요?','Reset length to 0?'),t('가동 중엔 누르지 마세요(코일 교체 후에만). 새 창에 결과가 뜹니다(200=성공). 안 뜨면 팝업 허용, 경고 뜨면 「계속」.','Only after a coil change — not while running. A new window shows the result (200=OK). If blocked, allow popups; if warned, tap Continue.'),function(){doReset()})};
  var db=$('cDone');if(db&&!db.disabled)db.onclick=function(){if(!curJob)return;confirmBox(t('작업을 완료 처리할까요?','Complete this job?'),esc(curJob.product_name)+' · '+esc(cuNm(curJob.company_name)),function(){doComplete(curJob.id)})};
  document.querySelectorAll('#pgCtrl .cbtn.start').forEach(function(b){b.onclick=function(){
    var id=+b.dataset.id,coil=b.dataset.coil;
@@ -688,13 +688,15 @@ function doComplete(id){
  });
 }
 function doReset(silent){
- var w=null;try{w=window.open('','s2reset','width=460,height=260')}catch(e){}
+ // 현장 태블릿에서 collect_server로 직접 POST. 새 창은 자동으로 닫지 않음(응답 200/500 눈으로 확인용).
+ var w=null;try{w=window.open('','s2reset','width=520,height=340')}catch(e){}
  var f=document.createElement('form');
  f.method='POST';f.action='http://ohsung2.iptime.org:8000/reset_length';f.target='s2reset';
  document.body.appendChild(f);try{f.submit()}catch(e){}
- setTimeout(function(){try{f.parentNode&&f.parentNode.removeChild(f)}catch(e){}try{if(w)w.close()}catch(e){}},3000);
- if(!silent)cMsg(t('길이 리셋 전송됨 — 현재 길이가 0으로 떨어지는지 확인','Reset sent — check Length drops to 0'),'good');
- setTimeout(function(){loadCtrl().then(renderCtrl)},4000);
+ setTimeout(function(){try{f.parentNode&&f.parentNode.removeChild(f)}catch(e){}},5000);
+ if(!silent)cMsg(t('리셋 전송됨 — 새 창 결과(200=성공) + 아래 현재 길이 0 확인','Reset sent — check new window (200=OK) + Length below →0'),'good');
+ // 현재 길이를 여러 번 재조회해 0으로 떨어지는지 보여줌
+ [1500,3000,5000,8000,12000].forEach(function(ms){setTimeout(function(){loadCtrl().then(renderCtrl)},ms)});
 }
 function confirmBox(title,msg,onYes){
  var o=document.createElement('div');o.className='coverlay';
