@@ -123,8 +123,8 @@
 <script>
 var API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1';
 var STATUS=API+'/leveling-status', QUALITY=API+'/leveling-quality';
-var IMG=function(id){return QUALITY+'?mode=img&id='+id;};
-var LEVVID=function(seg,file){return QUALITY+'?mode=levvid&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file);};
+var IMG=function(id){return OCR_BASE+'/det/'+id;};  /* 검출이미지: 개발서버 프록시(Supabase 미경유) */
+var LEVVID=function(seg,file){return OCR_BASE+'/levvid?seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file);};
 var DEFECTIMG=API+'/defect-images';
 var OCR_BASE='https://desktop-tdp9hrt.tail8d1b48.ts.net';
 function fieldImg(fp){ fp=fp||''; return /^https?:\/\//.test(fp)?fp:OCR_BASE+'/img/'+fp+'/1.jpg'; }
@@ -266,7 +266,7 @@ function videoCards(){
       +'<div style="font-size:14px;color:var(--mut);font-weight:700;margin-top:9px">새 창에서 재생 · 대용량(수백 MB) 영상은 처음 로딩이 걸릴 수 있어요.</div></div>';
   }).join('');
 }
-function openVid(seg,file,sec){ var t=(sec!=null&&sec>0)?'#t='+Math.floor(sec):''; window.open(QUALITY+'?mode=levvid&redirect=1&seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file)+t,'_blank'); }
+function openVid(seg,file,sec){ var t=(sec!=null&&sec>0)?'#t='+Math.floor(sec):''; window.open(OCR_BASE+'/levvid?seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file)+t,'_blank'); }
 
 // 박스별 보고서
 function reports(){
