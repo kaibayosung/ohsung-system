@@ -298,7 +298,7 @@ function openDef(id){
   var posM=dd.abs!=null?Math.round((box.cut||2500)*dd.abs/1000):null;
   var h='<div class="dh">'+ml[0]+'</div><div class="dsub">박스 '+(dd.box||'?')+' · '+(dd.abs!=null?dd.abs+'번째 장':'')+(posM!=null?' · 약 '+posM+'m 지점':'')+'</div>'
     +'<span class="dbadge" style="background:'+ml[1]+'">'+(dd.at||'')+'</span>';
-  h+=dd.hasImg?'<div class="dimg dimg-ph" id="dimgph">⏳ 불러오는 중…</div><img id="dimgM" src="'+IMG(dd.id,1)+'" class="dimg" style="display:none" onload="this.style.display=\'block\';var p=document.getElementById(\'dimgph\');p&&p.remove();swapFull(this,'+dd.id+');" onerror="var p=document.getElementById(\'dimgph\');p&&(p.textContent=\'이미지 없음\');this.remove();">':'<div class="dimg dimg-ph">이미지 없음</div>';
+  h+=dd.hasImg?'<div class="dimg dimg-ph" id="dimgph">⏳ 불러오는 중…</div><img id="dimgM" src="'+IMG(dd.id,1)+'" class="dimg" style="display:none" onload="this.style.display=\'block\';var p=document.getElementById(\'dimgph\');p&&p.remove();swapFull(this,'+dd.id+');" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=\''+IMG(dd.id)+'\';return;}var p=document.getElementById(\'dimgph\');p&&(p.textContent=\'이미지 없음\');this.remove();">':'<div class="dimg dimg-ph">이미지 없음</div>';
   if(dd.seg) h+='<button class="playbtn" onclick="playSeg(\''+dd.seg+'\','+dd.cam+','+(dd.vms||0)+')">▶ 이 구간 영상 보기 (결함 지점)</button>';
   if(dd.cam===2 && dd.edge){ h+='<div class="sect">철판이 어떻게 굽었나 (단면)</div><div class="wavebox">'+waveType(dd.edge)+waveSVG(dd.edge)+'</div>'; }
   else { h+='<div class="sect">측정값</div><div class="opt"><div class="k">'+(dd.cam===2?'휨/지표':'이상점수')+'</div><div class="v" style="color:#d5331f">'+(dd.cam===2?(dd.warp!=null?dd.warp+'mm':(dd.score!=null?dd.score:'—')):(dd.score!=null?dd.score:'—'))+'</div></div>'; }
