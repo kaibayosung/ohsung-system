@@ -129,7 +129,7 @@ def img(path: str):
 
 
 @app.get("/det/{det_id}")
-def det(det_id: str):
+def det(det_id: str, thumb: int = 0):
     """
     검출 이미지 프록시: 상용 비전서버(38080)의 검출 이미지를 받아 그대로 돌려줌.
     품질화면(https)이 Supabase를 거치지 않고 이 서버(https)에서 직접 받게 하기 위함.
@@ -138,7 +138,7 @@ def det(det_id: str):
     did = "".join(ch for ch in str(det_id) if ch.isdigit())
     if not did:
         raise HTTPException(400, "bad id")
-    url = f"{VISION_SRC}/api/leveling/detections/{did}/image"
+    url = f"{VISION_SRC}/api/leveling/detections/{did}/image" + ("?thumb=1" if thumb else "")
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "ohsung-det-proxy"})
         with urllib.request.urlopen(req, timeout=15) as resp:
