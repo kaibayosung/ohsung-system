@@ -186,7 +186,7 @@ tr.cur td{background:#eef3ff}
 <body>
 
 <div class="page">
-  <div class="head"><h1 id="h1"></h1><span id="h1s"></span><span id="ver" class="ver">v1.2 · 2026-11-11 (작업조작)</span></div>
+  <div class="head"><h1 id="h1"></h1><span id="h1s"></span><span id="ver" class="ver">v1.3 · 2026-11-11 (작업조작)</span></div>
   <div id="fit">
     <div id="stage">
       <nav id="nav"></nav>
@@ -661,7 +661,7 @@ function renderCtrl(){
  });
  h+='</div>';
  $('pgCtrl').innerHTML=h;
- var rb=$('cReset');if(rb)rb.onclick=function(){confirmBox(t('길이를 0으로 리셋할까요?','Reset length to 0?'),t('가동 중엔 누르지 마세요(코일 교체 후에만). 새 창에 결과가 뜹니다(200=성공). 안 뜨면 팝업 허용, 경고 뜨면 「계속」.','Only after a coil change — not while running. A new window shows the result (200=OK). If blocked, allow popups; if warned, tap Continue.'),function(){doReset()})};
+ var rb=$('cReset');if(rb)rb.onclick=function(){confirmBox(t('길이를 0으로 리셋할까요?','Reset length to 0?'),t('가동 중엔 누르지 마세요(코일 교체 후에만). 경고창이 뜨면 「무시하고 보내기」를 누르세요. 리셋되면 아래 「현재 길이」가 0이 됩니다.','Only after a coil change — not while running. If a warning appears, tap “Send anyway”. On success, Length below drops to 0.'),function(){doReset()})};
  var db=$('cDone');if(db&&!db.disabled)db.onclick=function(){if(!curJob)return;confirmBox(t('작업을 완료 처리할까요?','Complete this job?'),esc(curJob.product_name)+' · '+esc(cuNm(curJob.company_name)),function(){doComplete(curJob.id)})};
  document.querySelectorAll('#pgCtrl .cbtn.start').forEach(function(b){b.onclick=function(){
    var id=+b.dataset.id,coil=b.dataset.coil;
@@ -688,16 +688,28 @@ function doComplete(id){
   loadCtrl().then(renderCtrl);
  });
 }
-function doReset(silent){
- // 현장 태블릿에서 collect_server로 직접 POST. 새 창은 자동으로 닫지 않음(응답 200/500 눈으로 확인용).
- var w=null;try{w=window.open('','s2reset','width=520,height=340')}catch(e){}
+var RST_URL='http://ohsung2.iptime.org:8000/reset_length';
+function pollLen(){[1500,3000,5000,8000,12000].forEach(function(ms){setTimeout(function(){loadCtrl().then(renderCtrl)},ms)})}
+function formReset(silent){
+ // 폴백: https→http 폼 전송. 크롬이 '안전하지 않은 정보 제출' 경고를 띄움 → 「무시하고 보내기」 눌러야 전송됨.
+ try{window.open('','s2reset','width=520,height=340')}catch(e){}
  var f=document.createElement('form');
- f.method='POST';f.action='http://ohsung2.iptime.org:8000/reset_length';f.target='s2reset';
+ f.method='POST';f.action=RST_URL;f.target='s2reset';
  document.body.appendChild(f);try{f.submit()}catch(e){}
  setTimeout(function(){try{f.parentNode&&f.parentNode.removeChild(f)}catch(e){}},5000);
- if(!silent)cMsg(t('리셋 전송됨 — 새 창 결과(200=성공) + 아래 현재 길이 0 확인','Reset sent — check new window (200=OK) + Length below →0'),'good');
- // 현재 길이를 여러 번 재조회해 0으로 떨어지는지 보여줌
- [1500,3000,5000,8000,12000].forEach(function(ms){setTimeout(function(){loadCtrl().then(renderCtrl)},ms)});
+ if(!silent)cMsg(t('새 창에서 「무시하고 보내기」를 누르세요 → 현재 길이 0 확인','In the new tab tap “Send anyway” → Length→0'),'wn');
+}
+function doReset(silent){
+ // 1차: 직접 fetch(no-cors). 태블릿 크롬에 이 사이트 '안전하지 않은 콘텐츠 허용'이 켜져 있으면
+ //      팝업·경고 없이 바로 전송. 막히면(기본값) catch → 폼 폴백.
+ if(!silent)cMsg(t('길이 리셋 중…','Resetting length…'),'good');
+ var p=null;
+ try{ p=fetch(RST_URL,{method:'POST',mode:'no-cors',body:'{}'}); }catch(e){ p=null; }
+ if(p&&p.then){
+   p.then(function(){ if(!silent)cMsg(t('리셋 전송됨 — 현재 길이 0으로 떨어지는지 확인','Reset sent — check Length→0'),'good'); })
+    .catch(function(){ formReset(silent); });
+ } else { formReset(silent); }
+ pollLen();
 }
 function confirmBox(title,msg,onYes){
  var o=document.createElement('div');o.className='coverlay';
