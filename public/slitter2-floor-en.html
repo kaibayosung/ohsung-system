@@ -187,7 +187,7 @@ tr.cur td{background:#eef3ff}
 <body>
 
 <div class="page">
-  <div class="head"><h1 id="h1"></h1><span id="h1s"></span><span id="ver" class="ver">v1.6 · 2026-11-11 (작업조작)</span></div>
+  <div class="head"><h1 id="h1"></h1><span id="h1s"></span><span id="ver" class="ver">v1.7 · 2026-11-11 (작업조작)</span></div>
   <div id="fit">
     <div id="stage">
       <nav id="nav"></nav>
@@ -689,7 +689,7 @@ function doComplete(id){
   loadCtrl().then(renderCtrl);
  });
 }
-var RST_URL='http://ohsung-ai.iptime.org:12080/reset_length';
+var RST_URL='http://ohsung2.iptime.org:8000/reset_length';
 function pollLen(){[1500,3000,5000,8000,12000].forEach(function(ms){setTimeout(function(){loadCtrl().then(renderCtrl)},ms)})}
 function formReset(silent){
  // 폴백: https→http 폼 전송. 크롬이 '안전하지 않은 정보 제출' 경고를 띄움 → 「무시하고 보내기」 눌러야 전송됨.
