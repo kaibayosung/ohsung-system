@@ -139,6 +139,47 @@ tr.cur td{background:#eef3ff}
 .dist{position:relative;height:16px;border-radius:8px;background:linear-gradient(90deg,#dfe6f3,#bfd0f0,#dfe6f3);margin:10px 0 4px}
 .dist s{position:absolute;top:-6px;width:6px;height:28px;border-radius:3px;background:var(--ac);transform:translateX(-3px)}
 .nt{font-size:13px;color:#5c6478;margin-top:10px;max-width:1280px}
+
+/* ---- 작업 조작 패널 ---- */
+#stage .ctrlbtn{background:var(--ac);border-color:var(--ac);color:#fff}
+#stage .ctrlbtn small{color:#dbe5ff}
+#stage .ctrlbtn.on{background:#1b49b5;border-color:#1b49b5}
+.cbig{display:grid;grid-template-columns:1.3fr 1fr 1fr auto;gap:14px;align-items:center;background:var(--pn);border:2px solid var(--ln);border-radius:20px;padding:16px 18px}
+.cbig.idle{background:#fafbfe}
+.cbcol span{font-size:16px;color:var(--sb);display:block}
+.cbcol b{font-size:34px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;display:block;word-break:break-all}
+.cbcol b.rn{color:var(--ok)}.cbcol b.sp{color:var(--bd)}
+.cbcol small{font-size:14px;color:var(--sb)}
+.cbact{display:flex;flex-direction:column;gap:8px}
+.cbtn{height:62px;min-width:150px;padding:0 18px;font-size:22px;font-weight:800;border-radius:16px;cursor:pointer;border:2px solid var(--ln);background:#fff;color:var(--tx)}
+.cbtn.reset{background:var(--wn2);border-color:#e6b65c;color:#6a4700}
+.cbtn.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.cbtn.done:disabled{opacity:.3;cursor:default}
+.cbtn.start{background:var(--ac);border-color:var(--ac);color:#fff;height:58px;min-width:140px}
+.chint{font-size:15px;color:var(--sb);background:#fdf6e6;border:1.5px solid #efd79a;border-radius:12px;padding:10px 14px}
+.clist{display:flex;flex-direction:column;gap:8px;overflow:auto;min-height:0;flex:1;padding-right:4px}
+.crow{display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--ln);border-radius:16px;padding:12px 16px}
+.crow.run{border-color:var(--ok);background:var(--ok2)}
+.crow.done{opacity:.55}
+.cinfo{flex:1;min-width:0}
+.cinfo b{font-size:24px;font-weight:900;display:block;word-break:break-all}
+.cinfo small{font-size:15px;color:var(--sb)}
+.cbadge{font-size:18px;font-weight:800;padding:8px 14px;border-radius:12px;white-space:nowrap}
+.cbadge.run{background:var(--ok);color:#fff}
+.cbadge.done{background:var(--ln);color:var(--sb)}
+.cm{font-size:17px;font-weight:800;padding:6px 12px;border-radius:10px}
+.cm.good{background:var(--ok2);color:var(--ok)}
+.cm.bad{background:var(--bd2);color:var(--bd)}
+.coverlay{position:fixed;inset:0;background:rgba(15,30,51,.5);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px}
+.coverlay .cbox{background:#fff;border-radius:22px;padding:26px 28px;max-width:520px;width:100%;box-shadow:0 20px 60px rgba(15,30,51,.4)}
+.coverlay h3{margin:0 0 10px;font-size:26px;font-weight:900;color:#0f1e33}
+.coverlay p{margin:0 0 20px;font-size:19px;color:#44506a;line-height:1.5;word-break:break-all}
+.coverlay .cbtns{display:flex;gap:12px;justify-content:flex-end}
+.coverlay .cbtns.col{flex-direction:column}
+.coverlay .cbtns button{height:58px;padding:0 22px;font-size:21px;font-weight:800;border-radius:14px;cursor:pointer;border:2px solid #e1e6ef;font-family:inherit}
+.coverlay .cbtns .no{background:#fff;color:#44506a}
+.coverlay .cbtns .yes{background:#2a5bd7;border-color:#2a5bd7;color:#fff}
+.coverlay .cbtns .only{background:#fff;color:#2a5bd7}
 </style>
 </head>
 <body>
@@ -153,6 +194,7 @@ tr.cur td{background:#eef3ff}
         <section id="pgNow" hidden></section>
         <section id="pgPast" hidden></section>
         <section id="pgDetail" hidden></section>
+        <section id="pgCtrl" hidden></section>
       </main>
     </div>
   </div>
@@ -241,15 +283,16 @@ async function loadLive(){
 function plcAge(){var p=LV.plc;if(!p||!p.TIMESTAMP)return null;return Math.round((kstNow()-Date.parse(p.TIMESTAMP))/60000)}
 function renderNav(){
  var e=CUR?curEst():null,age=plcAge();
- var b=$('nav').querySelectorAll('button');
- b[0].innerHTML=t('작업 목록','Job list')+'<small>'+t('오늘 '+JOBS.length+'건',JOBS.length+' today')+'</small>';
- b[1].innerHTML='<span><span class="dot"></span>'+t('현재 작업','Current job')+'</span><small>'+(CUR?CUR.spec+' · '+e.pct+'%':t('진행 중 없음','None running'))+'</small>';
+ var _nv=$('nav');
+ _nv.querySelector('[data-p="list"]').innerHTML=t('작업 목록','Job list')+'<small>'+t('오늘 '+JOBS.length+'건',JOBS.length+' today')+'</small>';
+ _nv.querySelector('[data-p="now"]').innerHTML='<span><span class="dot"></span>'+t('현재 작업','Current job')+'</span><small>'+(CUR?CUR.spec+' · '+e.pct+'%':t('진행 중 없음','None running'))+'</small>';
  $('navFoot').innerHTML=(!LV.tried?t('연결 중…','Connecting…'):LV.live?kstClk(kstNow())+t(' 현재',' now')+'<br>'+(age===null?t('PLC 기록 없음','No PLC rows'):(age>10?t('PLC 기록 '+age+'분 전','PLC '+age+' min ago'):t('PLC 연결 정상','PLC connected'))):t('샘플 표시 중<br>실시간 연결 안 됨','Showing sample<br>not live'));
 }
 function renderShell(){
  $('h1').textContent=t('슬리터2 현장 화면 · 가로 태블릿','Slitter 2 Floor Screen · Landscape Tablet');
  $('h1s').textContent=t('왼쪽 메뉴로 이동합니다 · 작업 목록 행이나 지난 작업을 눌러 상세로 들어가 보세요','Use the left menu · tap a row in the job list or a past job to drill in');
  $('nav').innerHTML='<div class="logo">'+t('슬리터2','Slitter 2')+'<small>'+t('현장 화면','Floor screen')+'</small></div>'+
+ '<button type="button" data-p="ctrl" class="ctrlbtn">'+t('작업 조작','Operate')+'<small>'+t('코일 선택·길이 리셋','Select / reset')+'</small></button>'+
  '<button type="button" data-p="list" class="on"></button><button type="button" data-p="now"></button>'+
  '<button type="button" data-p="past">'+t('지난 작업','Past jobs')+'<small>'+t('상세 기록','Full records')+'</small></button><div class="foot" id="navFoot"></div>';
  renderNav();
@@ -577,22 +620,117 @@ function openDetail(i){
  mk('d6',[{data:g.cur,borderColor:'#0a7a3d',borderWidth:2.2,pointRadius:0}],'A',0,16);
 }
 
+
+/* ---------- 작업 조작 (PAD 대체: 코일 선택·길이 리셋·완료) ---------- */
+var PAD='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/slitter2-pad';
+var CTRL={list:[],cur:null,busy:false,loaded:false};
+function padGet(mode){return fetch(PAD+'?mode='+mode).then(function(r){return r.json()}).catch(function(){return null})}
+function padPost(mode,body){return fetch(PAD+'?mode='+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body||{})}).then(function(r){return r.json()}).catch(function(e){return {ok:false,error:String(e&&e.message||e)}})}
+function loadCtrl(){return Promise.all([padGet('list'),padGet('current')]).then(function(a){if(a[0]&&a[0].ok)CTRL.list=a[0].rows||[];if(a[1]&&a[1].ok)CTRL.cur=a[1];CTRL.loaded=true;return true})}
+function cuNm(x){return String(x||'').replace('(주)','')}
+function esc(x){return String(x==null?'':x).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function plcAgo(ts){if(!ts)return '?';var ms=Date.parse(String(ts).replace(' ','T')+'+09:00');if(isNaN(ms))return '?';return Math.max(0,Math.round((Date.now()-ms)/60000))}
+function cMsg(txt,kind){var e=$('cmsg');if(e)e.innerHTML='<span class="cm '+(kind||'')+'">'+esc(txt)+'</span>'}
+function cStat(x){return x==='완료'?'done':(x==='진행중'?'run':'wait')}
+
+function renderCtrl(){
+ var cur=CTRL.cur||{},ing=cur.ing||null,plc=cur.plc||null;
+ var runCoil=ing?ing.coil_id:null, isIdle=(!runCoil||runCoil==='0000000000');
+ var len=plc?plc.length:null, running=plc&&(+plc.run===1), lsp=plc?plc.line_speed:null;
+ var curJob=null;CTRL.list.forEach(function(r){if(r.status==='진행중')curJob=r});
+ var h='';
+ h+='<div class="ph"><h2>'+t('작업 조작','Operate')+'</h2><span class="sub">'+t('코일 선택 · 길이 리셋 · 작업 완료','Select coil · reset length · complete')+'</span><div class="sp" id="cmsg"></div></div>';
+ h+='<div class="cbig'+(isIdle?' idle':'')+'">';
+ h+= '<div class="cbcol"><span>'+t('현재 코일','Current coil')+'</span><b>'+(isIdle?t('— 없음 —','— none —'):esc(runCoil))+'</b>'+(curJob?'<small>'+esc(cuNm(curJob.company_name))+' · '+esc(curJob.specification)+'</small>':'')+'</div>';
+ h+= '<div class="cbcol"><span>'+t('현재 길이 (PLC)','Length (PLC)')+'</span><b class="num">'+(len==null?'—':Number(len).toLocaleString())+'</b><small>'+(plc?'PLC '+plcAgo(plc.ts)+t('분 전',' min ago'):t('기록 없음','no data'))+'</small></div>';
+ h+= '<div class="cbcol"><span>'+t('라인 상태','Line')+'</span><b class="'+(running?'rn':'sp')+'">'+(running?t('가동중','RUNNING'):t('정지','STOPPED'))+'</b><small>'+t('속도 ','Speed ')+(lsp==null?'—':lsp)+'</small></div>';
+ h+= '<div class="cbact"><button type="button" class="cbtn reset" id="cReset">'+t('길이 리셋','Reset length')+'</button>'
+    +'<button type="button" class="cbtn done" id="cDone"'+(isIdle?' disabled':'')+'>'+t('작업 완료','Complete')+'</button></div>';
+ h+='</div>';
+ h+='<div class="chint">'+t('길이 리셋은 현장 태블릿에서만 전송됩니다(인터넷 서버 경유 불가). 리셋 후 위 「현재 길이」가 0으로 떨어지는지 확인하세요.','Reset is sent from this floor tablet only (not via the cloud). After reset, check that Length above drops to 0.')+'</div>';
+ h+='<div class="clist">';
+ if(!CTRL.list.length)h+='<div class="empty"><b>'+(CTRL.loaded?t('오늘 슬리터2 작업이 없습니다','No Slitter 2 jobs today'):t('불러오는 중…','Loading…'))+'</b></div>';
+ CTRL.list.forEach(function(r){
+  var st=cStat(r.status);
+  h+='<div class="crow '+st+'"><div class="cinfo"><b>'+esc(r.product_name)+'</b><small>'+esc(cuNm(r.company_name))+' · '+esc(r.specification)+' · '+Number(r.original_weight||0).toLocaleString()+' kg</small></div>';
+  if(st==='run')h+='<div class="cbadge run">'+t('진행 중','RUNNING')+(r.started?' · '+r.started:'')+'</div>';
+  else if(st==='done')h+='<div class="cbadge done">'+t('완료','Done')+(r.updated?' · '+r.updated:'')+'</div>';
+  else h+='<button type="button" class="cbtn start" data-id="'+r.id+'" data-coil="'+esc(r.product_name)+'">'+t('이 코일 시작','Start')+'</button>';
+  h+='</div>';
+ });
+ h+='</div>';
+ $('pgCtrl').innerHTML=h;
+ var rb=$('cReset');if(rb)rb.onclick=function(){confirmBox(t('길이를 0으로 리셋할까요?','Reset length to 0?'),t('가동 중에는 누르지 마세요. 코일 교체 후에만 누릅니다.','Do not press while running. Only after a coil change.'),function(){doReset()})};
+ var db=$('cDone');if(db&&!db.disabled)db.onclick=function(){if(!curJob)return;confirmBox(t('작업을 완료 처리할까요?','Complete this job?'),esc(curJob.product_name)+' · '+esc(cuNm(curJob.company_name)),function(){doComplete(curJob.id)})};
+ document.querySelectorAll('#pgCtrl .cbtn.start').forEach(function(b){b.onclick=function(){
+   var id=+b.dataset.id,coil=b.dataset.coil;
+   var note=(!isIdle&&runCoil)?t('현재 코일 '+runCoil+' 은 자동으로 완료 처리됩니다.','Current coil '+runCoil+' will be auto-completed.'):t('대기 작업을 시작합니다.','Start this waiting job.');
+   confirmReset(t('이 코일로 작업을 시작할까요?','Start this coil?'),coil+' · '+note,function(doRst){doStart(id,coil,doRst)});
+ }});
+}
+function doStart(id,coil,doRst){
+ if(CTRL.busy)return;CTRL.busy=true;cMsg(t('시작 처리 중…','Starting…'));
+ padPost('start',{id:id,coil_id:coil,commit:true}).then(function(r){
+  CTRL.busy=false;
+  if(!r||!r.ok){cMsg(t('시작 실패: ','Start failed: ')+((r&&r.error)||'?'),'bad');return}
+  cMsg(t(coil+' 시작됨','Started '+coil),'good');
+  if(doRst)doReset(true);
+  loadCtrl().then(renderCtrl);
+ });
+}
+function doComplete(id){
+ if(CTRL.busy)return;CTRL.busy=true;cMsg(t('완료 처리 중…','Completing…'));
+ padPost('complete',{id:id,commit:true}).then(function(r){
+  CTRL.busy=false;
+  if(!r||!r.ok){cMsg(t('완료 실패: ','Complete failed: ')+((r&&r.error)||'?'),'bad');return}
+  cMsg(t('완료 처리됨','Completed'),'good');
+  loadCtrl().then(renderCtrl);
+ });
+}
+function doReset(silent){
+ var w=null;try{w=window.open('','s2reset','width=460,height=260')}catch(e){}
+ var f=document.createElement('form');
+ f.method='POST';f.action='http://ohsung2.iptime.org:8000/reset_length';f.target='s2reset';
+ document.body.appendChild(f);try{f.submit()}catch(e){}
+ setTimeout(function(){try{f.parentNode&&f.parentNode.removeChild(f)}catch(e){}try{if(w)w.close()}catch(e){}},3000);
+ if(!silent)cMsg(t('길이 리셋 전송됨 — 현재 길이가 0으로 떨어지는지 확인','Reset sent — check Length drops to 0'),'good');
+ setTimeout(function(){loadCtrl().then(renderCtrl)},4000);
+}
+function confirmBox(title,msg,onYes){
+ var o=document.createElement('div');o.className='coverlay';
+ o.innerHTML='<div class="cbox"><h3>'+esc(title)+'</h3><p>'+esc(msg)+'</p><div class="cbtns"><button type="button" class="no">'+t('취소','Cancel')+'</button><button type="button" class="yes">'+t('확인','Confirm')+'</button></div></div>';
+ document.body.appendChild(o);
+ o.querySelector('.no').onclick=function(){o.parentNode.removeChild(o)};
+ o.querySelector('.yes').onclick=function(){o.parentNode.removeChild(o);onYes()};
+ o.onclick=function(e){if(e.target===o)o.parentNode.removeChild(o)};
+}
+function confirmReset(title,msg,onYes){
+ var o=document.createElement('div');o.className='coverlay';
+ o.innerHTML='<div class="cbox"><h3>'+esc(title)+'</h3><p>'+esc(msg)+'</p><div class="cbtns col"><button type="button" class="yes rst">'+t('시작 + 길이 리셋','Start + reset length')+'</button><button type="button" class="yes only">'+t('시작만 (리셋 안 함)','Start only')+'</button><button type="button" class="no">'+t('취소','Cancel')+'</button></div></div>';
+ document.body.appendChild(o);
+ o.querySelector('.no').onclick=function(){o.parentNode.removeChild(o)};
+ o.querySelector('.rst').onclick=function(){o.parentNode.removeChild(o);onYes(true)};
+ o.querySelector('.only').onclick=function(){o.parentNode.removeChild(o);onYes(false)};
+ o.onclick=function(e){if(e.target===o)o.parentNode.removeChild(o)};
+}
+
 /* ---------- 이동 ---------- */
 function showOnly(id,nav){
- ['pgList','pgNow','pgPast','pgDetail'].forEach(function(s){$(s).hidden=(s!==id)});
+ ['pgList','pgNow','pgPast','pgDetail','pgCtrl'].forEach(function(s){$(s).hidden=(s!==id)});
  document.querySelectorAll('#nav button').forEach(function(b){b.className=b.dataset.p===nav?'on':''});
 }
 function go(p){
  if(p==='list'){renderList();showOnly('pgList','list')}
  else if(p==='now'){showOnly('pgNow','now');renderNow()}
+ else if(p==='ctrl'){showOnly('pgCtrl','ctrl');renderCtrl();loadCtrl().then(renderCtrl)}
  else{renderPast();showOnly('pgPast','past')}
 }
 function fit(){var f=$('fit'),s=Math.min(1.2,f.clientWidth/1280);$('stage').style.transform='scale('+s+')';f.style.height=(800*s)+'px'}
 buildJobs();renderShell();setFoot();
 document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){go(b.dataset.p)}});
 window.addEventListener('resize',fit);fit();
-function curPage(){var s=['pgList','pgNow','pgPast','pgDetail'],i;for(i=0;i<s.length;i++)if(!$(s[i]).hidden)return s[i];return ''}
-function refresh(){var pg=curPage();renderNav();if(pg==='pgList')renderList();else if(pg==='pgNow'){var wasCur=!!CUR;renderNow()}}
+function curPage(){var s=['pgList','pgNow','pgPast','pgDetail','pgCtrl'],i;for(i=0;i<s.length;i++)if(!$(s[i]).hidden)return s[i];return ''}
+function refresh(){var pg=curPage();renderNav();if(pg==='pgList')renderList();else if(pg==='pgNow'){var wasCur=!!CUR;renderNow()}else if(pg==='pgCtrl'){loadCtrl().then(renderCtrl)}}
 renderList();
 if(location.hash==='#now')go('now');else if(location.hash==='#past')go('past');else if(location.hash==='#detail')openDetail(pi('2632001021','10-08'));
 loadLive().then(function(){setFoot();refresh()});
