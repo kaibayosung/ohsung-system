@@ -335,9 +335,11 @@ async function fetchDetail(cookie: string, h: any, date: string) {
       return `${String(r.spum).trim()}${kg > 0 ? " " + Math.round(kg * 100) / 100 + "kg" : ""}`;
     });
   const sizeRows = (d2.data || []) as any[];
-  const ruleParts = sizeRows.map((r) => r.sdesc).filter(Boolean);
-  if (subItems.length > 0) ruleParts.push("부자재: " + subItems.join(", "));
+  // v18 [2026-11-12] 작업지시서 가공규격 줄(sdesc)만 그대로 쉼표로 이어 보여준다.
+  //   부자재(SKID·지관 등)는 가공규격에 작업자가 쓴 게 아니라서(ERP 별도 품목 줄) 제외 — 사용자 요청. ⚠ 등 추가 기호 없음.
+  const ruleParts = sizeRows.map((r) => String(r.sdesc ?? "").trim()).filter(Boolean);
   const processRule = ruleParts.join(", ");
+  void subItems; // 부자재는 가공규격 칸에서 제외(코일 줄 선택 로직은 그대로 유지)
   const lengthParsed = parseLengthField(item.smeter);
   return { item, processRule, lengthParsed };
 }
