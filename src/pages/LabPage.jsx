@@ -36,6 +36,8 @@ import { DashboardReconcileScreen } from './test/dashboardReconcileScreen';
 // 분류 섹션 순서·소분류 순서·소분류 안의 서비스 순서를 모두 "최근에 만든 것이 위" 기준(git 최초
 // 배포일)으로 재정렬했습니다. 목업 승인 내역은 대화 기록 참고.
 const PROJECTS = [
+  { key: 'slitter2-floor-demo-kr', label: '슬리터2 현장 화면 — 작업중 시연', icon: '🎬', category: '제품 시연', desc: '가동 작업이 없어도 슬리터2 현장 화면의 「현재 작업」 뷰를 항상 보여주는 시연. 과거 가동 코일을 작업 중처럼 재생해 진행률·라인 흐름·텐션 1~4·라인 속도가 실시간처럼 움직입니다. 대표·고객 시연용(자체 완결형). 바로가기 /slitter2-floor-demo-kr.html', external: '/slitter2-floor-demo-kr.html', badge: '시연', isNew: true, updated: '2026-11-12' },
+  { key: 'leveling-floor-demo-kr', label: '레벨링 현장 화면 — 작업중 시연', icon: '🎬', category: '제품 시연', desc: '가동 작업이 없어도 레벨링 현장 화면의 「현재 작업」 뷰를 보여주는 시연. 과거 가동 코일(실데이터)을 시간순으로 재생해 박스 진행·이송/부하/텐션/사이클·OCR 텐션이 실시간처럼 움직입니다. 대표·고객 시연용. 바로가기 /leveling-floor-demo-kr.html', external: '/leveling-floor-demo-kr.html', badge: '시연', isNew: true, updated: '2026-11-12' },
   { key: 'service-monitor', label: '시스템 상태 모니터', icon: '🖥️', category: '생산현장 도구', group: '시스템 상태 모니터', desc: '개발서버·비전서버(38080)·SAIGE VIMS(8095)·MariaDB·AI서버·텐션 판독(OCR)·Supabase·Vercel이 지금 살아있는지 초록/빨강으로 한눈에 봅니다. Supabase 함수가 서버 쪽에서 각 서비스를 점검하며 15초마다 자동 갱신. 모바일 우선. 바로가기 /service-monitor.html', external: '/service-monitor.html', badge: '실데이터 연동', isNew: true, updated: '2026-11-12' },
   // ── 1. 생산현장 도구 (32개, 최신 10/6) ──────────────────────────────
   // 소분류: 입출고 · 재고 관제 (1개, 10/6)
@@ -43,7 +45,6 @@ const PROJECTS = [
   // 소분류: 슬리팅2 AI 헬퍼·모니터 (11개, 최신 10/8)
   { key: 'slitter2-floor-en', label: 'Slitter 2 Floor Screen (English)', icon: '🖥️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: 'Landscape tablet screen for the Slitter 2 operator: job list, live tension 1–4 and line speed with forecast vs. past same-spec jobs, and full detail of past jobs. Design preview with part of the data real.', external: '/slitter2-floor-en.html', badge: '샘플', isNew: true, updated: '2026-10-08' },
   { key: 'slitter2-floor-kr', label: '슬리터2 현장 화면 (한국어)', icon: '🖥️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: '가로형 태블릿용 슬리터2 현장 화면 — 전체 작업 목록, 현재 작업의 텐션 1~4·라인 속도 시각화와 같은 규격 지난 작업 대비 예측, 지난 작업 완전 상세 기록. 시안 단계(일부 값만 실데이터).', external: '/slitter2-floor-kr.html', badge: '샘플', isNew: true, updated: '2026-10-08' },
-  { key: 'slitter2-floor-demo-kr', label: '슬리터2 현장 화면 — 시연 (작업 중 재생)', icon: '🎬', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: '가동 중인 작업이 없어도 슬리터2 현장 화면의 「현재 작업」 뷰를 항상 보여주는 시연 페이지. 과거 가동 코일을 작업 중처럼 재생해 진행률·라인 흐름·텐션 1~4·라인 속도가 실시간처럼 움직입니다. 대표·고객 시연용(DB 불필요, 자체 완결형). 바로가기 /slitter2-floor-demo-kr.html', external: '/slitter2-floor-demo-kr.html', badge: '시연', isNew: true, updated: '2026-11-12' },
   { key: 'slitter2-stop-analysis-en', label: 'Slitting2 Stop Analysis (English)', icon: '⏸️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: 'Pick a date to see that day’s Slitting2 job durations and mid-work stops as stats and charts, then click a job to open its full PLC time series. Real-data.', external: '/slitter2-stop-analysis-en.html', badge: '실데이터 연동', isNew: true, updated: '2026-09-29' },
   { key: 'slitter2-stop-analysis-kr', label: '슬리터2 정지 분석 (한국어)', icon: '⏸️', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: '날짜를 고르면 그날 슬리터2 전체 작업의 소요시간과 중간정지(설비가 RUN 상태에서 실제로 완전히 멈춘 구간) 건수·시간을 통계와 그래프로 보여줍니다. 작업을 클릭하면 해당 코일의 PLC 전 구간 시계열(속도·전류·텐션·지름·길이)이 열립니다. 실데이터로 동작합니다.', external: '/slitter2-stop-analysis-kr.html', badge: '실데이터 연동', isNew: true, updated: '2026-09-29' },
   { key: 'slitter-before-after-kr', label: '슬리터 개선 전후 성과 비교 (한국어)', icon: '📊', category: '생산현장 도구', group: '슬리팅2 AI 헬퍼 · 모니터', desc: '개선 전(A)·개선 후(B) 기간을 골라 같은 기준으로 비교합니다. 슬리터2는 PLC 가동/정지로 같은 규칙 교체·규칙 변경 교체·가동률·첫 가동 시각을, 슬리터1은 작업 완료 간격으로 코일 주기를 계산하고, 일별 교체 시간 그래프와 교체 목록, 개선/악화/표본 부족 판정을 보여줍니다. 실데이터로 동작합니다.', external: '/slitter-before-after-kr.html', badge: '실데이터 연동', isNew: true, updated: '2026-10-13' },
@@ -135,6 +136,7 @@ const PROJECTS = [
 // 분류(category)마다 아이콘·강조색을 부여해 홈 화면에서 한눈에 구분되게 합니다.
 // (기존 COLORS 토큰을 최대한 재사용하고, 없는 색만 새로 추가했습니다.)
 const CATEGORY_META = {
+  '제품 시연': { icon: '🎬', accent: '#6b4fa0', accentBg: '#efe9f9' },
   '생산현장 도구': { icon: '🏭', accent: '#0e7c7b', accentBg: '#e3f4f3' },
   '통합 챗봇 (테스트)': { icon: '🤖', accent: '#6b4fa0', accentBg: '#efe9f9' },
   '시스템 연동': { icon: '🔗', accent: COLORS.blue, accentBg: COLORS.blueBg },

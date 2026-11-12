@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>시스템 상태</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{--ink:#0f1e33;--sec:#44506a;--mut:#8a93a6;--line:#e3e8f0;--acc:#796cbf;--bg:#f3f5fe;
+    --ok:#1f9d57;--okbg:#eafaf1;--bad:#d5331f;--badbg:#fdecea;--warn:#e07b1a;--warnbg:#fdf4e8;--gray:#95a0b3;--graybg:#eef1f7}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:Pretendard,system-ui,sans-serif;font-weight:700;background:var(--bg);color:var(--ink);
+    padding:16px 16px 40px;max-width:900px;margin:0 auto;-webkit-font-smoothing:antialiased;font-size:16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+  h1{font-size:24px;letter-spacing:-.4px}
+  .refresh{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--sec);font-weight:700}
+  .dot-live{width:9px;height:9px;border-radius:50%;background:var(--ok);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(31,157,87,.45)}70%{box-shadow:0 0 0 7px rgba(31,157,87,0)}100%{box-shadow:0 0 0 0 rgba(31,157,87,0)}}
+
+  .hero{background:#fff;border:2px solid var(--line);border-radius:18px;padding:16px 20px;margin:12px 0 4px;
+    display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .hero .big{font-size:40px;font-weight:900;letter-spacing:-1.5px;line-height:1}
+  .hero .big.ok{color:var(--ok)}.hero .big.bad{color:var(--bad)}
+  .hero .lab{font-size:13px;color:var(--mut);font-weight:700;margin-top:3px}
+  .hero .pills{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .pill{display:inline-flex;align-items:center;gap:6px;border-radius:11px;padding:6px 12px;font-size:14px;font-weight:900}
+  .pill.ok{background:var(--okbg);color:var(--ok)}.pill.bad{background:var(--badbg);color:var(--bad)}
+  .pill.warn{background:var(--warnbg);color:var(--warn)}.pill.gray{background:var(--graybg);color:var(--gray)}
+
+  .grp{font-size:14px;font-weight:900;color:var(--sec);margin:18px 2px 2px;display:flex;align-items:center;gap:8px}
+  .grp .ln{flex:1;height:2px;background:var(--line);border-radius:2px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:11px;margin-top:9px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+
+  .card{background:#fff;border:2px solid var(--line);border-radius:16px;padding:14px 15px 14px 16px;position:relative;overflow:hidden}
+  .card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:6px}
+  .card.s-ok::before{background:var(--ok)}.card.s-down::before{background:var(--bad)}
+  .card.s-unknown::before{background:var(--gray)}.card.s-idle::before{background:var(--warn)}
+  .crow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .cname{font-size:18px;font-weight:900;letter-spacing:-.3px;display:flex;align-items:center;gap:8px}
+  .sdot{width:13px;height:13px;border-radius:50%;flex:0 0 auto}
+  .s-ok .sdot{background:var(--ok)}.s-down .sdot{background:var(--bad)}
+  .s-unknown .sdot{background:var(--gray)}.s-idle .sdot{background:var(--warn)}
+  .cbadge{font-size:13px;font-weight:900;border-radius:9px;padding:4px 10px;white-space:nowrap}
+  .s-ok .cbadge{background:var(--okbg);color:var(--ok)}.s-down .cbadge{background:var(--badbg);color:var(--bad)}
+  .s-unknown .cbadge{background:var(--graybg);color:var(--gray)}.s-idle .cbadge{background:var(--warnbg);color:var(--warn)}
+  .caddr{font-size:12.5px;color:var(--mut);font-weight:700;margin-top:6px;word-break:break-all;font-variant-numeric:tabular-nums}
+  .cmeta{font-size:13px;color:var(--sec);font-weight:700;margin-top:7px}
+  .cmeta b{color:var(--ink);font-weight:900}
+
+  .err{background:var(--badbg);border:2px solid #f0bdb3;color:#9a2a1b;border-radius:14px;padding:13px 16px;font-size:15px;font-weight:800;margin:12px 0;display:none}
+  .foot{font-size:12.5px;color:var(--mut);font-weight:700;text-align:center;margin-top:24px;line-height:1.7}
+  .skel{color:var(--mut);font-size:16px;padding:30px;text-align:center}
+</style>
+</head>
+<body>
+<div class="top">
+  <h1>시스템 상태</h1>
+  <div class="refresh"><span class="dot-live"></span><span id="rtxt">갱신 중…</span></div>
+</div>
+
+<div class="err" id="err"></div>
+<div id="hero"></div>
+<div id="body"><div class="skel">불러오는 중…</div></div>
+<div class="foot">15초마다 자동 점검 · 각 서버를 Supabase 함수가 서버 쪽에서 확인합니다.<br>
+<span style="color:var(--ok)">●정상</span> &nbsp; <span style="color:var(--bad)">■중단</span> &nbsp; <span style="color:var(--warn)">◐대기</span> &nbsp; <span style="color:var(--gray)">?확인불가(내부망 등)</span></div>
+
+<script>
+var API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/service-monitor';
+var ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ubG5id2NiZ2ZnZnRkZ2F3YW5oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0NTYxMDQsImV4cCI6MjA4NTAzMjEwNH0.-tS-m6hezjEclG0er5yUXERisE0uE3BYVJlviJKkQAo';
+var META={ok:{t:'정상',c:'s-ok'},down:{t:'중단',c:'s-down'},unknown:{t:'확인불가',c:'s-unknown'},idle:{t:'대기',c:'s-idle'}};
+var GROUPS=['인프라','비전서버','AI 서버','클라우드'];
+
+function fmtMs(m){return m>0?m+'ms':'—';}
+async function load(){
+  try{
+    var r=await fetch(API,{headers:{apikey:ANON,Authorization:'Bearer '+ANON}});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    var d=await r.json();
+    document.getElementById('err').style.display='none';
+    render(d);
+  }catch(e){
+    var el=document.getElementById('err');
+    el.style.display='block';
+    el.textContent='⚠ 점검 서버에 연결하지 못했습니다 ('+e.message+'). 잠시 후 다시 시도합니다.';
+    document.getElementById('rtxt').textContent='연결 실패';
+  }
+}
+function render(d){
+  var svc=d.services||[];
+  var ok=svc.filter(s=>s.status==='ok').length;
+  var down=svc.filter(s=>s.status==='down').length;
+  var idle=svc.filter(s=>s.status==='idle').length;
+  var unk=svc.filter(s=>s.status==='unknown').length;
+  var allOk=(down===0);
+  document.getElementById('hero').innerHTML=
+    '<div class="hero"><div><div class="big '+(allOk?'ok':'bad')+'">'+ok+'<span style="font-size:22px;color:var(--mut)">/'+svc.length+'</span></div>'
+    +'<div class="lab">정상 가동</div></div><div class="pills">'
+    +'<span class="pill ok">● 정상 '+ok+'</span>'
+    +(down?'<span class="pill bad">■ 중단 '+down+'</span>':'')
+    +(idle?'<span class="pill warn">◐ 대기 '+idle+'</span>':'')
+    +(unk?'<span class="pill gray">? 확인불가 '+unk+'</span>':'')
+    +'</div></div>';
+
+  var html='';
+  GROUPS.forEach(function(g){
+    var items=svc.filter(s=>s.group===g);
+    if(!items.length)return;
+    html+='<div class="grp">'+g+'<span class="ln"></span></div><div class="grid">';
+    items.forEach(function(s){
+      var m=META[s.status]||META.unknown;
+      var meta='';
+      if(s.detail) meta=s.detail;
+      else if(s.status==='ok') meta='응답 <b>'+fmtMs(s.ms)+'</b>'+(s.code&&s.code>1?' · HTTP '+s.code:'');
+      else if(s.status==='down') meta='<b style="color:var(--bad)">응답 없음</b>'+(s.err?' · '+s.err:'');
+      else if(s.status==='unknown') meta='클라우드에서 확인 불가'+(s.err?'':'');
+      html+='<div class="card '+m.c+'"><div class="crow"><div class="cname"><span class="sdot"></span>'+s.name+'</div>'
+        +'<span class="cbadge">'+m.t+'</span></div>'
+        +'<div class="caddr">'+(s.addr||'')+'</div>'
+        +(s.note?'<div class="caddr" style="color:#aeb6c4">'+s.note+'</div>':'')
+        +'<div class="cmeta">'+meta+'</div></div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('body').innerHTML=html;
+  var t=new Date(d.ts);
+  document.getElementById('rtxt').textContent='방금 갱신 · '+String(t.getHours()).padStart(2,'0')+':'+String(t.getMinutes()).padStart(2,'0')+':'+String(t.getSeconds()).padStart(2,'0');
+}
+load();
+setInterval(load,15000);
+</script>
+</body>
+</html>
