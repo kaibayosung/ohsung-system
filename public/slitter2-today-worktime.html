@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>슬리터2 작업시간 — 오늘</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+  :root{--ink:#0f1e33;--sec:#5c6478;--mut:#7d8ba1;--line:#e3e8f0;--acc:#796cbf;--accbg:#efe9f9;--bg:#f3f5fe;
+    --ok:#1f9d57;--okbg:#eafaf1;--warn:#e07b1a;--warnbg:#fdf4e8;--bad:#d5331f;--badbg:#fdecea;--grid:#eef1f7}
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font-family:Pretendard,system-ui,sans-serif;font-weight:700;background:var(--bg);color:var(--ink);
+    padding:16px 16px 48px;max-width:960px;margin:0 auto;-webkit-font-smoothing:antialiased;font-size:16px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  h1{font-size:23px;letter-spacing:-.5px}
+  .sub{font-size:13px;color:var(--mut);font-weight:700;margin-top:3px}
+  .datenav{display:flex;align-items:center;gap:6px}
+  .datenav button{font-family:inherit;font-weight:900;font-size:15px;color:var(--sec);background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:7px 11px;cursor:pointer}
+  .datenav .d{font-size:15px;font-weight:900;color:var(--ink);min-width:104px;text-align:center;font-variant-numeric:tabular-nums}
+  .datenav .today{color:#fff;background:var(--acc);border-color:var(--acc)}
+
+  .hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:14px 0 4px}
+  @media(max-width:640px){.hero{grid-template-columns:1fr 1fr}}
+  .stat{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:13px 15px}
+  .stat .l{font-size:12.5px;color:var(--mut);font-weight:800}
+  .stat .v{font-size:27px;font-weight:900;letter-spacing:-1px;line-height:1.05;margin-top:5px}
+  .stat .s{font-size:12px;color:var(--sec);font-weight:700;margin-top:4px}
+  .stat.acc .v{color:var(--acc)} .stat.warn .v{color:var(--warn)} .stat.bad .v{color:var(--bad)}
+
+  .panel{background:#fff;border:1.5px solid var(--line);border-radius:17px;padding:16px 17px;margin-top:13px}
+  .panel h2{font-size:15px;font-weight:900;letter-spacing:-.3px}
+  .panel .hint{font-size:12.5px;color:var(--mut);font-weight:700;margin-top:4px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--sec);font-weight:700;margin-top:10px}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+
+  table{width:100%;border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums}
+  th{font-size:12px;color:var(--mut);font-weight:800;text-align:left;padding:8px 7px;border-bottom:1.5px solid var(--line);white-space:nowrap}
+  td{font-size:14px;font-weight:700;padding:9px 7px;border-bottom:1px solid var(--grid)}
+  td.r,th.r{text-align:right}
+  .tag{display:inline-block;font-size:11.5px;font-weight:900;border-radius:999px;padding:3px 9px}
+  .tag.ok{background:var(--okbg);color:var(--ok)} .tag.bad{background:var(--badbg);color:var(--bad)}
+  .cid{font-weight:900;letter-spacing:-.2px}
+
+  .tip{position:fixed;pointer-events:none;background:#0f1e33;color:#fff;font-size:12.5px;font-weight:800;
+    padding:7px 10px;border-radius:9px;opacity:0;transition:opacity .1s;z-index:9;white-space:nowrap;box-shadow:0 6px 20px rgba(15,30,51,.25)}
+  .msg{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:34px 18px;text-align:center;color:var(--mut);font-size:16px;font-weight:800;margin-top:13px}
+  .badge{display:inline-block;font-size:11px;font-weight:900;color:var(--acc);background:var(--accbg);border-radius:999px;padding:3px 10px;margin-left:6px;vertical-align:3px}
+  .foot{font-size:12px;color:var(--mut);font-weight:700;text-align:center;margin-top:22px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="top">
+  <div>
+    <h1>슬리터2 작업시간 — 오늘 <span class="badge" id="pvb" style="display:none">미리보기</span></h1>
+    <div class="sub" id="sub">오늘 하루 슬리터2 작업별 소요시간·교체/대기·정지를 한 화면에</div>
+  </div>
+  <div class="datenav">
+    <button id="prev">◀</button>
+    <span class="d" id="dlabel">—</span>
+    <button id="next">▶</button>
+    <button class="today" id="today">오늘</button>
+  </div>
+</div>
+
+<div id="app"><div class="msg">불러오는 중…</div></div>
+<div class="tip" id="tip"></div>
+<div class="foot">slitter2 실데이터(plc_data·erp_data, leveler-explore) · 작업시간=PLC 가동구간, 정지=RUN 중 속도0 지속(초기 스레딩·코일교체·완료 후 대기 제외)</div>
+
+<script>
+const API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore";
+const KEY="sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs";
+const PREVIEW=new URLSearchParams(location.search).has('preview');
+
+async function getJson(params){
+  const qs=new URLSearchParams(params).toString();
+  const res=await fetch(`${API}?${qs}`,{headers:{apikey:KEY,Authorization:`Bearer ${KEY}`}});
+  if(!res.ok) throw new Error("API "+res.status);
+  return res.json();
+}
+function todayKST(){return new Date(Date.now()+9*3600000).toISOString().slice(0,10);}
+function addDaysKST(s,n){const d=new Date(s+"T00:00:00Z");d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
+function fmtHM(iso){const d=new Date(iso);return String(d.getUTCHours()).padStart(2,'0')+':'+String(d.getUTCMinutes()).padStart(2,'0');}
+function msOf(iso){return new Date(iso).getTime();}
+function fmtDur(min){const h=Math.floor(min/60),m=Math.round(min%60);return h>0?`${h}시간 ${m}분`:`${m}분`;}
+function fmtDurS(min){const h=Math.floor(min/60),m=Math.round(min%60);return h>0?`${h}h ${m}m`:`${m}m`;}
+function fmtSec(sec){const m=Math.floor(sec/60),s=Math.round(sec%60);return m>0?`${m}분 ${s}초`:`${s}초`;}
+function shortId(id){return id.length>8?id.slice(-6):id;}
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function detectStops(rs){
+  if(!rs||rs.length===0)return{stops:[],totalStopSec:0};
+  const THREAD=25,TAIL=90;
+  const finalMax=Math.max(...rs.map(r=>Number(r.LENGTH)||0));
+  const lastTs=msOf(rs[rs.length-1].TIMESTAMP);
+  const stops=[];let runStart=null;
+  for(let i=0;i<rs.length;i++){
+    const r=rs[i],len=Number(r.LENGTH)||0,spd=Number(r.LINE_SPEED_VALUE)||0,run=Number(r.RUN);
+    const stopped=run===1&&spd===0&&len>THREAD;
+    if(stopped&&runStart===null)runStart=i;
+    if(!stopped&&runStart!==null){fin(runStart,i-1);runStart=null;}
+  }
+  if(runStart!==null)fin(runStart,rs.length-1);
+  function fin(s,e){
+    const dur=(msOf(rs[e].TIMESTAMP)-msOf(rs[s].TIMESTAMP))/1000;
+    if(dur<10)return;
+    let mn=Infinity,mx=-Infinity;for(let k=s;k<=e;k++){const l=Number(rs[k].LENGTH)||0;if(l<mn)mn=l;if(l>mx)mx=l;}
+    const at=Number(rs[s].LENGTH)||0;
+    if(mx-mn>3)return; if(at>=finalMax-5)return;
+    if((lastTs-msOf(rs[e].TIMESTAMP))/1000<TAIL)return;
+    stops.push({durSec:Math.round(dur)});
+  }
+  return{stops,totalStopSec:Math.round(stops.reduce((a,x)=>a+x.durSec,0))};
+}
+
+const state={date:todayKST()};
+
+async function load(){
+  const app=document.getElementById('app');
+  document.getElementById('dlabel').textContent=state.date;
+  document.getElementById('pvb').style.display=PREVIEW?'inline-block':'none';
+  app.innerHTML='<div class="msg">'+state.date+' 작업을 불러오는 중…</div>';
+  try{
+    let jobs;
+    if(PREVIEW){jobs=SAMPLE();}
+    else{
+      const jl=await getJson({slitter_work_date:state.date});
+      const rows=(jl.rows||[]).filter(r=>/^[A-Za-z0-9_-]+$/.test(r.product_name));
+      if(rows.length===0){app.innerHTML='<div class="msg">이 날짜에는 슬리터2 작업 기록이 없습니다.<br>◀ 로 지난 날짜를 확인해 보세요.</div>';return;}
+      const idList=rows.map(r=>`'${r.product_name}'`).join(",");
+      const sql=`SELECT COIL_ID, TIMESTAMP, RUN, LINE_SPEED_VALUE, LENGTH FROM plc_data WHERE COIL_ID IN (${idList}) ORDER BY COIL_ID, TIMESTAMP`;
+      const pj=await getJson({sql});
+      const byCoil=new Map();(pj.rows||[]).forEach(r=>{if(!byCoil.has(r.COIL_ID))byCoil.set(r.COIL_ID,[]);byCoil.get(r.COIL_ID).push(r);});
+      jobs=rows.map(e=>{
+        const rs=byCoil.get(e.product_name)||[];
+        if(rs.length===0)return{coilId:e.product_name,erp:e,hasPlc:false,durationMin:0,totalStopSec:0,stopCount:0};
+        const det=detectStops(rs);
+        return{coilId:e.product_name,erp:e,hasPlc:true,startTs:rs[0].TIMESTAMP,endTs:rs[rs.length-1].TIMESTAMP,
+          durationMin:(msOf(rs[rs.length-1].TIMESTAMP)-msOf(rs[0].TIMESTAMP))/60000,
+          totalStopSec:det.totalStopSec,stopCount:det.stops.length};
+      });
+    }
+    jobs.sort((a,b)=>(a.startTs||'zzz')<(b.startTs||'zzz')?-1:1);
+    render(jobs);
+  }catch(err){app.innerHTML='<div class="msg">불러오지 못했습니다: '+esc(err.message||err)+'</div>';}
+}
+
+function render(jobs){
+  const withPlc=jobs.filter(j=>j.hasPlc);
+  const n=withPlc.length;
+  const sumDur=withPlc.reduce((s,j)=>s+j.durationMin,0);
+  const avgDur=n?sumDur/n:0;
+  const sumStopSec=withPlc.reduce((s,j)=>s+j.totalStopSec,0);
+  const stopJobs=withPlc.filter(j=>j.stopCount>0).length;
+  const firstStart=withPlc.length?Math.min(...withPlc.map(j=>msOf(j.startTs))):0;
+  const lastEnd=withPlc.length?Math.max(...withPlc.map(j=>msOf(j.endTs))):0;
+  const spanMin=withPlc.length?(lastEnd-firstStart)/60000:0;
+  const changeMin=Math.max(0,spanMin-sumDur);
+  const util=spanMin>0?Math.round(sumDur/spanMin*100):0;
+
+  let h='';
+  // hero
+  h+='<div class="hero">'
+    +card('작업 수',n+'<span style="font-size:15px;color:var(--mut)">건</span>','acc',n?fmtHM(new Date(firstStart).toISOString())+'~'+fmtHM(new Date(lastEnd).toISOString()):'—')
+    +card('총 작업시간',fmtDurS(sumDur),'',n?'평균 '+fmtDurS(avgDur)+'/건':'—')
+    +card('교체·대기',fmtDurS(changeMin),'warn','조업 대비 '+(spanMin>0?Math.round(changeMin/spanMin*100):0)+'%')
+    +card('작업 중 정지',fmtSec(sumStopSec),sumStopSec>0?'bad':'',stopJobs?stopJobs+'개 작업에서':'없음')
+    +'</div>';
+
+  // utilization bar
+  h+='<div class="panel"><h2>하루 조업 구성</h2>'
+    +'<div class="hint">첫 가동 '+ (n?fmtHM(new Date(firstStart).toISOString()):'—') +' ~ 마지막 종료 '+ (n?fmtHM(new Date(lastEnd).toISOString()):'—') +' · 총 '+fmtDur(spanMin)+'</div>'
+    +'<div style="display:flex;height:34px;border-radius:9px;overflow:hidden;margin-top:12px;border:1.5px solid var(--line)">'
+    +'<div style="width:'+util+'%;background:var(--acc);min-width:2px"></div>'
+    +'<div style="flex:1;background:var(--warnbg)"></div></div>'
+    +'<div class="legend"><span><i style="background:var(--acc)"></i>가동(작업) '+util+'%</span><span><i style="background:var(--warnbg);border:1px solid var(--warn)"></i>교체·대기 '+(100-util)+'%</span></div>'
+    +'</div>';
+
+  // bar chart: per-job duration
+  h+='<div class="panel"><h2>작업별 소요시간</h2><div class="hint">막대가 길수록 오래 걸린 작업 · 빨강 = 작업 중 정지 발생</div>'+barChart(withPlc)+'</div>';
+
+  // table
+  h+='<div class="panel"><h2>작업 목록</h2><div style="overflow-x:auto"><table><thead><tr>'
+    +'<th>시작</th><th>코일ID</th><th>거래처</th><th>가공규격</th><th class="r">중량</th><th class="r">작업시간</th><th>정지</th></tr></thead><tbody>';
+  jobs.forEach(j=>{
+    const e=j.erp||{};
+    const stop=j.stopCount>0?'<span class="tag bad">'+j.stopCount+'회 '+fmtSec(j.totalStopSec)+'</span>':'<span class="tag ok">없음</span>';
+    h+='<tr><td>'+(j.hasPlc?fmtHM(j.startTs):'—')+'</td>'
+      +'<td class="cid">'+esc(shortId(j.coilId))+'</td>'
+      +'<td>'+esc(e.company_name||'—')+'</td>'
+      +'<td>'+esc(e.specification||'—')+'</td>'
+      +'<td class="r">'+(e.original_weight?Number(e.original_weight).toLocaleString()+'kg':'—')+'</td>'
+      +'<td class="r">'+(j.hasPlc?fmtDurS(j.durationMin):'기록없음')+'</td>'
+      +'<td>'+(j.hasPlc?stop:'—')+'</td></tr>';
+  });
+  h+='</tbody></table></div></div>';
+  document.getElementById('app').innerHTML=h;
+  wireBars();
+}
+
+function card(l,v,cls,s){return '<div class="stat '+(cls||'')+'"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="s">'+(s||'')+'</div></div>';}
+
+function barChart(jobs){
+  if(!jobs.length)return '<div class="msg" style="border:0;padding:20px">표시할 작업이 없습니다.</div>';
+  const max=Math.max(...jobs.map(j=>j.durationMin),1);
+  const rowH=34,padL=0,w=880,barMax=w-140;
+  let s='';
+  jobs.forEach(j=>{
+    const bw=Math.max(3,Math.round(j.durationMin/max*barMax));
+    const col=j.stopCount>0?'var(--bad)':'var(--acc)';
+    s+='<div class="brow" data-tip="'+esc(shortId(j.coilId))+' · '+fmtDurS(j.durationMin)+(j.stopCount>0?' · 정지 '+j.stopCount+'회':'')+'" style="display:flex;align-items:center;gap:9px;height:'+rowH+'px">'
+      +'<div style="width:62px;font-size:12.5px;color:var(--sec);font-weight:800;text-align:right;white-space:nowrap">'+esc(shortId(j.coilId))+'</div>'
+      +'<div style="flex:1;position:relative;height:16px"><div style="position:absolute;left:0;top:0;height:16px;width:'+bw+'px;background:'+col+';border-radius:4px"></div></div>'
+      +'<div style="width:66px;font-size:13px;font-weight:900;white-space:nowrap">'+fmtDurS(j.durationMin)+'</div></div>';
+  });
+  return '<div style="margin-top:10px">'+s+'</div>';
+}
+function wireBars(){
+  const tip=document.getElementById('tip');
+  document.querySelectorAll('.brow').forEach(el=>{
+    el.addEventListener('mousemove',e=>{tip.textContent=el.getAttribute('data-tip');tip.style.left=(e.clientX+12)+'px';tip.style.top=(e.clientY+12)+'px';tip.style.opacity='1';});
+    el.addEventListener('mouseleave',()=>{tip.style.opacity='0';});
+  });
+}
+
+// --- 미리보기용 샘플 (preview=1) ---
+function SAMPLE(){
+  const d=state.date;
+  function mk(id,cu,sp,kg,h0,m0,durMin,stopN,stopSec){
+    const start=`${d}T${String(h0).padStart(2,'0')}:${String(m0).padStart(2,'0')}:00.000Z`;
+    const end=new Date(new Date(start).getTime()+durMin*60000).toISOString();
+    return{coilId:id,erp:{product_name:id,company_name:cu,specification:sp,original_weight:kg},hasPlc:true,startTs:start,endTs:end,durationMin:durMin,totalStopSec:stopSec,stopCount:stopN};
+  }
+  return[
+    mk('JAD85124','대한제강','1.15X1200XC',8420,8,12,47,0,0),
+    mk('JAD85137','세아특수강','0.76X1000XB',6150,9,8,33,1,72),
+    mk('JAD85142','현대제철','1.40X1250XC',9870,9,55,58,0,0),
+    mk('JAD85150','동국제강','0.90X900XB',5230,11,2,29,0,0),
+    mk('JAD85166','포스코','1.20X1100XC',7680,13,20,41,2,146),
+    mk('JAD85171','대한제강','1.15X1200XC',8300,14,18,44,0,0),
+  ];
+}
+
+document.getElementById('prev').onclick=()=>{state.date=addDaysKST(state.date,-1);load();};
+document.getElementById('next').onclick=()=>{state.date=addDaysKST(state.date,1);load();};
+document.getElementById('today').onclick=()=>{state.date=todayKST();load();};
+load();
+</script>
+</body>
+</html>
