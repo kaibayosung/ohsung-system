@@ -309,7 +309,7 @@
   .ptt .go{cursor:pointer}.ptt .go:hover td{background:#f4f7fd}
   .ptt .cn{font-weight:900;font-family:'IBM Plex Mono',monospace}
   .pill{display:inline-block;font-size:16px;font-weight:900;padding:5px 14px;border-radius:99px;white-space:nowrap}
-  .p-ok{background:var(--okbg);color:var(--ok)}.p-bd{background:var(--badbg);color:var(--bad)}.p-wn{background:#fdf3e6;color:#b06a12}
+  .p-ok{background:var(--okbg);color:var(--ok)}.p-bd{background:var(--badbg);color:var(--bad)}.p-wn{background:#fdf3e6;color:#b06a12}.p-bl{background:#eaf0fb;color:var(--blue)}.p-id{background:var(--line);color:var(--sec)}
   .chev2{color:var(--blue);font-size:24px;font-weight:900;text-align:right}
 
   /* 지난 작업 상세 — 확장 섹션 */
@@ -334,6 +334,18 @@
   .pdcmp>div{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:10px 13px;text-align:center}
   .pdcmp b{display:block;font-size:22px;font-weight:900;font-family:'IBM Plex Mono',monospace}
   .pdcmp span{font-size:13px;color:var(--mut);font-weight:800}
+
+  /* 시각 스냅샷 */
+  .ov2{position:absolute;inset:0;background:rgba(15,20,30,.55);display:none;align-items:center;justify-content:center;z-index:14;padding:18px}
+  .ov2.on{display:flex}
+  #v-past .ptt .go td{cursor:pointer}
+  .pdt .go{cursor:pointer}.pdt .go:hover td{background:#eef3ff}
+  .snapts{font-size:16px;font-weight:900;color:var(--sec);margin-bottom:12px}
+  .snapg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .snapc{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:11px 14px}
+  .snapc span{display:block;font-size:14px;color:var(--mut);font-weight:800}
+  .snapc b{font-size:26px;font-weight:900;color:var(--ink);font-family:'IBM Plex Mono',monospace}
+  .snapc b small{font-size:14px;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -570,7 +582,7 @@
   <div class="ptw">
     <table class="ptt">
       <thead><tr><th>#</th><th><span class="ko">코일</span><span class="en">Coil</span></th><th><span class="ko">거래처</span><span class="en">Customer</span></th><th><span class="ko">규격</span><span class="en">Spec</span></th><th class="r"><span class="ko">장수</span><span class="en">Sheets</span></th><th class="r"><span class="ko">박스</span><span class="en">Box</span></th><th><span class="ko">품질</span><span class="en">Quality</span></th><th><span class="ko">시간</span><span class="en">Time</span></th><th></th></tr></thead>
-      <tbody id="h-pasttbody"><tr class="go"><td>1</td><td class="cn">BA6AA1290</td><td>(주)신진스틸</td><td>4.00X2438</td><td class="r">366</td><td class="r">2</td><td><span class="pill p-bd">불량 3</span></td><td>09:12~11:47</td><td class="chev2">›</td></tr><tr class="go"><td>2</td><td class="cn">FG3UQAB</td><td>태경스틸</td><td>1.55X4XC</td><td class="r">322</td><td class="r">1</td><td><span class="pill p-ok">양호</span></td><td>11:34~14:05</td><td class="chev2">›</td></tr><tr class="go"><td>3</td><td class="cn">2632500711</td><td>대한강재</td><td>0.45X4XC</td><td class="r">188</td><td class="r">1</td><td><span class="pill p-bd">불량 1</span></td><td>14:05~15:40</td><td class="chev2">›</td></tr></tbody>
+      <tbody id="h-pasttbody"><tr class="go"><td>1</td><td class="cn">BA6AA1290</td><td>(주)신진스틸</td><td>4.00X2438</td><td class="r">366</td><td class="r">2</td><td><span class="pill p-bd">불량 3</span></td><td>09:12~11:47</td><td class="chev2">›</td></tr><tr class="go"><td>2</td><td class="cn">FG3UQAB</td><td>태경스틸</td><td>1.55X4XC</td><td class="r">322</td><td class="r">1</td><td><span class="pill p-ok">양호</span></td><td>11:34~14:05</td><td class="chev2">›</td></tr></tbody>
     </table>
   </div>
 </div>
@@ -623,6 +635,14 @@
   <div class="modal" style="width:920px;max-height:92vh;display:flex;flex-direction:column">
     <div class="mtop" style="background:var(--navy)"><span class="ic">📋</span><div><div class="t" id="pd-title">지난 작업 상세</div><div class="s" id="pd-sub"></div></div><span class="x">✕</span></div>
     <div class="mbody" id="pd-body" style="overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ===== 시각 스냅샷 (타임라인 클릭) ===== -->
+<div class="ov2" id="ov-snap">
+  <div class="modal" style="width:660px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="mtop" style="background:var(--blue)"><span class="ic">🕒</span><div><div class="t" id="snap-t">시각 데이터</div><div class="s" id="snap-s"></div></div><span class="x" id="snap-x">✕</span></div>
+    <div class="mbody" id="snap-body" style="overflow-y:auto"></div>
   </div>
 </div>
 

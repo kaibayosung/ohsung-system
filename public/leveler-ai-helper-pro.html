@@ -309,7 +309,7 @@
   .ptt .go{cursor:pointer}.ptt .go:hover td{background:#f4f7fd}
   .ptt .cn{font-weight:900;font-family:'IBM Plex Mono',monospace}
   .pill{display:inline-block;font-size:16px;font-weight:900;padding:5px 14px;border-radius:99px;white-space:nowrap}
-  .p-ok{background:var(--okbg);color:var(--ok)}.p-bd{background:var(--badbg);color:var(--bad)}.p-wn{background:#fdf3e6;color:#b06a12}
+  .p-ok{background:var(--okbg);color:var(--ok)}.p-bd{background:var(--badbg);color:var(--bad)}.p-wn{background:#fdf3e6;color:#b06a12}.p-bl{background:#eaf0fb;color:var(--blue)}.p-id{background:var(--line);color:var(--sec)}
   .chev2{color:var(--blue);font-size:24px;font-weight:900;text-align:right}
 
   /* 지난 작업 상세 — 확장 섹션 */
@@ -334,6 +334,18 @@
   .pdcmp>div{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:10px 13px;text-align:center}
   .pdcmp b{display:block;font-size:22px;font-weight:900;font-family:'IBM Plex Mono',monospace}
   .pdcmp span{font-size:13px;color:var(--mut);font-weight:800}
+
+  /* 시각 스냅샷 */
+  .ov2{position:absolute;inset:0;background:rgba(15,20,30,.55);display:none;align-items:center;justify-content:center;z-index:14;padding:18px}
+  .ov2.on{display:flex}
+  #v-past .ptt .go td{cursor:pointer}
+  .pdt .go{cursor:pointer}.pdt .go:hover td{background:#eef3ff}
+  .snapts{font-size:16px;font-weight:900;color:var(--sec);margin-bottom:12px}
+  .snapg{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .snapc{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:11px 14px}
+  .snapc span{display:block;font-size:14px;color:var(--mut);font-weight:800}
+  .snapc b{font-size:26px;font-weight:900;color:var(--ink);font-family:'IBM Plex Mono',monospace}
+  .snapc b small{font-size:14px;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -619,6 +631,14 @@
   </div>
 </div>
 
+<!-- ===== 시각 스냅샷 (타임라인 클릭) ===== -->
+<div class="ov2" id="ov-snap">
+  <div class="modal" style="width:660px;max-height:88vh;display:flex;flex-direction:column">
+    <div class="mtop" style="background:var(--blue)"><span class="ic">🕒</span><div><div class="t" id="snap-t">시각 데이터</div><div class="s" id="snap-s"></div></div><span class="x" id="snap-x">✕</span></div>
+    <div class="mbody" id="snap-body" style="overflow-y:auto"></div>
+  </div>
+</div>
+
 <script>
 var TITLES={select:{ko:'작업 선택',en:'Select job'},now:{ko:'현재 상태',en:'Current status'},settings:{ko:'장비 셋팅값',en:'Machine settings'},trend:{ko:'추세·분석',en:'Trend'},past:{ko:'지난 작업',en:'Past jobs'}};
 var LANG='ko', CURV='now';
@@ -669,10 +689,11 @@ if(q.get('popup'))showPop('ov-'+q.get('popup'));
 var SAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
 var FAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-floor';
 var RAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-rec';
+var EXP='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
 var SKEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
 var SQ=new URLSearchParams(location.search);
 var ASOF=SQ.get('asof')||null;
-var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null, LASTST=null, PASTJOBS=[];
+var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null, LASTST=null, PASTJOBS=[], CURJOB=null;
 var EN=function(){return document.body.classList.contains('lang-en');};
 function t(k,e){return EN()?e:k;}
 function _T(id,x){var e=document.getElementById(id);if(e&&x!=null)e.textContent=x;}
@@ -792,6 +813,7 @@ function render(st){
   handleDefects(defs);
 }
 function _pn(v,u){return (v==null||v===''||isNaN(v))?'—':(Math.round(v*10)/10)+(u||'');}
+function clkAdd(hm,mins){if(!hm||hm.indexOf(':')<0)return '';var pp=hm.split(':'),base=(+pp[0])*60+(+pp[1])+Math.round(mins||0);base=((base%1440)+1440)%1440;return ('0'+Math.floor(base/60)).slice(-2)+':'+('0'+(base%60)).slice(-2);}
 var FLAGLB={over:['w','계획 초과','Over plan'],stops:['i','정지','Stops'],anom:['w','부하 이상','Load anomaly'],ocr:['i','텐션 OCR 공백','Tension OCR gap'],len:['w','길이 이상','Length anomaly'],partial:['i','부분 작업','Partial job'],under:['i','수량 부족','Under count'],noerp:['i','작업지시서 없음','No work order'],nosheet:['i','절단 기록 없음','No cut log']};
 function flagText(f){
   if(f.k==='over')return t('계획 초과 ','Over plan ')+f.n+t('장','sh')+(f.boxes&&f.boxes.length?' ('+f.boxes.map(function(b){return t('박스','box')+b.i+' +'+b.d;}).join(', ')+')':'');
@@ -820,6 +842,20 @@ function showPastDetail(j){
    +'<div><b>'+_pn(j.load,'%')+'</b><span>'+t('평균 부하','Avg load')+'</span></div>'
    +'<div><b>'+_pn(j.cyc,'s')+'</b><span>'+t('사이클','Cycle')+'</span></div>'
    +'<div><b>'+_pn(j.tenAvg,'%')+'</b><span>'+t('텐션 평균','Tension')+'</span></div></div></div>';
+  var st=j.st||'',ev=[];ev.push({m:0,k:'start',x:t('작업 시작 · 속도 올림','Job start · ramp up'),p:'0m'});var _pv=null;
+  (j.segs||[]).forEach(function(sg){
+    if(sg.k==='run')ev.push({m:sg.a,k:'run',x:(_pv==='stop'?t('재가동','Restart'):t('가동 시작','Running'))+(sg.box?' · '+t('박스','box')+sg.box:''),p:_pn(sg.l0,'m')});
+    else if(sg.k==='stop')ev.push({m:sg.a,k:'stop',x:t('라인 정지','Line stopped')+' ('+_pn(sg.b-sg.a,t('분','m'))+')',p:_pn(sg.l0,'m')});
+    else if(sg.k==='chg')ev.push({m:sg.a,k:'chg',x:t('박스 교체','Box change')+(sg.box?' → '+(sg.box+1):''),p:_pn(sg.l0,'m')});
+    _pv=sg.k;});
+  (j.ssChanges||[]).forEach(function(c){ev.push({m:c.m,k:'spd',x:t('속도 설정 변경','Speed set')+' '+c.from+'→'+c.to,p:''});});
+  (j.boxes||[]).forEach(function(bx){if(bx.b!=null)ev.push({m:bx.b,k:'box',x:t('박스','Box')+bx.i+' '+t('완료','done')+' ('+_nf(bx.plc)+t('장','sh')+')',p:_pn(bx.lenM,'m')});});
+  (j.ocrGaps||[]).forEach(function(g){ev.push({m:g[0],k:'ocr',x:t('텐션 OCR 공백','Tension OCR gap')+' ('+_pn(g[1]-g[0],t('분','m'))+')',p:''});});
+  ev.push({m:(j.dur||0),k:'end',x:t('작업 종료','Job end')+' · '+_nf(j.sPlc)+t('장','sh')+' · '+_pn(j.L,'m'),p:_pn(j.L,'m')});
+  ev.sort(function(a,b){return a.m-b.m;});
+  var evk={start:['p-id',t('시작','Start')],end:['p-id',t('종료','End')],run:['p-ok',t('가동','Run')],stop:['p-wn',t('정지','Stop')],chg:['p-bl',t('교체','Change')],spd:['p-bl',t('설정','Setting')],box:['p-ok',t('박스완료','Box done')],ocr:['p-wn',t('OCR공백','OCR gap')]};
+  var tlr=ev.map(function(e){var k=evk[e.k]||['p-id',e.k];return '<tr class="go" data-m="'+e.m+'"><td style="font-family:\'IBM Plex Mono\',monospace;font-weight:900">'+clkAdd(st,e.m)+'</td><td><span class="pill '+k[0]+'">'+k[1]+'</span></td><td>'+e.x+'</td><td class="r" style="color:var(--mut)">'+(e.p||'')+'</td></tr>';}).join('');
+  h+='<div class="pdsec"><h4>🕒 '+t('시간순 기록','Timeline')+' <small>'+t('작업 순서대로','in time order')+'</small></h4><table class="pdt"><thead><tr><th>'+t('시각','Time')+'</th><th>'+t('구분','Type')+'</th><th>'+t('내용','Event')+'</th><th class="r">'+t('길이','Length')+'</th></tr></thead><tbody>'+tlr+'</tbody></table></div>';
   if(j.segs&&j.segs.length&&j.dur){var col={run:'#1f9d57',stop:'#cbd5e8',chg:'#2451a0',set:'#9db8f0'};
     var bars=j.segs.map(function(sg){var w=Math.max(0,(sg.b-sg.a))/j.dur*100;return '<i style="width:'+w+'%;background:'+(col[sg.k]||'#ccc')+'"></i>';}).join('');
     var sums={set:j.setup,run:j.runMin,stop:j.stopMin,chg:j.chg};
@@ -840,7 +876,7 @@ function showPastDetail(j){
      +'<div><b>'+(c.rank||'—')+'/'+(c.tot||'—')+'</b><span>'+t('소요 순위','Rank')+'</span></div></div></div>';
   } else if(j.hist&&j.hist.n){var hh=j.hist;
     h+='<div class="pdsec"><h4>📈 '+t('같은 규격 평소','Same-spec usual')+'</h4><div class="pdcmp"><div><b>'+_pn(hh.ldMean,'%')+'</b><span>'+t('평소 부하','Usual load')+'</span></div><div><b>±'+_pn(hh.ldSd,'')+'</b><span>'+t('편차','SD')+'</span></div><div><b>'+hh.n+'</b><span>'+t('비교 코일','coils')+'</span></div></div></div>';}
-  _H('pd-body', h);showPop('ov-past');
+  CURJOB=j;_H('pd-body', h);wireSnap();showPop('ov-past');
 }
 function loadPast(date){
   var tb=document.getElementById('h-pasttbody');if(!tb||!date)return;
@@ -863,6 +899,26 @@ function loadPast(date){
      tb.querySelectorAll('tr[data-pi]').forEach(function(tr){tr.addEventListener('click',function(){showPastDetail(PASTJOBS[+tr.getAttribute('data-pi')]);});});
    }).catch(function(e){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--bad);padding:20px">'+t('조회 실패','Load failed')+' ('+e+')</td></tr>';});
 }
+var SNAPF=[['RUN','가동 RUN',''],['BOXIDX','박스 Box',''],['CUTLENSET','절단길이 Cut','mm'],['CUTLENCORR','보정 Corr','mm'],['SPEEDSET','속도설정 Speed',''],['INVERTERSPEEDPER','인버터 부하 Load','%'],['INVERTERSPEEDCOEFF','인버터 계수 Coeff',''],['CYCLETM','사이클 Cycle','s'],['MOVELENSV','행정 위치 Pos','mm'],['CUTSPEED','절단속도 CutSpd',''],['ACCTM','가속 Acc','s'],['DECTM','감속 Dec','s'],['SLOWLENSET','저속 Slow','mm'],['POS','POS','']];
+function wireSnap(){var body=document.getElementById('pd-body');if(!body)return;
+  body.querySelectorAll('tr.go[data-m]').forEach(function(tr){tr.addEventListener('click',function(){if(!CURJOB)return;showSnap(CURJOB.coil,CURJOB.date,clkAdd(CURJOB.st,+tr.getAttribute('data-m')));});});}
+function showSnap(coil,date,clk){
+  _T('snap-t',clk+' '+t('시점 데이터','snapshot'));_T('snap-s',(coil||'')+' · '+(date||''));
+  _H('snap-body','<div style="text-align:center;color:var(--mut);padding:24px;font-size:18px">'+t('불러오는 중…','Loading…')+'</div>');
+  document.getElementById('ov-snap').classList.add('on');
+  var q="SELECT * FROM LEVELING_DATA WHERE COIL_ID='"+String(coil).replace(/'/g,'')+"' AND TIMESTAMP>='"+date+" "+clk+":00' ORDER BY TIMESTAMP ASC LIMIT 1";
+  fetch(EXP+'?sql='+encodeURIComponent(q),{headers:hdr(),cache:'no-store'}).then(function(r){return r.json();}).then(function(jj){
+    var row=(jj&&jj.rows&&jj.rows[0])||(Array.isArray(jj)?jj[0]:null);
+    if(!row){_H('snap-body','<div style="text-align:center;color:var(--mut);padding:24px;font-size:18px">'+t('이 시각 데이터 없음','No data at this time')+'</div>');return;}
+    var ts=(''+(row.TIMESTAMP||'')).replace('T',' ').replace(/\..*/,'');ts=ts.slice(11)||ts;
+    var grid=SNAPF.map(function(f){var v=row[f[0]];if(v==null)return '';var lab=f[1];if(EN()&&lab.indexOf(' ')>0)lab=lab.split(' ').slice(1).join(' ');else lab=lab.split(' ')[0];
+      var vv=isNaN(+v)?v:(Math.round(+v*10)/10).toLocaleString();
+      return '<div class="snapc"><span>'+lab+'</span><b>'+vv+(f[2]?'<small> '+f[2]+'</small>':'')+'</b></div>';}).join('');
+    _H('snap-body','<div class="snapts">PLC '+ts+' · '+t('이 시점 전체 데이터','full snapshot at this time')+'</div><div class="snapg">'+grid+'</div>');
+  }).catch(function(){_H('snap-body','<div style="text-align:center;color:var(--bad);padding:24px;font-size:18px">'+t('조회 실패','Load failed')+'</div>');});
+}
+var _sx=document.getElementById('snap-x');if(_sx)_sx.addEventListener('click',function(){document.getElementById('ov-snap').classList.remove('on');});
+var _sov=document.getElementById('ov-snap');if(_sov)_sov.addEventListener('click',function(e){if(e.target===_sov)_sov.classList.remove('on');});
 function initPast(){
   var pd=document.getElementById('past-date');if(!pd)return;
   var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
