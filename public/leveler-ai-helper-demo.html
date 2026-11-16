@@ -245,6 +245,34 @@
   .setband .sbt .rcnote{font-size:14.5px;color:var(--blue);font-weight:800;margin-left:8px}
   .nfg.gd-hi{background:var(--warnbg);border-color:#f3d6ab;color:#9a5410}
   .nfg.gd-lo{background:#eaf0fb;border-color:#c6d8f2;color:var(--blue)}
+
+  /* ===== 2차 폰트 확대 (현장 가독성 더) ===== */
+  .snav .t{font-size:25px}.snav .s{font-size:16px}
+  #v-now .chead .nm,.chead .nm{font-size:34px}.chead .meta{font-size:21px}
+  .chead .box{font-size:24px;padding:6px 16px}.chead .verdict{font-size:29px;padding:11px 22px}
+  .prog .pn{font-size:22px}.prog .pt{height:22px}
+  #v-now .boxswitch .bst,.boxswitch .bst{font-size:24px}.boxswitch .bst small{font-size:17px}
+  #v-now .bsbtn .bn3,.bsbtn .bn3{font-size:46px}#v-now .bsbtn .meta3,.bsbtn .meta3{font-size:19.5px}
+  #v-now .bsbtn .tag3,.bsbtn .tag3{font-size:17px;padding:5px 14px}
+  #v-now .eqwrap .et,.eqwrap .et{font-size:23px}
+  .boxprog .bt{font-size:20px}.bpr .bl{font-size:24px}.bpr .bc{font-size:25px}.bpr .bb{height:22px}
+  .set2 .k{font-size:20px}.set2 .v{font-size:54px}.set2 .v small{font-size:24px}.set2 .rc{font-size:16.5px}
+  .setband .sbt{font-size:27px}.setnote{font-size:19px}
+  .plc .pt2{font-size:20px}.pc .k{font-size:18px}.pc .v{font-size:31px}
+  .nfchip{font-size:22px}.nfg{font-size:20.5px}.nfset{font-size:23px}
+  .scoil .cu{font-size:26px}.scoil .sp{font-size:19px}
+  td{font-size:18px}.pastdate{font-size:21px}
+
+  /* ===== 16:9 한 화면 압축 (큰 폰트 유지) ===== */
+  #v-now.on{gap:8px}
+  #v-now .chead{padding:7px 20px}
+  #v-now .boxswitch{padding:6px 18px}
+  #v-now .boxswitch .bst{margin-bottom:5px}
+  #v-now .bsbtn{padding:7px 10px}
+  #v-now .eqwrap{padding:5px 18px 2px}
+  #v-now .eqwrap .et{margin-bottom:0}
+  #v-now .nowfoot{padding:9px 18px}
+  .wrap{padding:7px 20px 10px;gap:7px}
 </style>
 </head>
 <body>
@@ -254,8 +282,8 @@
 <!-- 좌측 사이드바 -->
 <div class="side">
   <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper</small></div></div>
-  <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s">태경스틸 외 3건</div></div>
-  <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s">태경스틸 · 박스2</div></div>
+  <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s" id="nav-sel-s">태경스틸 외 3건</div></div>
+  <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s" id="nav-now-s">태경스틸 · 박스2</div></div>
   <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
   <div class="snav" data-v="trend"><div class="t"><span class="ko">추세·분석</span><span class="en">Trend</span></div><div class="s"><span class="ko">그래프</span><span class="en">Graphs</span></div></div>
   <div class="snav" data-v="past"><div class="t"><span class="ko">지난 작업</span><span class="en">Past jobs</span></div><div class="s"><span class="ko">기록</span><span class="en">History</span></div></div>
@@ -304,7 +332,7 @@
   <!-- 장비 그림 위에 운행 상태 -->
   <div class="eqwrap">
     <div class="et"><span class="ko">장비 운행 상태</span><span class="en">Equipment status</span> <span style="font-size:.82em;color:var(--mut)"><span class="ko">(그림 위 실시간 · 평소 대비 색)</span><span class="en">(live on diagram · color vs usual)</span></span></div>
-    <svg viewBox="0 0 1300 380" style="height:188px;width:auto;display:block;margin:0 auto" font-family="Pretendard">
+    <svg viewBox="0 0 1300 380" style="height:182px;width:auto;display:block;margin:0 auto" font-family="Pretendard">
       <!-- strip line -->
       <line x1="156" y1="196" x2="1116" y2="196" stroke="#9fb4d6" stroke-width="5" stroke-dasharray="14 10"/>
       <!-- 언코일러 -->
@@ -318,7 +346,7 @@
         <line x1="330" y1="150" x2="330" y2="193" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="214" y="48" width="232" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
         <text x="330" y="76" text-anchor="middle" font-size="18" font-weight="800" fill="#51607a">텐션 출력 Tension(OCR)</text>
-        <text x="330" y="124" text-anchor="middle" font-size="46" font-weight="900" fill="#1f9d57">68.0%</text>
+        <text x="330" y="124" text-anchor="middle" font-size="54" font-weight="900" fill="#1f9d57">68.0%</text>
         <text x="330" y="146" text-anchor="middle" font-size="16" font-weight="900" fill="#1f9d57">● 적정 Normal · 평소 67%</text>
       </g>
       <!-- 레벨러 7롤 -->
@@ -336,7 +364,7 @@
       <g>
         <line x1="578" y1="236" x2="578" y2="312" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="462" y="312" width="232" height="60" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
-        <text x="520" y="350" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57" id="eq-load">35%</text>
+        <text x="520" y="350" text-anchor="middle" font-size="50" font-weight="900" fill="#1f9d57" id="eq-load">35%</text>
         <text x="632" y="338" text-anchor="middle" font-size="16" font-weight="800" fill="#51607a" id="eq-loadlbl">인버터 부하</text>
         <text x="632" y="358" text-anchor="middle" font-size="15" font-weight="900" fill="#1f9d57" id="eq-loadnorm">● 적정 30~38</text>
       </g>
@@ -347,7 +375,7 @@
         <line x1="814" y1="150" x2="814" y2="146" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="700" y="46" width="228" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
         <text x="814" y="72" text-anchor="middle" font-size="17" font-weight="800" fill="#51607a">이송속도 Speed · 절단 Cut</text>
-        <text x="814" y="112" text-anchor="middle" font-size="36" font-weight="900" fill="#1f9d57">11.3<tspan font-size="18" fill="#51607a"> m/min</tspan></text>
+        <text x="814" y="112" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57">11.3<tspan font-size="18" fill="#51607a"> m/min</tspan></text>
         <text x="814" y="138" text-anchor="middle" font-size="18" font-weight="900" fill="#17233b">절단길이 2,439mm</text>
       </g>
       <!-- 적재 -->
