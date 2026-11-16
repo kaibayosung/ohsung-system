@@ -487,22 +487,22 @@
   <!-- 장비 그림 위에 운행 상태 -->
   <div class="eqwrap">
     <div class="et"><span class="ko">장비 운행 상태</span><span class="en">Equipment status</span> <span style="font-size:.82em;color:var(--mut)"><span class="ko">(그림 위 실시간 · 평소 대비 색)</span><span class="en">(live on diagram · color vs usual)</span></span></div>
-    <svg viewBox="0 0 1300 380" style="height:182px;width:auto;display:block;margin:0 auto" font-family="Pretendard">
+    <svg viewBox="0 0 1300 380" style="width:100%;max-width:960px;height:auto;display:block;margin:0 auto" font-family="Pretendard">
       <!-- strip line -->
       <line x1="156" y1="196" x2="1116" y2="196" stroke="#9fb4d6" stroke-width="5" stroke-dasharray="14 10"/>
       <!-- 언코일러 -->
       <circle cx="120" cy="196" r="54" fill="#eef2fa" stroke="#1a3a6b" stroke-width="6"/>
       <circle cx="120" cy="196" r="31" fill="#fff" stroke="#9fb4d6" stroke-width="4"/>
       <circle cx="120" cy="196" r="10" fill="#1a3a6b"/>
-      <text x="120" y="282" text-anchor="middle" font-size="19" font-weight="900" fill="#17233b">언코일러 Uncoiler</text>
-      <text x="120" y="305" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab" id="eq-core">잔여경 508mm</text>
+      <text x="120" y="282" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">언코일러 Uncoiler</text>
+      <text x="120" y="305" text-anchor="middle" font-size="20" font-weight="800" fill="#8995ab" id="eq-core">잔여경 508mm</text>
       <!-- 텐션 콜아웃 (위, 큰 숫자) -->
       <g>
         <line x1="330" y1="150" x2="330" y2="193" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="214" y="48" width="232" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
-        <text x="330" y="76" text-anchor="middle" font-size="18" font-weight="800" fill="#51607a">텐션 출력 Tension(OCR)</text>
+        <text x="330" y="76" text-anchor="middle" font-size="23" font-weight="800" fill="#51607a">텐션 출력 Tension(OCR)</text>
         <text x="330" y="124" text-anchor="middle" font-size="54" font-weight="900" fill="#1f9d57">68.0%</text>
-        <text x="330" y="146" text-anchor="middle" font-size="16" font-weight="900" fill="#1f9d57">● 적정 Normal · 평소 67%</text>
+        <text x="330" y="146" text-anchor="middle" font-size="21" font-weight="900" fill="#1f9d57">● 적정 Normal · 평소 67%</text>
       </g>
       <!-- 레벨러 7롤 -->
       <g>
@@ -513,25 +513,25 @@
         <circle cx="614" cy="178" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
         <circle cx="650" cy="214" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
         <circle cx="686" cy="178" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
-        <text x="578" y="300" text-anchor="middle" font-size="19" font-weight="900" fill="#17233b">레벨러 Leveler (7롤)</text>
+        <text x="578" y="300" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">레벨러 Leveler (7롤)</text>
       </g>
       <!-- 부하 콜아웃 (아래, 큰 숫자) -->
       <g>
         <line x1="578" y1="236" x2="578" y2="312" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="462" y="312" width="232" height="60" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
         <text x="520" y="350" text-anchor="middle" font-size="50" font-weight="900" fill="#1f9d57" id="eq-load">35%</text>
-        <text x="632" y="338" text-anchor="middle" font-size="16" font-weight="800" fill="#51607a" id="eq-loadlbl">인버터 부하</text>
-        <text x="632" y="358" text-anchor="middle" font-size="15" font-weight="900" fill="#1f9d57" id="eq-loadnorm">● 적정 30~38</text>
+        <text x="632" y="338" text-anchor="middle" font-size="21" font-weight="800" fill="#51607a" id="eq-loadlbl">인버터 부하</text>
+        <text x="632" y="358" text-anchor="middle" font-size="20" font-weight="900" fill="#1f9d57" id="eq-loadnorm">● 적정 30~38</text>
       </g>
       <!-- 이송·절단 -->
       <rect x="800" y="146" width="28" height="104" rx="7" fill="#d5331f"/>
-      <text x="814" y="300" text-anchor="middle" font-size="19" font-weight="900" fill="#17233b">이송·절단 Cut</text>
+      <text x="814" y="300" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">이송·절단 Cut</text>
       <g>
         <line x1="814" y1="150" x2="814" y2="146" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="700" y="46" width="228" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
-        <text x="814" y="72" text-anchor="middle" font-size="17" font-weight="800" fill="#51607a">이송속도 Speed · 절단 Cut</text>
+        <text x="814" y="72" text-anchor="middle" font-size="22" font-weight="800" fill="#51607a">이송속도 Speed · 절단 Cut</text>
         <text x="814" y="112" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57">11.3<tspan font-size="18" fill="#51607a"> m/min</tspan></text>
-        <text x="814" y="138" text-anchor="middle" font-size="18" font-weight="900" fill="#17233b">절단길이 2,439mm</text>
+        <text x="814" y="138" text-anchor="middle" font-size="23" font-weight="900" fill="#17233b">절단길이 2,439mm</text>
       </g>
       <!-- 적재 -->
       <g>
@@ -539,8 +539,8 @@
         <rect x="1030" y="187" width="156" height="15" fill="#3a66b8"/>
         <rect x="1030" y="206" width="156" height="15" fill="#2451a0"/>
         <rect x="1030" y="225" width="156" height="15" fill="#3a66b8"/>
-        <text x="1108" y="282" text-anchor="middle" font-size="19" font-weight="900" fill="#17233b">적재 Stack</text>
-        <text x="1108" y="305" text-anchor="middle" font-size="18" font-weight="900" fill="#2451a0">박스2 · 151/84장</text>
+        <text x="1108" y="282" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">적재 Stack</text>
+        <text x="1108" y="305" text-anchor="middle" font-size="23" font-weight="900" fill="#2451a0">박스2 · 151/84장</text>
       </g>
     </svg>
   </div>
