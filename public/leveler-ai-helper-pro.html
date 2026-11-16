@@ -454,6 +454,24 @@
 #ov-past .tbadge.ok{background:var(--okbg);color:#167a43}
 #ov-past .tbadge.warn{background:var(--warnbg);color:#9a5a10}
 #ov-past .tbadge.info{background:#f0edfa;color:#796cbf}
+
+/* 장비 셋팅값 — 텐션 */
+.tenset{margin-top:12px;border:2.5px solid #d7cff0;border-radius:14px;padding:12px 16px;background:#faf9ff}
+.tenset .tst{font-size:18px;font-weight:900;color:#4a3f7a;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tenset .tst small{font-size:13px;color:var(--mut);font-weight:800}
+.tstg{font-size:14px;font-weight:900;border-radius:8px;padding:3px 10px;margin-left:auto}
+.tstg.down{background:#fdeae7;color:#d5331f}.tstg.flat{background:#e7f7ee;color:#167a43}.tstg.up{background:#fdf2e2;color:#9a5a10}
+.tsg{display:grid;grid-template-columns:1fr 1fr 1.3fr 2fr;gap:12px;align-items:center}
+.tenset .ts2{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:9px 12px;text-align:center}
+.tenset .ts2 .k{font-size:14px;color:var(--mut);font-weight:800}
+.tenset .ts2 .v{font-size:30px;font-weight:900;font-family:'IBM Plex Mono',monospace;line-height:1.05}
+.tenset .ts2 .v small{font-size:15px;color:var(--mut)}
+.tenset .ts2.act .v{color:#796cbf}
+.tenset .ts2.taper{text-align:left}
+.tenset .ts2.taper .v b{font-weight:900}
+.tenset .ts2.taper .v b.gd-hi{color:#d5331f}.tenset .ts2.taper .v b.gd-lo{color:#167a43}
+.tsspark{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:8px 12px}
+.tsspark .k{font-size:13px;color:var(--mut);font-weight:800}
 </style>
 </head>
 <body>
@@ -587,6 +605,15 @@
       <div class="set2"><div class="k">가속 Acc</div><div class="v"><span id="s-acc">10.0</span><small>s</small></div><div class="rc" id="rc-acc">추천 10 ✓</div></div>
       <div class="set2"><div class="k">감속 Dec</div><div class="v"><span id="s-dec">1.0</span><small>s</small></div><div class="rc up" id="rc-dec">추천 1.2 ↑</div></div>
       <div class="set2"><div class="k">저속 구간 Slow</div><div class="v"><span id="s-slow">50</span><small>mm</small></div><div class="rc" id="rc-slow">추천 50 ✓</div></div>
+    </div>
+    <div class="tenset">
+      <div class="tst">🎛 <span class="ko">텐션</span><span class="en">Tension</span> <small>PR-DTC-3100 OCR</small> <span class="tstg" id="st-taperbadge"></span></div>
+      <div class="tsg">
+        <div class="ts2"><div class="k"><span class="ko">설정</span><span class="en">Set</span></div><div class="v"><span id="st-set">—</span><small>%</small></div></div>
+        <div class="ts2 act"><div class="k"><span class="ko">실제 출력</span><span class="en">Actual</span></div><div class="v"><span id="st-act">—</span><small>%</small></div></div>
+        <div class="ts2 taper"><div class="k"><span class="ko">추이</span><span class="en">Trend</span></div><div class="v" id="st-taper" style="font-size:19px">—</div></div>
+        <div class="tsspark"><div class="k" style="margin-bottom:2px"><span class="ko">최근 출력</span><span class="en">Recent</span></div><svg id="st-spark" viewBox="0 0 320 60" preserveAspectRatio="none" style="width:100%;height:56px"></svg></div>
+      </div>
     </div>
     <div class="setnote"><span class="ko">✅ 작업지시 규격과 일치 — 장비 셋팅값이 올바릅니다.</span><span class="en">✅ Matches the work order — settings are correct.</span></div>
   </div>
@@ -1145,7 +1172,42 @@ function initPast(){
 }
 ['.lng .kobtn','.lng .enbtn'].forEach(function(sel){var b=document.querySelector(sel);if(b)b.addEventListener('click',function(){setTimeout(function(){if(LASTST)render(LASTST);var pd=document.getElementById('past-date');if(pd&&pd.value)loadPast(pd.value);},0);});});
 _T('h-cu',t('불러오는 중…','Loading…'));_T('h-meta','');_T('nav-now-s','—');clearWork();
-function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');});}
+var REST='https://mnlnbwcbgfgftdgawanh.supabase.co/rest/v1/';
+var TENREC=null;
+function sparkSVG(a){
+  if(!a||a.length<2)return '';
+  var mn=Math.min.apply(null,a),mx=Math.max.apply(null,a),rg=(mx-mn)||1,n=a.length;
+  var pts=a.map(function(v,i){var x=6+i/(n-1)*308,y=52-((v-mn)/rg)*44;return x.toFixed(1)+','+y.toFixed(1);}).join(' ');
+  return '<polyline points="'+pts+'" fill="none" stroke="#796cbf" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>'
+    +'<circle cx="'+(6+308).toFixed(1)+'" cy="'+(52-((a[n-1]-mn)/rg)*44).toFixed(1)+'" r="4" fill="#796cbf"/>';
+}
+function tenTrend(rows){
+  if(!rows||!rows.length)return null;
+  var outs=rows.map(function(r){return r.output_percent;}).filter(function(v){return v!=null;});
+  if(!outs.length)return null;
+  var first=outs[0],last=outs[outs.length-1],slope=last-first;
+  return {outs:outs,first:first,last:last,set:rows[rows.length-1].tension_set,dir:(slope<=-2?'down':(slope>=2?'up':'flat')),slope:slope,dia:rows[rows.length-1].start_dia_mm,thk:rows[rows.length-1].thickness_um};
+}
+function renderTen(rows){
+  var tr=tenTrend(rows);TENREC=tr;
+  var bg=document.getElementById('st-taperbadge');
+  if(!tr){_T('st-set','—');_T('st-act','—');_H('st-taper','<span style="color:var(--mut)">'+t('OCR 판독 없음','no OCR')+'</span>');_H('st-spark','');if(bg){bg.textContent='';bg.className='tstg';}return;}
+  _T('st-set',(tr.set!=null?Math.round(tr.set):'—'));_T('st-act',Math.round(tr.last));
+  var dn=tr.dir==='down',up=tr.dir==='up';
+  var lbl=dn?('↓ '+t('내려가는 중 (테이퍼 정상)','dropping (taper)')):(up?('↑ '+t('올라감 — 확인','rising — check')):('→ '+t('유지','holding')));
+  var cls=dn?'gd-hi':(up?'':'gd-lo');
+  _H('st-taper','<b class="'+(dn?'gd-hi':(up?'':'gd-lo'))+'">'+lbl+'</b> <span style="color:var(--mut);font-size:15px">'+Math.round(tr.first)+'→'+Math.round(tr.last)+'% ('+rows.length+t('건',' pts')+')</span>');
+  if(bg){bg.textContent=dn?t('테이퍼 ↓','taper ↓'):(up?t('상승 ↑','up ↑'):t('유지 →','hold →'));bg.className='tstg '+(dn?'down':(up?'up':'flat'));}
+  _H('st-spark',sparkSVG(tr.outs));
+  var live=LASTST&&LASTST.floor&&LASTST.floor.live&&LASTST.floor.online;
+  if(live){_T('eq-tensub','● OCR '+(dn?t('↓ 테이퍼 진행','taper ↓'):(up?t('↑ 상승','rising'):t('유지','hold')))+' · '+Math.round(tr.first)+'→'+Math.round(tr.last)+'%');}
+}
+function fetchTenTrend(){
+  if(ASOF)return;
+  var u=REST+'ai_tension_readings?select=captured_at,output_percent,tension_set,thickness_um,start_dia_mm&order=captured_at.desc&limit=14';
+  return fetch(u,{headers:{apikey:SKEY,Authorization:'Bearer '+SKEY},cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(rows){rows=(rows||[]).filter(function(x){return x.output_percent!=null;}).reverse();renderTen(rows);}).catch(function(){});
+}
+function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');});fetchTenTrend();}
 try{tick();if(!ASOF)setInterval(tick,15000);initPast();}catch(e){}
 
 </script>
