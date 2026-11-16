@@ -273,6 +273,20 @@
   #v-now .eqwrap .et{margin-bottom:0}
   #v-now .nowfoot{padding:9px 18px}
   .wrap{padding:7px 20px 10px;gap:7px}
+
+  /* 지난 작업 상세 모달 */
+  #ov-past .mbody{padding:18px 22px}
+  .pdsum{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+  .pdsum>div{background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+  .pdsum b{display:block;font-size:24px;font-weight:900;color:var(--ink);font-family:'IBM Plex Mono',monospace}
+  .pdsum span{font-size:13px;font-weight:800;color:var(--mut)}
+  .pdq{font-size:19px;font-weight:900;margin-bottom:12px}
+  .pdt{width:100%;border-collapse:collapse}
+  .pdt th{font-size:14px;color:var(--mut);font-weight:800;text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);background:var(--soft)}
+  .pdt td{font-size:18px;font-weight:800;padding:11px 12px;border-bottom:1px solid #eef1f7;font-family:'IBM Plex Mono',monospace}
+  .pdt td.r,.pdt th.r{text-align:right}
+  #h-pasttbody tr{cursor:pointer}
+  #h-pasttbody tr:hover{background:#f4f7fd}
 </style>
 </head>
 <body>
@@ -553,6 +567,15 @@
   </div>
 </div>
 
+
+<!-- ===== 지난 작업 상세 (행 클릭) ===== -->
+<div class="ov" id="ov-past">
+  <div class="modal" style="width:880px">
+    <div class="mtop" style="background:var(--navy)"><span class="ic">📋</span><div><div class="t" id="pd-title">지난 작업 상세</div><div class="s" id="pd-sub"></div></div><span class="x">✕</span></div>
+    <div class="mbody" id="pd-body"></div>
+  </div>
+</div>
+
 <script>
 var TITLES={select:{ko:'작업 선택',en:'Select job'},now:{ko:'현재 상태',en:'Current status'},settings:{ko:'장비 셋팅값',en:'Machine settings'},trend:{ko:'추세·분석',en:'Trend'},past:{ko:'지난 작업',en:'Past jobs'}};
 var LANG='ko', CURV='now';
@@ -606,7 +629,7 @@ var RAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-rec';
 var SKEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
 var SQ=new URLSearchParams(location.search);
 var ASOF=SQ.get('asof')||null;
-var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null, LASTST=null;
+var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null, LASTST=null, PASTJOBS=[];
 var EN=function(){return document.body.classList.contains('lang-en');};
 function t(k,e){return EN()?e:k;}
 function _T(id,x){var e=document.getElementById(id);if(e&&x!=null)e.textContent=x;}
@@ -725,15 +748,38 @@ function render(st){
   if(load!=null)guide(load);
   handleDefects(defs);
 }
+function _pn(v,u){return (v==null||v===''||isNaN(v))?'—':(Math.round(v*10)/10)+(u||'');}
+function showPastDetail(j){
+  if(!j)return;
+  _T('pd-title',(j.coil||'')+' · '+(j.cu||''));
+  _T('pd-sub',(j.specRaw||'')+' · '+(j.date||'')+' · '+(j.st||'')+'~'+(j.end||''));
+  var boxes=j.boxes||[];
+  var rows=boxes.map(function(b){return '<tr><td style="font-weight:900">'+b.i+'</td><td class="r">'+_nf(b.len)+'</td><td class="r">'+_nf(b.plc)+(b.plan!=null?'/'+_nf(b.plan):'')+'</td><td class="r">'+_pn(b.ld,'%')+'</td><td class="r">'+_pn(b.cyc,'s')+'</td><td class="r">'+_pn(b.ss)+'</td><td class="r">'+_pn(b.acc)+'/'+_pn(b.dec)+'</td></tr>';}).join('');
+  if(!rows)rows='<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:16px">'+t('박스 상세 없음','no box detail')+'</td></tr>';
+  var q=j.def>0?'<span style="color:var(--bad)">'+t('불량/초과 의심','NG / over')+' '+j.def+t('장','')+'</span>':'<span style="color:var(--ok)">'+t('양호 OK','OK')+'</span>';
+  var sum='<div class="pdsum">'
+   +'<div><b>'+_nf(j.sPlc)+(j.sPlan?'/'+_nf(j.sPlan):'')+'</b><span>'+t('총 장수','Sheets')+'</span></div>'
+   +'<div><b>'+boxes.length+'</b><span>'+t('박스','Boxes')+'</span></div>'
+   +'<div><b>'+_pn(j.L,'m')+'</b><span>'+t('길이','Length')+'</span></div>'
+   +'<div><b>'+_pn(j.dur,t('분','m'))+'</b><span>'+t('총 시간','Duration')+'</span></div>'
+   +'<div><b>'+_pn(j.load,'%')+'</b><span>'+t('평균 부하','Avg load')+'</span></div>'
+   +'<div><b>'+_pn(j.tenAvg,'%')+'</b><span>'+t('텐션','Tension')+'</span></div>'
+   +'</div>';
+  _H('pd-body', sum
+   +'<div class="pdq">'+t('품질','Quality')+': '+q+'</div>'
+   +'<table class="pdt"><thead><tr><th>'+t('박스','Box')+'</th><th class="r">'+t('절단길이','Cut')+'</th><th class="r">'+t('장수','Sheets')+'</th><th class="r">'+t('부하','Load')+'</th><th class="r">'+t('사이클','Cycle')+'</th><th class="r">'+t('속도','Speed')+'</th><th class="r">'+t('가/감속','Acc/Dec')+'</th></tr></thead><tbody>'+rows+'</tbody></table>');
+  showPop('ov-past');
+}
 function loadPast(date){
   var tb=document.getElementById('h-pasttbody');if(!tb||!date)return;
   tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:18px">'+t('불러오는 중…','Loading…')+'</td></tr>';
   fetch(FAPI+'?mode=day&date='+date,{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject('HTTP '+r.status);})
-   .then(function(j){var jobs=(j&&j.jobs)||[];
+   .then(function(j){var jobs=(j&&j.jobs)||[];PASTJOBS=jobs;
      if(!jobs.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:20px;font-size:18px">'+t('이 날짜에 작업이 없습니다','No jobs on this date')+'</td></tr>';return;}
-     tb.innerHTML=jobs.map(function(b){var q=(b.def>0)?'<span class="tg2 bad">'+t('불량','NG')+' '+b.def+'</span>':'<span class="tg2 ok">'+t('양호','OK')+'</span>';
+     tb.innerHTML=jobs.map(function(b,ix){var q=(b.def>0)?'<span class="tg2 bad">'+t('불량','NG')+' '+b.def+'</span>':'<span class="tg2 ok">'+t('양호','OK')+'</span>';
        var bn=(b.boxes&&b.boxes.length)||(b.planBoxes&&b.planBoxes.length)||'';
-       return '<tr><td>'+(b.st||'')+'</td><td style="font-weight:900">'+(b.coil||'')+'</td><td>'+(b.cu||'')+'</td><td>'+(b.specRaw||'')+'</td><td class="r">'+_nf(b.sPlc)+'</td><td class="r">'+bn+'</td><td>'+q+'</td></tr>';}).join('');
+       return '<tr data-pi="'+ix+'"><td>'+(b.st||'')+'</td><td style="font-weight:900">'+(b.coil||'')+'</td><td>'+(b.cu||'')+'</td><td>'+(b.specRaw||'')+'</td><td class="r">'+_nf(b.sPlc)+'</td><td class="r">'+bn+'</td><td>'+q+' <span style="color:var(--blue);font-weight:900">›</span></td></tr>';}).join('');
+     tb.querySelectorAll('tr[data-pi]').forEach(function(tr){tr.addEventListener('click',function(){showPastDetail(PASTJOBS[+tr.getAttribute('data-pi')]);});});
    }).catch(function(e){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--bad);padding:18px">'+t('조회 실패','Load failed')+' ('+e+')</td></tr>';});
 }
 function initPast(){

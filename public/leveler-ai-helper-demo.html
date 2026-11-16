@@ -273,6 +273,20 @@
   #v-now .eqwrap .et{margin-bottom:0}
   #v-now .nowfoot{padding:9px 18px}
   .wrap{padding:7px 20px 10px;gap:7px}
+
+  /* 지난 작업 상세 모달 */
+  #ov-past .mbody{padding:18px 22px}
+  .pdsum{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:14px}
+  .pdsum>div{background:var(--soft);border:1.5px solid var(--line);border-radius:12px;padding:10px 8px;text-align:center}
+  .pdsum b{display:block;font-size:24px;font-weight:900;color:var(--ink);font-family:'IBM Plex Mono',monospace}
+  .pdsum span{font-size:13px;font-weight:800;color:var(--mut)}
+  .pdq{font-size:19px;font-weight:900;margin-bottom:12px}
+  .pdt{width:100%;border-collapse:collapse}
+  .pdt th{font-size:14px;color:var(--mut);font-weight:800;text-align:left;padding:9px 12px;border-bottom:2px solid var(--line);background:var(--soft)}
+  .pdt td{font-size:18px;font-weight:800;padding:11px 12px;border-bottom:1px solid #eef1f7;font-family:'IBM Plex Mono',monospace}
+  .pdt td.r,.pdt th.r{text-align:right}
+  #h-pasttbody tr{cursor:pointer}
+  #h-pasttbody tr:hover{background:#f4f7fd}
 </style>
 </head>
 <body>
@@ -557,6 +571,15 @@
       <div class="scr-sub">해당 장(120번째)의 <b>철판을 직접 확인</b>하세요.<br>Scratch detected — please check the plate.</div>
       <div class="mbtns"><div class="mbtn vid">▶ 이 구간 영상 Clip</div><div class="mbtn close">확인 OK</div></div>
     </div>
+  </div>
+</div>
+
+
+<!-- ===== 지난 작업 상세 (행 클릭) ===== -->
+<div class="ov" id="ov-past">
+  <div class="modal" style="width:880px">
+    <div class="mtop" style="background:var(--navy)"><span class="ic">📋</span><div><div class="t" id="pd-title">지난 작업 상세</div><div class="s" id="pd-sub"></div></div><span class="x">✕</span></div>
+    <div class="mbody" id="pd-body"></div>
   </div>
 </div>
 
