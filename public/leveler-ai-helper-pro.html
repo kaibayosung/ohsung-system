@@ -237,6 +237,7 @@
   .gcard .gavg{font-size:15.5px}.gcard .gok{font-size:16.5px}.gmsg{font-size:21px}
   .scoil .cu{font-size:24px}.scoil .sp{font-size:18px}.scoil .mt{font-size:15px}
   td{font-size:17px}th{font-size:15px}.pastbar .dd{font-size:20px}
+  .pastdate{font-size:19px;font-weight:900;font-family:inherit;border:2px solid var(--line);border-radius:10px;padding:7px 12px;color:var(--navy)}
   /* 추천(최적)값 라인 */
   .set2 .rc{margin-top:6px;font-size:15.5px;font-weight:900;color:var(--blue);background:#eaf0fb;border-radius:8px;padding:3px 6px;white-space:nowrap}
   .set2 .rc.up{color:var(--ok);background:var(--okbg)}
@@ -304,7 +305,7 @@
       <circle cx="120" cy="196" r="31" fill="#fff" stroke="#9fb4d6" stroke-width="4"/>
       <circle cx="120" cy="196" r="10" fill="#1a3a6b"/>
       <text x="120" y="282" text-anchor="middle" font-size="19" font-weight="900" fill="#17233b">언코일러 Uncoiler</text>
-      <text x="120" y="305" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">잔여경 508mm</text>
+      <text x="120" y="305" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab" id="eq-core">잔여경 508mm</text>
       <!-- 텐션 콜아웃 (위, 큰 숫자) -->
       <g>
         <line x1="330" y1="150" x2="330" y2="193" stroke="#bfe6cf" stroke-width="4"/>
@@ -329,8 +330,8 @@
         <line x1="578" y1="236" x2="578" y2="312" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="462" y="312" width="232" height="60" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
         <text x="520" y="350" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57" id="eq-load">35%</text>
-        <text x="632" y="338" text-anchor="middle" font-size="16" font-weight="800" fill="#51607a">인버터 부하</text>
-        <text x="632" y="358" text-anchor="middle" font-size="15" font-weight="900" fill="#1f9d57">● 적정 30~38</text>
+        <text x="632" y="338" text-anchor="middle" font-size="16" font-weight="800" fill="#51607a" id="eq-loadlbl">인버터 부하</text>
+        <text x="632" y="358" text-anchor="middle" font-size="15" font-weight="900" fill="#1f9d57" id="eq-loadnorm">● 적정 30~38</text>
       </g>
       <!-- 이송·절단 -->
       <rect x="800" y="146" width="28" height="104" rx="7" fill="#d5331f"/>
@@ -378,11 +379,11 @@
       <div class="set2"><div class="k">감속 Dec</div><div class="v"><span id="s-dec">1.0</span><small>s</small></div><div class="rc up" id="rc-dec">추천 1.2 ↑</div></div>
       <div class="set2"><div class="k">저속 구간 Slow</div><div class="v"><span id="s-slow">50</span><small>mm</small></div><div class="rc" id="rc-slow">추천 50 ✓</div></div>
     </div>
-    <div class="setnote">✅ 작업지시 규격과 일치 — 장비 셋팅값이 올바릅니다. (불일치 시 빨강으로 표시)</div>
+    <div class="setnote"><span class="ko">✅ 작업지시 규격과 일치 — 장비 셋팅값이 올바릅니다.</span><span class="en">✅ Matches the work order — settings are correct.</span></div>
   </div>
   <div class="brow" style="margin-top:13px">
     <div class="boxprog" id="h-boxprog">
-      <div class="bt">박스별 진행 Box progress <span style="color:var(--mut);font-weight:800">(절단길이 · 장수)</span></div>
+      <div class="bt">Box progress <span style="color:var(--mut);font-weight:800"><span class="ko">(절단길이 · 장수)</span><span class="en">(cut-len · sheets)</span></span></div>
       <div class="bpr"><span class="bl">1,260</span><div class="bb"><div style="width:100%;background:var(--ok)"></div></div><span class="bc">139/131</span></div>
       <div class="bpr"><span class="bl">2,438</span><div class="bb"><div style="width:100%;background:var(--blue)"></div></div><span class="bc" style="color:var(--blue)">151/84</span></div>
       <div class="bpr"><span class="bl">2,438</span><div class="bb"><div style="width:4%;background:#cbd5e8"></div></div><span class="bc">0/84</span></div>
@@ -391,12 +392,12 @@
     <div class="plc">
       <div class="pt2">측정값 Measured <span style="color:var(--mut);font-weight:800">· 모니터링</span></div>
       <div class="plcg">
-        <div class="pc"><div class="k">인버터 계수</div><div class="v" id="m-coeff">24.4</div></div>
+        <div class="pc"><div class="k"><span class="ko">인버터 계수</span><span class="en">Inv. coeff</span></div><div class="v" id="m-coeff">24.4</div></div>
         <div class="pc"><div class="k">사이클 Cycle</div><div class="v" id="m-cycle">13.0 s</div></div>
-        <div class="pc"><div class="k">생산 속도</div><div class="v" id="m-ppm">4.6 장/분</div></div>
-        <div class="pc"><div class="k">행정 위치</div><div class="v" id="m-pos">2,417</div></div>
+        <div class="pc"><div class="k"><span class="ko">생산 속도</span><span class="en">Output</span></div><div class="v" id="m-ppm">4.6 장/분</div></div>
+        <div class="pc"><div class="k"><span class="ko">행정 위치</span><span class="en">Stroke pos</span></div><div class="v" id="m-pos">2,417</div></div>
         <div class="pc"><div class="k">RUN</div><div class="v" id="m-run">1</div></div>
-        <div class="pc"><div class="k">두께 OCR</div><div class="v" id="m-thk">1550 µm</div></div>
+        <div class="pc"><div class="k"><span class="ko">두께 OCR</span><span class="en">Thk OCR</span></div><div class="v" id="m-thk">1550 µm</div></div>
       </div>
     </div>
   </div>
@@ -437,27 +438,27 @@
     </div>
   </div>
   <div class="gpanel" style="margin-top:13px">
-    <div class="gh">🤖 AI 가이드 <small>· 지난 같은 규격(1.55×4자) 완료 코일 N=8건 평균 대비</small></div>
+    <div class="gh">🤖 <span class="ko">AI 가이드</span><span class="en">AI guide</span> <small><span class="ko">· 지난 같은 규격 완료 코일 평균 대비</span><span class="en">· vs past same-spec coils</span></small></div>
     <div class="gcmp">
       <div class="gcard"><div class="gk">인버터 부하 Load</div><div class="gv" id="g-load">35<small style="font-size:16px">%</small></div><div class="gavg">지난 평균 36% (32~40)</div><div class="gok">● 양호 OK</div></div>
       <div class="gcard"><div class="gk">텐션 출력 Tension</div><div class="gv" id="g-ten">68<small style="font-size:16px">%</small></div><div class="gavg">지난 평균 67% (63~71)</div><div class="gok">● 양호 OK</div></div>
       <div class="gcard"><div class="gk">사이클 Cycle</div><div class="gv" id="g-cyc">13.0<small style="font-size:16px">s</small></div><div class="gavg">지난 평균 13.2s</div><div class="gok">● 양호 OK</div></div>
       <div class="gcard"><div class="gk">이송속도 Speed</div><div class="gv" id="g-spd">11.3</div><div class="gavg">지난 평균 11.5</div><div class="gok">● 양호 OK</div></div>
     </div>
-    <div class="gmsg"><span class="gmi">✅</span>종합: 지난 같은 규격 작업과 거의 동일 — 지금 설정 유지. 품질 불량(웨이브·흠집) 0건.</div>
+    <div class="gmsg"><span class="gmi">✅</span><span class="ko">종합: 지난 같은 규격과 거의 동일 — 지금 설정 유지.</span><span class="en">Overall: close to past same-spec jobs — keep settings.</span></div>
   </div>
 </div>
 
 <!-- ================= 작업 선택 ================= -->
 <div class="view" id="v-select">
-  <div style="font-size:17px;font-weight:900;color:var(--sec)">코일 선택 Pick coil — 오늘 Today <span style="color:var(--mut);font-size:14px;font-weight:800">· 코일만 고르면 1박스로 시작, 박스는 현재 작업에서 변경</span></div>
+  <div style="font-size:17px;font-weight:900;color:var(--sec)">Pick coil — <span class="ko">오늘</span><span class="en">Today</span> <span style="color:var(--mut);font-size:14px;font-weight:800"><span class="ko">· 코일만 고르면 1박스로 시작</span><span class="en">· pick a coil, starts at box 1</span></span></div>
   <div class="sgrid">
-    <div class="scoil on"><span class="st run">작업중</span><div class="cu" id="sel-cu">태경스틸</div><div class="sp" id="sel-sp">1.55×4자</div><div class="mt" id="sel-mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
-    <div class="scoil"><span class="st wait">대기</span><div class="cu">대한강재</div><div class="sp">0.45×4XC</div><div class="mt">코일 2632500711 · 10,760kg · 3박스</div><div class="pk">선택 Select →</div></div>
+    <div class="scoil on"><span class="st run"><span class="ko">작업중</span><span class="en">Running</span></span><div class="cu" id="sel-cu">태경스틸</div><div class="sp" id="sel-sp">1.55×4자</div><div class="mt" id="sel-mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
+    <div class="scoil"><span class="st wait"><span class="ko">대기</span><span class="en">Wait</span></span><div class="cu">대한강재</div><div class="sp">0.45×4XC</div><div class="mt">코일 2632500711 · 10,760kg · 3박스</div><div class="pk">선택 Select →</div></div>
     <div class="scoil"><span class="st wait">대기</span><div class="cu">미래이앤아이</div><div class="sp">0.75×4XC</div><div class="mt">코일 T251122 · 10,420kg · 2박스</div><div class="pk">선택 Select →</div></div>
   </div>
   <div class="selbox" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
-    <div style="font-size:19px;font-weight:900">선택: <span style="color:var(--navy)">태경스틸</span> · 1박스로 시작 <span style="color:var(--mut);font-size:15px;font-weight:800">Start at box 1 — 박스는 현재 작업 맨 위에서 변경</span></div>
+    <div style="font-size:19px;font-weight:900"><span class="ko">선택:</span><span class="en">Selected:</span> <span style="color:var(--navy)">태경스틸</span> · <span class="ko">1박스로 시작</span><span class="en">start at box 1</span></div>
     <div class="gobtn" style="margin-top:0;padding:16px 34px" data-go="now">작업 시작 Start →</div>
   </div>
 </div>
@@ -466,20 +467,20 @@
 <div class="view" id="v-past">
   <div class="pastbar">
     <span style="font-size:16px;font-weight:900;color:var(--sec)">지난 작업 Past jobs</span>
-    <span class="db">‹</span><span class="dd">2026-11-12</span><span class="db">›</span>
-    <span style="font-size:14px;color:var(--mut);font-weight:800;margin-left:6px">날짜를 고르면 그날 작업을 모두 봅니다</span>
+    <input type="date" id="past-date" class="pastdate" value="2026-11-12">
+    <span style="font-size:14px;color:var(--mut);font-weight:800;margin-left:6px"><span class="ko">날짜를 고르면 그날 작업을 봅니다</span><span class="en">Pick a date to see jobs</span></span>
   </div>
   <div class="ptable">
     <table>
       <thead><tr><th>시작 Start</th><th>코일 Coil</th><th>거래처 Customer</th><th>규격 Spec</th><th class="r">장수 Sheets</th><th class="r">박스 Box</th><th>품질 Quality</th></tr></thead>
-      <tbody>
+      <tbody id="h-pasttbody">
         <tr><td>09:12</td><td style="font-weight:900">BA6AA1290</td><td>신진스틸</td><td>4.00×2438</td><td class="r">366</td><td class="r">4</td><td><span class="tg2 bad">웨이브 1 · 흠집 2</span></td></tr>
         <tr><td>11:34</td><td style="font-weight:900">FG3UQAB</td><td>태경스틸</td><td>1.55×4자</td><td class="r">322</td><td class="r">4</td><td><span class="tg2 ok">양호 OK</span></td></tr>
         <tr><td>14:05</td><td style="font-weight:900">2632500711</td><td>대한강재</td><td>0.45×4XC</td><td class="r">188</td><td class="r">3</td><td><span class="tg2 bad">웨이브 1</span></td></tr>
       </tbody>
     </table>
   </div>
-  <div style="font-size:14px;color:var(--mut);font-weight:800;text-align:center">행을 누르면 그 코일의 박스별 결함·영상·도식을 봅니다 (현재 작업과 동일 상세)</div>
+  <div style="font-size:14px;color:var(--mut);font-weight:800;text-align:center"><span class="ko">행을 누르면 그 코일의 박스별 상세를 봅니다</span><span class="en">Tap a row for box-level detail</span></div>
 </div>
 
 </div>
@@ -570,13 +571,14 @@ if(q.get('tab'))showView(q.get('tab'));
 if(q.get('popup'))showPop('ov-'+q.get('popup'));
 
 
-// ══════════ 상용 실데이터 엔진 v3 (state + 품질·규격 추천 + cruise 가이드 + 유휴비우기) ══════════
+// ══════════ 상용 실데이터 엔진 v4 (유휴판정·초기로딩·영문화·지난작업·언어전환) ══════════
 var SAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
+var FAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-floor';
 var RAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-rec';
 var SKEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
 var SQ=new URLSearchParams(location.search);
 var ASOF=SQ.get('asof')||null;
-var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null;
+var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null, LASTST=null;
 var EN=function(){return document.body.classList.contains('lang-en');};
 function t(k,e){return EN()?e:k;}
 function _T(id,x){var e=document.getElementById(id);if(e&&x!=null)e.textContent=x;}
@@ -588,8 +590,8 @@ function sfetch(){var u=SAPI+'?mode=state'+(ASOF?'&asof='+encodeURIComponent(ASO
 
 function buildBoxes(job,lv){
   var grid=document.getElementById('h-bsgrid');if(!grid)return;var boxes=(job&&job.boxes)||[],cur=(lv&&lv.box)||1;if(!boxes.length)return;
-  grid.innerHTML=boxes.map(function(b){var cls=b.i<cur?'done':(b.i===cur?'on':'');var tag=b.i<cur?'완료 Done':(b.i===cur?'진행중 Now':'대기 Next');
-    return '<div class="bsbtn '+cls+'"><div class="bn3">'+b.i+'</div><div class="meta3">'+_nf(b.len)+'mm · '+(b.plc!=null?_nf(b.plc):'0')+'/'+_nf(b.plan)+'장</div><div class="tag3">'+tag+'</div></div>';}).join('');
+  grid.innerHTML=boxes.map(function(b){var cls=b.i<cur?'done':(b.i===cur?'on':'');var tag=b.i<cur?t('완료','Done'):(b.i===cur?t('진행중','Now'):t('대기','Next'));
+    return '<div class="bsbtn '+cls+'"><div class="bn3">'+b.i+'</div><div class="meta3">'+_nf(b.len)+'mm · '+(b.plc!=null?_nf(b.plc):'0')+'/'+_nf(b.plan)+t('장','')+'</div><div class="tag3">'+tag+'</div></div>';}).join('');
   grid.querySelectorAll('.bsbtn').forEach(function(el){el.addEventListener('click',function(){grid.querySelectorAll('.bsbtn').forEach(function(x){x.classList.remove('on');});el.classList.add('on');});});
 }
 function buildBoxProg(job,lv){
@@ -597,12 +599,12 @@ function buildBoxProg(job,lv){
   boxes.forEach(function(b){var done=b.i<cur,now=b.i===cur,pct=b.plan?Math.min(100,Math.round((b.plc||0)/b.plan*100)):4;var col=done?'var(--ok)':(now?'var(--blue)':'#cbd5e8');var row=document.createElement('div');row.className='bpr';
     row.innerHTML='<span class="bl">'+_nf(b.len)+'</span><div class="bb"><div style="width:'+(done||now?pct:4)+'%;background:'+col+'"></div></div><span class="bc"'+(now?' style="color:var(--blue)"':'')+'>'+_nf(b.plc||0)+'/'+_nf(b.plan)+'</span>';bp.appendChild(row);});
 }
-function fillWave(d){var s=document.querySelector('#ov-wave .mtop .s');if(s){var pos=(d.pos||d.l||d.position_m);s.textContent=(d.coil||'')+' · 박스 '+(d.box||d.box_idx||'')+(pos?' · 약 '+Math.round(pos)+'m':'');}}
-function fillScratch(d){var s=document.querySelector('#ov-scratch .mtop .s');if(s){var pos=(d.pos||d.l||d.position_m);s.textContent=(d.coil||'')+' · 박스 '+(d.box||d.box_idx||'')+(pos?' · 약 '+Math.round(pos)+'m':'');}}
+function fillWave(d){var s=document.querySelector('#ov-wave .mtop .s');if(s){var pos=(d.pos||d.l||d.position_m);s.textContent=(d.coil||'')+' · '+t('박스','Box')+' '+(d.box||d.box_idx||'')+(pos?' · '+Math.round(pos)+'m':'');}}
+function fillScratch(d){var s=document.querySelector('#ov-scratch .mtop .s');if(s){var pos=(d.pos||d.l||d.position_m);s.textContent=(d.coil||'')+' · '+t('박스','Box')+' '+(d.box||d.box_idx||'')+(pos?' · '+Math.round(pos)+'m':'');}}
 function isFlat(d){var x=((d.type||d.kind||d.metric||d.worst_feature||'')+'').toLowerCase();return /wave|flat|평탄|edge|bow|resid|gap|jump|local/.test(x);}
 function handleDefects(defs){
   var nf=defs?defs.filter(isFlat).length:0, ns=defs?defs.length-nf:0;
-  _H('h-flatchip','<span class="d" style="background:'+(nf?'var(--bad)':'var(--ok)')+'"></span><span class="ko">평탄도</span><span class="en">Flatness</span> '+(nf?'<b style="color:var(--bad)">불량 '+nf+'</b>':t('정상 OK','OK'))+' <span class="lk2">'+t('도식 →','Diagram →')+'</span>');
+  _H('h-flatchip','<span class="d" style="background:'+(nf?'var(--bad)':'var(--ok)')+'"></span><span class="ko">평탄도</span><span class="en">Flatness</span> '+(nf?'<b style="color:var(--bad)">'+t('불량','NG')+' '+nf+'</b>':t('정상 OK','OK'))+' <span class="lk2">'+t('도식 →','Diagram →')+'</span>');
   _H('h-scratchchip','<span class="d" style="background:'+(ns?'var(--bad)':'var(--ok)')+'"></span><span class="ko">흠집</span><span class="en">Scratch</span> '+ns+' <span class="lk2">'+t('검출이력 →','Log →')+'</span>');
   if(!defs||!defs.length||ASOF)return;
   var d=defs[defs.length-1],key=(d.id||d.alert_id||d.at||d.seg||d.segment_id||JSON.stringify(d));if(SHOWN[key])return;SHOWN[key]=1;
@@ -611,18 +613,21 @@ function handleDefects(defs){
 function clearWork(){
   var g=document.getElementById('h-bsgrid');if(g)g.innerHTML='<div class="bsbtn" style="grid-column:1/-1;opacity:.6;cursor:default"><div class="meta3" style="font-size:18px;padding:14px">'+t('진행 중인 박스 없음','No active box')+'</div></div>';
   _T('eq-ten','—');_T('eq-tensub','● '+t('대기','Idle'));_H('eq-spd','—');_T('eq-cut',t('절단길이','Cut len')+' —');_T('eq-stack',t('대기','Idle'));
+  _T('eq-load','—');_T('eq-core',t('잔여경','Core')+' —');_T('eq-loadlbl',t('인버터 부하','Inv. load'));_T('eq-loadnorm','● '+t('적정','Normal'));
   _H('h-flatchip','<span class="d"></span><span class="ko">평탄도</span><span class="en">Flatness</span> —');_H('h-scratchchip','<span class="d"></span><span class="ko">흠집</span><span class="en">Scratch</span> —');
   var gd=document.getElementById('h-guide');if(gd){gd.className='nfg';_H('h-guide',t('라인 대기 중 — 작업을 선택해 시작하세요','Line idle — pick a job to start'));}
   _T('t-now',t('대기','Idle'));_T('m-cycle','—');_T('m-pos','—');_T('m-ppm','—');
 }
-function setIdle(){
+function setIdle(m){
   _T('h-cu',t('현재 작업 없음','No active job'));_T('h-meta',' · '+t('라인 대기 중 (실데이터 연결됨)','line idle (data connected)'));_T('h-box',t('박스 —','Box —'));
-  var v=document.getElementById('h-verdict');if(v){v.textContent='● '+t('대기 Idle','Idle');v.className='verdict';}
+  var v=document.getElementById('h-verdict');if(v){v.textContent='● '+t('대기','Idle');v.className='verdict';}
   _T('h-prog1','—');var pf=document.getElementById('h-progfill');if(pf)pf.style.width='0%';
   _H('h-prog2','<span class="ko">진행 중인 작업이 없습니다</span><span class="en">No active job</span>');
-  _T('rc-note','· '+t('작업 중 같은 규격 추천 표시','rec shown during a job'));clearWork();
+  _T('rc-note','· '+t('작업 중 같은 규격 추천 표시','rec shown during a job'));
+  _T('rc-speed','추천 —');_T('rc-acc','추천 —');_T('rc-dec','추천 —');_T('rc-slow','추천 —');
+  clearWork();
+  if(m){_T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));_T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');}
 }
-// ── 품질·규격 기반 추천 (leveling-rec: 같은 코일규격+절단길이, 불량코일 제외) ──
 function loadRec(coil,cut){
   if(!coil||String(coil).length<5||/^0+$/.test(coil))return;
   var key=coil+'|'+cut;if(RECKEY===key)return;RECKEY=key;
@@ -632,24 +637,24 @@ function loadRec(coil,cut){
    .catch(function(){_T('rc-note','· '+t('추천 데이터 조회 실패','rec lookup failed'));});
 }
 function recLine(rcId,curId,val){
-  var e=document.getElementById(rcId);if(!e)return;
-  if(val==null||isNaN(val)){e.className='rc';e.textContent='추천 —';return;}
+  var e=document.getElementById(rcId);if(!e)return;var lab=t('추천','Rec');
+  if(val==null||isNaN(val)){e.className='rc';e.textContent=lab+' —';return;}
   var cur=parseFloat((document.getElementById(curId)||{}).textContent);var cls='rc',ar=' ✓';
   if(!isNaN(cur)){ if(val>cur*1.03){cls='rc up';ar=' ↑';} else if(val<cur*0.97){cls='rc dn';ar=' ↓';} }
-  e.className=cls;e.textContent='추천 '+(Math.round(val*10)/10)+ar;
+  e.className=cls;e.textContent=lab+' '+(Math.round(val*10)/10)+ar;
 }
 function applyRec(){
   if(!REC||!REC.n){_T('rc-note','· '+t('같은 규격 과거 데이터 없음','no same-spec history'));return;}
   var m=RECMETA||{};
   var sp=m.cutMatched?t('규격+절단길이','spec+cut-len'):t('코일 규격','coil spec');
   var q=(m.qualityMode&&m.qualityMode.indexOf('good')===0)?t('양품만','good-only'):t('전체','all');
-  _T('rc-note','· '+sp+' '+t('같은 작업','same jobs')+' '+(m.goodCount||'')+t('코일','coils')+'('+q+') '+t('기준','basis')+(m.excludedCount?' · '+t('불량','NG')+' '+m.excludedCount+t('코일 제외','coils excl.'):''));
+  _T('rc-note','· '+sp+' '+t('같은 작업','same jobs')+' '+(m.goodCount||'')+t('코일','coils')+'('+q+') '+t('기준','basis')+(m.excludedCount?' · '+t('불량','NG')+' '+m.excludedCount+t('코일 제외','excl.'):''));
   recLine('rc-speed','s-speed',REC.ss);recLine('rc-acc','s-acc',REC.acc);recLine('rc-dec','s-dec',REC.de);recLine('rc-slow','s-slow',REC.slow);
 }
-// ── 속도/부하 가이드 (절단 구간 cruise 부하 대비) ──
 function guide(load){
   LASTLOAD=load;var g=document.getElementById('h-guide');if(!g)return;
   var base=(REC&&REC.cl&&!isNaN(REC.cl))?REC.cl:null;
+  if(base!=null){var sd0=(REC.clsd&&REC.clsd>2)?REC.clsd:3;_T('eq-loadnorm','● '+t('적정','Normal')+' '+Math.round(base-sd0)+'~'+Math.round(base+sd0));}
   if(base==null){g.className='nfg';_H('h-guide','🤖 '+t('같은 규격 과거 데이터 수집 중 — 기본 범위로 모니터링','collecting same-spec history'));return;}
   var sd=(REC.clsd&&REC.clsd>2)?REC.clsd:3,d=load-base,msg,cls='nfg';
   if(d<=-(sd+1)){cls='nfg gd-lo';msg=t('부하가 평소('+Math.round(base)+'%)보다 낮음 — 속도를 조금 높여도 됩니다','Load below usual ('+Math.round(base)+'%) — you may raise speed');}
@@ -658,36 +663,66 @@ function guide(load){
   g.className=cls;_H('h-guide','🤖 '+msg+((REC&&REC.ss)?' <span style="opacity:.7">· '+t('추천 속도','rec speed')+' '+(Math.round(REC.ss*10)/10)+'</span>':''));
 }
 function render(st){
-  if(!st||!st.ok){_H('h-foot','<span style="color:var(--bad)">PLC 응답 오류<br>샘플값 표시</span>');return;}
+  LASTST=st;
+  if(!st||!st.ok){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 응답 오류','PLC error')+'</span>');return;}
   var lv=st.floor&&st.floor.live,jobs=(st.floor&&st.floor.jobs)||[],job=jobs[0]||null,m=st.machine||{},ten=st.tension||{},defs=st.defects||[],now=st.now||'',online=st.floor&&st.floor.online;
   _H('h-date','PLC '+(st.today||'')+' · '+((st.floor&&st.floor.lastRow)||now)+(ASOF?' · <b style="color:var(--acc)">'+t('과거재생','Replay')+'</b>':''));
   _H('h-foot','<span class="ko">'+now+' 기준<br>'+(online?'PLC 연결 정상':'PLC 대기')+'<br>15초 갱신</span><span class="en">'+now+'<br>'+(online?'PLC live':'PLC idle')+'<br>updates 15s</span>');
+  _T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');_T('eq-loadlbl',t('인버터 부하','Inv. load'));
+  // ── 엄격한 유휴 판정: 라이브+온라인+작업 있어야 '작업중' ──
+  if(!(lv && job && online)){ setIdle(m); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); handleDefects(defs); return; }
+  // 작업 중
   _T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
-  _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
-  if(!lv||!job){setIdle();_T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%');handleDefects(defs);return;}
+  _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');
   loadRec(job.coil,m.cut);
-  _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · 코일 '+(job.coil||'')+' · 시작 '+(job.st||''));
+  _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · '+t('코일','coil')+' '+(job.coil||'')+' · '+t('시작','start')+' '+(job.st||''));
   var totB=(job.planBoxes&&job.planBoxes.length)||(job.boxes&&job.boxes.length)||'';
-  _T('h-box','박스 '+(lv.box||'')+' / '+totB);
+  _T('h-box',t('박스','Box')+' '+(lv.box||'')+' / '+totB);
   var done=lv.sheetsDone,tot=lv.planTotal,pct=tot?Math.round(done/tot*100):0;
-  _T('h-prog1',pct+'% · '+_nf(done)+'/'+_nf(tot)+'장');var pf=document.getElementById('h-progfill');if(pf)pf.style.width=Math.min(100,pct)+'%';
+  _T('h-prog1',pct+'% · '+_nf(done)+'/'+_nf(tot)+t('장',' sh'));var pf=document.getElementById('h-progfill');if(pf)pf.style.width=Math.min(100,pct)+'%';
   _H('h-prog2','<span class="ko">남음 ~'+Math.round(lv.remainMin||0)+'분 · 종료 '+(lv.endEst||'')+'</span><span class="en">Left ~'+Math.round(lv.remainMin||0)+'min · End '+(lv.endEst||'')+'</span> · '+_nf(job.L)+'m');
-  var v=document.getElementById('h-verdict'),dn=defs.length;if(v){if(dn>0){v.textContent='● '+t('주의 Check','Check');v.className='verdict bad';}else{v.textContent='● '+t('정상 Normal','Normal');v.className='verdict';}}
+  var v=document.getElementById('h-verdict'),dn=defs.length;if(v){if(dn>0){v.textContent='● '+t('주의','Check');v.className='verdict bad';}else{v.textContent='● '+t('정상','Normal');v.className='verdict';}}
   var load=(lv.load!=null?lv.load:m.load);
-  _T('eq-ten',(ten.out!=null?_f1(ten.out):'—')+'%');_T('eq-tensub','● OCR '+(ten.at||'')+(ten.ageMin!=null?' · '+Math.round(ten.ageMin)+'분전':''));
+  _T('eq-ten',(ten.out!=null?_f1(ten.out):'—')+'%');_T('eq-tensub','● OCR '+(ten.at||'')+(ten.ageMin!=null?' · '+Math.round(ten.ageMin)+t('분전','m ago'):''));
   _T('eq-load',(load!=null?Math.round(load):'—')+'%');_H('eq-spd',(lv.feed!=null?_f1(lv.feed):'—')+'<tspan font-size="18" fill="#51607a"> m/min</tspan>');
-  _T('eq-cut','절단길이 '+_nf(m.cut||lv.cutNow)+'mm');_T('eq-stack','박스'+(lv.box||'')+' · '+_nf(lv.sheetsDone)+'/'+_nf(lv.boxPlan)+'장');
-  _T('m-cycle',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+' s');_T('m-pos',_nf(lv.pos));_T('m-ppm',_f1(lv.ppm)+' 장/분');
+  _T('eq-cut',t('절단길이','Cut len')+' '+_nf(m.cut||lv.cutNow)+'mm');_T('eq-stack',t('박스','Box')+(lv.box||'')+' · '+_nf(lv.sheetsDone)+'/'+_nf(lv.boxPlan)+t('장',''));
+  _T('eq-core',t('잔여경','Core')+' '+_nf(lv.dia)+'mm');
+  _T('m-cycle',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+' s');_T('m-pos',_nf(lv.pos));_T('m-ppm',_f1(lv.ppm)+t(' 장/분',' pc/m'));
   buildBoxes(job,lv);buildBoxProg(job,lv);
   _H('g-load',Math.round(load)+'<small style="font-size:16px">%</small>');_H('g-ten',(ten.out!=null?Math.round(ten.out):'—')+'<small style="font-size:16px">%</small>');
   _H('g-cyc',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+'<small style="font-size:16px">s</small>');_H('g-spd',_f1(lv.feed));
-  _T('t-now','지금 Now · '+_nf(job.L)+'m · '+Math.round(load)+'%');
-  _T('sel-cu',job.cu||'—');_T('sel-sp',job.specRaw||'');_T('sel-mt','코일 '+(job.coil||'')+' · '+_nf(job.kg)+'kg · '+totB+'박스');
+  _T('t-now',t('지금','Now')+' · '+_nf(job.L)+'m · '+Math.round(load)+'%');
+  _T('sel-cu',job.cu||'—');_T('sel-sp',job.specRaw||'');_T('sel-mt',t('코일','Coil')+' '+(job.coil||'')+' · '+_nf(job.kg)+'kg · '+totB+t('박스',' box'));
   if(load!=null)guide(load);
   handleDefects(defs);
 }
-function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">PLC 연결 실패<br>('+e+')<br>샘플값 표시</span>');});}
-try{tick();if(!ASOF)setInterval(tick,15000);}catch(e){}
+// ── 지난 작업 (달력 선택 → leveling-floor mode=day) ──
+function loadPast(date){
+  var tb=document.getElementById('h-pasttbody');if(!tb||!date)return;
+  tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:18px">'+t('불러오는 중…','Loading…')+'</td></tr>';
+  fetch(FAPI+'?mode=day&date='+date,{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);})
+   .then(function(j){var jobs=(j&&j.jobs)||[];
+     if(!jobs.length){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--mut);padding:20px;font-size:17px">'+t('이 날짜에 작업이 없습니다','No jobs on this date')+'</td></tr>';return;}
+     tb.innerHTML=jobs.map(function(b){var q=(b.def>0)?'<span class="tg2 bad">'+t('불량','NG')+' '+b.def+'</span>':'<span class="tg2 ok">'+t('양호','OK')+'</span>';
+       var bn=(b.boxes&&b.boxes.length)||(b.planBoxes&&b.planBoxes.length)||'';
+       return '<tr><td>'+(b.st||'')+'</td><td style="font-weight:900">'+(b.coil||'')+'</td><td>'+(b.cu||'')+'</td><td>'+(b.specRaw||'')+'</td><td class="r">'+_nf(b.sPlc)+'</td><td class="r">'+bn+'</td><td>'+q+'</td></tr>';}).join('');
+   }).catch(function(){tb.innerHTML='<tr><td colspan="7" style="text-align:center;color:var(--bad);padding:18px">'+t('조회 실패','Load failed')+'</td></tr>';});
+}
+function initPast(){
+  var pd=document.getElementById('past-date');if(!pd)return;
+  var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+  fetch(FAPI+'?mode=days&n=28&to='+today,{headers:hdr(),cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    var days=(j&&j.days)||[],work=days.filter(function(d){return d.n>0;});
+    var pick=work.length?work[work.length-1].date:(j&&j.today)||today;pd.value=pick;loadPast(pick);
+  }).catch(function(){loadPast(pd.value||today);});
+  pd.addEventListener('change',function(){loadPast(pd.value);});
+}
+// 언어 전환 시 동적 영역 재렌더
+['.lng .kobtn','.lng .enbtn'].forEach(function(sel){var b=document.querySelector(sel);if(b)b.addEventListener('click',function(){setTimeout(function(){if(LASTST)render(LASTST);var pd=document.getElementById('past-date');if(pd&&pd.value)loadPast(pd.value);},0);});});
+// 초기 로딩 (샘플 숨김)
+_T('h-cu',t('불러오는 중…','Loading…'));_T('h-meta','');clearWork();
+function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');});}
+try{tick();if(!ASOF)setInterval(tick,15000);initPast();}catch(e){}
 
 </script>
 </div>
