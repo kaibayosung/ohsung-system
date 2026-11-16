@@ -13,6 +13,10 @@
   body{background:var(--bg);margin:0;padding:0}
   .screen{width:100%;max-width:1440px;margin:0 auto;background:var(--bg);overflow:hidden;position:relative;min-height:100vh}
   .snav,.bsbtn,.nfset,.nfchip,.gobtn,.scoil,[data-go],[data-pop]{cursor:pointer}
+  /* 한/영 전환 */
+  .en{display:none}
+  body.lang-en .ko{display:none}
+  body.lang-en .en{display:inline}
   .mock{background:#fff7ed;border-bottom:2px dashed var(--amber);color:#9a5410;padding:6px 14px;font-size:12.5px;font-weight:800;text-align:center}
 
   /* layout: 좌측 사이드바 + 본문 */
@@ -211,17 +215,17 @@
 <!-- 좌측 사이드바 -->
 <div class="side">
   <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper</small></div></div>
-  <div class="snav" data-v="select"><div class="t">작업 선택</div><div class="s">Select job · 오늘 3건</div></div>
-  <div class="snav on" data-v="now"><div class="t">현재 상태</div><div class="s">Status · 태경스틸 박스2</div></div>
-  <div class="snav" data-v="settings"><div class="t">장비 셋팅값</div><div class="s">Settings · 확인</div></div>
-  <div class="snav" data-v="trend"><div class="t">추세·분석</div><div class="s">Trend · 그래프</div></div>
-  <div class="snav" data-v="past"><div class="t">지난 작업</div><div class="s">Past jobs</div></div>
-  <div class="lng"><b>한</b><b class="on">EN</b></div>
-  <div class="foot">14:44 현재<br>PLC 연결 정상<br>15초 갱신</div>
+  <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s">태경스틸 외 3건</div></div>
+  <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s">태경스틸 · 박스2</div></div>
+  <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
+  <div class="snav" data-v="trend"><div class="t"><span class="ko">추세·분석</span><span class="en">Trend</span></div><div class="s"><span class="ko">그래프</span><span class="en">Graphs</span></div></div>
+  <div class="snav" data-v="past"><div class="t"><span class="ko">지난 작업</span><span class="en">Past jobs</span></div><div class="s"><span class="ko">기록</span><span class="en">History</span></div></div>
+  <div class="lng"><b class="kobtn on">한</b><b class="enbtn">EN</b></div>
+  <div class="foot"><span class="ko">14:44 현재<br>PLC 연결 정상<br>15초 갱신</span><span class="en">14:44 now<br>PLC connected<br>updates 15s</span></div>
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span class="date">지시일자 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span class="date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
 <!-- ================= 현재 작업 ================= -->
@@ -236,13 +240,13 @@
     <div class="prog">
       <span class="pn">79% · 290/366장</span>
       <div class="pt"><div class="pf" style="width:79%"></div></div>
-      <span class="pn">남음 ~33분 · 종료 15:18 · 554/738m</span>
+      <span class="pn"><span class="ko">남음 ~33분 · 종료 15:18</span><span class="en">Left ~33min · End 15:18</span> · 554/738m</span>
     </div>
   </div>
 
   <!-- 박스 전환 바 (맨 위, 크게) -->
   <div class="boxswitch">
-    <div class="bst">📦 현재 박스 Current box <small>· 눌러서 바로 바꾸기 (잘못 눌렀어도 여기서 변경) · Tap to switch</small></div>
+    <div class="bst">📦 <span class="ko">현재 박스</span><span class="en">Current box</span> <small><span class="ko">· 눌러서 바로 바꾸기 (잘못 눌렀어도 여기서 변경)</span><span class="en">· Tap to switch (fixes a missed box change)</span></small></div>
     <div class="bsgrid">
       <div class="bsbtn done"><div class="bn3">1</div><div class="meta3">1,260mm · 131장</div><div class="tag3">완료 Done</div></div>
       <div class="bsbtn on"><div class="bn3">2</div><div class="meta3">2,438mm · 151/84장</div><div class="tag3">진행중 Now</div></div>
@@ -253,7 +257,7 @@
 
   <!-- 장비 그림 위에 운행 상태 -->
   <div class="eqwrap">
-    <div class="et">장비 운행 상태 Equipment (장비 그림 위 실시간 · 평소 대비 색)</div>
+    <div class="et"><span class="ko">장비 운행 상태</span><span class="en">Equipment status</span> <span style="font-size:.82em;color:var(--mut)"><span class="ko">(그림 위 실시간 · 평소 대비 색)</span><span class="en">(live on diagram · color vs usual)</span></span></div>
     <svg viewBox="0 0 1300 380" style="height:224px;width:auto;display:block;margin:0 auto" font-family="Pretendard">
       <!-- strip line -->
       <line x1="156" y1="196" x2="1116" y2="196" stroke="#9fb4d6" stroke-width="5" stroke-dasharray="14 10"/>
@@ -286,7 +290,7 @@
       <g>
         <line x1="578" y1="236" x2="578" y2="312" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="462" y="312" width="232" height="60" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
-        <text x="520" y="350" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57">35%</text>
+        <text x="520" y="350" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57" id="eq-load">35%</text>
         <text x="632" y="338" text-anchor="middle" font-size="16" font-weight="800" fill="#51607a">인버터 부하</text>
         <text x="632" y="358" text-anchor="middle" font-size="15" font-weight="900" fill="#1f9d57">● 적정 30~38</text>
       </g>
@@ -315,12 +319,12 @@
   <!-- 하단 요약 (품질 + 가이드 한 줄 + 셋팅값 바로가기) — 16:9 한 화면 -->
   <div class="nowfoot">
     <div class="nfq">
-      <span class="nfchip" data-pop="ov-wave"><span class="d"></span>평탄도 v2 OK <span class="lk2">도식 →</span></span>
-      <span class="nfchip" data-pop="ov-scratch"><span class="d"></span>흠집 0 <span class="lk2">검출이력 →</span></span>
-      <span class="nfchip" style="color:var(--blue)">🎞 영상</span>
+      <span class="nfchip" data-pop="ov-wave"><span class="d"></span><span class="ko">평탄도 v2 OK</span><span class="en">Flatness v2 OK</span> <span class="lk2"><span class="ko">도식 →</span><span class="en">Diagram →</span></span></span>
+      <span class="nfchip" data-pop="ov-scratch"><span class="d"></span><span class="ko">흠집 0</span><span class="en">Scratch 0</span> <span class="lk2"><span class="ko">검출이력 →</span><span class="en">Log →</span></span></span>
+      <span class="nfchip" style="color:var(--blue)">🎞 <span class="ko">영상</span><span class="en">Video</span></span>
     </div>
-    <div class="nfg" data-go="trend">🤖 지난 같은 규격 작업 평균 범위 안 — 지금 설정 유지 <span style="color:var(--mut)">(자세히: 추세·분석)</span></div>
-    <span class="nfset" data-go="settings">⚙ 장비 셋팅값 확인 →</span>
+    <div class="nfg" data-go="trend">🤖 <span class="ko">지난 같은 규격 작업 평균 범위 안 — 지금 설정 유지 <span style="color:var(--mut)">(자세히: 추세·분석)</span></span><span class="en">Within past same-spec average — keep current settings <span style="color:var(--mut)">(details: Trend)</span></span></div>
+    <span class="nfset" data-go="settings">⚙ <span class="ko">장비 셋팅값 확인 →</span><span class="en">Check machine settings →</span></span>
   </div>
 </div>
 
@@ -329,12 +333,12 @@
   <div class="setband">
     <div class="sbt">⚙ 장비 셋팅값 — 이 값으로 장비가 맞는지 확인하세요 <small>Settings · check the machine matches</small></div>
     <div class="setgrid6">
-      <div class="set2"><div class="k">절단길이 Cut len</div><div class="v">2,439<small>mm</small></div></div>
-      <div class="set2"><div class="k">보정 Correction</div><div class="v">+0.0<small>mm</small></div></div>
-      <div class="set2"><div class="k">속도 설정 Speed</div><div class="v">15.0</div></div>
-      <div class="set2"><div class="k">가속 Acc</div><div class="v">10.0<small>s</small></div></div>
-      <div class="set2"><div class="k">감속 Dec</div><div class="v">1.0<small>s</small></div></div>
-      <div class="set2"><div class="k">저속 구간 Slow</div><div class="v">50<small>mm</small></div></div>
+      <div class="set2"><div class="k">절단길이 Cut len</div><div class="v"><span id="s-cutlen">2,439</span><small>mm</small></div></div>
+      <div class="set2"><div class="k">보정 Correction</div><div class="v"><span id="s-corr">+0.0</span><small>mm</small></div></div>
+      <div class="set2"><div class="k">속도 설정 Speed</div><div class="v"><span id="s-speed">15.0</span></div></div>
+      <div class="set2"><div class="k">가속 Acc</div><div class="v"><span id="s-acc">10.0</span><small>s</small></div></div>
+      <div class="set2"><div class="k">감속 Dec</div><div class="v"><span id="s-dec">1.0</span><small>s</small></div></div>
+      <div class="set2"><div class="k">저속 구간 Slow</div><div class="v"><span id="s-slow">50</span><small>mm</small></div></div>
     </div>
     <div class="setnote">✅ 작업지시 규격과 일치 — 장비 셋팅값이 올바릅니다. (불일치 시 빨강으로 표시)</div>
   </div>
@@ -349,11 +353,11 @@
     <div class="plc">
       <div class="pt2">측정값 Measured <span style="color:var(--mut);font-weight:800">· 모니터링</span></div>
       <div class="plcg">
-        <div class="pc"><div class="k">인버터 계수</div><div class="v">24.4</div></div>
-        <div class="pc"><div class="k">사이클 Cycle</div><div class="v">13.0 s</div></div>
+        <div class="pc"><div class="k">인버터 계수</div><div class="v" id="m-coeff">24.4</div></div>
+        <div class="pc"><div class="k">사이클 Cycle</div><div class="v" id="m-cycle">13.0 s</div></div>
         <div class="pc"><div class="k">생산 속도</div><div class="v">4.6 장/분</div></div>
-        <div class="pc"><div class="k">행정 위치</div><div class="v">2,417</div></div>
-        <div class="pc"><div class="k">출력 전압</div><div class="v">16.3 V</div></div>
+        <div class="pc"><div class="k">행정 위치</div><div class="v" id="m-pos">2,417</div></div>
+        <div class="pc"><div class="k">RUN</div><div class="v" id="m-run">1</div></div>
         <div class="pc"><div class="k">두께 OCR</div><div class="v">1550 µm</div></div>
       </div>
     </div>
@@ -365,24 +369,28 @@
   <div class="trend">
     <div class="tt">📈 추세·분석 Trend <small>· 코일 길이(시간)에 따른 변화 · 실측 vs 지난 같은 규격 작업 평균 vs 정상 범위</small></div>
     <div class="ttabs"><b class="on">인버터 부하 Load</b><b>텐션 Tension</b><b>이송속도 Speed</b><b>사이클 Cycle</b></div>
-    <svg viewBox="0 0 1240 320" style="width:100%;height:auto" font-family="Pretendard">
-      <rect x="64" y="150" width="1136" height="30" fill="rgba(31,157,87,.15)"/>
-      <text x="70" y="144" font-size="13" font-weight="800" fill="#1f9d57">정상 범위 Normal (같은 두께 지난 작업 30~38%)</text>
-      <line x1="64" y1="40" x2="64" y2="250" stroke="#dfe4ee" stroke-width="2"/>
-      <line x1="64" y1="250" x2="1200" y2="250" stroke="#dfe4ee" stroke-width="2"/>
-      <text x="40" y="60" font-size="13" fill="#8995ab" font-weight="800">100</text>
-      <text x="44" y="170" font-size="13" fill="#8995ab" font-weight="800">35</text>
-      <text x="50" y="254" font-size="13" fill="#8995ab" font-weight="800">0</text>
-      <line x1="300" y1="44" x2="300" y2="250" stroke="#c7cedb" stroke-width="2" stroke-dasharray="5 5"/>
-      <text x="306" y="60" font-size="12" font-weight="800" fill="#8995ab">박스2 시작</text>
-      <polyline points="64,160 300,159 560,161 820,160 980,159" fill="none" stroke="#9aa3b5" stroke-width="2.6" stroke-dasharray="9 7"/>
-      <polyline points="64,174 160,169 260,165 360,163 480,164 600,162 720,161 860,163 980,161" fill="none" stroke="#1a3a6b" stroke-width="3.8"/>
-      <circle cx="980" cy="161" r="7" fill="#1a3a6b"/>
-      <polyline points="980,161 1080,161 1200,160" fill="none" stroke="#1a3a6b" stroke-width="2.6" stroke-dasharray="8 6" opacity=".55"/>
-      <line x1="980" y1="40" x2="980" y2="250" stroke="#0f1e33" stroke-width="2.5"/>
-      <text x="980" y="276" text-anchor="middle" font-size="14" font-weight="900" fill="#0f1e33">지금 Now · 554m</text>
-      <text x="630" y="300" text-anchor="middle" font-size="13" font-weight="800" fill="#8995ab">코일 길이 Length (m) →</text>
-      <text x="1150" y="276" text-anchor="middle" font-size="13" font-weight="800" fill="#8995ab">738</text>
+    <svg viewBox="0 0 1240 500" style="width:100%;height:auto;min-height:420px" font-family="Pretendard">
+      <!-- y축 0~60% 확대 -->
+      <rect x="70" y="192" width="1120" height="48" fill="rgba(31,157,87,.16)"/>
+      <text x="78" y="184" font-size="16" font-weight="800" fill="#1f9d57">정상 범위 Normal (같은 두께 지난 작업 30~38%)</text>
+      <line x1="70" y1="60" x2="70" y2="420" stroke="#dfe4ee" stroke-width="2.5"/>
+      <line x1="70" y1="420" x2="1190" y2="420" stroke="#dfe4ee" stroke-width="2.5"/>
+      <text x="36" y="66" font-size="15" fill="#8995ab" font-weight="800">60</text>
+      <text x="36" y="216" font-size="15" fill="#8995ab" font-weight="800">35</text>
+      <text x="42" y="426" font-size="15" fill="#8995ab" font-weight="800">0</text>
+      <text x="30" y="454" font-size="15" fill="#8995ab" font-weight="800">%</text>
+      <line x1="330" y1="66" x2="330" y2="420" stroke="#c7cedb" stroke-width="2.5" stroke-dasharray="6 6"/>
+      <text x="338" y="84" font-size="14" font-weight="800" fill="#8995ab">박스2 시작 Box2</text>
+      <!-- 지난 작업 평균 -->
+      <polyline points="70,206 330,205 640,207 920,205 1050,204" fill="none" stroke="#9aa3b5" stroke-width="3" stroke-dasharray="10 8"/>
+      <!-- 실측 -->
+      <polyline points="70,224 180,219 300,215 440,213 600,212 760,210 900,211 1050,210" fill="none" stroke="#1a3a6b" stroke-width="4.5"/>
+      <circle cx="1050" cy="210" r="9" fill="#1a3a6b"/>
+      <polyline points="1050,210 1150,210 1190,209" fill="none" stroke="#1a3a6b" stroke-width="3" stroke-dasharray="9 7" opacity=".55"/>
+      <line x1="1050" y1="60" x2="1050" y2="420" stroke="#0f1e33" stroke-width="3"/>
+      <text x="1050" y="450" text-anchor="middle" font-size="17" font-weight="900" fill="#0f1e33">지금 Now · 554m · 35%</text>
+      <text x="620" y="480" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">코일 길이 Length (m) →</text>
+      <text x="1165" y="450" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">738</text>
     </svg>
     <div class="tlegend">
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#1a3a6b" stroke-width="3.8"/></svg> 실측 Actual</span>
@@ -479,13 +487,23 @@
 </div>
 
 <script>
-var TITLES={select:'작업 선택 Select job',now:'현재 상태 Status',settings:'장비 셋팅값 Settings',trend:'추세·분석 Trend',past:'지난 작업 Past jobs'};
+var TITLES={select:{ko:'작업 선택',en:'Select job'},now:{ko:'현재 상태',en:'Current status'},settings:{ko:'장비 셋팅값',en:'Machine settings'},trend:{ko:'추세·분석',en:'Trend'},past:{ko:'지난 작업',en:'Past jobs'}};
+var LANG='ko', CURV='now';
+function applyTitle(){var t=document.getElementById('vtitle');if(t&&TITLES[CURV])t.textContent=TITLES[CURV][LANG];}
+function setLang(l){
+  LANG=l;
+  document.body.classList.toggle('lang-en', l==='en');
+  var kb=document.querySelector('.lng .kobtn'), eb=document.querySelector('.lng .enbtn');
+  if(kb)kb.classList.toggle('on', l==='ko'); if(eb)eb.classList.toggle('on', l==='en');
+  applyTitle();
+}
 function showView(v){
+  CURV=v;
   document.querySelectorAll('.view').forEach(function(e){e.classList.remove('on');});
   document.querySelectorAll('.snav').forEach(function(e){e.classList.remove('on');});
   var vw=document.getElementById('v-'+v); if(vw)vw.classList.add('on');
   var nv=document.querySelector('.snav[data-v="'+v+'"]'); if(nv)nv.classList.add('on');
-  var t=document.getElementById('vtitle'); if(t)t.textContent=TITLES[v]||'';
+  applyTitle();
   try{window.scrollTo(0,0);}catch(e){}
 }
 function hidePop(){document.querySelectorAll('.ov').forEach(function(e){e.classList.remove('on');});}
@@ -503,10 +521,57 @@ document.querySelectorAll('#v-select .scoil').forEach(function(el){el.addEventLi
 // 팝업 닫기 (✕ / 확인 / 바깥 클릭)
 document.querySelectorAll('.ov .x, .ov .mbtn.close').forEach(function(el){el.addEventListener('click',hidePop);});
 document.querySelectorAll('.ov').forEach(function(ov){ov.addEventListener('click',function(e){if(e.target===ov)hidePop();});});
+// 한/영 전환
+var _kb=document.querySelector('.lng .kobtn'), _eb=document.querySelector('.lng .enbtn');
+if(_kb)_kb.addEventListener('click',function(){setLang('ko');});
+if(_eb)_eb.addEventListener('click',function(){setLang('en');});
+setLang('ko');
 // 초기 상태 (쿼리)
 var q=new URLSearchParams(location.search);
 if(q.get('tab'))showView(q.get('tab'));
 if(q.get('popup'))showPop('ov-'+q.get('popup'));
+
+// ── 실데이터 연동 (레벨링 PLC) ───────────────────────────
+var LIVE_API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
+var LIVE_KEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
+function _n(v){return (v===null||v===undefined||v==='')?null:Number(v);}
+function _fmt(v){if(v===null||v===undefined||isNaN(v))return null;return Math.round(v).toLocaleString('en-US');}
+function _set(id,val){var el=document.getElementById(id);if(el&&val!==null&&val!==undefined)el.textContent=val;}
+function _pickRow(j){
+  if(!j)return null;
+  if(Array.isArray(j))return j[0]||null;
+  if(Array.isArray(j.rows))return j.rows[0]||null;
+  if(Array.isArray(j.data))return j.data[0]||null;
+  if(Array.isArray(j.result))return j.result[0]||null;
+  if(typeof j==='object')return j;
+  return null;
+}
+function loadLive(){
+  var sql='SELECT * FROM LEVELING_DATA ORDER BY TIMESTAMP DESC LIMIT 1';
+  var url=LIVE_API+'?sql='+encodeURIComponent(sql);
+  fetch(url,{headers:{apikey:LIVE_KEY,Authorization:'Bearer '+LIVE_KEY}})
+   .then(function(r){return r.ok?r.json():Promise.reject(r.status);})
+   .then(function(j){
+     var row=_pickRow(j); if(!row)return;
+     // 장비 셋팅값
+     _set('s-cutlen',_fmt(_n(row.CUTLENSET)));
+     _set('s-corr',_fmt(_n(row.CUTLENCORR)));
+     _set('s-speed',_fmt(_n(row.SPEEDSET)));
+     _set('s-acc',_fmt(_n(row.ACCTM)));
+     _set('s-dec',_fmt(_n(row.DECTM)));
+     _set('s-slow',_fmt(_n(row.SLOWLENSET)));
+     // 측정값
+     var coeff=_n(row.INVERTERSPEEDCOEFF); if(coeff!==null)_set('m-coeff',coeff.toFixed(1));
+     var cyc=_n(row.CYCLETM); if(cyc!==null)_set('m-cycle',cyc.toFixed(1)+' s');
+     _set('m-pos',_fmt(_n(row.MOVELENSV)));
+     var run=_n(row.RUN); if(run!==null)_set('m-run',String(run));
+     // 장비 부하 (인버터 속도 %)
+     var load=_n(row.INVERTERSPEEDPER);
+     if(load!==null){var e=document.getElementById('eq-load');if(e)e.textContent=Math.round(load)+'%';}
+   })
+   .catch(function(){/* 실패 시 샘플값 유지 */});
+}
+try{loadLive();setInterval(loadLive,15000);}catch(e){}
 </script>
 </div>
 </body>
