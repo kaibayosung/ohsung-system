@@ -34,7 +34,13 @@
   .snav.on .t::before{content:'● ';color:#7fd1a0;font-size:12px;vertical-align:2px}
   .side .lng{display:flex;border:2px solid var(--line);border-radius:10px;overflow:hidden;font-size:14px;font-weight:900;margin-top:4px}
   .side .lng b{flex:1;text-align:center;padding:8px 0;color:var(--sec)}.side .lng b.on{background:var(--navy);color:#fff}
-  .side .foot{margin-top:auto;font-size:12.5px;color:var(--mut);font-weight:800;line-height:1.6;padding:0 4px}
+  .side .demo{margin-top:auto;border:1.5px dashed #c9b3e6;background:#f6f1fb;border-radius:12px;padding:9px 10px}
+  .side .demo .demolb{font-size:11.5px;font-weight:900;color:var(--acc);margin-bottom:7px;letter-spacing:-.2px}
+  .side .demo .demobtns{display:flex;gap:6px}
+  .side .demo .demobtn{flex:1;border:none;border-radius:9px;padding:9px 4px;font-size:12.5px;font-weight:900;cursor:pointer;color:#fff;font-family:inherit;line-height:1.15}
+  .side .demo .demobtn.w{background:var(--bad)}.side .demo .demobtn.s{background:var(--warn)}
+  .side .demo .demobtn:active{transform:translateY(1px);opacity:.9}
+  .side .foot{margin-top:12px;font-size:12.5px;color:var(--mut);font-weight:800;line-height:1.6;padding:0 4px}
   .main{flex:1;min-width:0;background:var(--bg)}
   .mtopbar{display:flex;align-items:center;justify-content:space-between;padding:12px 20px 0}
   .mtopbar .tt{font-size:20px;font-weight:900;color:var(--navy)}
@@ -221,6 +227,13 @@
   <div class="snav" data-v="trend"><div class="t"><span class="ko">추세·분석</span><span class="en">Trend</span></div><div class="s"><span class="ko">그래프</span><span class="en">Graphs</span></div></div>
   <div class="snav" data-v="past"><div class="t"><span class="ko">지난 작업</span><span class="en">Past jobs</span></div><div class="s"><span class="ko">기록</span><span class="en">History</span></div></div>
   <div class="lng"><b class="kobtn on">한</b><b class="enbtn">EN</b></div>
+  <div class="demo">
+    <div class="demolb">🎬 <span class="ko">시연 — 불량 팝업</span><span class="en">Demo — defect popup</span></div>
+    <div class="demobtns">
+      <button class="demobtn w" data-pop="ov-wave"><span class="ko">평탄도 웨이브</span><span class="en">Flatness wave</span></button>
+      <button class="demobtn s" data-pop="ov-scratch"><span class="ko">스크래치</span><span class="en">Scratch</span></button>
+    </div>
+  </div>
   <div class="foot"><span class="ko">14:44 현재<br>PLC 연결 정상<br>15초 갱신</span><span class="en">14:44 now<br>PLC connected<br>updates 15s</span></div>
 </div>
 
