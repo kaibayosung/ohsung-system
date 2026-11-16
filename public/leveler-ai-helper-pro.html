@@ -369,7 +369,7 @@
 <!-- ================= 장비 셋팅값 ================= -->
 <div class="view" id="v-settings">
   <div class="setband">
-    <div class="sbt">⚙ 장비 셋팅값 — 이 값으로 장비가 맞는지 확인하세요 <small>Settings · check the machine matches</small><span class="rcnote" id="rc-note">· 같은 규격 과거 평균 기준 추천</span></div>
+    <div class="sbt">⚙ 장비 셋팅값 — 이 값으로 장비가 맞는지 확인하세요 <small>Settings · check the machine matches</small><span class="rcnote" id="rc-note">· 규격·절단 같은 양품 8코일 기준 (불량 2코일 제외)</span></div>
     <div class="setgrid6">
       <div class="set2"><div class="k">절단길이 Cut len</div><div class="v"><span id="s-cutlen">2,439</span><small>mm</small></div></div>
       <div class="set2"><div class="k">보정 Correction</div><div class="v"><span id="s-corr">+0.0</span><small>mm</small></div></div>
@@ -570,39 +570,32 @@ if(q.get('tab'))showView(q.get('tab'));
 if(q.get('popup'))showPop('ov-'+q.get('popup'));
 
 
-// ══════════ 상용 실데이터 엔진 v2 (state + 같은규격 추천 + 가이드 + 유휴비우기) ══════════
+// ══════════ 상용 실데이터 엔진 v3 (state + 품질·규격 추천 + cruise 가이드 + 유휴비우기) ══════════
 var SAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
-var EXP ='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
+var RAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-rec';
 var SKEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
 var SQ=new URLSearchParams(location.search);
 var ASOF=SQ.get('asof')||null;
-var SHOWN={}, REC=null, LASTLOAD=null, RECCUT=null;
+var SHOWN={}, REC=null, RECMETA=null, RECKEY=null, LASTLOAD=null;
 var EN=function(){return document.body.classList.contains('lang-en');};
 function t(k,e){return EN()?e:k;}
 function _T(id,x){var e=document.getElementById(id);if(e&&x!=null)e.textContent=x;}
 function _H(id,h){var e=document.getElementById(id);if(e&&h!=null)e.innerHTML=h;}
 function _nf(v){return (v==null||v===''||isNaN(v))?'—':Math.round(v).toLocaleString('en-US');}
 function _f1(v){return (v==null||v===''||isNaN(v))?'—':(Math.round(v*10)/10).toString();}
-function pickRow(j){if(!j)return null;if(Array.isArray(j))return j[0]||null;['rows','data','result'].forEach(function(k){if(Array.isArray(j[k]))j=j[k];});return Array.isArray(j)?(j[0]||null):j;}
 function hdr(){return {apikey:SKEY,Authorization:'Bearer '+SKEY};}
 function sfetch(){var u=SAPI+'?mode=state'+(ASOF?'&asof='+encodeURIComponent(ASOF):'');return fetch(u,{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);});}
 
 function buildBoxes(job,lv){
-  var grid=document.getElementById('h-bsgrid');if(!grid)return;
-  var boxes=(job&&job.boxes)||[],cur=(lv&&lv.box)||1;if(!boxes.length)return;
-  grid.innerHTML=boxes.map(function(b){
-    var cls=b.i<cur?'done':(b.i===cur?'on':'');var tag=b.i<cur?'완료 Done':(b.i===cur?'진행중 Now':'대기 Next');
-    return '<div class="bsbtn '+cls+'"><div class="bn3">'+b.i+'</div><div class="meta3">'+_nf(b.len)+'mm · '+(b.plc!=null?_nf(b.plc):'0')+'/'+_nf(b.plan)+'장</div><div class="tag3">'+tag+'</div></div>';
-  }).join('');
+  var grid=document.getElementById('h-bsgrid');if(!grid)return;var boxes=(job&&job.boxes)||[],cur=(lv&&lv.box)||1;if(!boxes.length)return;
+  grid.innerHTML=boxes.map(function(b){var cls=b.i<cur?'done':(b.i===cur?'on':'');var tag=b.i<cur?'완료 Done':(b.i===cur?'진행중 Now':'대기 Next');
+    return '<div class="bsbtn '+cls+'"><div class="bn3">'+b.i+'</div><div class="meta3">'+_nf(b.len)+'mm · '+(b.plc!=null?_nf(b.plc):'0')+'/'+_nf(b.plan)+'장</div><div class="tag3">'+tag+'</div></div>';}).join('');
   grid.querySelectorAll('.bsbtn').forEach(function(el){el.addEventListener('click',function(){grid.querySelectorAll('.bsbtn').forEach(function(x){x.classList.remove('on');});el.classList.add('on');});});
 }
 function buildBoxProg(job,lv){
-  var bp=document.getElementById('h-boxprog');if(!bp||!job)return;var boxes=job.boxes||[],cur=(lv&&lv.box)||1;
-  var bt=bp.querySelector('.bt');bp.innerHTML='';if(bt)bp.appendChild(bt);
-  boxes.forEach(function(b){var done=b.i<cur,now=b.i===cur,pct=b.plan?Math.min(100,Math.round((b.plc||0)/b.plan*100)):4;
-    var col=done?'var(--ok)':(now?'var(--blue)':'#cbd5e8');var row=document.createElement('div');row.className='bpr';
-    row.innerHTML='<span class="bl">'+_nf(b.len)+'</span><div class="bb"><div style="width:'+(done||now?pct:4)+'%;background:'+col+'"></div></div><span class="bc"'+(now?' style="color:var(--blue)"':'')+'>'+_nf(b.plc||0)+'/'+_nf(b.plan)+'</span>';
-    bp.appendChild(row);});
+  var bp=document.getElementById('h-boxprog');if(!bp||!job)return;var boxes=job.boxes||[],cur=(lv&&lv.box)||1;var bt=bp.querySelector('.bt');bp.innerHTML='';if(bt)bp.appendChild(bt);
+  boxes.forEach(function(b){var done=b.i<cur,now=b.i===cur,pct=b.plan?Math.min(100,Math.round((b.plc||0)/b.plan*100)):4;var col=done?'var(--ok)':(now?'var(--blue)':'#cbd5e8');var row=document.createElement('div');row.className='bpr';
+    row.innerHTML='<span class="bl">'+_nf(b.len)+'</span><div class="bb"><div style="width:'+(done||now?pct:4)+'%;background:'+col+'"></div></div><span class="bc"'+(now?' style="color:var(--blue)"':'')+'>'+_nf(b.plc||0)+'/'+_nf(b.plan)+'</span>';bp.appendChild(row);});
 }
 function fillWave(d){var s=document.querySelector('#ov-wave .mtop .s');if(s){var pos=(d.pos||d.l||d.position_m);s.textContent=(d.coil||'')+' · 박스 '+(d.box||d.box_idx||'')+(pos?' · 약 '+Math.round(pos)+'m':'');}}
 function fillScratch(d){var s=document.querySelector('#ov-scratch .mtop .s');if(s){var pos=(d.pos||d.l||d.position_m);s.textContent=(d.coil||'')+' · 박스 '+(d.box||d.box_idx||'')+(pos?' · 약 '+Math.round(pos)+'m':'');}}
@@ -612,15 +605,13 @@ function handleDefects(defs){
   _H('h-flatchip','<span class="d" style="background:'+(nf?'var(--bad)':'var(--ok)')+'"></span><span class="ko">평탄도</span><span class="en">Flatness</span> '+(nf?'<b style="color:var(--bad)">불량 '+nf+'</b>':t('정상 OK','OK'))+' <span class="lk2">'+t('도식 →','Diagram →')+'</span>');
   _H('h-scratchchip','<span class="d" style="background:'+(ns?'var(--bad)':'var(--ok)')+'"></span><span class="ko">흠집</span><span class="en">Scratch</span> '+ns+' <span class="lk2">'+t('검출이력 →','Log →')+'</span>');
   if(!defs||!defs.length||ASOF)return;
-  var d=defs[defs.length-1],key=(d.id||d.alert_id||d.at||d.seg||d.segment_id||JSON.stringify(d));
-  if(SHOWN[key])return;SHOWN[key]=1;
+  var d=defs[defs.length-1],key=(d.id||d.alert_id||d.at||d.seg||d.segment_id||JSON.stringify(d));if(SHOWN[key])return;SHOWN[key]=1;
   if(isFlat(d)){fillWave(d);showPop('ov-wave');}else{fillScratch(d);showPop('ov-scratch');}
 }
 function clearWork(){
   var g=document.getElementById('h-bsgrid');if(g)g.innerHTML='<div class="bsbtn" style="grid-column:1/-1;opacity:.6;cursor:default"><div class="meta3" style="font-size:18px;padding:14px">'+t('진행 중인 박스 없음','No active box')+'</div></div>';
   _T('eq-ten','—');_T('eq-tensub','● '+t('대기','Idle'));_H('eq-spd','—');_T('eq-cut',t('절단길이','Cut len')+' —');_T('eq-stack',t('대기','Idle'));
-  _H('h-flatchip','<span class="d"></span><span class="ko">평탄도</span><span class="en">Flatness</span> —');
-  _H('h-scratchchip','<span class="d"></span><span class="ko">흠집</span><span class="en">Scratch</span> —');
+  _H('h-flatchip','<span class="d"></span><span class="ko">평탄도</span><span class="en">Flatness</span> —');_H('h-scratchchip','<span class="d"></span><span class="ko">흠집</span><span class="en">Scratch</span> —');
   var gd=document.getElementById('h-guide');if(gd){gd.className='nfg';_H('h-guide',t('라인 대기 중 — 작업을 선택해 시작하세요','Line idle — pick a job to start'));}
   _T('t-now',t('대기','Idle'));_T('m-cycle','—');_T('m-pos','—');_T('m-ppm','—');
 }
@@ -629,37 +620,42 @@ function setIdle(){
   var v=document.getElementById('h-verdict');if(v){v.textContent='● '+t('대기 Idle','Idle');v.className='verdict';}
   _T('h-prog1','—');var pf=document.getElementById('h-progfill');if(pf)pf.style.width='0%';
   _H('h-prog2','<span class="ko">진행 중인 작업이 없습니다</span><span class="en">No active job</span>');
-  clearWork();
+  _T('rc-note','· '+t('작업 중 같은 규격 추천 표시','rec shown during a job'));clearWork();
 }
-// ── 같은 규격(절단길이) 과거 평균 → 추천/최적값 + 정상범위 ──
-function loadRec(cut){
-  if(cut==null||Math.abs((RECCUT||-9999)-cut)<1)return; RECCUT=cut;
-  var lo=Math.round(cut-10),hi=Math.round(cut+10);
-  var sql="SELECT ROUND(AVG(SPEEDSET),1) ss,ROUND(AVG(ACCTM),1) acc,ROUND(AVG(DECTM),1) de,ROUND(AVG(SLOWLENSET)) slow,ROUND(AVG(INVERTERSPEEDCOEFF),1) coef,ROUND(AVG(INVERTERSPEEDPER),1) ld,ROUND(STD(INVERTERSPEEDPER),1) lsd,ROUND(AVG(CYCLETM),1) cyc,COUNT(*) n FROM LEVELING_DATA WHERE CUTLENSET BETWEEN "+lo+" AND "+hi+" AND RUN=1"+(ASOF?" AND TIMESTAMP<='"+ASOF+"'":"");
-  fetch(EXP+'?sql='+encodeURIComponent(sql),{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);})
-   .then(function(j){REC=pickRow(j);applyRec();if(LASTLOAD!=null)guide(LASTLOAD);}).catch(function(){});
+// ── 품질·규격 기반 추천 (leveling-rec: 같은 코일규격+절단길이, 불량코일 제외) ──
+function loadRec(coil,cut){
+  if(!coil||String(coil).length<5||/^0+$/.test(coil))return;
+  var key=coil+'|'+cut;if(RECKEY===key)return;RECKEY=key;
+  var u=RAPI+'?coil='+encodeURIComponent(coil)+(cut?'&cutlen='+Math.round(cut):'');
+  fetch(u,{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);})
+   .then(function(j){ if(j&&j.ok&&j.rec){ var r=j.rec; r.ss=+r.ss;r.acc=+r.acc;r.de=+r.de;r.slow=+r.slow;r.ld=+r.ld;r.lsd=+r.lsd;r.cl=+r.cl;r.clsd=+r.clsd; REC=r;RECMETA=j;applyRec();if(LASTLOAD!=null)guide(LASTLOAD);} else {_T('rc-note','· '+t('같은 규격 과거 데이터 없음','no same-spec history'));} })
+   .catch(function(){_T('rc-note','· '+t('추천 데이터 조회 실패','rec lookup failed'));});
 }
 function recLine(rcId,curId,val){
   var e=document.getElementById(rcId);if(!e)return;
   if(val==null||isNaN(val)){e.className='rc';e.textContent='추천 —';return;}
   var cur=parseFloat((document.getElementById(curId)||{}).textContent);var cls='rc',ar=' ✓';
   if(!isNaN(cur)){ if(val>cur*1.03){cls='rc up';ar=' ↑';} else if(val<cur*0.97){cls='rc dn';ar=' ↓';} }
-  e.className=cls;e.textContent='추천 '+val+ar;
+  e.className=cls;e.textContent='추천 '+(Math.round(val*10)/10)+ar;
 }
 function applyRec(){
   if(!REC||!REC.n){_T('rc-note','· '+t('같은 규격 과거 데이터 없음','no same-spec history'));return;}
-  _T('rc-note','· '+t('같은 절단길이 과거 '+REC.n+'행 평균 기준 추천','rec from '+REC.n+' past rows, same cut-len'));
+  var m=RECMETA||{};
+  var sp=m.cutMatched?t('규격+절단길이','spec+cut-len'):t('코일 규격','coil spec');
+  var q=(m.qualityMode&&m.qualityMode.indexOf('good')===0)?t('양품만','good-only'):t('전체','all');
+  _T('rc-note','· '+sp+' '+t('같은 작업','same jobs')+' '+(m.goodCount||'')+t('코일','coils')+'('+q+') '+t('기준','basis')+(m.excludedCount?' · '+t('불량','NG')+' '+m.excludedCount+t('코일 제외','coils excl.'):''));
   recLine('rc-speed','s-speed',REC.ss);recLine('rc-acc','s-acc',REC.acc);recLine('rc-dec','s-dec',REC.de);recLine('rc-slow','s-slow',REC.slow);
 }
-// ── 속도/부하 가이드 (같은 규격 평소 대비) ──
+// ── 속도/부하 가이드 (절단 구간 cruise 부하 대비) ──
 function guide(load){
   LASTLOAD=load;var g=document.getElementById('h-guide');if(!g)return;
-  if(!REC||!REC.n||REC.n<5||REC.ld==null){g.className='nfg';_H('h-guide','🤖 '+t('같은 규격 과거 데이터 수집 중 — 기본 범위로 모니터링','collecting same-spec history'));return;}
-  var base=REC.ld,sd=(REC.lsd&&REC.lsd>2)?REC.lsd:4,d=load-base,msg,cls='nfg';
+  var base=(REC&&REC.cl&&!isNaN(REC.cl))?REC.cl:null;
+  if(base==null){g.className='nfg';_H('h-guide','🤖 '+t('같은 규격 과거 데이터 수집 중 — 기본 범위로 모니터링','collecting same-spec history'));return;}
+  var sd=(REC.clsd&&REC.clsd>2)?REC.clsd:3,d=load-base,msg,cls='nfg';
   if(d<=-(sd+1)){cls='nfg gd-lo';msg=t('부하가 평소('+Math.round(base)+'%)보다 낮음 — 속도를 조금 높여도 됩니다','Load below usual ('+Math.round(base)+'%) — you may raise speed');}
   else if(d>=(sd+1)){cls='nfg gd-hi';msg=t('부하가 평소('+Math.round(base)+'%)보다 높음 — 속도를 조금 낮추세요','Load above usual ('+Math.round(base)+'%) — lower speed a little');}
   else{msg=t('지금 속도·부하 적정 (평소 '+Math.round(base)+'% 범위) — 설정 유지','Speed & load OK (usual ~'+Math.round(base)+'%) — keep settings');}
-  g.className=cls;_H('h-guide','🤖 '+msg+(REC.ss!=null?' <span style="opacity:.7">· '+t('추천 속도','rec speed')+' '+REC.ss+'</span>':''));
+  g.className=cls;_H('h-guide','🤖 '+msg+((REC&&REC.ss)?' <span style="opacity:.7">· '+t('추천 속도','rec speed')+' '+(Math.round(REC.ss*10)/10)+'</span>':''));
 }
 function render(st){
   if(!st||!st.ok){_H('h-foot','<span style="color:var(--bad)">PLC 응답 오류<br>샘플값 표시</span>');return;}
@@ -668,8 +664,8 @@ function render(st){
   _H('h-foot','<span class="ko">'+now+' 기준<br>'+(online?'PLC 연결 정상':'PLC 대기')+'<br>15초 갱신</span><span class="en">'+now+'<br>'+(online?'PLC live':'PLC idle')+'<br>updates 15s</span>');
   _T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
   _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
-  if(m.cut!=null)loadRec(m.cut); else applyRec();
   if(!lv||!job){setIdle();_T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%');handleDefects(defs);return;}
+  loadRec(job.coil,m.cut);
   _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · 코일 '+(job.coil||'')+' · 시작 '+(job.st||''));
   var totB=(job.planBoxes&&job.planBoxes.length)||(job.boxes&&job.boxes.length)||'';
   _T('h-box','박스 '+(lv.box||'')+' / '+totB);
