@@ -287,6 +287,53 @@
   .pdt td.r,.pdt th.r{text-align:right}
   #h-pasttbody tr{cursor:pointer}
   #h-pasttbody tr:hover{background:#f4f7fd}
+
+  /* 지난 작업 — 슬리터2 스타일 */
+  #v-past.on{gap:11px}
+  .ph2{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .ph2 h2{margin:0;font-size:28px;font-weight:900;color:var(--navy)}
+  .ph2 .phsub{font-size:16px;color:var(--mut);font-weight:800}
+  .kp{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+  .kp .k{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:13px 18px}
+  .kp .k span{font-size:16px;color:var(--sec);font-weight:800}
+  .kp .k b{display:block;font-size:38px;font-weight:900;line-height:1.1;font-variant-numeric:tabular-nums;font-family:'IBM Plex Mono',monospace;margin-top:2px}
+  .kp .k small{font-size:14px;color:var(--mut);font-weight:800}
+  .kp .k.warn{background:var(--badbg);border-color:#f0bdb3}.kp .k.warn b{color:var(--bad)}
+  .kp .k.okk{background:var(--okbg);border-color:var(--okln)}.kp .k.okk b{color:var(--ok)}
+  .ptw{border:2px solid var(--line);border-radius:16px;overflow:hidden;background:#fff}
+  .ptt{width:100%;border-collapse:collapse;font-size:19px}
+  .ptt th{font-size:15px;color:var(--mut);font-weight:800;text-align:left;padding:12px 16px;background:var(--soft);border-bottom:2px solid var(--line)}
+  .ptt td{padding:0 16px;height:60px;font-weight:800;color:var(--ink);border-bottom:1px solid #eef1f7}
+  .ptt tr:last-child td{border-bottom:none}
+  .ptt td.r,.ptt th.r{text-align:right}
+  .ptt .go{cursor:pointer}.ptt .go:hover td{background:#f4f7fd}
+  .ptt .cn{font-weight:900;font-family:'IBM Plex Mono',monospace}
+  .pill{display:inline-block;font-size:16px;font-weight:900;padding:5px 14px;border-radius:99px;white-space:nowrap}
+  .p-ok{background:var(--okbg);color:var(--ok)}.p-bd{background:var(--badbg);color:var(--bad)}.p-wn{background:#fdf3e6;color:#b06a12}
+  .chev2{color:var(--blue);font-size:24px;font-weight:900;text-align:right}
+
+  /* 지난 작업 상세 — 확장 섹션 */
+  .pdsec{margin-bottom:16px}
+  .pdsec h4{font-size:18px;font-weight:900;color:var(--navy);margin:0 0 9px;display:flex;align-items:center;gap:8px}
+  .pdsec h4 small{font-size:13px;color:var(--mut);font-weight:800}
+  .pdinfo{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+  .pdinfo>div{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:9px 13px}
+  .pdinfo span{display:block;font-size:13px;color:var(--mut);font-weight:800}
+  .pdinfo b{font-size:19px;font-weight:900;color:var(--ink)}
+  .pdgantt{display:flex;height:26px;border-radius:8px;overflow:hidden;border:1px solid var(--line)}
+  .pdgantt i{display:block;height:100%}
+  .pdgleg{display:flex;gap:16px;flex-wrap:wrap;margin-top:7px;font-size:14px;font-weight:800;color:var(--sec)}
+  .pdgleg i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+  .pdflags{display:flex;flex-direction:column;gap:7px}
+  .pdflag{display:flex;align-items:center;gap:10px;border-radius:11px;padding:10px 14px;font-size:16px;font-weight:800}
+  .pdflag.w{background:var(--badbg);color:#9a2a1b}.pdflag.i{background:var(--soft);color:var(--sec)}.pdflag.ok{background:var(--okbg);color:#167a43}
+  .pdflag .fi{font-size:20px}
+  .pdten{display:flex;align-items:flex-end;gap:4px;height:70px;background:var(--soft);border-radius:11px;padding:9px 11px}
+  .pdten .tb{flex:1;background:var(--blue);border-radius:3px 3px 0 0;min-height:3px}
+  .pdcmp{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+  .pdcmp>div{background:var(--soft);border:1px solid var(--line);border-radius:11px;padding:10px 13px;text-align:center}
+  .pdcmp b{display:block;font-size:22px;font-weight:900;font-family:'IBM Plex Mono',monospace}
+  .pdcmp span{font-size:13px;color:var(--mut);font-weight:800}
 </style>
 </head>
 <body>
@@ -514,22 +561,18 @@
 
 <!-- ================= 지난 작업 ================= -->
 <div class="view" id="v-past">
-  <div class="pastbar">
-    <span style="font-size:16px;font-weight:900;color:var(--sec)">지난 작업 Past jobs</span>
+  <div class="ph2">
+    <h2><span class="ko">지난 작업</span><span class="en">Past jobs</span></h2>
     <input type="date" id="past-date" class="pastdate" value="2026-11-12">
-    <span style="font-size:14px;color:var(--mut);font-weight:800;margin-left:6px"><span class="ko">날짜를 고르면 그날 작업을 봅니다</span><span class="en">Pick a date to see jobs</span></span>
+    <span class="phsub" id="past-sub"></span>
   </div>
-  <div class="ptable">
-    <table>
-      <thead><tr><th>시작 Start</th><th>코일 Coil</th><th>거래처 Customer</th><th>규격 Spec</th><th class="r">장수 Sheets</th><th class="r">박스 Box</th><th>품질 Quality</th></tr></thead>
-      <tbody id="h-pasttbody">
-        <tr><td>09:12</td><td style="font-weight:900">BA6AA1290</td><td>신진스틸</td><td>4.00×2438</td><td class="r">366</td><td class="r">4</td><td><span class="tg2 bad">웨이브 1 · 흠집 2</span></td></tr>
-        <tr><td>11:34</td><td style="font-weight:900">FG3UQAB</td><td>태경스틸</td><td>1.55×4자</td><td class="r">322</td><td class="r">4</td><td><span class="tg2 ok">양호 OK</span></td></tr>
-        <tr><td>14:05</td><td style="font-weight:900">2632500711</td><td>대한강재</td><td>0.45×4XC</td><td class="r">188</td><td class="r">3</td><td><span class="tg2 bad">웨이브 1</span></td></tr>
-      </tbody>
+  <div class="kp s4" id="past-kpi"><div class="k"><span>작업</span><b>3</b><small>코일</small></div><div class="k"><span>총 장수</span><b>876</b><small>장</small></div><div class="k"><span>총 길이</span><b>1,777</b><small>m</small></div><div class="k warn"><span>품질</span><b>2</b><small>불량 코일</small></div></div>
+  <div class="ptw">
+    <table class="ptt">
+      <thead><tr><th>#</th><th><span class="ko">코일</span><span class="en">Coil</span></th><th><span class="ko">거래처</span><span class="en">Customer</span></th><th><span class="ko">규격</span><span class="en">Spec</span></th><th class="r"><span class="ko">장수</span><span class="en">Sheets</span></th><th class="r"><span class="ko">박스</span><span class="en">Box</span></th><th><span class="ko">품질</span><span class="en">Quality</span></th><th><span class="ko">시간</span><span class="en">Time</span></th><th></th></tr></thead>
+      <tbody id="h-pasttbody"><tr class="go"><td>1</td><td class="cn">BA6AA1290</td><td>(주)신진스틸</td><td>4.00X2438</td><td class="r">366</td><td class="r">2</td><td><span class="pill p-bd">불량 3</span></td><td>09:12~11:47</td><td class="chev2">›</td></tr><tr class="go"><td>2</td><td class="cn">FG3UQAB</td><td>태경스틸</td><td>1.55X4XC</td><td class="r">322</td><td class="r">1</td><td><span class="pill p-ok">양호</span></td><td>11:34~14:05</td><td class="chev2">›</td></tr><tr class="go"><td>3</td><td class="cn">2632500711</td><td>대한강재</td><td>0.45X4XC</td><td class="r">188</td><td class="r">1</td><td><span class="pill p-bd">불량 1</span></td><td>14:05~15:40</td><td class="chev2">›</td></tr></tbody>
     </table>
   </div>
-  <div style="font-size:14px;color:var(--mut);font-weight:800;text-align:center"><span class="ko">행을 누르면 그 코일의 박스별 상세를 봅니다</span><span class="en">Tap a row for box-level detail</span></div>
 </div>
 
 </div>
@@ -577,9 +620,9 @@
 
 <!-- ===== 지난 작업 상세 (행 클릭) ===== -->
 <div class="ov" id="ov-past">
-  <div class="modal" style="width:880px">
+  <div class="modal" style="width:920px;max-height:92vh;display:flex;flex-direction:column">
     <div class="mtop" style="background:var(--navy)"><span class="ic">📋</span><div><div class="t" id="pd-title">지난 작업 상세</div><div class="s" id="pd-sub"></div></div><span class="x">✕</span></div>
-    <div class="mbody" id="pd-body"></div>
+    <div class="mbody" id="pd-body" style="overflow-y:auto"></div>
   </div>
 </div>
 
