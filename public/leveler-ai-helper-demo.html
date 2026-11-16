@@ -438,6 +438,22 @@
 .trend-idle{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:60px;color:#c3cede;background:#f8fafd;border-radius:14px;border:2px dashed var(--line)}
 .trend-idle .ti1{font-size:24px;font-weight:900;color:var(--sec)}
 .trend-idle .ti2{font-size:16px;font-weight:800;color:var(--mut)}
+
+/* 텐션 — 정보·시간 탭 + readout */
+.pdpane[data-pane="i"].on{overflow-y:auto}
+#ov-past .rg.ten b{color:#796cbf}
+#ov-past .tenbox{border:2px solid #d7cff0;border-radius:14px;padding:12px 14px;background:#faf9ff}
+#ov-past .tnums{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:10px}
+#ov-past .tnum{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:10px 8px;text-align:center}
+#ov-past .tnum b{display:block;font-size:26px;font-weight:900;font-family:'IBM Plex Mono',monospace;line-height:1.05}
+#ov-past .tnum span{font-size:14px;color:var(--mut);font-weight:800}
+#ov-past .tnum .sub{font-size:12px;color:#796cbf;font-weight:800;margin-top:2px}
+#ov-past .tnum.avg b{color:#796cbf}
+#ov-past .tchart{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:8px 10px}
+#ov-past .tbadge{font-size:14px;font-weight:900;border-radius:8px;padding:3px 10px;margin-left:6px}
+#ov-past .tbadge.ok{background:var(--okbg);color:#167a43}
+#ov-past .tbadge.warn{background:var(--warnbg);color:#9a5a10}
+#ov-past .tbadge.info{background:#f0edfa;color:#796cbf}
 </style>
 </head>
 <body>

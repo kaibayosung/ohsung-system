@@ -438,6 +438,22 @@
 .trend-idle{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:60px;color:#c3cede;background:#f8fafd;border-radius:14px;border:2px dashed var(--line)}
 .trend-idle .ti1{font-size:24px;font-weight:900;color:var(--sec)}
 .trend-idle .ti2{font-size:16px;font-weight:800;color:var(--mut)}
+
+/* 텐션 — 정보·시간 탭 + readout */
+.pdpane[data-pane="i"].on{overflow-y:auto}
+#ov-past .rg.ten b{color:#796cbf}
+#ov-past .tenbox{border:2px solid #d7cff0;border-radius:14px;padding:12px 14px;background:#faf9ff}
+#ov-past .tnums{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin-bottom:10px}
+#ov-past .tnum{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:10px 8px;text-align:center}
+#ov-past .tnum b{display:block;font-size:26px;font-weight:900;font-family:'IBM Plex Mono',monospace;line-height:1.05}
+#ov-past .tnum span{font-size:14px;color:var(--mut);font-weight:800}
+#ov-past .tnum .sub{font-size:12px;color:#796cbf;font-weight:800;margin-top:2px}
+#ov-past .tnum.avg b{color:#796cbf}
+#ov-past .tchart{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:8px 10px}
+#ov-past .tbadge{font-size:14px;font-weight:900;border-radius:8px;padding:3px 10px;margin-left:6px}
+#ov-past .tbadge.ok{background:var(--okbg);color:#167a43}
+#ov-past .tbadge.warn{background:var(--warnbg);color:#9a5a10}
+#ov-past .tbadge.info{background:#f0edfa;color:#796cbf}
 </style>
 </head>
 <body>
@@ -941,7 +957,7 @@ function showPastDetail(j){
    +'<div class="rg"><span>'+t('사이클','Cycle')+'</span><b id="j-cyc">—</b></div>'
    +'<div class="rg"><span>'+t('가/감속','Acc/Dec')+'</span><b id="j-accdec">—</b></div>'
    +'<div class="rg"><span>'+t('저속 구간','Slow')+'</span><b id="j-slow">—</b></div>'
-   +'<div class="rg"><span>'+t('누적 장수','Sheets')+'</span><b id="j-sh">—</b></div></div></div></div>';
+   +'<div class="rg ten"><span>'+t('텐션 실제','Tension')+'</span><b id="j-ten">—</b></div></div></div></div>';
   // ── pane S: 요약·박스 ──
   var ps='<div class="pdpane" data-pane="s">'
    +'<div class="pdsec"><h4>📊 '+t('요약','Summary')+'</h4><div class="pdsum">'
@@ -953,19 +969,19 @@ function showPastDetail(j){
    +'<div><b>'+_pn(j.tenAvg,'%')+'</b><span>'+t('텐션 평균','Tension')+'</span></div></div></div>';
   var rows=boxes.map(function(b){return '<tr><td style="font-weight:900">'+b.i+'</td><td class="r">'+_nf(b.len)+'</td><td class="r">'+_nf(b.plc)+(b.plan!=null?'/'+_nf(b.plan):'')+'</td><td class="r">'+_pn(b.ld,'%')+'</td><td class="r">'+_pn(b.cyc,'s')+'</td><td class="r">'+_pn(b.ss)+'</td><td class="r">'+_pn(b.acc)+'/'+_pn(b.dec)+'</td><td class="r">'+_pn(b.slow)+'</td><td class="r">'+_pn(b.min,t('분','m'))+'</td></tr>';}).join('');
   if(rows)ps+='<div class="pdsec"><h4>📦 '+t('박스별 상세','By box')+'</h4><table class="pdt"><thead><tr><th>'+t('박스','Box')+'</th><th class="r">'+t('절단','Cut')+'</th><th class="r">'+t('장수','Sheets')+'</th><th class="r">'+t('부하','Load')+'</th><th class="r">'+t('사이클','Cycle')+'</th><th class="r">'+t('속도','Speed')+'</th><th class="r">'+t('가/감속','Acc/Dec')+'</th><th class="r">'+t('저속','Slow')+'</th><th class="r">'+t('시간','Time')+'</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
-  ps+='</div>';
-  // ── pane I: 정보·시간 ──
-  var info=[[t('거래처','Customer'),j.cu||'—'],[t('규격','Spec'),j.specRaw||'—'],[t('두께×폭','Thk×W'),(j.thk||'—')+' × '+(j.wd||'—')+'mm'],
-   [t('중량','Weight'),_nf(j.kg)+' kg'],[t('시작~종료','Start~End'),(j.st||'')+'~'+(j.end||'')],[t('소요','Duration'),_pn(j.dur,t('분','m'))],
-   [t('가동','Running'),_pn(j.runMin,t('분','m'))],[t('정지','Stopped'),_pn(j.stopMin,t('분','m'))],[t('교체·세팅','Chg·Setup'),_pn((j.chg||0)+(j.setup||0),t('분','m'))]];
-  if(j.notes)info.push([t('작업내용','Note'),j.notes]);
-  var pi='<div class="pdpane" data-pane="i">'
-   +'<div class="pdsec"><h4>📋 '+t('작업 정보','Job info')+'</h4><div class="pdinfo">'+info.map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('')+'</div></div>';
   if(j.segs&&j.segs.length&&j.dur){var col={run:'#1f9d57',stop:'#cbd5e8',chg:'#2451a0',set:'#9db8f0'};
     var bars=j.segs.map(function(sg){var w=Math.max(0,(sg.b-sg.a))/j.dur*100;return '<i style="width:'+w+'%;background:'+(col[sg.k]||'#ccc')+'"></i>';}).join('');
     var sums={set:j.setup,run:j.runMin,stop:j.stopMin,chg:j.chg};
     var leg=[['set',t('세팅','Setup')],['run',t('가동','Running')],['stop',t('정지','Stopped')],['chg',t('교체','Change')]].map(function(c){return '<span><i style="background:'+col[c[0]]+'"></i>'+c[1]+' '+_pn(sums[c[0]],t('분','m'))+'</span>';}).join('');
-    pi+='<div class="pdsec"><h4>⏱ '+t('시간 구성','Time breakdown')+'</h4><div class="pdgantt">'+bars+'</div><div class="pdgleg">'+leg+'</div></div>';}
+    ps+='<div class="pdsec"><h4>⏱ '+t('시간 구성','Time breakdown')+'</h4><div class="pdgantt">'+bars+'</div><div class="pdgleg">'+leg+'</div></div>';}
+  ps+='</div>';
+  // ── pane I: 정보·시간 ──
+  var info=[[t('거래처','Customer'),j.cu||'—'],[t('규격','Spec'),j.specRaw||'—'],[t('두께×폭','Thk×W'),(j.thk||'—')+' × '+(j.wd||'—')+'mm'],
+   [t('중량','Weight'),_nf(j.kg)+' kg'],[t('시작~종료','Start~End'),(j.st||'')+'~'+(j.end||'')],[t('소요','Duration'),_pn(j.dur,t('분','m'))],
+   [t('작업내용','Note'),j.notes||'—']];
+  var pi='<div class="pdpane" data-pane="i">'
+   +'<div class="pdsec"><h4>📋 '+t('작업 정보','Job info')+'</h4><div class="pdinfo">'+info.map(function(r){return '<div><span>'+r[0]+'</span><b>'+r[1]+'</b></div>';}).join('')+'</div></div>';
+  pi+=tenBlock(j);
   pi+='</div>';
   // ── pane Q: 품질·텐션 ──
   var flags=(j.flags||[]);var fh=flags.map(function(f){var lv=(f.lv==='w'?'w':'i');return '<div class="pdflag '+lv+'"><span class="fi">'+(lv==='w'?'⚠️':'ℹ️')+'</span>'+flagText(f)+'</div>';}).join('');
@@ -1013,6 +1029,35 @@ function loadPast(date){
    }).catch(function(e){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--bad);padding:20px">'+t('조회 실패','Load failed')+' ('+e+')</td></tr>';});
 }
 var SNAPF=[['RUN','가동 RUN',''],['BOXIDX','박스 Box',''],['CUTLENSET','절단길이 Cut','mm'],['CUTLENCORR','보정 Corr','mm'],['SPEEDSET','속도설정 Speed',''],['INVERTERSPEEDPER','인버터 부하 Load','%'],['INVERTERSPEEDCOEFF','인버터 계수 Coeff',''],['CYCLETM','사이클 Cycle','s'],['MOVELENSV','행정 위치 Pos','mm'],['CUTSPEED','절단속도 CutSpd',''],['ACCTM','가속 Acc','s'],['DECTM','감속 Dec','s'],['SLOWLENSET','저속 Slow','mm'],['POS','POS','']];
+function tenMiniSVG(j){
+  var rd=(j.rd||[]).filter(function(r){return r.l!=null&&r.out!=null;}),L=Math.max(1,j.L||1);
+  var X0=48,X1=980,Y0=14,Y1=120;
+  function xOf(l){return X0+Math.min(1,l/L)*(X1-X0);}function yOf(v){return Y1-Math.max(0,Math.min(100,v))/100*(Y1-Y0);}
+  var h='<svg viewBox="0 0 1000 150" style="width:100%;height:auto" font-family="Pretendard">';
+  [0,50,100].forEach(function(v){h+='<line x1="'+X0+'" y1="'+yOf(v)+'" x2="'+X1+'" y2="'+yOf(v)+'" stroke="#eee8f8" stroke-width="1.5"/><text x="'+(X0-6)+'" y="'+(yOf(v)+4)+'" text-anchor="end" font-size="12" fill="#9c8fc9" font-weight="800">'+v+'</text>';});
+  h+='<polyline points="'+X0+','+yOf(99)+' '+X1+','+yOf(99)+'" fill="none" stroke="#796cbf" stroke-width="2" stroke-dasharray="7 6" opacity=".5"/><text x="'+(X1-6)+'" y="'+(yOf(99)-4)+'" text-anchor="end" font-size="11" font-weight="800" fill="#9c8fc9">'+t('설정','set')+'</text>';
+  var pts=rd.map(function(r){return xOf(r.l)+','+yOf(r.out);}).join(' ');
+  if(pts)h+='<polyline points="'+pts+'" fill="none" stroke="#796cbf" stroke-width="3.5"/>';
+  rd.forEach(function(r){h+='<circle cx="'+xOf(r.l)+'" cy="'+yOf(r.out)+'" r="3.5" fill="#796cbf"/>';});
+  [0,0.5,1].forEach(function(f){h+='<text x="'+xOf(L*f)+'" y="143" text-anchor="middle" font-size="12" fill="#8995ab" font-weight="800">'+Math.round(L*f)+'m</text>';});
+  return h+'</svg>';
+}
+function tenBlock(j){
+  var rd=j.rd||[];if(!(j.tenAvg!=null||rd.length))return '';
+  var first=j.tenFirst,last=j.tenLast,taper=(first!=null&&last!=null)?Math.round((first-last)*10)/10:null;
+  var gaps=(j.ocrGaps||[]).length,dia=(rd.length&&rd[rd.length-1].dia!=null)?rd[rd.length-1].dia:null;
+  var h='<div class="pdsec"><h4>🎛 '+t('텐션','Tension')+' <small>PR-DTC-3100 OCR</small>'
+   +(taper!=null?'<span class="tbadge ok">● '+t('테이퍼','Taper')+'</span>':'')
+   +(gaps?'<span class="tbadge warn">'+t('OCR 공백 ','OCR gap ')+gaps+t('구간','')+'</span>':'')
+   +(j.thkUm?'<span class="tbadge info">'+t('두께 ','Thk ')+_nf(j.thkUm)+'µm</span>':'')
+   +'</h4><div class="tenbox"><div class="tnums">'
+   +'<div class="tnum avg"><b>'+_pn(j.tenAvg,'%')+'</b><span>'+t('평균 출력','Avg out')+'</span></div>'
+   +'<div class="tnum"><b style="font-size:21px">'+(first!=null?Math.round(first):'—')+'→'+(last!=null?Math.round(last):'—')+'<small style="font-size:13px">%</small></b><span>'+t('시작 → 끝','Start→End')+'</span>'+(taper!=null?'<div class="sub">'+t('테이퍼 ↓ ','taper ↓ ')+taper+'%p</div>':'')+'</div>'
+   +'<div class="tnum"><b>'+(j.rdOk!=null?j.rdOk:rd.length)+'<small style="font-size:14px">'+t('건','')+'</small></b><span>'+t('OCR 판독','readings')+'</span>'+(j.tenDrops?'<div class="sub" style="color:#8995ab">'+t('하강 ','drops ')+j.tenDrops+t('회','')+'</div>':'')+'</div>'
+   +'<div class="tnum"><b>'+(dia!=null?_nf(dia):'—')+'<small style="font-size:13px">mm</small></b><span>'+t('잔여경(끝)','Core end')+'</span></div>'
+   +'</div>'+(rd.length?'<div class="tchart">'+tenMiniSVG(j)+'</div>':'<div style="font-size:15px;color:var(--mut);font-weight:800;padding:6px 2px">'+t('길이별 판독 데이터 없음','no per-length readings')+'</div>')+'</div></div>';
+  return h;
+}
 function buildJourney(j){
   var svg=document.getElementById('jchart'),sld=document.getElementById('jsld');if(!svg||!sld)return;
   var L=Math.max(1,j.L||1),X0=56,X1=1092,Y0=20,Y1=210,prof=j.prof||{x:[],ld:[],cyc:[]};
@@ -1025,6 +1070,7 @@ function buildJourney(j){
   function near(arr,m){if(!prof.x||!prof.x.length||!arr)return null;var bi=0;for(var k=0;k<prof.x.length;k++){if(Math.abs(prof.x[k]-m)<Math.abs(prof.x[bi]-m))bi=k;}return arr[bi];}
   function boxAt(m){for(var k=0;k<BR.length;k++){if(m>=BR[k].a&&m<=BR[k].b)return BR[k];}return BR[BR.length-1]||null;}
   function nearStop(m){var best=null;stops.forEach(function(s){if(Math.abs(s.l-m)<L/70){if(!best||s.min>best.min)best=s;}});return best;}
+  function nearRd(m){var rd=j.rd||[],best=null,bd=1e9;rd.forEach(function(r){if(r.l==null||r.out==null)return;var d=Math.abs(r.l-m);if(d<bd){bd=d;best=r.out;}});return bd<L/6?best:null;}
   function draw(){var h='';
     BR.forEach(function(r,i){h+='<rect x="'+xOf(r.a)+'" y="'+(Y1+8)+'" width="'+Math.max(0,xOf(r.b)-xOf(r.a))+'" height="28" fill="'+bc[i%4]+'"/><text x="'+((xOf(r.a)+xOf(r.b))/2)+'" y="'+(Y1+27)+'" text-anchor="middle" font-size="14" font-weight="900" fill="#3a4a66">'+t('박스','Box')+r.n+'</text>';});
     [0,20,40,60].forEach(function(v){h+='<line x1="'+X0+'" y1="'+yOf(v)+'" x2="'+X1+'" y2="'+yOf(v)+'" stroke="#eef1f7" stroke-width="1.5"/><text x="'+(X0-8)+'" y="'+(yOf(v)+5)+'" text-anchor="end" font-size="13" fill="#8995ab" font-weight="800">'+v+'</text>';});
@@ -1045,7 +1091,7 @@ function buildJourney(j){
     _H('j-load',(st?2:Math.round((near(prof.ld,m)!=null?near(prof.ld,m):bx.ld)||0))+'<small>%</small>');
     _H('j-cyc',_pn(near(prof.cyc,m)!=null?near(prof.cyc,m):bx.cyc)+'<small>s</small>');
     _T('j-accdec',_pn(bx.acc)+' / '+_pn(bx.dec));_H('j-slow',_nf(bx.slow)+'<small>mm</small>');
-    _T('j-sh',_nf(Math.round(m/L*(j.sPlc||0))));}
+    var rr=nearRd(m);_H('j-ten',rr!=null?Math.round(rr)+'<small>%</small>':'—');}
   draw();upd(+sld.value);sld.addEventListener('input',function(){upd(+sld.value);});
 }
 function trendIdle(on){var sv=document.getElementById('trend-svg'),tb=document.getElementById('trend-tabs'),id=document.getElementById('trend-idle');if(sv)sv.style.display=on?'none':'';if(tb)tb.style.display=on?'none':'';if(id)id.style.display=on?'':'none';}
