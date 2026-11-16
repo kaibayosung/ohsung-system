@@ -43,6 +43,10 @@
     {
       "source": "/leveling-quality-tablet",
       "destination": "/leveling-coil-quality-tablet.html"
+    },
+    {
+      "source": "/slitter2-quality-tablet",
+      "destination": "/slitter2-quality-tablet.html"
     }
   ]
 }

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>슬리터2 품질검사 · 현장 태블릿</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{--ink:#0f1e33;--sec:#51607a;--mut:#8a93a6;--line:#e2e7f0;--bg:#eef1f8;--card:#fff;
+ --pre:#2451a0;--post:#0e8f8a;--field:#0ea5a0;
+ --ok:#1f9d57;--okbg:#e9f8f0;--okln:#b3e3c7;--warn:#e07b1a;--warnbg:#fdf5ea;--warnln:#f3d6ab;--bad:#d5331f;--badbg:#fdeeeb;--badln:#f0bdb3;--navy:#1a3a6b}
+*{margin:0;padding:0;box-sizing:border-box;font-family:Pretendard,system-ui,-apple-system,sans-serif;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--ink);font-weight:700;overflow:hidden}
+.app{height:100%;display:flex;flex-direction:column}
+.bar{flex:0 0 auto;background:#fff;border-bottom:2px solid var(--line);display:flex;align-items:center;gap:12px;padding:9px 16px}
+.bar .brand{font-size:21px;font-weight:900;color:var(--navy);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.bar .crumb{font-size:16px;font-weight:800;color:var(--mut);min-width:0;overflow:hidden}
+.bar .crumb b{color:var(--ink)}
+.bar .sp{flex:1}
+.datenav{display:flex;align-items:center;gap:6px}
+.datenav button{font-size:20px;font-weight:900;color:var(--navy);background:#eef1fb;border:2px solid #d8def0;border-radius:11px;width:44px;height:44px;cursor:pointer}
+.datenav .d{font-size:18px;font-weight:900;color:var(--ink);min-width:118px;text-align:center}
+.bar .back{font-size:18px;font-weight:900;color:var(--navy);background:#eef1fb;border:2px solid #d8def0;border-radius:11px;padding:9px 16px;cursor:pointer}
+.view{flex:1;min-height:0;display:none;flex-direction:column}
+.view.on{display:flex}
+.summary{flex:0 0 auto;display:flex;gap:10px;padding:11px 16px 4px}
+.sm{flex:1;background:#fff;border:2px solid var(--line);border-radius:14px;padding:9px 15px;display:flex;align-items:center;gap:12px}
+.sm .n{font-size:34px;font-weight:900;line-height:1}
+.sm .l{font-size:15px;font-weight:800;color:var(--mut);line-height:1.25}
+.sm.bad{border-color:var(--badln);background:var(--badbg)} .sm.bad .n{color:var(--bad)}
+.sm.ok .n{color:var(--ok)} .sm.warn .n{color:var(--warn)}
+.cards{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(248px,1fr));gap:13px;padding:13px 16px 18px;align-content:start}
+.coilcard{background:#fff;border:3px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:7px;cursor:pointer;position:relative;min-height:162px}
+.coilcard:active{transform:scale(.985)}
+.coilcard.ok{border-color:var(--okln)} .coilcard.warn{border-color:var(--warnln)} .coilcard.bad{border-color:var(--badln)}
+.coilcard .lamp{display:flex;align-items:center;gap:9px}
+.coilcard .dot{width:22px;height:22px;border-radius:50%;flex:0 0 auto}
+.coilcard .verd{font-size:27px;font-weight:900;line-height:1}
+.coilcard.ok .dot{background:var(--ok)} .coilcard.ok .verd{color:var(--ok)}
+.coilcard.warn .dot{background:var(--warn)} .coilcard.warn .verd{color:var(--warn)}
+.coilcard.bad .dot{background:var(--bad)} .coilcard.bad .verd{color:var(--bad)}
+.coilcard .cn{font-size:21px;font-weight:900;letter-spacing:-.3px;line-height:1.1;margin-top:2px;word-break:break-all}
+.coilcard .cmeta{font-size:14px;font-weight:800;color:var(--mut);line-height:1.35}
+.coilcard .cstat{margin-top:auto;display:flex;gap:7px;flex-wrap:wrap;padding-top:6px}
+.chip{font-size:14px;font-weight:900;border-radius:9px;padding:5px 11px;background:#f1f4fa;color:var(--sec)}
+.chip.hot{background:var(--badbg);color:var(--bad)} .chip.un{background:#fff4e6;color:#b4690e}
+.stt{position:absolute;top:-1px;right:-1px;color:#fff;font-size:13px;font-weight:900;border-radius:0 15px 0 14px;padding:5px 12px}
+.stt.run{background:#2451a0} .stt.done{background:#1f7a4d} .stt.rdy{background:#8a93a6}
+/* 상세 */
+.detail{flex:1;min-height:0;display:flex;flex-direction:column;padding:11px 14px 12px;gap:10px;overflow:hidden}
+.banner{flex:0 0 auto;display:flex;align-items:stretch;gap:12px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:11px 16px}
+.banner .verdbox{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:13px;padding:7px 18px;min-width:120px}
+.banner .verdbox .big{font-size:33px;font-weight:900;line-height:1} .banner .verdbox .sm2{font-size:14px;font-weight:800;margin-top:2px}
+.banner.ok .verdbox{background:var(--okbg);color:var(--ok)} .banner.warn .verdbox{background:var(--warnbg);color:var(--warn)} .banner.bad .verdbox{background:var(--badbg);color:var(--bad)}
+.banner .info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
+.banner .info .t{font-size:24px;font-weight:900;letter-spacing:-.4px;line-height:1.05;word-break:break-all}
+.banner .info .s{font-size:16px;font-weight:800;color:var(--sec)}
+.banner .kpis{display:flex;gap:9px;align-items:center}
+.kpi{text-align:center;background:#f7f9fc;border:1.5px solid var(--line);border-radius:12px;padding:6px 14px;min-width:76px}
+.kpi .n{font-size:26px;font-weight:900;line-height:1} .kpi .l{font-size:13px;font-weight:800;color:var(--mut)}
+.kpi.hot{background:var(--badbg);border-color:var(--badln)} .kpi.hot .n{color:var(--bad)}
+.kpi.un{background:#fff4e6;border-color:#f3d6ab} .kpi.un .n{color:#b4690e}
+.dmain{flex:1;min-height:0;display:flex;gap:11px}
+.mapcol{flex:1.55;min-width:0;background:#fff;border:2px solid var(--line);border-radius:16px;padding:10px 14px 6px;display:flex;flex-direction:column}
+.mapcol h3{font-size:17px;font-weight:900;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mapcol .hint{font-size:13px;font-weight:800;color:var(--mut);margin:2px 0 4px}
+.mapwrap{flex:1;min-height:0;display:flex;align-items:center}
+.mapwrap svg{width:100%;height:auto;max-height:100%}
+.leg{display:flex;gap:11px;flex-wrap:wrap;font-size:12.5px;font-weight:800;color:var(--sec);padding:4px 2px 2px}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:4px}
+.sumcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:9px;overflow-y:auto}
+.typetile{flex:0 0 auto;border:2px solid var(--line);border-radius:14px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:13px;background:#fff}
+.typetile:active{transform:scale(.99)}
+.typetile .sw{width:16px;height:30px;border-radius:5px;flex:0 0 auto}
+.typetile .nm{font-size:19px;font-weight:900;flex:1;min-width:0}
+.typetile .ct{font-size:26px;font-weight:900}
+.typetile .ct small{font-size:14px;color:var(--mut)}
+.actbar{flex:0 0 auto;display:flex;gap:10px}
+.act{flex:1;text-align:center;background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px 8px;font-size:18px;font-weight:900;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.act:active{background:#f1f4fa}
+.act .bdg{font-size:13px;font-weight:900;color:#fff;background:var(--navy);border-radius:8px;padding:2px 8px}
+.act .bdg.un{background:#b4690e}
+/* Drawer */
+.scrim{position:fixed;inset:0;background:rgba(10,18,32,.5);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(580px,88%);background:var(--bg);box-shadow:-18px 0 50px rgba(0,0,0,.3);transform:translateX(100%);transition:.26s cubic-bezier(.3,.7,.3,1);z-index:41;display:flex;flex-direction:column}
+.drawer.on{transform:translateX(0)}
+.dtop{flex:0 0 auto;background:var(--navy);color:#fff;display:flex;align-items:center;gap:12px;padding:13px 18px}
+.dtop .x{margin-left:auto;font-size:26px;font-weight:900;cursor:pointer;line-height:1;width:40px;height:40px;display:flex;align-items:center;justify-content:center;border-radius:11px;background:rgba(255,255,255,.14)}
+.dtop .dt{font-size:22px;font-weight:900}
+.dbody{flex:1;min-height:0;overflow-y:auto;padding:16px 18px 26px}
+.dh{font-size:25px;font-weight:900;line-height:1.1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.dsub{font-size:17px;font-weight:800;color:var(--sec);margin-top:4px}
+.tbadge{display:inline-block;color:#fff;font-size:16px;font-weight:900;border-radius:9px;padding:4px 13px}
+.segtoggle{display:flex;gap:8px;margin-top:14px}
+.segtoggle button{flex:1;font-size:16px;font-weight:900;border:2px solid var(--line);background:#fff;color:var(--sec);border-radius:11px;padding:10px;cursor:pointer}
+.segtoggle button.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.dimg{width:100%;border-radius:14px;margin-top:12px;background:#11151e;display:block;min-height:200px}
+.dimg-ph{min-height:200px;display:flex;align-items:center;justify-content:center;color:#9fb0c9;font-size:17px;font-weight:800}
+.playbtn{display:block;width:100%;margin-top:12px;background:var(--navy);color:#fff;border:none;border-radius:13px;padding:15px;font-size:18px;font-weight:900;cursor:pointer;text-align:center;text-decoration:none}
+.playbtn.g{background:#eef1fb;color:var(--navy);border:2px solid #d8def0}
+.sect{font-size:16px;font-weight:900;color:var(--sec);margin:18px 0 8px}
+.optiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.opt{background:#fff;border:2px solid var(--line);border-radius:12px;padding:9px 12px}
+.opt.hot{border-color:var(--badln);background:var(--badbg)}
+.opt .k{font-size:13px;font-weight:800;color:var(--mut)}
+.opt .v{font-size:21px;font-weight:900;margin-top:1px;word-break:break-all}
+.opt.hot .v{color:var(--bad)}
+.opt .u{font-size:13px;font-weight:800;color:var(--mut)}
+/* 결함 목록 drawer */
+.dlist{display:flex;flex-direction:column;gap:10px}
+.dcard{display:flex;gap:13px;background:#fff;border:2px solid var(--line);border-radius:14px;padding:11px;cursor:pointer;align-items:center}
+.dcard.sel{border-color:var(--navy);box-shadow:0 0 0 2px rgba(26,58,107,.15)}
+.dthumb{width:96px;height:74px;border-radius:10px;overflow:hidden;background:#11151e;flex:0 0 auto;display:flex;align-items:center;justify-content:center}
+.dthumb img{width:100%;height:100%;object-fit:cover}
+.dmeta{flex:1;min-width:0}
+.dmeta .tp{display:inline-block;color:#fff;font-size:15px;font-weight:900;border-radius:8px;padding:3px 10px}
+.dmeta .ms{font-size:14px;font-weight:800;color:var(--mut);margin-top:4px}
+.dmeta .pos{font-size:19px;font-weight:900;margin-top:2px}
+.rev{font-size:14px;font-weight:900;border-radius:8px;padding:3px 10px;flex:0 0 auto}
+.rev.un{background:#fff4e6;color:#b4690e} .rev.ok{background:#e9f8f0;color:#167a43}
+.vrow{display:flex;flex-direction:column;gap:9px}
+.vlink{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid var(--line);border-radius:12px;padding:12px 14px;font-size:16px;font-weight:900;color:var(--navy);text-decoration:none}
+.vlink .cam{color:var(--ink)} .vlink .meta{margin-left:auto;font-size:13px;font-weight:800;color:var(--mut)}
+.vnone{color:var(--mut);font-size:16px;font-weight:800;padding:14px 0}
+/* 라이트박스 */
+.lb{position:fixed;inset:0;background:rgba(5,9,16,.92);z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;padding:18px}
+.lb.on{display:flex}
+.lb .lbtop{position:absolute;top:14px;left:18px;right:18px;display:flex;align-items:center;gap:12px;color:#fff}
+.lb .lbtop .x{margin-left:auto;font-size:30px;cursor:pointer}
+.lb img{max-width:96%;max-height:80%;border-radius:10px}
+.lb .lbtg{position:absolute;bottom:20px;display:flex;gap:10px}
+.lb .lbtg button{font-size:16px;font-weight:900;border:2px solid #44506a;background:#1a2230;color:#cdd8ec;border-radius:11px;padding:10px 18px;cursor:pointer}
+.lb .lbtg button.on{background:#2451a0;border-color:#2451a0;color:#fff}
+.center{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:var(--mut);font-size:19px;font-weight:800;text-align:center;padding:24px}
+.spin{width:44px;height:44px;border:5px solid #dfe4ee;border-top-color:var(--navy);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.btn-sm{font-size:16px;font-weight:900;color:var(--navy);background:#eef1fb;border:2px solid #d8def0;border-radius:11px;padding:10px 18px;cursor:pointer}
+</style></head>
+<body>
+<div class="app">
+  <div class="bar">
+    <div class="brand">🔎 슬리터2 품질</div>
+    <div class="crumb" id="crumb"></div>
+    <div class="sp"></div>
+    <div class="datenav" id="datenav"><button onclick="moveDate(-1)">‹</button><div class="d" id="dvDate">—</div><button onclick="moveDate(1)">›</button></div>
+    <div class="back" id="backBtn" style="display:none" onclick="show('vList')">← 목록</div>
+  </div>
+  <div class="view on" id="vList">
+    <div class="summary" id="summary"></div>
+    <div class="cards" id="cards"></div>
+  </div>
+  <div class="view" id="vCoil"><div id="detailBody" style="flex:1;min-height:0;display:flex;flex-direction:column"></div></div>
+</div>
+
+<div class="scrim" id="scrim" onclick="closeD()"></div>
+<div class="drawer" id="drawer"><div class="dtop"><div class="dt" id="dTitle">상세</div><div class="x" onclick="closeD()">✕</div></div><div class="dbody" id="dBody"></div></div>
+
+<div class="lb" id="lb">
+  <div class="lbtop"><div id="lbTitle" style="font-size:20px;font-weight:900"></div><div style="font-size:15px;color:#aeb6c4" id="lbInfo"></div><div class="x" onclick="closeLB()">✕</div></div>
+  <div id="lbImg"></div>
+  <div class="lbtg" id="lbtg"></div>
+</div>
+
+<script>
+var API="https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/vims";
+var COLORS={"스크래치":"#CC3F31","가로스크레치":"#09A4DB","찌그러짐":"#878DEE","우글우글":"#F5AE52","에지웨이브":"#F5AE52","burr":"#E8A33D","버":"#E8A33D","아연도금벗겨짐":"#B0884E","OK":"#1DDB16"};
+function colorFallback(t){if(!t)return"#7d8ba1";for(var k in COLORS){if(t.indexOf(k)>=0)return COLORS[k];}return"#7d8ba1";}
+function kstDate(off){var n=new Date(Date.now()+9*3600000);n.setUTCDate(n.getUTCDate()+(off||0));return n.toISOString().slice(0,10);}
+function kstDateStr(s,off){var d=new Date(s+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+off);return d.toISOString().slice(0,10);}
+function kstTime(ms){if(!ms)return"—";return new Date(Number(ms)+9*3600000).toISOString().slice(11,19);}
+function kstHM(ms){return kstTime(ms).slice(0,5);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');}
+function typeOf(r){if(r.class_name&&r.class_name!=='iad')return r.class_name;var m=(r.image_path||"").match(/NG_([^_.]+)\./);return m?m[1]:(r.is_ng?"불량":"OK");}
+function colorOf(r){return r.class_color||colorFallback(typeOf(r));}
+function imgSrc(r,heat){var u=heat?r.heatmap_url:r.image_url;return u?(API+u):"";}
+function vidSrc(r){return r.video_url?(API+r.video_url):"";}
+function wTxt(kg){return kg!=null?Number(kg).toLocaleString()+'kg':'—';}
+function isPre(r){return String(r.camera_name||'').indexOf('이전')>=0;}
+function chanOf(name){var m=String(name||'').match(/슬리팅 이[전후] *- *\d/);return m?m[0]:(name||'영상');}
+
+var S={date:kstDate(0),coil:null,coils:null,defs:[],videos:[],sel:0};
+function show(v){document.getElementById('vList').classList.toggle('on',v==='vList');document.getElementById('vCoil').classList.toggle('on',v==='vCoil');
+  document.getElementById('backBtn').style.display=(v==='vCoil')?'block':'none';
+  document.getElementById('datenav').style.display=(v==='vList')?'flex':'none';
+  document.getElementById('crumb').innerHTML=(v==='vCoil')?'<b>'+(S.coil||'')+'</b>':'';}
+function moveDate(off){S.date=kstDateStr(S.date,off);loadCoils();}
+
+/* 판정: 슬리터2 표면 결함 — 결함 수 기준 */
+function verdict(ng){if(!ng)return{k:'ok',label:'양호'};if(ng>=5)return{k:'bad',label:'불량'};return{k:'warn',label:'주의'};}
+function statusCls(s){if(!s)return'rdy';if(s.indexOf('완료')>=0)return'done';if(s.indexOf('진행')>=0)return'run';return'rdy';}
+function statusRank(s){s=s||'';if(s.indexOf('완료')>=0)return 3;if(s.indexOf('진행')>=0)return 2;if(s.indexOf('준비')>=0)return 1;return 0;}
+function dedupeCoils(coils){var by={};coils.forEach(function(c){var k=c.coil||'';if(!by[k]||statusRank(c.status)>statusRank(by[k].status))by[k]=c;});return Object.keys(by).map(function(k){return by[k];});}
+
+/* ===== 목록 ===== */
+function loadCoils(){
+  document.getElementById('dvDate').textContent=S.date;show('vList');
+  document.getElementById('summary').innerHTML='';
+  document.getElementById('cards').innerHTML='<div class="center"><div class="spin"></div><div>작업 목록 불러오는 중…</div></div>';
+  fetch(API+'?mode=worklist&date='+S.date).then(function(r){return r.json()}).then(function(d){
+    var coils=dedupeCoils((d&&d.coils)||[]);S.coils=coils;
+    if(!coils.length){document.getElementById('cards').innerHTML='<div class="center">이 날짜에 슬리터2 작업지시가 없습니다.<br>◀ ▶ 로 다른 날짜를 조회하세요.</div>';return;}
+    var nBad=0,nWarn=0,nOk=0,tNg=0,tUn=0;
+    coils.forEach(function(c){var v=verdict(c.ng||0);if(v.k==='bad')nBad++;else if(v.k==='warn')nWarn++;else nOk++;tNg+=c.ng||0;tUn+=c.unreviewed||0;});
+    var okRate=Math.round(nOk/coils.length*100);
+    document.getElementById('summary').innerHTML=
+       sm('',coils.length,'작업 코일')+sm(tNg?'bad':'ok',tNg,'총 결함')
+      +sm(tUn?'warn':'ok',tUn,'미확인')+sm(okRate>=70?'ok':okRate>=40?'warn':'bad',okRate+'%','양품률');
+    document.getElementById('cards').innerHTML=coils.map(function(c,i){var v=verdict(c.ng||0);var scl=statusCls(c.status);
+      return '<div class="coilcard '+v.k+'" onclick="openDetail('+i+')">'
+        +'<span class="stt '+scl+'">'+esc(c.status||'준비')+'</span>'
+        +'<div class="lamp"><span class="dot"></span><span class="verd">'+v.label+'</span></div>'
+        +'<div class="cn">'+esc(c.coil||'')+'</div>'
+        +'<div class="cmeta">'+esc(c.company||'슬리터2 가공')+'<br>'+esc(c.spec||'—')+(c.oweight?' · '+wTxt(c.oweight):'')+'</div>'
+        +'<div class="cstat"><span class="chip'+((c.ng||0)>0?' hot':'')+'">결함 '+(c.ng||0)+'건</span>'
+        +((c.unreviewed||0)>0?'<span class="chip un">미확인 '+c.unreviewed+'</span>':'')+'</div></div>';
+    }).join('');
+  }).catch(function(e){document.getElementById('cards').innerHTML='<div class="center">불러오지 못했습니다.<br>네트워크를 확인하고 날짜를 다시 선택해 주세요.</div>';});
+}
+function sm(k,n,l){return '<div class="sm '+k+'"><div class="n">'+n+'</div><div class="l">'+l+'</div></div>';}
+
+/* ===== 상세 ===== */
+function openDetail(i){
+  var c=S.coils[i];S.coil=c.coil;S.cinfo=c;show('vCoil');
+  document.getElementById('detailBody').innerHTML='<div class="center"><div class="spin"></div><div>코일 검사결과 불러오는 중…</div></div>';
+  fetch(API+'?mode=coil&key='+encodeURIComponent(c.coil)+'&ng=1&date='+S.date).then(function(r){return r.json()}).then(function(d){
+    S.defs=(d&&d.results)||[];
+    renderCoil();
+    // 전체 영상(채널별 병합본)
+    fetch(API+'?mode=coilvideos&coil='+encodeURIComponent(c.coil)).then(function(r){return r.json()}).then(function(d2){S.videos=(d2&&d2.videos)||[];}).catch(function(){S.videos=[];});
+  }).catch(function(e){document.getElementById('detailBody').innerHTML='<div class="center">검사결과를 불러오지 못했습니다.<br><button class="btn-sm" onclick="show(\'vList\')">목록으로</button></div>';});
+}
+function renderCoil(){
+  var c=S.cinfo,defs=S.defs;var ng=defs.length;var v=verdict(ng);
+  var un=defs.filter(function(r){return r.review_status==='UNREVIEWED';}).length;
+  var cams={};defs.forEach(function(r){cams[r.camera_id]=1;});
+  var ts=ng?defs[0].inspection_time:0,te=ng?defs[ng-1].inspection_time:0;
+  var h='<div class="detail">';
+  h+='<div class="banner '+v.k+'">'
+    +'<div class="verdbox"><div class="big">'+v.label+'</div><div class="sm2">종합 판정</div></div>'
+    +'<div class="info"><div class="t">'+esc(c.coil)+'</div><div class="s">'+esc(c.company||'슬리터2 가공')+' · '+esc(c.spec||'')+(c.oweight?' · '+wTxt(c.oweight):'')+' · '+(ng?(kstHM(ts)+'~'+kstHM(te)):'—')+'</div></div>'
+    +'<div class="kpis">'+kpi(ng,'총 결함',ng>0)+kpi(un,'미확인',un>0,'un')+kpi(Object.keys(cams).length,'카메라',false)+'</div></div>';
+  h+='<div class="dmain">';
+  h+='<div class="mapcol"><h3>📏 코일 길이 지도 <span style="font-size:13px;color:var(--mut);font-weight:800">결함을 누르면 이미지·히트맵·영상</span></h3>'
+    +'<div class="hint"><b style="color:var(--pre)">위=슬리팅 이전</b> · <b style="color:var(--post)">아래=슬리팅 이후</b> · 색=결함 유형</div>'
+    +'<div class="mapwrap" id="map"></div>'
+    +'<div class="leg" id="leg"></div></div>';
+  h+='<div class="sumcol" id="sumcol"></div>';
+  h+='</div>';
+  h+='<div class="actbar">'
+    +'<div class="act" onclick="openDefList()">📋 결함 목록 <span class="bdg">'+ng+'</span>'+(un?' <span class="bdg un">미확인 '+un+'</span>':'')+'</div>'
+    +'<div class="act" onclick="openVideos()">🎬 전체 영상</div>'
+    +'</div>';
+  h+='</div>';
+  document.getElementById('detailBody').innerHTML=h;
+  document.getElementById('map').innerHTML=mapSVG();
+  document.getElementById('leg').innerHTML=legend();
+  document.getElementById('sumcol').innerHTML=typeTiles();
+  prefetch();
+}
+function kpi(v,l,hot,cls){return '<div class="kpi'+(hot?' '+(cls||'hot'):'')+'"><div class="n">'+v+'</div><div class="l">'+l+'</div></div>';}
+function prefetch(){var ds=S.defs.slice(0,8);var i=0;function nx(){if(i>=ds.length)return;var im=new Image();im.onload=im.onerror=nx;im.src=imgSrc(ds[i++],false);}nx();nx();}
+
+function maxDist(){var m=0;S.defs.forEach(function(r){if(r.distance!=null&&r.distance>m)m=r.distance;});return m||100;}
+function typeCounts(){var by={};S.defs.forEach(function(r){var t=typeOf(r);if(!by[t])by[t]={t:t,c:colorOf(r),n:0};by[t].n++;});return Object.keys(by).map(function(k){return by[k];}).sort(function(a,b){return b.n-a.n;});}
+function legend(){return typeCounts().map(function(x){return '<span><i style="background:'+x.c+'"></i>'+esc(x.t)+' '+x.n+'</span>';}).join('')
+  +'<span style="margin-left:auto"><i style="background:var(--pre);border-radius:50%"></i>이전 <i style="background:var(--post);border-radius:50%;margin-left:3px"></i>이후</span>';}
+function typeTiles(){
+  var tc=typeCounts();if(!tc.length)return '<div class="vnone" style="padding:16px">NG 결함이 없습니다 (양품).</div>';
+  return tc.map(function(x,i){return '<div class="typetile" onclick="openDefListType(\''+esc(x.t).replace(/'/g,'')+'\')">'
+    +'<div class="sw" style="background:'+x.c+'"></div><div class="nm">'+esc(x.t)+'</div><div class="ct">'+x.n+'<small>건</small></div></div>';}).join('');
+}
+function mapSVG(){
+  var defs=S.defs,N=maxDist();var W=1100,padL=16,padR=16,bw=W-padL-padR,barY=132,barH=52,zone=116;
+  var H=barY+barH+zone+30;
+  var x=function(dm){return padL+bw*(Math.max(0,Math.min(N,dm||0))/N);};
+  var s='<svg viewBox="0 0 '+W+' '+H+'">';
+  s+='<text x="'+padL+'" y="26" font-size="19" font-weight="900" font-family="Pretendard" fill="#2451a0">▲ 슬리팅 이전</text>';
+  s+='<text x="'+padL+'" y="'+(barY+barH+zone-2)+'" font-size="19" font-weight="900" font-family="Pretendard" fill="#0e8f8a">▼ 슬리팅 이후</text>';
+  // coil bar
+  s+='<rect x="'+padL+'" y="'+barY+'" width="'+bw+'" height="'+barH+'" rx="13" fill="#f2f5fa" stroke="#dbe2ee" stroke-width="2.5"/>';
+  s+='<text x="'+(padL+bw/2)+'" y="'+(barY+barH/2+7)+'" text-anchor="middle" font-size="18" font-weight="900" font-family="Pretendard" fill="#aab4c6">코일 '+Math.round(N)+'m</text>';
+  var upC={},dnC={};
+  defs.forEach(function(r,idx){if(r.distance==null)return;var xx=x(r.distance);var col=colorOf(r);var pre=isPre(r);
+    if(pre){var k=Math.round(xx/18);upC[k]=(upC[k]||0);var row=upC[k]++;var yy=barY-13-row*21;if(yy<28)yy=28;
+      s+='<line x1="'+xx+'" y1="'+(yy+9)+'" x2="'+xx+'" y2="'+barY+'" stroke="'+col+'" stroke-width="1.5" opacity="0.3"/>';
+      s+='<circle cx="'+xx+'" cy="'+yy+'" r="10" fill="'+col+'" stroke="#2451a0" stroke-width="2" style="cursor:pointer" onclick="openDefAt('+idx+')"/>';}
+    else{var k2=Math.round(xx/18);dnC[k2]=(dnC[k2]||0);var row2=dnC[k2]++;var yy2=barY+barH+15+row2*21;var ym=barY+barH+zone-14;if(yy2>ym)yy2=ym;
+      s+='<line x1="'+xx+'" y1="'+(barY+barH)+'" x2="'+xx+'" y2="'+(yy2-9)+'" stroke="'+col+'" stroke-width="1.5" opacity="0.3"/>';
+      s+='<rect x="'+(xx-9)+'" y="'+(yy2-9)+'" width="18" height="18" rx="4" fill="'+col+'" stroke="#0e8f8a" stroke-width="2" style="cursor:pointer" onclick="openDefAt('+idx+')"/>';}});
+  s+='<text x="'+padL+'" y="'+(H-6)+'" font-size="16" font-weight="800" font-family="Pretendard" fill="#8a93a6">0m</text>';
+  s+='<text x="'+(W-padR)+'" y="'+(H-6)+'" text-anchor="end" font-size="16" font-weight="800" font-family="Pretendard" fill="#8a93a6">'+Math.round(N)+'m</text>';
+  s+='</svg>';return s;
+}
+
+/* Drawer */
+function drawer(title,html){document.getElementById('dTitle').innerHTML=title;document.getElementById('dBody').innerHTML=html;document.getElementById('drawer').classList.add('on');document.getElementById('scrim').classList.add('on');document.getElementById('dBody').scrollTop=0;}
+function closeD(){document.getElementById('drawer').classList.remove('on');document.getElementById('scrim').classList.remove('on');}
+
+function openDefAt(idx){S.sel=idx;openDef();}
+function openDef(){
+  var r=S.defs[S.sel];if(!r)return;var t=typeOf(r),col=colorOf(r);
+  var pre=isPre(r);
+  var h='<div class="dh"><span class="tbadge" style="background:'+col+'">'+esc(t)+'</span><span style="font-size:17px;color:var(--mut)">#'+r.result_id+'</span></div>'
+    +'<div class="dsub">'+esc(r.camera_name||'')+' · '+(r.distance!=null?r.distance+'m 지점':'')+' · '+kstTime(r.inspection_time)+'</div>';
+  var hasHeat=!!r.heatmap_url;
+  h+='<div id="dmediaWrap">'+mediaImg(r,'orig')+'</div>';
+  if(hasHeat)h+='<div class="segtoggle" id="ovtg"><button class="on" onclick="setOv(\'orig\')">원본</button><button onclick="setOv(\'heat\')">히트맵(AI)</button></div>';
+  var vs=vidSrc(r);
+  if(vs)h+='<a class="playbtn" href="'+esc(vs)+'" target="_blank" rel="noopener">▶ 이 결함 구간 영상 보기 (다운로드)</a>';
+  h+='<div class="sect">검사 정보</div><div class="optiles">'
+    +opt('위치',(r.distance!=null?r.distance:'—'),'m')+opt('이상점수',(r.max_score!=null?Number(r.max_score).toFixed(1):'—'),'')
+    +opt('검출 카메라',pre?'이전':'이후','')+opt('리뷰',(r.review_status==='UNREVIEWED'?'미확인':'확인'),'',r.review_status==='UNREVIEWED')
+    +opt('모델',esc(r.model_name||'—'),'')+opt('방식',esc(r.model_type||'Seg'),'')
+    +'</div>';
+  drawer(t,h);
+  S.ov='orig';
+}
+function mediaImg(r,ov){var src=imgSrc(r,ov==='heat');
+  return src?'<img class="dimg" src="'+esc(src)+'" onclick="openLB()" style="cursor:zoom-in" onerror="this.outerHTML=\'<div class=&quot;dimg dimg-ph&quot;>이미지를 불러올 수 없습니다</div>\'">'
+    :'<div class="dimg dimg-ph">이미지 없음</div>';}
+function setOv(ov){S.ov=ov;document.getElementById('dmediaWrap').innerHTML=mediaImg(S.defs[S.sel],ov);
+  var tg=document.getElementById('ovtg');if(tg){tg.children[0].classList.toggle('on',ov==='orig');tg.children[1].classList.toggle('on',ov==='heat');}}
+function opt(k,v,u,hot){return '<div class="opt'+(hot?' hot':'')+'"><div class="k">'+k+'</div><div class="v">'+v+(u?'<span class="u"> '+u+'</span>':'')+'</div></div>';}
+
+function openDefList(){defListDrawer('결함 목록 ('+S.defs.length+'건)',S.defs);}
+function openDefListType(t){var rows=S.defs.filter(function(r){return typeOf(r)===t;});defListDrawer(t+' ('+rows.length+'건)',rows);}
+function defListDrawer(title,rows){
+  if(!rows.length){drawer(title,'<div class="vnone" style="padding:20px">결함이 없습니다 (양품).</div>');return;}
+  var html='<div class="dlist">'+rows.map(function(r){var gi=S.defs.indexOf(r);var t=typeOf(r),col=colorOf(r),src=imgSrc(r,false);var un=r.review_status==='UNREVIEWED';
+    return '<div class="dcard" onclick="closeD();S.sel='+gi+';openDef()">'
+      +'<div class="dthumb">'+(src?'<img src="'+esc(src)+'" loading="lazy" onerror="this.style.display=\'none\'">':'')+'</div>'
+      +'<div class="dmeta"><span class="tp" style="background:'+col+'">'+esc(t)+'</span>'
+      +'<div class="ms">'+esc(isPre(r)?'슬리팅 이전':'슬리팅 이후')+' · '+kstTime(r.inspection_time)+' · 점수 '+(r.max_score!=null?Number(r.max_score).toFixed(1):'—')+'</div>'
+      +'<div class="pos">'+(r.distance!=null?r.distance+' m':'—')+'</div></div>'
+      +'<span class="rev '+(un?'un':'ok')+'">'+(un?'미확인':'확인')+'</span></div>';
+  }).join('')+'</div>';
+  drawer(title,html);
+}
+
+function openVideos(){
+  var dvids=S.defs.filter(function(r){return r.video_url;});
+  var html='';
+  html+='<div class="sect" style="margin-top:0">전체 영상 (채널별 병합본)</div>';
+  if(!S.videos.length)html+='<div class="vnone">전체 영상이 아직 생성되지 않았습니다(작업 완료 후 병합본 생성).</div>';
+  else html+='<div class="vrow">'+S.videos.map(function(v){var link=v.redirect?(API+v.redirect):v.direct;if(!link)return '';
+    return '<a class="vlink" href="'+esc(link)+'" target="_blank" rel="noopener"><span>📹</span><span class="cam">'+esc(chanOf(v.name))+'</span>'+(v.merged?'<span style="color:var(--mut)">전체</span>':'')+'<span class="meta">다운로드 ⬇</span></a>';}).join('')+'</div>';
+  html+='<div class="sect">검출 구간 클립 ('+dvids.length+'건)</div>';
+  if(!dvids.length)html+='<div class="vnone">검출 구간 영상이 없습니다.</div>';
+  else html+='<div class="vrow">'+dvids.map(function(r){return '<a class="vlink" href="'+esc(API+(r.video_dl||r.video_url))+'" target="_blank" rel="noopener"><span>🎬</span><span class="cam">'+esc(r.camera_name||'')+'</span><span style="color:var(--mut)">'+esc(typeOf(r))+'</span><span class="meta">'+kstTime(r.inspection_time)+' ⬇</span></a>';}).join('')+'</div>';
+  drawer('영상',html);
+}
+
+/* 라이트박스 */
+function openLB(){var r=S.defs[S.sel];if(!r)return;S.lbov='orig';
+  document.getElementById('lbTitle').textContent=typeOf(r)+' #'+r.result_id;
+  document.getElementById('lbInfo').textContent=(r.distance!=null?r.distance+'m':'')+' · 점수 '+(r.max_score!=null?Number(r.max_score).toFixed(1):'—');
+  var tg=document.getElementById('lbtg');tg.innerHTML='<button class="on" onclick="lbSet(\'orig\')">원본</button>'+(r.heatmap_url?'<button onclick="lbSet(\'heat\')">히트맵(AI)</button>':'');
+  lbRender();document.getElementById('lb').classList.add('on');}
+function lbSet(o){S.lbov=o;var tg=document.getElementById('lbtg');[].forEach.call(tg.children,function(b){b.classList.toggle('on',(o==='orig')===(b.textContent==='원본'));});lbRender();}
+function lbRender(){var r=S.defs[S.sel];if(!r)return;var src=imgSrc(r,S.lbov==='heat');
+  document.getElementById('lbImg').innerHTML=src?'<img src="'+esc(src)+'" onerror="this.parentNode.innerHTML=&quot;<div style=\\&quot;color:#8893a8;padding:40px\\&quot;>이미지 없음</div>&quot;">':'<div style="color:#8893a8;padding:40px">이미지 없음</div>';}
+function closeLB(){document.getElementById('lb').classList.remove('on');}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'){if(document.getElementById('lb').classList.contains('on'))closeLB();else closeD();}});
+loadCoils();
+</script>
+</body></html>
