@@ -3,32 +3,57 @@
 // ERP2.0의 다른 메뉴는 노출되지 않습니다 — 태블릿에 그대로 배포하기 위한 용도입니다.
 //
 // 화면 흐름: ① 작업 선택 (슬리터2 작업지시서 목록, 5분마다 자동 동기화)
-//          → ② 셋팅 화면 (가공규격 + 세퍼레이터①·②만 나란히 표시, ③은 ②와 항상 같아 생략)
-//          → "작업 선택으로 돌아가기"를 누르면 중간 확인 없이 바로 ①로 복귀
-// "작업완료" 버튼은 아직 그린ERP/DB에 상태를 기록하지 않습니다 — 지금은 목록으로 돌아가는
-// 용도로만 동작합니다. 실제 작업 상태를 어딘가에 남길지는 추후 결정이 필요합니다.
+//          → ② 셋팅 화면 (가공규격별로 세퍼레이터①·② 셋팅. 규격이 많으면 페이지로 넘김)
+//          → "작업 선택으로"를 누르면 중간 확인 없이 바로 ①로 복귀
 //
-// 자동 전환(2026-08): 슬리팅2 대시보드(osungsteel.servehttp.com:38080/pad/sliting2)에서
-// 코일을 "시작"하면 leveler_jobs.status가 '진행중'으로 바뀌고 started_at이 기록됩니다.
-// leveler-sync(서버, 2분 주기)와 이 화면의 재조회(SYNC_INTERVAL_MS, 5분 주기)를 통해
-// 그 변화가 반영되면, ① 작업 선택 화면에 머물러 있는 경우 가장 최근에 시작된 진행중 코일의
-// ② 셋팅 화면으로 자동 전환합니다(동시에 여러 건이 진행중이면 started_at이 가장 늦은 것 우선).
-// 자동으로 열린 화면에서 작업자가 직접 "작업 선택으로 돌아가기"를 누르면, 같은 코일로는
-// 다시 자동 전환하지 않습니다(dismissedAutoIds) — 그래야 뒤로 가기가 먹통처럼 보이지 않습니다.
+// 2026-11 개편: 소형 가로 태블릿(Lenovo Tab M8 등, CSS 약 853×533)에서도 셋팅값이 크게
+//   보이도록 (1) 1280 고정 디자인 축소(FitStage)를 걷어내고 실제 화면에 맞춘 반응형으로,
+//   (2) 규격 2개씩 "페이지"로 나눠 번호 탭으로 이동, (3) 낱개(스페이서)를 크기별 고유 색으로
+//   칠해 멀리서도 바로 구분되게 했습니다.
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabaseClient';
-import { DEFAULT_DENOMS, DEFAULT_PLASTIC_THRESHOLD, DEFAULT_STATIONS, parseProcessRule, computeStationResults } from '../lib/separatorCalc';
+import { DEFAULT_DENOMS, DEFAULT_STATIONS, computeStationResults } from '../lib/separatorCalc';
 
-// 클라이언트가 전달한 디자인 시안(claude.ai/design)에 맞춘 라벤더/퍼플 톤 팔레트.
-// 기존 오렌지 포인트 컬러 대신 이 색으로 전체 화면을 통일합니다.
 const PURPLE = {
-  accent: '#6C5FCF', accentDark: '#5A4FC4', panelBg: '#EEF0FB', chipBg: '#E7E6F4',
-  border: '#E6E3F5', text: '#22283A', textMuted: '#8A8FA8',
+  accent: '#6f63c4', accentDark: '#473c8c', panelBg: '#efecfa', chipBg: '#E7E6F4',
+  border: '#e3e1f0', text: '#23213a', textMuted: '#7b7797',
 };
 
+// 낱개(스페이서) 크기별 고유 색 — 멀리서도 색만 보고 바로 구분. 모두 흰 글씨 대비.
+const SPACER_COLOR = {
+  100: '#17407a', 90: '#235fa6', 80: '#0f7d94', 70: '#1f9d57', 60: '#5a9e23',
+  50: '#d99012', 40: '#dd6b12', 30: '#cf3224', 20: '#b12e74', 10: '#6f3ca0',
+  9: '#8a5a2b', 8: '#167a7a', 7: '#3a4a9e', 6: '#b5283f', 5: '#6b7a1f',
+  4: '#4a5568', 3: '#8a2e2e', 2: '#2e6a8a', 1: '#5a6270',
+};
+const spacerColor = (size) => SPACER_COLOR[size] || '#555a66';
+
+const SPECS_PER_PAGE = 2;
 const SYNC_INTERVAL_MS = 5 * 60 * 1000; // 5분
-const KIOSK_STATIONS = DEFAULT_STATIONS.filter((s) => s.key === 1 || s.key === 2); // ③은 화면에서 아예 제외
+const KIOSK_STATIONS = DEFAULT_STATIONS.filter((s) => s.key === 1 || s.key === 2); // ③은 화면에서 제외
 const DENOMS_DESC = [...DEFAULT_DENOMS].sort((a, b) => b - a);
+
+// 가공규격 파서(방어형). 세퍼레이터가 쓸 수 있는 "폭=가닥수"만 추립니다.
+//  - 깨끗한 형식:   "67=1", "160=6(회동물산)"  → 폭 67 / 160
+//  - 슬리터 형식:   "4X469=150"               → X 뒤의 폭(469)을 사용
+//  - 메모/로스:     "로스=24", "한번감음"       → 건너뜀
+// 이렇게 해야 "4X469"를 폭 4로 잘못 읽어 엉뚱한 셋팅을 보여주는 문제를 막습니다.
+function parseSeparatorRule(rule) {
+  if (!rule) return [];
+  const out = [];
+  rule.split(',').forEach((tok) => {
+    const t = tok.trim();
+    let m = t.match(/^\d+(?:\.\d+)?\s*[Xx]\s*(\d+(?:\.\d+)?)\s*=\s*(\d+)/); // 두께X폭=수량
+    if (!m) m = t.match(/^(\d+(?:\.\d+)?)\s*=\s*(\d+)/);                      // 폭=수량
+    if (!m) return;
+    const width = parseFloat(m[1]);
+    const qty = parseInt(m[2], 10);
+    if (Number.isFinite(width) && width > 0 && width < 3000 && Number.isFinite(qty) && qty > 0) {
+      out.push({ width, qty });
+    }
+  });
+  return out;
+}
 
 function minutesAgoLabel(date) {
   if (!date) return '동기화 전';
@@ -37,13 +62,7 @@ function minutesAgoLabel(date) {
   return `${mins}분 전`;
 }
 
-// 태블릿 기기의 시스템 시간대 설정과 무관하게 항상 한국시간 기준 "오늘" 날짜를 계산합니다.
-// (그린ERP 동기화 자체가 한국 업무시간 기준으로 도는 것과 맞춰야 날짜가 어긋나지 않습니다.)
 function todayKST() {
-  // now.getTime()은 이미 타임존과 무관한 절대 시각(UTC 기준 epoch ms)이므로,
-  // 여기에 getTimezoneOffset()을 더하는 건 이중 보정이 되어 버그였습니다.
-  // (기기가 KST(UTC+9)일 때 보정이 서로 상쇄되어 결과적으로 UTC 날짜가 나왔고,
-  //  KST 00:00~08:59 사이에는 실제 날짜보다 하루 이전 날짜로 조회되는 문제가 있었습니다.)
   const now = new Date();
   const kstMs = now.getTime() + 9 * 3600000;
   return new Date(kstMs).toISOString().slice(0, 10);
@@ -58,17 +77,10 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   const [selectedId, setSelectedId] = useState(null);
   const [autoBanner, setAutoBanner] = useState(false);
   const [dismissedAutoIds, setDismissedAutoIds] = useState(() => new Set());
+  const [setupPage, setSetupPage] = useState(0);
 
   const loadJobs = useCallback(async () => {
     const today = todayKST();
-    // 그린ERP의 joborder_date는 최초 지시일자로 고정되지만, 현장에서는 "어제 못한 작업을
-    // 오늘 날짜로 바꿔서" 레벨러 대시보드(osungsteel.servehttp.com:38080)에서 재작업하는
-    // 경우가 있고, 이 날짜 변경은 레벨러 시스템(erp_data.work_date)에만 반영되고 그린ERP에는
-    // 반영되지 않습니다. 그래서 그린ERP 기준으로 조회하면 실제로는 작업해야 할 건이 있는데도
-    // "오늘 작업 없음"으로 잘못 표시되는 문제가 있었습니다.
-    // 이제는 그 날짜 변경까지 반영된 leveler_jobs(레벨러 대시보드 미러, leveler-sync Edge
-    // Function이 주기적으로 동기화)를 조회해 실제 현재 상태를 그대로 보여줍니다.
-    // 작업자용 키오스크 화면 — 금액은 보여주지 않으므로 작업지시서 목록만 조회합니다.
     const jobsRes = await supabase
       .from('leveler_jobs')
       .select('id:source_id, company_name, product_name, process_rule, original_weight, status, work_type, work_date, started_at')
@@ -92,8 +104,6 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
     return () => { clearInterval(syncTimer); clearInterval(tickTimer); };
   }, [loadJobs]);
 
-  // 슬리팅2 대시보드에서 코일이 "진행중"으로 바뀐 것을 감지하면, 작업 선택 화면에 머물러
-  // 있는 동안에는 가장 최근에 시작된 코일의 셋팅 화면으로 자동 전환합니다.
   useEffect(() => {
     if (screen !== 'select') return;
     const inProgress = jobs.filter((j) => j.status === '진행중' && j.started_at && !dismissedAutoIds.has(j.id));
@@ -101,6 +111,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
     inProgress.sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
     const candidate = inProgress[0];
     setSelectedId(candidate.id);
+    setSetupPage(0);
     setScreen('setup');
     setAutoBanner(true);
   }, [jobs, screen, dismissedAutoIds]);
@@ -112,12 +123,11 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   }, [autoBanner]);
 
   const selected = jobs.find((j) => j.id === selectedId) || null;
-  const strips = useMemo(() => (selected ? parseProcessRule(selected.process_rule) : []), [selected]);
+  const strips = useMemo(() => (selected ? parseSeparatorRule(selected.process_rule) : []), [selected]);
   const stationResults = useMemo(() => computeStationResults(strips, KIOSK_STATIONS, DENOMS_DESC), [strips]);
 
-  const openJob = (id) => { setSelectedId(id); setScreen('setup'); setAutoBanner(false); };
+  const openJob = (id) => { setSelectedId(id); setSetupPage(0); setScreen('setup'); setAutoBanner(false); };
   const backToSelect = () => {
-    // 자동으로 열렸던 코일이면, 같은 코일로는 다시 자동 전환하지 않도록 표시해둡니다.
     if (selectedId) setDismissedAutoIds((prev) => new Set(prev).add(selectedId));
     setAutoBanner(false);
     setScreen('select');
@@ -125,12 +135,9 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   };
 
   return (
-    <FitStage>
     <div style={styles.page}>
       <div style={styles.topStrip}>
-        <div style={styles.topStripLeftGroup}>
-          <span style={styles.topStripText}>슬리터2 세퍼레이터 셋팅 · {staffName || '작업자'}님</span>
-        </div>
+        <span>슬리터2 세퍼레이터 셋팅 · {staffName || '작업자'}님</span>
         <button style={styles.logoutBtn} onClick={onLogout}>로그아웃</button>
       </div>
 
@@ -138,10 +145,12 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
         <SelectScreen jobs={jobs} loading={loading} syncLabel={minutesAgoLabel(lastSyncAt)} onOpen={openJob} nowTick={nowTick} />
       )}
       {screen === 'setup' && selected && (
-        <SetupScreen job={selected} strips={strips} stationResults={stationResults} onBack={backToSelect} autoDetected={autoBanner} />
+        <SetupScreen
+          job={selected} strips={strips} stationResults={stationResults}
+          page={setupPage} setPage={setSetupPage} onBack={backToSelect} autoDetected={autoBanner}
+        />
       )}
     </div>
-    </FitStage>
   );
 }
 
@@ -160,19 +169,19 @@ function SelectScreen({ jobs, loading, syncLabel, onOpen }) {
         <div style={styles.jobList}>
           {jobs.map((j) => (
             <div key={j.id} style={styles.jobRow} onClick={() => onOpen(j.id)}>
-              <div style={{ ...styles.jobCol, flex: 1.3 }}>
+              <div style={{ flex: 1.3, minWidth: 0 }}>
                 <div style={styles.jobLabel}>코일번호</div>
                 <div style={styles.jobValue}>{j.product_name}</div>
               </div>
-              <div style={{ ...styles.jobCol, flex: 1.2 }}>
+              <div style={{ flex: 1.1, minWidth: 0 }}>
                 <div style={styles.jobLabel}>회사명</div>
                 <div style={styles.jobValue}>{j.company_name}</div>
               </div>
-              <div style={{ ...styles.jobCol, flex: 1.8 }}>
+              <div style={{ flex: 1.8, minWidth: 0 }}>
                 <div style={styles.jobLabel}>가공규격</div>
-                <div style={{ ...styles.jobValue, fontSize: '28px' }}>{j.process_rule}</div>
+                <div style={styles.jobRule}>{j.process_rule}</div>
               </div>
-              <div style={{ ...styles.jobCol, flex: 0.8, textAlign: 'right' }}>
+              <div style={{ flex: 0.7, minWidth: 0, textAlign: 'right' }}>
                 <div style={styles.jobLabel}>중량</div>
                 <div style={styles.jobValue}>{Number(j.original_weight || 0).toLocaleString()}</div>
               </div>
@@ -185,161 +194,172 @@ function SelectScreen({ jobs, loading, syncLabel, onOpen }) {
   );
 }
 
-function SetupScreen({ job, strips, stationResults, onBack, autoDetected }) {
+function Spacer({ size }) {
   return (
-    <div style={styles.screenPad}>
+    <div style={{ ...styles.spacer, background: spacerColor(size) }}>{size}</div>
+  );
+}
+
+function StationCol({ station, row, divider }) {
+  const flat = row && row.pieces ? row.pieces.flatMap((p) => Array(p.count).fill(p.size)) : [];
+  const off = station.offset;
+  const sym = station.key === 1 ? '①' : station.key === 2 ? '②' : station.key;
+  return (
+    <div style={{ ...styles.stc, ...(divider ? styles.stcDivider : {}) }}>
+      <div style={styles.sthd}>
+        <div style={styles.bdg}>{sym}</div>
+        <div style={styles.snm}>세퍼레이터{station.key}</div>
+        <div style={styles.off}>{off >= 0 ? '+' : '−'}{Math.abs(off)}</div>
+      </div>
+      <div style={styles.eq}>
+        {row.width} <span style={styles.eqOp}>{off >= 0 ? '＋' : '－'}{Math.abs(off)}</span>
+        <span style={styles.eqOp}> = </span>
+        <span style={styles.eqTarget}>{row.target}</span>
+      </div>
+      <div style={styles.pcs}>
+        {flat.map((size, i) => (
+          <React.Fragment key={i}>
+            {i > 0 && <span style={styles.plusSm}>+</span>}
+            <Spacer size={size} />
+          </React.Fragment>
+        ))}
+        {row.remainder > 0 && (
+          <span style={styles.warn}>⚠ {row.remainder} 부족</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Band({ strip, stripIndex, stationResults }) {
+  const st1 = stationResults[0];
+  const st2 = stationResults[1];
+  return (
+    <div style={styles.band}>
+      <div style={styles.wbox}>
+        <div style={styles.wv}>{strip.width}<small style={styles.wvUnit}>mm</small></div>
+        <div style={styles.wq}>×{strip.qty}가닥</div>
+      </div>
+      {st1 && <StationCol station={st1} row={st1.rows[stripIndex]} />}
+      {st2 && <StationCol station={st2} row={st2.rows[stripIndex]} divider />}
+    </div>
+  );
+}
+
+function SetupScreen({ job, strips, stationResults, page, setPage, onBack, autoDetected }) {
+  const total = Math.max(1, Math.ceil(strips.length / SPECS_PER_PAGE));
+  const cur = Math.min(Math.max(0, page), total - 1);
+  const start = cur * SPECS_PER_PAGE;
+  const pageStrips = strips.slice(start, start + SPECS_PER_PAGE);
+  const lo = start + 1;
+  const hi = Math.min(start + SPECS_PER_PAGE, strips.length);
+
+  return (
+    <div style={styles.setupPad}>
       {autoDetected && (
-        <div style={styles.autoBanner}>🔄 슬리팅2 대시보드에서 자동 감지됨 — 이 코일로 화면이 자동 전환되었습니다</div>
+        <div style={styles.autoBanner}>🔄 슬리팅2 대시보드에서 자동 감지됨 — 이 코일로 자동 전환되었습니다</div>
       )}
-      <div style={styles.infoRowSplit3}>
-        <InfoCol label="코일번호" value={job.product_name} />
-        <InfoCol label="회사명" value={job.company_name} border />
-        <InfoCol label="중량" value={Number(job.original_weight || 0).toLocaleString()} border />
-      </div>
-      <div style={styles.infoRowSingle}>
-        <div style={styles.infoLabelInline}>가공규격</div>
-        <div style={styles.infoValueInline}>{job.process_rule}</div>
-      </div>
 
-      <div style={styles.stationGrid}>
-        <div style={styles.stationCard}>
-          {stationResults.map((st, idx) => (
-            <div key={st.key} style={{ ...styles.stationCol, ...(idx > 0 ? styles.stationColDivider : {}) }}>
-              <div style={styles.stationColHead}>
-                <div style={styles.stationBadge}>{st.key}</div>
-                <div style={styles.stationNameBig}>세퍼레이터{st.key}</div>
-                <div style={styles.stationOffBig}>{st.offset >= 0 ? '+' : ''}{st.offset}</div>
-              </div>
-              {strips.length === 0 ? (
-                <div style={styles.loadingText}>가공규격을 읽을 수 없습니다.</div>
-              ) : st.rows.map((r, i) => {
-                // 조합에 필요한 낱개 규격 전체를 펼쳐서 보여줍니다 (같은 규격이 2개 필요하면 2개 다 표시).
-                const flatPieces = r.pieces.flatMap((p) => Array(p.count).fill(p.size));
-                return (
-                  <div key={i} style={styles.comboBlock}>
-                    <div style={styles.comboMeta}>{r.width}mm × {r.qty}가닥</div>
-                    <div style={styles.comboEquation}>
-                      {r.width} <span style={styles.eqSign}>{st.offset >= 0 ? '+' : '−'}</span> {Math.abs(st.offset)} <span style={styles.eqOp}>=</span> <span style={styles.comboTarget}>{r.target}</span>
-                    </div>
-                    <div style={styles.comboPieces}>
-                      {flatPieces.map((size, pi) => (
-                        <React.Fragment key={pi}>
-                          {pi > 0 && <span style={styles.plusSm}>+</span>}
-                          <PieceBig size={size} />
-                        </React.Fragment>
-                      ))}
-                    </div>
-                    {r.remainder > 0 && (
-                      <div style={styles.remainderWarn}>⚠ {r.remainder}mm 부족 — 더 작은 규격 필요</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ))}
+      <div style={styles.setHead}>
+        <div style={styles.backBtn} onClick={onBack}>← 작업 선택</div>
+        <div style={styles.coilInfo}>
+          <b style={styles.coilNo}>{job.product_name}</b>
+          <span style={styles.coilSub}>{job.company_name} · {Number(job.original_weight || 0).toLocaleString()}kg{strips.length ? ` · 규격 ${strips.length}개` : ''}</span>
         </div>
+        {strips.length > 0 && (
+          <div style={styles.pageInd}>{strips.length > SPECS_PER_PAGE ? `규격 ${lo}~${hi} · ` : ''}<b style={styles.pageIndNum}>{cur + 1} / {total}</b> 페이지</div>
+        )}
+        <div style={styles.doneBtn} onClick={onBack}>작업완료</div>
       </div>
 
-      <div style={styles.btnFooter}>
-        <div style={{ ...styles.btnBig, ...styles.btnOutline }} onClick={onBack}>작업 선택으로 돌아가기</div>
-        <div style={{ ...styles.btnBig, ...styles.btnSolid }} onClick={onBack}>작업완료</div>
-      </div>
-    </div>
-  );
-}
+      {strips.length === 0 ? (
+        <div style={styles.cantRead}>
+          <div style={{ fontSize: '26px', fontWeight: 900, color: '#c8372c' }}>⚠ 가공규격을 읽을 수 없습니다</div>
+          <div style={{ fontSize: '18px', fontWeight: 800, color: PURPLE.textMuted, marginTop: '8px' }}>원본: {job.process_rule || '(없음)'}</div>
+          <div style={{ fontSize: '16px', fontWeight: 800, color: PURPLE.textMuted, marginTop: '4px' }}>관리자에게 규격 형식을 확인하세요.</div>
+        </div>
+      ) : (
+        <>
+          <div style={styles.bands}>
+            {pageStrips.map((s, k) => (
+              <Band key={start + k} strip={s} stripIndex={start + k} stationResults={stationResults} />
+            ))}
+          </div>
 
-function InfoCol({ label, value, border }) {
-  return (
-    <div style={{ ...styles.infoCol, ...(border ? styles.infoColBorder : {}) }}>
-      <div style={styles.infoLabel}>{label}</div>
-      <div style={styles.infoValue}>{value}</div>
-    </div>
-  );
-}
-
-function PieceBig({ size }) {
-  const isPlastic = size < DEFAULT_PLASTIC_THRESHOLD;
-  const width = Math.max(84, 50 + size * 1.05);
-  return (
-    <div style={{
-      height: '104px', minWidth: `${width}px`, borderRadius: '16px', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontWeight: 900, fontSize: '48px', flexShrink: 0, padding: '0 14px',
-      backgroundColor: isPlastic ? PURPLE.accent : PURPLE.chipBg, color: isPlastic ? '#fff' : '#1c2b3f',
-    }}>
-      {size}
-    </div>
-  );
-}
-
-function FitStage({ children }) {
-  const DW = 1280, DH = 800;
-  const [scale, setScale] = React.useState(1);
-  React.useEffect(() => {
-    const fit = () => setScale(Math.min(window.innerWidth / DW, window.innerHeight / DH));
-    fit();
-    window.addEventListener('resize', fit);
-    window.addEventListener('orientationchange', fit);
-    return () => { window.removeEventListener('resize', fit); window.removeEventListener('orientationchange', fit); };
-  }, []);
-  return (
-    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#E9E8F3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ width: DW + 'px', height: DH + 'px', transform: 'scale(' + scale + ')', transformOrigin: 'center', flex: '0 0 auto' }}>
-        {children}
-      </div>
+          <div style={styles.setFoot}>
+            <div style={{ ...styles.navBtn, ...(total <= 1 ? styles.navDisabled : {}) }} onClick={() => total > 1 && setPage((cur - 1 + total) % total)}>◀ 이전</div>
+            <div style={styles.ptabs}>
+              {Array.from({ length: total }).map((_, i) => (
+                <div key={i} style={{ ...styles.ptab, ...(i === cur ? styles.ptabOn : {}) }} onClick={() => setPage(i)}>{i + 1}</div>
+              ))}
+            </div>
+            <div style={{ ...styles.navBtn, ...styles.navNext, ...(total <= 1 ? styles.navDisabled : {}) }} onClick={() => total > 1 && setPage((cur + 1) % total)}>다음 ▶</div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 const styles = {
-  page: { width: '100%', height: '100%', background: '#FAFAFE', display: 'flex', flexDirection: 'column', fontFamily: "'Pretendard', -apple-system, sans-serif" },
-  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 28px', fontSize: '19px', fontWeight: 900, borderBottom: `1px solid ${PURPLE.border}` },
-  topStripLeftGroup: { display: 'flex', alignItems: 'center', gap: '26px', flexWrap: 'wrap' },
-  topStripText: {},
-  logoutBtn: { background: '#F2F1FA', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '10px 20px', borderRadius: '8px', fontSize: '16px', fontWeight: 900, cursor: 'pointer' },
-  screenPad: { padding: '22px 30px 28px', flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 },
+  page: { height: '100vh', width: '100vw', background: '#f5f4fb', display: 'flex', flexDirection: 'column', overflow: 'hidden', fontFamily: "'Pretendard', -apple-system, sans-serif" },
+  topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 20px', fontSize: '17px', fontWeight: 900, borderBottom: `1px solid ${PURPLE.border}`, flex: '0 0 auto' },
+  logoutBtn: { background: '#f1f0f8', color: PURPLE.textMuted, border: `1px solid ${PURPLE.border}`, padding: '8px 16px', borderRadius: '8px', fontSize: '14px', fontWeight: 900, cursor: 'pointer' },
 
-  topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' },
-  topBarTitle: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
-  syncPill: { background: '#dff7ea', color: '#1c7a4d', fontWeight: 900, fontSize: '20px', padding: '10px 18px', borderRadius: '22px' },
-  loadingText: { fontSize: '24px', fontWeight: 900, color: PURPLE.textMuted, padding: '30px 0' },
+  // ── 작업 선택 ──
+  screenPad: { padding: '12px 18px 16px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' },
+  topBar: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flex: '0 0 auto' },
+  topBarTitle: { fontSize: '26px', fontWeight: 900, color: PURPLE.text },
+  syncPill: { background: '#dff7ea', color: '#1c7a4d', fontWeight: 900, fontSize: '15px', padding: '8px 14px', borderRadius: '20px' },
+  loadingText: { fontSize: '20px', fontWeight: 900, color: PURPLE.textMuted, padding: '24px 0' },
+  jobList: { display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', minHeight: 0 },
+  jobRow: { background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '14px', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: '14px', cursor: 'pointer', flex: '0 0 auto' },
+  jobLabel: { fontSize: '13px', color: PURPLE.textMuted, fontWeight: 900, marginBottom: '2px' },
+  jobValue: { fontSize: '24px', fontWeight: 900, color: PURPLE.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  jobRule: { fontSize: '17px', fontWeight: 900, color: PURPLE.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+  goArrow: { width: '44px', height: '44px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
-  jobList: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  jobRow: { background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '18px', padding: '22px 30px', display: 'flex', alignItems: 'center', gap: '26px', cursor: 'pointer' },
-  jobCol: {},
-  jobLabel: { fontSize: '18px', color: PURPLE.textMuted, fontWeight: 900, marginBottom: '4px' },
-  jobValue: { fontSize: '36px', fontWeight: 900, color: PURPLE.text },
-  goArrow: { width: '64px', height: '64px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  // ── 셋팅 (페이지) ──
+  setupPad: { padding: '10px 16px 12px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '10px' },
+  autoBanner: { background: PURPLE.panelBg, color: PURPLE.accentDark, fontWeight: 900, fontSize: '16px', padding: '9px 16px', borderRadius: '12px', flex: '0 0 auto' },
 
-  autoBanner: { background: PURPLE.panelBg, color: PURPLE.accentDark, fontWeight: 900, fontSize: '20px', padding: '14px 24px', borderRadius: '14px', marginBottom: '14px', border: `1px solid ${PURPLE.border}` },
-  infoRowSplit3: { display: 'flex', background: PURPLE.panelBg, borderRadius: '16px', marginBottom: '14px' },
-  infoCol: { flex: 1, padding: '14px 24px', textAlign: 'center' },
-  infoColBorder: {},
-  infoLabel: { fontSize: '22px', color: PURPLE.textMuted, fontWeight: 900, marginBottom: '4px' },
-  infoValue: { fontSize: '68px', fontWeight: 900, color: PURPLE.text, lineHeight: 1.05 },
-  infoRowSingle: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff', border: `1px solid ${PURPLE.border}`, borderRadius: '16px', padding: '12px 28px', marginBottom: '14px', flex: '0 0 auto' },
-  infoLabelInline: { fontSize: '24px', color: PURPLE.textMuted, fontWeight: 900 },
-  infoValueInline: { fontSize: '46px', fontWeight: 900, color: PURPLE.text },
+  setHead: { display: 'flex', alignItems: 'center', gap: '12px', flex: '0 0 auto' },
+  backBtn: { background: '#fff', border: `2px solid ${PURPLE.border}`, color: PURPLE.accentDark, borderRadius: '11px', padding: '10px 16px', fontSize: '17px', fontWeight: 900, cursor: 'pointer', flex: '0 0 auto' },
+  coilInfo: { display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0, flex: 1, flexWrap: 'wrap' },
+  coilNo: { fontSize: '22px', fontWeight: 900, color: PURPLE.text },
+  coilSub: { fontSize: '15px', fontWeight: 800, color: PURPLE.textMuted },
+  pageInd: { fontSize: '15px', fontWeight: 900, color: PURPLE.accentDark, flex: '0 0 auto' },
+  pageIndNum: { fontSize: '21px', color: PURPLE.accent },
+  doneBtn: { background: PURPLE.accent, color: '#fff', borderRadius: '11px', padding: '10px 20px', fontSize: '18px', fontWeight: 900, cursor: 'pointer', flex: '0 0 auto' },
 
-  stationGrid: { display: 'flex', gap: '16px', flex: 1, minHeight: 0 },
-  stationCard: { flex: 1, minHeight: 0, display: 'flex', background: '#fff', border: `2px solid ${PURPLE.border}`, borderRadius: '20px' },
-  stationCol: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '18px 26px 20px' },
-  stationColDivider: { borderLeft: `2px solid ${PURPLE.border}` },
-  stationColHead: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '12px', paddingBottom: '10px', borderBottom: `2px solid ${PURPLE.border}`, flex: '0 0 auto' },
-  stationBadge: { width: '58px', height: '58px', borderRadius: '50%', background: PURPLE.panelBg, color: PURPLE.accentDark, fontSize: '30px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  stationNameBig: { fontSize: '40px', fontWeight: 900, color: PURPLE.text },
-  stationOffBig: { fontSize: '30px', color: PURPLE.accent, fontWeight: 900, marginLeft: 'auto' },
-  comboBlock: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '10px 0' },
-  comboMeta: { fontSize: '36px', fontWeight: 900, color: PURPLE.textMuted, marginBottom: '6px' },
-  comboEquation: { fontSize: '44px', fontWeight: 900, color: PURPLE.text, marginBottom: '12px', display: 'flex', alignItems: 'baseline', gap: '10px' },
-  eqSign: { color: PURPLE.text },
-  eqOp: { color: PURPLE.textMuted },
-  comboTarget: { fontSize: '56px', color: PURPLE.accent },
-  comboPieces: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-  plusSm: { color: PURPLE.textMuted, fontWeight: 900, fontSize: '40px' },
-  remainderWarn: { marginTop: '10px', fontSize: '22px', color: '#c8372c', fontWeight: 900 },
+  bands: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '10px' },
+  band: { flex: 1, minHeight: 0, background: '#fff', border: `2px solid ${PURPLE.border}`, borderRadius: '15px', display: 'flex', alignItems: 'stretch', overflow: 'hidden' },
+  wbox: { flex: '0 0 112px', background: PURPLE.panelBg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRight: `2px solid ${PURPLE.border}` },
+  wv: { fontSize: '36px', fontWeight: 900, color: PURPLE.text, lineHeight: 1 },
+  wvUnit: { fontSize: '16px', color: PURPLE.textMuted },
+  wq: { fontSize: '15px', fontWeight: 900, color: PURPLE.textMuted, marginTop: '3px' },
 
-  btnFooter: { display: 'flex', gap: '18px', marginTop: '14px', flex: '0 0 auto' },
-  btnBig: { flex: 1, textAlign: 'center', padding: '28px', borderRadius: '18px', fontSize: '46px', fontWeight: 900, cursor: 'pointer' },
-  btnOutline: { background: '#fff', border: `4px solid ${PURPLE.border}`, color: PURPLE.accentDark },
-  btnSolid: { background: PURPLE.accent, color: '#fff' },
+  stc: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '8px 16px', gap: '6px' },
+  stcDivider: { borderLeft: `2px dashed ${PURPLE.border}` },
+  sthd: { display: 'flex', alignItems: 'center', gap: '8px' },
+  bdg: { width: '28px', height: '28px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '15px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  snm: { fontSize: '16px', fontWeight: 900, color: PURPLE.text },
+  off: { marginLeft: 'auto', fontSize: '15px', fontWeight: 900, color: '#fff', background: PURPLE.accent, borderRadius: '8px', padding: '2px 11px' },
+  eq: { fontSize: '27px', fontWeight: 900, color: PURPLE.text, display: 'flex', alignItems: 'baseline', gap: '6px' },
+  eqOp: { color: PURPLE.textMuted, fontSize: '21px' },
+  eqTarget: { color: PURPLE.accent, fontSize: '40px' },
+  pcs: { display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' },
+  spacer: { height: '54px', minWidth: '60px', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '31px', fontWeight: 900, color: '#fff', padding: '0 12px', boxShadow: '0 2px 0 rgba(0,0,0,.15)' },
+  plusSm: { fontSize: '21px', fontWeight: 900, color: '#9a96ad' },
+  warn: { fontSize: '16px', fontWeight: 900, color: '#c8372c', marginLeft: '6px' },
+
+  setFoot: { flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
+  navBtn: { fontSize: '18px', fontWeight: 900, padding: '11px 18px', borderRadius: '12px', background: '#fff', border: `3px solid ${PURPLE.border}`, color: PURPLE.accentDark, cursor: 'pointer' },
+  navNext: {},
+  navDisabled: { opacity: 0.35, cursor: 'default' },
+  ptabs: { display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' },
+  ptab: { minWidth: '50px', height: '50px', borderRadius: '12px', background: '#fff', border: `3px solid ${PURPLE.border}`, color: PURPLE.accentDark, fontSize: '22px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0 8px' },
+  ptabOn: { background: PURPLE.accent, borderColor: PURPLE.accent, color: '#fff' },
+
+  cantRead: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' },
 };
