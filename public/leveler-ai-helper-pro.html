@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>레벨러 AI 헬퍼 (통합)</title>
+<title>레벨러 AI 헬퍼</title>
 <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
 <style>
   :root{--navy:#1a3a6b;--navy-d:#142d54;--blue:#2451a0;--amber:#f5a623;--ink:#17233b;--sec:#51607a;--mut:#8995ab;
@@ -227,40 +227,33 @@
   <div class="snav" data-v="trend"><div class="t"><span class="ko">추세·분석</span><span class="en">Trend</span></div><div class="s"><span class="ko">그래프</span><span class="en">Graphs</span></div></div>
   <div class="snav" data-v="past"><div class="t"><span class="ko">지난 작업</span><span class="en">Past jobs</span></div><div class="s"><span class="ko">기록</span><span class="en">History</span></div></div>
   <div class="lng"><b class="kobtn on">한</b><b class="enbtn">EN</b></div>
-  <div class="demo">
-    <div class="demolb">🎬 <span class="ko">시연 — 불량 팝업</span><span class="en">Demo — defect popup</span></div>
-    <div class="demobtns">
-      <button class="demobtn w" data-pop="ov-wave"><span class="ko">평탄도 웨이브</span><span class="en">Flatness wave</span></button>
-      <button class="demobtn s" data-pop="ov-scratch"><span class="ko">스크래치</span><span class="en">Scratch</span></button>
-    </div>
-  </div>
-  <div class="foot"><span class="ko">14:44 현재<br>PLC 연결 정상<br>15초 갱신</span><span class="en">14:44 now<br>PLC connected<br>updates 15s</span></div>
+  <div class="foot" id="h-foot"><span class="ko">14:44 현재<br>PLC 연결 정상<br>15초 갱신</span><span class="en">14:44 now<br>PLC connected<br>updates 15s</span></div>
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span class="date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
 <!-- ================= 현재 작업 ================= -->
 <div class="view on" id="v-now">
   <div class="chead">
     <div>
-      <span class="nm">태경스틸</span>
-      <span class="meta"> &nbsp;1.55×4자 · 2,450kg · 코일 FG3UQAB · 시작 11:15</span>
+      <span class="nm" id="h-cu">태경스틸</span>
+      <span class="meta" id="h-meta"> &nbsp;1.55×4자 · 2,450kg · 코일 FG3UQAB · 시작 11:15</span>
     </div>
-    <span class="box">박스 2 / 4</span>
-    <span class="verdict">● 정상 Normal</span>
+    <span class="box" id="h-box">박스 2 / 4</span>
+    <span class="verdict" id="h-verdict">● 정상 Normal</span>
     <div class="prog">
-      <span class="pn">79% · 290/366장</span>
-      <div class="pt"><div class="pf" style="width:79%"></div></div>
-      <span class="pn"><span class="ko">남음 ~33분 · 종료 15:18</span><span class="en">Left ~33min · End 15:18</span> · 554/738m</span>
+      <span class="pn" id="h-prog1">79% · 290/366장</span>
+      <div class="pt"><div class="pf" id="h-progfill" style="width:79%"></div></div>
+      <span class="pn" id="h-prog2"><span class="ko">남음 ~33분 · 종료 15:18</span><span class="en">Left ~33min · End 15:18</span> · 554/738m</span>
     </div>
   </div>
 
   <!-- 박스 전환 바 (맨 위, 크게) -->
   <div class="boxswitch">
     <div class="bst">📦 <span class="ko">현재 박스</span><span class="en">Current box</span> <small><span class="ko">· 눌러서 바로 바꾸기 (잘못 눌렀어도 여기서 변경)</span><span class="en">· Tap to switch (fixes a missed box change)</span></small></div>
-    <div class="bsgrid">
+    <div class="bsgrid" id="h-bsgrid">
       <div class="bsbtn done"><div class="bn3">1</div><div class="meta3">1,260mm · 131장</div><div class="tag3">완료 Done</div></div>
       <div class="bsbtn on"><div class="bn3">2</div><div class="meta3">2,438mm · 151/84장</div><div class="tag3">진행중 Now</div></div>
       <div class="bsbtn"><div class="bn3">3</div><div class="meta3">2,438mm · 예정</div><div class="tag3">대기 Next</div></div>
@@ -285,8 +278,8 @@
         <line x1="330" y1="150" x2="330" y2="193" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="214" y="48" width="232" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
         <text x="330" y="76" text-anchor="middle" font-size="18" font-weight="800" fill="#51607a">텐션 출력 Tension(OCR)</text>
-        <text x="330" y="124" text-anchor="middle" font-size="46" font-weight="900" fill="#1f9d57">68.0%</text>
-        <text x="330" y="146" text-anchor="middle" font-size="16" font-weight="900" fill="#1f9d57">● 적정 Normal · 평소 67%</text>
+        <text x="330" y="124" text-anchor="middle" font-size="46" font-weight="900" fill="#1f9d57" id="eq-ten">68.0%</text>
+        <text x="330" y="146" text-anchor="middle" font-size="16" font-weight="900" fill="#1f9d57" id="eq-tensub">● 적정 Normal · 평소 67%</text>
       </g>
       <!-- 레벨러 7롤 -->
       <g>
@@ -314,8 +307,8 @@
         <line x1="814" y1="150" x2="814" y2="146" stroke="#bfe6cf" stroke-width="4"/>
         <rect x="700" y="46" width="228" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
         <text x="814" y="72" text-anchor="middle" font-size="17" font-weight="800" fill="#51607a">이송속도 Speed · 절단 Cut</text>
-        <text x="814" y="112" text-anchor="middle" font-size="36" font-weight="900" fill="#1f9d57">11.3<tspan font-size="18" fill="#51607a"> m/min</tspan></text>
-        <text x="814" y="138" text-anchor="middle" font-size="18" font-weight="900" fill="#17233b">절단길이 2,439mm</text>
+        <text x="814" y="112" text-anchor="middle" font-size="36" font-weight="900" fill="#1f9d57" id="eq-spd">11.3<tspan font-size="18" fill="#51607a"> m/min</tspan></text>
+        <text x="814" y="138" text-anchor="middle" font-size="18" font-weight="900" fill="#17233b" id="eq-cut">절단길이 2,439mm</text>
       </g>
       <!-- 적재 -->
       <g>
@@ -324,7 +317,7 @@
         <rect x="1030" y="206" width="156" height="15" fill="#2451a0"/>
         <rect x="1030" y="225" width="156" height="15" fill="#3a66b8"/>
         <text x="1108" y="282" text-anchor="middle" font-size="19" font-weight="900" fill="#17233b">적재 Stack</text>
-        <text x="1108" y="305" text-anchor="middle" font-size="18" font-weight="900" fill="#2451a0">박스2 · 151/84장</text>
+        <text x="1108" y="305" text-anchor="middle" font-size="18" font-weight="900" fill="#2451a0" id="eq-stack">박스2 · 151/84장</text>
       </g>
     </svg>
   </div>
@@ -332,8 +325,8 @@
   <!-- 하단 요약 (품질 + 가이드 한 줄 + 셋팅값 바로가기) — 16:9 한 화면 -->
   <div class="nowfoot">
     <div class="nfq">
-      <span class="nfchip" data-pop="ov-wave"><span class="d"></span><span class="ko">평탄도 v2 OK</span><span class="en">Flatness v2 OK</span> <span class="lk2"><span class="ko">도식 →</span><span class="en">Diagram →</span></span></span>
-      <span class="nfchip" data-pop="ov-scratch"><span class="d"></span><span class="ko">흠집 0</span><span class="en">Scratch 0</span> <span class="lk2"><span class="ko">검출이력 →</span><span class="en">Log →</span></span></span>
+      <span class="nfchip" id="h-flatchip" data-pop="ov-wave"><span class="d"></span><span class="ko">평탄도 v2 OK</span><span class="en">Flatness v2 OK</span> <span class="lk2"><span class="ko">도식 →</span><span class="en">Diagram →</span></span></span>
+      <span class="nfchip" id="h-scratchchip" data-pop="ov-scratch"><span class="d"></span><span class="ko">흠집 0</span><span class="en">Scratch 0</span> <span class="lk2"><span class="ko">검출이력 →</span><span class="en">Log →</span></span></span>
       <span class="nfchip" style="color:var(--blue)">🎞 <span class="ko">영상</span><span class="en">Video</span></span>
     </div>
     <div class="nfg" data-go="trend">🤖 <span class="ko">지난 같은 규격 작업 평균 범위 안 — 지금 설정 유지 <span style="color:var(--mut)">(자세히: 추세·분석)</span></span><span class="en">Within past same-spec average — keep current settings <span style="color:var(--mut)">(details: Trend)</span></span></div>
@@ -356,7 +349,7 @@
     <div class="setnote">✅ 작업지시 규격과 일치 — 장비 셋팅값이 올바릅니다. (불일치 시 빨강으로 표시)</div>
   </div>
   <div class="brow" style="margin-top:13px">
-    <div class="boxprog">
+    <div class="boxprog" id="h-boxprog">
       <div class="bt">박스별 진행 Box progress <span style="color:var(--mut);font-weight:800">(절단길이 · 장수)</span></div>
       <div class="bpr"><span class="bl">1,260</span><div class="bb"><div style="width:100%;background:var(--ok)"></div></div><span class="bc">139/131</span></div>
       <div class="bpr"><span class="bl">2,438</span><div class="bb"><div style="width:100%;background:var(--blue)"></div></div><span class="bc" style="color:var(--blue)">151/84</span></div>
@@ -368,10 +361,10 @@
       <div class="plcg">
         <div class="pc"><div class="k">인버터 계수</div><div class="v" id="m-coeff">24.4</div></div>
         <div class="pc"><div class="k">사이클 Cycle</div><div class="v" id="m-cycle">13.0 s</div></div>
-        <div class="pc"><div class="k">생산 속도</div><div class="v">4.6 장/분</div></div>
+        <div class="pc"><div class="k">생산 속도</div><div class="v" id="m-ppm">4.6 장/분</div></div>
         <div class="pc"><div class="k">행정 위치</div><div class="v" id="m-pos">2,417</div></div>
         <div class="pc"><div class="k">RUN</div><div class="v" id="m-run">1</div></div>
-        <div class="pc"><div class="k">두께 OCR</div><div class="v">1550 µm</div></div>
+        <div class="pc"><div class="k">두께 OCR</div><div class="v" id="m-thk">1550 µm</div></div>
       </div>
     </div>
   </div>
@@ -401,7 +394,7 @@
       <circle cx="1050" cy="210" r="9" fill="#1a3a6b"/>
       <polyline points="1050,210 1150,210 1190,209" fill="none" stroke="#1a3a6b" stroke-width="3" stroke-dasharray="9 7" opacity=".55"/>
       <line x1="1050" y1="60" x2="1050" y2="420" stroke="#0f1e33" stroke-width="3"/>
-      <text x="1050" y="450" text-anchor="middle" font-size="17" font-weight="900" fill="#0f1e33">지금 Now · 554m · 35%</text>
+      <text x="1050" y="450" text-anchor="middle" font-size="17" font-weight="900" fill="#0f1e33" id="t-now">지금 Now · 554m · 35%</text>
       <text x="620" y="480" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">코일 길이 Length (m) →</text>
       <text x="1165" y="450" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">738</text>
     </svg>
@@ -414,10 +407,10 @@
   <div class="gpanel" style="margin-top:13px">
     <div class="gh">🤖 AI 가이드 <small>· 지난 같은 규격(1.55×4자) 완료 코일 N=8건 평균 대비</small></div>
     <div class="gcmp">
-      <div class="gcard"><div class="gk">인버터 부하 Load</div><div class="gv">35<small style="font-size:16px">%</small></div><div class="gavg">지난 평균 36% (32~40)</div><div class="gok">● 양호 OK</div></div>
-      <div class="gcard"><div class="gk">텐션 출력 Tension</div><div class="gv">68<small style="font-size:16px">%</small></div><div class="gavg">지난 평균 67% (63~71)</div><div class="gok">● 양호 OK</div></div>
-      <div class="gcard"><div class="gk">사이클 Cycle</div><div class="gv">13.0<small style="font-size:16px">s</small></div><div class="gavg">지난 평균 13.2s</div><div class="gok">● 양호 OK</div></div>
-      <div class="gcard"><div class="gk">이송속도 Speed</div><div class="gv">11.3</div><div class="gavg">지난 평균 11.5</div><div class="gok">● 양호 OK</div></div>
+      <div class="gcard"><div class="gk">인버터 부하 Load</div><div class="gv" id="g-load">35<small style="font-size:16px">%</small></div><div class="gavg">지난 평균 36% (32~40)</div><div class="gok">● 양호 OK</div></div>
+      <div class="gcard"><div class="gk">텐션 출력 Tension</div><div class="gv" id="g-ten">68<small style="font-size:16px">%</small></div><div class="gavg">지난 평균 67% (63~71)</div><div class="gok">● 양호 OK</div></div>
+      <div class="gcard"><div class="gk">사이클 Cycle</div><div class="gv" id="g-cyc">13.0<small style="font-size:16px">s</small></div><div class="gavg">지난 평균 13.2s</div><div class="gok">● 양호 OK</div></div>
+      <div class="gcard"><div class="gk">이송속도 Speed</div><div class="gv" id="g-spd">11.3</div><div class="gavg">지난 평균 11.5</div><div class="gok">● 양호 OK</div></div>
     </div>
     <div class="gmsg"><span class="gmi">✅</span>종합: 지난 같은 규격 작업과 거의 동일 — 지금 설정 유지. 품질 불량(웨이브·흠집) 0건.</div>
   </div>
@@ -427,7 +420,7 @@
 <div class="view" id="v-select">
   <div style="font-size:17px;font-weight:900;color:var(--sec)">코일 선택 Pick coil — 오늘 Today <span style="color:var(--mut);font-size:14px;font-weight:800">· 코일만 고르면 1박스로 시작, 박스는 현재 작업에서 변경</span></div>
   <div class="sgrid">
-    <div class="scoil on"><span class="st run">작업중</span><div class="cu">태경스틸</div><div class="sp">1.55×4자</div><div class="mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
+    <div class="scoil on"><span class="st run">작업중</span><div class="cu" id="sel-cu">태경스틸</div><div class="sp" id="sel-sp">1.55×4자</div><div class="mt" id="sel-mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
     <div class="scoil"><span class="st wait">대기</span><div class="cu">대한강재</div><div class="sp">0.45×4XC</div><div class="mt">코일 2632500711 · 10,760kg · 3박스</div><div class="pk">선택 Select →</div></div>
     <div class="scoil"><span class="st wait">대기</span><div class="cu">미래이앤아이</div><div class="sp">0.75×4XC</div><div class="mt">코일 T251122 · 10,420kg · 2박스</div><div class="pk">선택 Select →</div></div>
   </div>
@@ -544,47 +537,135 @@ var q=new URLSearchParams(location.search);
 if(q.get('tab'))showView(q.get('tab'));
 if(q.get('popup'))showPop('ov-'+q.get('popup'));
 
-// ── 실데이터 연동 (레벨링 PLC) ───────────────────────────
-var LIVE_API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
-var LIVE_KEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
-function _n(v){return (v===null||v===undefined||v==='')?null:Number(v);}
-function _fmt(v){if(v===null||v===undefined||isNaN(v))return null;return Math.round(v).toLocaleString('en-US');}
-function _set(id,val){var el=document.getElementById(id);if(el&&val!==null&&val!==undefined)el.textContent=val;}
-function _pickRow(j){
-  if(!j)return null;
-  if(Array.isArray(j))return j[0]||null;
-  if(Array.isArray(j.rows))return j.rows[0]||null;
-  if(Array.isArray(j.data))return j.data[0]||null;
-  if(Array.isArray(j.result))return j.result[0]||null;
-  if(typeof j==='object')return j;
-  return null;
+
+// ══════════ 상용 실데이터 엔진 (leveler-helper?mode=state) ══════════
+var SAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
+var SKEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
+var SQ=new URLSearchParams(location.search);
+var ASOF=SQ.get('asof')||null;            // "YYYY-MM-DD HH:MM:SS" 과거 재생
+var SHOWN={};                             // 중복 팝업 방지
+function _T(id,t){var e=document.getElementById(id);if(e&&t!=null)e.textContent=t;}
+function _H(id,h){var e=document.getElementById(id);if(e&&h!=null)e.innerHTML=h;}
+function _nf(v){return (v==null||v===''||isNaN(v))?'—':Math.round(v).toLocaleString('en-US');}
+function _f1(v){return (v==null||v===''||isNaN(v))?'—':(Math.round(v*10)/10).toString();}
+function sfetch(){
+  var u=SAPI+'?mode=state'+(ASOF?'&asof='+encodeURIComponent(ASOF):'');
+  return fetch(u,{headers:{apikey:SKEY,Authorization:'Bearer '+SKEY},cache:'no-store'})
+    .then(function(r){return r.ok?r.json():Promise.reject(r.status);});
 }
-function loadLive(){
-  var sql='SELECT * FROM LEVELING_DATA ORDER BY TIMESTAMP DESC LIMIT 1';
-  var url=LIVE_API+'?sql='+encodeURIComponent(sql);
-  fetch(url,{headers:{apikey:LIVE_KEY,Authorization:'Bearer '+LIVE_KEY}})
-   .then(function(r){return r.ok?r.json():Promise.reject(r.status);})
-   .then(function(j){
-     var row=_pickRow(j); if(!row)return;
-     // 장비 셋팅값
-     _set('s-cutlen',_fmt(_n(row.CUTLENSET)));
-     _set('s-corr',_fmt(_n(row.CUTLENCORR)));
-     _set('s-speed',_fmt(_n(row.SPEEDSET)));
-     _set('s-acc',_fmt(_n(row.ACCTM)));
-     _set('s-dec',_fmt(_n(row.DECTM)));
-     _set('s-slow',_fmt(_n(row.SLOWLENSET)));
-     // 측정값
-     var coeff=_n(row.INVERTERSPEEDCOEFF); if(coeff!==null)_set('m-coeff',coeff.toFixed(1));
-     var cyc=_n(row.CYCLETM); if(cyc!==null)_set('m-cycle',cyc.toFixed(1)+' s');
-     _set('m-pos',_fmt(_n(row.MOVELENSV)));
-     var run=_n(row.RUN); if(run!==null)_set('m-run',String(run));
-     // 장비 부하 (인버터 속도 %)
-     var load=_n(row.INVERTERSPEEDPER);
-     if(load!==null){var e=document.getElementById('eq-load');if(e)e.textContent=Math.round(load)+'%';}
-   })
-   .catch(function(){/* 실패 시 샘플값 유지 */});
+function buildBoxes(job,lv){
+  var grid=document.getElementById('h-bsgrid');if(!grid)return;
+  var boxes=(job&&job.boxes)||[],cur=(lv&&lv.box)||1;
+  if(!boxes.length)return;
+  grid.innerHTML=boxes.map(function(b){
+    var cls=b.i<cur?'done':(b.i===cur?'on':'');
+    var tag=b.i<cur?'완료 Done':(b.i===cur?'진행중 Now':'대기 Next');
+    var cnt=(b.plc!=null?_nf(b.plc):'0')+'/'+_nf(b.plan)+'장';
+    return '<div class="bsbtn '+cls+'"><div class="bn3">'+b.i+'</div><div class="meta3">'+_nf(b.len)+'mm · '+cnt+'</div><div class="tag3">'+tag+'</div></div>';
+  }).join('');
+  grid.querySelectorAll('.bsbtn').forEach(function(el){el.addEventListener('click',function(){grid.querySelectorAll('.bsbtn').forEach(function(x){x.classList.remove('on');});el.classList.add('on');});});
 }
-try{loadLive();setInterval(loadLive,15000);}catch(e){}
+function buildBoxProg(job,lv){
+  var bp=document.getElementById('h-boxprog');if(!bp||!job)return;
+  var boxes=job.boxes||[],cur=(lv&&lv.box)||1;
+  var bt=bp.querySelector('.bt');
+  bp.innerHTML='';if(bt)bp.appendChild(bt);
+  boxes.forEach(function(b){
+    var done=b.i<cur, now=b.i===cur;
+    var pct=b.plan? Math.min(100,Math.round((b.plc||0)/b.plan*100)) : 4;
+    var col=done?'var(--ok)':(now?'var(--blue)':'#cbd5e8');
+    var row=document.createElement('div');row.className='bpr';
+    row.innerHTML='<span class="bl">'+_nf(b.len)+'</span><div class="bb"><div style="width:'+(done||now?pct:4)+'%;background:'+col+'"></div></div><span class="bc"'+(now?' style="color:var(--blue)"':'')+'>'+_nf(b.plc||0)+'/'+_nf(b.plan)+'</span>';
+    bp.appendChild(row);
+  });
+}
+function fillWave(d){
+  var s=document.querySelector('#ov-wave .mtop .s');
+  if(s){var seg=(d.seg||d.segment_id||d.box_idx||''),pos=(d.pos||d.l||d.position_m);
+    s.textContent=(d.coil||'')+' · 박스 '+(d.box||d.box_idx||'')+(pos?' · 약 '+Math.round(pos)+'m':'');}
+}
+function fillScratch(d){
+  var s=document.querySelector('#ov-scratch .mtop .s');
+  if(s){var pos=(d.pos||d.l||d.position_m),cam=(d.camera_id||d.camera||'');
+    s.textContent=(d.coil||'')+' · 박스 '+(d.box||d.box_idx||'')+(pos?' · 약 '+Math.round(pos)+'m':'')+(cam?' · '+cam:'');}
+}
+function handleDefects(defs){
+  _H('h-flatchip','<span class="d"></span><span class="ko">평탄도</span><span class="en">Flatness</span> '+(defs&&defs.filter(isFlat).length?'<b style="color:var(--bad)">불량 '+defs.filter(isFlat).length+'</b>':'<span class="ko">정상 OK</span><span class="en">OK</span>')+' <span class="lk2"><span class="ko">도식 →</span><span class="en">Diagram →</span></span>');
+  _H('h-scratchchip','<span class="d"></span><span class="ko">흠집</span><span class="en">Scratch</span> '+((defs&&defs.filter(function(x){return !isFlat(x);}).length)||0)+' <span class="lk2"><span class="ko">검출이력 →</span><span class="en">Log →</span></span>');
+  if(!defs||!defs.length)return;
+  var d=defs[defs.length-1];
+  var key=(d.id||d.alert_id||d.at||d.seg||d.segment_id||JSON.stringify(d));
+  if(SHOWN[key])return;SHOWN[key]=1;
+  if(ASOF)return; // 과거 재생 땐 자동팝업 억제
+  if(isFlat(d)){fillWave(d);showPop('ov-wave');}else{fillScratch(d);showPop('ov-scratch');}
+}
+function isFlat(d){var t=((d.type||d.kind||d.metric||d.worst_feature||'')+'').toLowerCase();return /wave|flat|평탄|edge|bow|resid|gap|jump|local/.test(t);}
+function setIdle(on){
+  var v=document.getElementById('h-verdict');
+  if(on){
+    _T('h-cu','현재 작업 없음');_T('h-meta',' · 라인 대기 중 (실데이터 연결됨)');_T('h-box','박스 —');
+    if(v){v.textContent='● 대기 Idle';v.className='verdict';}
+    _T('h-prog1','—');var pf=document.getElementById('h-progfill');if(pf)pf.style.width='0%';
+    _H('h-prog2','<span class="ko">진행 중인 작업이 없습니다</span><span class="en">No active job</span>');
+  }
+}
+function render(st){
+  if(!st||!st.ok){ _H('h-foot','<span style="color:var(--bad)">PLC 응답 오류<br>샘플값 표시</span>'); return; }
+  var lv=st.floor&&st.floor.live, jobs=(st.floor&&st.floor.jobs)||[], job=jobs[0]||null;
+  var m=st.machine||{}, ten=st.tension||{}, defs=st.defects||[];
+  var now=st.now||'', online=st.floor&&st.floor.online;
+  // 상단 날짜/상태
+  _H('h-date','<span class="ko">PLC</span><span class="en">PLC</span> '+(st.today||'')+' · '+(st.floor&&st.floor.lastRow||now)+(ASOF?' · <b style="color:var(--acc)">과거재생 Replay</b>':''));
+  _H('h-foot','<span class="ko">'+now+' 기준<br>'+(online?'PLC 연결 정상':'PLC 대기')+'<br>15초 갱신</span><span class="en">'+now+'<br>'+(online?'PLC live':'PLC idle')+'<br>updates 15s</span>');
+  // 장비 셋팅값 (항상)
+  _T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));
+  _T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
+  // 측정값
+  _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');
+  _T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
+  if(!lv||!job){ setIdle(true); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%');
+    _T('m-cycle','—');_T('m-pos','—');_T('m-ppm','—');
+    handleDefects(defs); return; }
+  // ── 작업 진행 중 ──
+  _T('h-cu',job.cu||lv.coil||'—');
+  _T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · 코일 '+(job.coil||'')+' · 시작 '+(job.st||''));
+  var totB=(job.planBoxes&&job.planBoxes.length)||(job.boxes&&job.boxes.length)||'';
+  _T('h-box','박스 '+(lv.box||'')+' / '+totB);
+  var done=lv.sheetsDone,tot=lv.planTotal,pct=tot?Math.round(done/tot*100):0;
+  _T('h-prog1',pct+'% · '+_nf(done)+'/'+_nf(tot)+'장');
+  var pf=document.getElementById('h-progfill');if(pf)pf.style.width=Math.min(100,pct)+'%';
+  _H('h-prog2','<span class="ko">남음 ~'+Math.round(lv.remainMin||0)+'분 · 종료 '+(lv.endEst||'')+'</span><span class="en">Left ~'+Math.round(lv.remainMin||0)+'min · End '+(lv.endEst||'')+'</span> · '+_nf(job.L)+'m');
+  // 판정
+  var v=document.getElementById('h-verdict'),dn=defs.length;
+  if(v){ if(dn>0){v.textContent='● 주의 Check';v.className='verdict bad';}else{v.textContent='● 정상 Normal';v.className='verdict';} }
+  // 장비 그림
+  var load=(lv.load!=null?lv.load:m.load);
+  _T('eq-ten',(ten.out!=null?_f1(ten.out):'—')+'%');
+  _T('eq-tensub','● OCR '+(ten.at||'')+(ten.ageMin!=null?' · '+Math.round(ten.ageMin)+'분전':''));
+  _T('eq-load',(load!=null?Math.round(load):'—')+'%');
+  _H('eq-spd',(lv.feed!=null?_f1(lv.feed):'—')+'<tspan font-size="18" fill="#51607a"> m/min</tspan>');
+  _T('eq-cut','절단길이 '+_nf(m.cut||lv.cutNow)+'mm');
+  _T('eq-stack','박스'+(lv.box||'')+' · '+_nf(lv.sheetsDone)+'/'+_nf(lv.boxPlan)+'장');
+  // 측정값(진행값)
+  _T('m-cycle',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+' s');
+  _T('m-pos',_nf(lv.pos));_T('m-ppm',_f1(lv.ppm)+' 장/분');
+  // 박스
+  buildBoxes(job,lv);buildBoxProg(job,lv);
+  // 추세 가이드(지금값)
+  _H('g-load',Math.round(load)+'<small style="font-size:16px">%</small>');
+  _H('g-ten',(ten.out!=null?Math.round(ten.out):'—')+'<small style="font-size:16px">%</small>');
+  _H('g-cyc',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+'<small style="font-size:16px">s</small>');
+  _H('g-spd',_f1(lv.feed));
+  _T('t-now','지금 Now · '+_nf(job.L)+'m · '+Math.round(load)+'%');
+  // 작업 선택(현재 코일)
+  _T('sel-cu',job.cu||'—');_T('sel-sp',job.specRaw||'');
+  _T('sel-mt','코일 '+(job.coil||'')+' · '+_nf(job.kg)+'kg · '+totB+'박스');
+  // 불량
+  handleDefects(defs);
+}
+function tick(){ sfetch().then(render).catch(function(e){ _H('h-foot','<span style="color:var(--bad)">PLC 연결 실패<br>('+e+')<br>샘플값 표시</span>'); }); }
+try{ tick(); if(!ASOF) setInterval(tick,15000); }catch(e){}
+
 </script>
 </div>
 </body>
