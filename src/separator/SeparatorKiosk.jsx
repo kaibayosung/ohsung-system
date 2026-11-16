@@ -125,6 +125,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
   };
 
   return (
+    <FitStage>
     <div style={styles.page}>
       <div style={styles.topStrip}>
         <div style={styles.topStripLeftGroup}>
@@ -140,6 +141,7 @@ export default function SeparatorKiosk({ staffName, onLogout }) {
         <SetupScreen job={selected} strips={strips} stationResults={stationResults} onBack={backToSelect} autoDetected={autoBanner} />
       )}
     </div>
+    </FitStage>
   );
 }
 
@@ -269,8 +271,27 @@ function PieceBig({ size }) {
   );
 }
 
+function FitStage({ children }) {
+  const DW = 1280, DH = 800;
+  const [scale, setScale] = React.useState(1);
+  React.useEffect(() => {
+    const fit = () => setScale(Math.min(window.innerWidth / DW, window.innerHeight / DH));
+    fit();
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', fit);
+    return () => { window.removeEventListener('resize', fit); window.removeEventListener('orientationchange', fit); };
+  }, []);
+  return (
+    <div style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: '#E9E8F3', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ width: DW + 'px', height: DH + 'px', transform: 'scale(' + scale + ')', transformOrigin: 'center', flex: '0 0 auto' }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 const styles = {
-  page: { minHeight: '100vh', background: '#FAFAFE', display: 'flex', flexDirection: 'column', fontFamily: "'Pretendard', -apple-system, sans-serif" },
+  page: { width: '100%', height: '100%', background: '#FAFAFE', display: 'flex', flexDirection: 'column', fontFamily: "'Pretendard', -apple-system, sans-serif" },
   topStrip: { background: '#fff', color: PURPLE.text, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 28px', fontSize: '19px', fontWeight: 900, borderBottom: `1px solid ${PURPLE.border}` },
   topStripLeftGroup: { display: 'flex', alignItems: 'center', gap: '26px', flexWrap: 'wrap' },
   topStripText: {},
