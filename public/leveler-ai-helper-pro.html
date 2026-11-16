@@ -428,6 +428,16 @@
 #ov-past .pdcmp>div{background:#f1f5fb;border-radius:14px;padding:15px;text-align:center}
 #ov-past .pdcmp b{font-size:32px}
 #ov-past .pdcmp span{font-size:16px;color:var(--mut);font-weight:800}
+
+/* 작업 선택 실데이터 상태 */
+.scoil .st.done{background:#e7edf7;color:#2451a0}
+.selempty{grid-column:1/-1;background:#f4f7fc;border:2px dashed var(--line);border-radius:16px;padding:34px 18px;text-align:center;font-size:22px;font-weight:900;color:var(--sec)}
+.selempty small{display:block;margin-top:8px;font-size:15px;color:var(--mut);font-weight:800}
+.scoil.sel{outline:3px solid var(--navy);outline-offset:-1px}
+/* 추세 — 작업 없을 때 안내 */
+.trend-idle{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:60px;color:#c3cede;background:#f8fafd;border-radius:14px;border:2px dashed var(--line)}
+.trend-idle .ti1{font-size:24px;font-weight:900;color:var(--sec)}
+.trend-idle .ti2{font-size:16px;font-weight:800;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -590,8 +600,8 @@
 <div class="view" id="v-trend">
   <div class="trend">
     <div class="tt">📈 추세·분석 Trend <small>· 코일 길이(시간)에 따른 변화 · 실측 vs 지난 같은 규격 작업 평균 vs 정상 범위</small></div>
-    <div class="ttabs"><b class="on">인버터 부하 Load</b><b>텐션 Tension</b><b>이송속도 Speed</b><b>사이클 Cycle</b></div>
-    <svg viewBox="0 0 1240 500" style="width:100%;height:auto;min-height:420px" font-family="Pretendard">
+    <div class="ttabs" id="trend-tabs"><b class="on">인버터 부하 Load</b><b>텐션 Tension</b><b>이송속도 Speed</b><b>사이클 Cycle</b></div>
+    <svg id="trend-svg" viewBox="0 0 1240 500" style="width:100%;height:auto;min-height:420px" font-family="Pretendard">
       <!-- y축 0~60% 확대 -->
       <rect x="70" y="192" width="1120" height="48" fill="rgba(31,157,87,.16)"/>
       <text x="78" y="184" font-size="16" font-weight="800" fill="#1f9d57">정상 범위 Normal (같은 두께 지난 작업 30~38%)</text>
@@ -614,6 +624,7 @@
       <text x="620" y="480" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">코일 길이 Length (m) →</text>
       <text x="1165" y="450" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">738</text>
     </svg>
+    <div id="trend-idle" class="trend-idle" style="display:none">📈<div class="ti1"><span class="ko">작업이 시작되면 추세가 표시됩니다</span><span class="en">Trend shows during a job</span></div><div class="ti2"><span class="ko">현재 레벨링 작업이 없습니다</span><span class="en">No active leveling job</span></div></div>
     <div class="tlegend">
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#1a3a6b" stroke-width="3.8"/></svg> 실측 Actual</span>
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#9aa3b5" stroke-width="2.6" stroke-dasharray="6 5"/></svg> 지난 작업 평균 Avg of past jobs</span>
@@ -635,12 +646,12 @@
 <!-- ================= 작업 선택 ================= -->
 <div class="view" id="v-select">
   <div style="font-size:17px;font-weight:900;color:var(--sec)">Pick coil — <span class="ko">오늘</span><span class="en">Today</span> <span style="color:var(--mut);font-size:14px;font-weight:800"><span class="ko">· 코일만 고르면 1박스로 시작</span><span class="en">· pick a coil, starts at box 1</span></span></div>
-  <div class="sgrid">
+  <div class="sgrid" id="sel-grid">
     <div class="scoil on"><span class="st run"><span class="ko">작업중</span><span class="en">Running</span></span><div class="cu" id="sel-cu">태경스틸</div><div class="sp" id="sel-sp">1.55×4자</div><div class="mt" id="sel-mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
     <div class="scoil"><span class="st wait"><span class="ko">대기</span><span class="en">Wait</span></span><div class="cu">대한강재</div><div class="sp">0.45×4XC</div><div class="mt">코일 2632500711 · 10,760kg · 3박스</div><div class="pk">선택 Select →</div></div>
     <div class="scoil"><span class="st wait">대기</span><div class="cu">미래이앤아이</div><div class="sp">0.75×4XC</div><div class="mt">코일 T251122 · 10,420kg · 2박스</div><div class="pk">선택 Select →</div></div>
   </div>
-  <div class="selbox" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div class="selbox" id="sel-box" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
     <div style="font-size:19px;font-weight:900"><span class="ko">선택:</span><span class="en">Selected:</span> <span style="color:var(--navy)">태경스틸</span> · <span class="ko">1박스로 시작</span><span class="en">start at box 1</span></div>
     <div class="gobtn" style="margin-top:0;padding:16px 34px" data-go="now">작업 시작 Start →</div>
   </div>
@@ -830,7 +841,7 @@ function setIdle(){
   _T('rc-note','· '+t('작업 중 같은 규격 추천 표시','rec shown during a job'));
   _T('rc-speed',t('추천','Rec')+' —');_T('rc-acc',t('추천','Rec')+' —');_T('rc-dec',t('추천','Rec')+' —');_T('rc-slow',t('추천','Rec')+' —');
   _T('nav-now-s',t('작업 없음','No job'));
-  clearWork();RECKEY=null;
+  clearWork();trendIdle(true);RECKEY=null;
 }
 function loadRec(coil,cut){
   if(!coil||String(coil).length<5||/^0+$/.test(coil))return;
@@ -873,11 +884,11 @@ function render(st){
   _H('h-foot','<span class="ko">'+now+' 기준<br>'+(online?'PLC 연결 정상':'PLC 대기')+'<br>15초 갱신</span><span class="en">'+now+'<br>'+(online?'PLC live':'PLC idle')+'<br>updates 15s</span>');
   _T('eq-loadlbl',t('인버터 부하','Inv. load'));
   var totToday=jobs.length+waiting.length;
-  _T('nav-sel-s',(totToday||'0')+t('건',' jobs'));
+  _T('nav-sel-s',(totToday||'0')+t('건',' jobs'));buildSelect(st);
   if(!(lv && job && online)){ setIdle(); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); handleDefects(defs); return; }
   _T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
   _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
-  loadRec(job.coil,m.cut);
+  trendIdle(false);loadRec(job.coil,m.cut);
   _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · '+t('코일','coil')+' '+(job.coil||'')+' · '+t('시작','start')+' '+(job.st||''));
   var totB=(job.planBoxes&&job.planBoxes.length)||(job.boxes&&job.boxes.length)||'';
   _T('h-box',t('박스','Box')+' '+(lv.box||'')+' / '+totB);
@@ -896,7 +907,6 @@ function render(st){
   _H('g-load',Math.round(load)+'<small style="font-size:16px">%</small>');_H('g-ten',(ten.out!=null?Math.round(ten.out):'—')+'<small style="font-size:16px">%</small>');
   _H('g-cyc',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+'<small style="font-size:16px">s</small>');_H('g-spd',_f1(lv.feed));
   _T('t-now',t('지금','Now')+' · '+_nf(job.L)+'m · '+Math.round(load)+'%');
-  _T('sel-cu',job.cu||'—');_T('sel-sp',job.specRaw||'');_T('sel-mt',t('코일','Coil')+' '+(job.coil||'')+' · '+_nf(job.kg)+'kg · '+totB+t('박스',' box'));
   if(load!=null)guide(load);
   handleDefects(defs);
 }
@@ -1037,6 +1047,27 @@ function buildJourney(j){
     _T('j-accdec',_pn(bx.acc)+' / '+_pn(bx.dec));_H('j-slow',_nf(bx.slow)+'<small>mm</small>');
     _T('j-sh',_nf(Math.round(m/L*(j.sPlc||0))));}
   draw();upd(+sld.value);sld.addEventListener('input',function(){upd(+sld.value);});
+}
+function trendIdle(on){var sv=document.getElementById('trend-svg'),tb=document.getElementById('trend-tabs'),id=document.getElementById('trend-idle');if(sv)sv.style.display=on?'none':'';if(tb)tb.style.display=on?'none':'';if(id)id.style.display=on?'':'none';}
+function buildSelect(st){
+  var fl=st.floor||{},jobs=fl.jobs||[],waiting=fl.waiting||[],lv=fl.live,online=fl.online;
+  var grid=document.getElementById('sel-grid'),box=document.getElementById('sel-box');if(!grid)return;
+  var liveCoil=lv&&lv.coil,curName=null,cards=[];
+  function card(c,sc,sl,on){var bn=(c.planBoxes&&c.planBoxes.length)||(c.boxes&&c.boxes.length)||'';
+    return '<div class="scoil'+(on?' on':'')+'"><span class="st '+sc+'">'+sl+'</span>'
+      +'<div class="cu">'+(c.cu||'—')+'</div><div class="sp">'+(c.specRaw||'')+'</div>'
+      +'<div class="mt">'+t('코일','Coil')+' '+(c.coil||'')+' · '+_nf(c.kg)+'kg'+(bn?' · '+bn+t('박스',' box'):'')+'</div>'
+      +'<div class="pk">'+(on?'✓ '+t('작업중','Running'):t('상세 →','View →'))+'</div></div>';}
+  jobs.forEach(function(j){var run=online&&liveCoil&&j.coil===liveCoil;if(run)curName=j.cu||j.coil;
+    cards.push(card(j,run?'run':'done',run?t('작업중','Running'):t('완료','Done'),run));});
+  waiting.forEach(function(w){cards.push(card(w,'wait',t('대기','Wait'),false));});
+  if(!cards.length){grid.innerHTML='<div class="selempty">'+t('오늘 레벨링 작업이 없습니다','No leveling jobs today')+'<small>'+t('작업지시가 등록되면 여기에 표시됩니다','jobs appear here when scheduled')+'</small></div>';if(box)box.style.display='none';return;}
+  grid.innerHTML=cards.join('');
+  if(box){box.style.display='';box.innerHTML=curName
+    ? '<div style="font-size:19px;font-weight:900">'+t('현재','Now')+': <span style="color:var(--navy)">'+curName+'</span>'+(lv&&lv.box?' · '+t('박스','Box')+lv.box:'')+'</div><div class="gobtn" style="margin-top:0;padding:14px 30px" data-go="now">'+t('현재 상태 보기 →','View status →')+'</div>'
+    : '<div style="font-size:19px;font-weight:900;color:var(--mut)">'+t('진행 중인 작업 없음','No running job')+'</div>';
+    var gb=box.querySelector('[data-go="now"]');if(gb)gb.addEventListener('click',function(){showView('now');});}
+  grid.querySelectorAll('.scoil').forEach(function(el){el.addEventListener('click',function(){grid.querySelectorAll('.scoil').forEach(function(c){c.classList.remove('sel');});el.classList.add('sel');});});
 }
 function wireSnap(){var body=document.getElementById('pd-body');if(!body)return;
   body.querySelectorAll('tr.go[data-m]').forEach(function(tr){tr.addEventListener('click',function(){if(!CURJOB)return;showSnap(CURJOB.coil,CURJOB.date,clkAdd(CURJOB.st,+tr.getAttribute('data-m')));});});}

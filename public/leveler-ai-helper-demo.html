@@ -428,6 +428,16 @@
 #ov-past .pdcmp>div{background:#f1f5fb;border-radius:14px;padding:15px;text-align:center}
 #ov-past .pdcmp b{font-size:32px}
 #ov-past .pdcmp span{font-size:16px;color:var(--mut);font-weight:800}
+
+/* 작업 선택 실데이터 상태 */
+.scoil .st.done{background:#e7edf7;color:#2451a0}
+.selempty{grid-column:1/-1;background:#f4f7fc;border:2px dashed var(--line);border-radius:16px;padding:34px 18px;text-align:center;font-size:22px;font-weight:900;color:var(--sec)}
+.selempty small{display:block;margin-top:8px;font-size:15px;color:var(--mut);font-weight:800}
+.scoil.sel{outline:3px solid var(--navy);outline-offset:-1px}
+/* 추세 — 작업 없을 때 안내 */
+.trend-idle{min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:60px;color:#c3cede;background:#f8fafd;border-radius:14px;border:2px dashed var(--line)}
+.trend-idle .ti1{font-size:24px;font-weight:900;color:var(--sec)}
+.trend-idle .ti2{font-size:16px;font-weight:800;color:var(--mut)}
 </style>
 </head>
 <body>
@@ -597,8 +607,8 @@
 <div class="view" id="v-trend">
   <div class="trend">
     <div class="tt">📈 추세·분석 Trend <small>· 코일 길이(시간)에 따른 변화 · 실측 vs 지난 같은 규격 작업 평균 vs 정상 범위</small></div>
-    <div class="ttabs"><b class="on">인버터 부하 Load</b><b>텐션 Tension</b><b>이송속도 Speed</b><b>사이클 Cycle</b></div>
-    <svg viewBox="0 0 1240 500" style="width:100%;height:auto;min-height:420px" font-family="Pretendard">
+    <div class="ttabs" id="trend-tabs"><b class="on">인버터 부하 Load</b><b>텐션 Tension</b><b>이송속도 Speed</b><b>사이클 Cycle</b></div>
+    <svg id="trend-svg" viewBox="0 0 1240 500" style="width:100%;height:auto;min-height:420px" font-family="Pretendard">
       <!-- y축 0~60% 확대 -->
       <rect x="70" y="192" width="1120" height="48" fill="rgba(31,157,87,.16)"/>
       <text x="78" y="184" font-size="16" font-weight="800" fill="#1f9d57">정상 범위 Normal (같은 두께 지난 작업 30~38%)</text>
@@ -621,6 +631,7 @@
       <text x="620" y="480" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">코일 길이 Length (m) →</text>
       <text x="1165" y="450" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">738</text>
     </svg>
+    <div id="trend-idle" class="trend-idle" style="display:none">📈<div class="ti1"><span class="ko">작업이 시작되면 추세가 표시됩니다</span><span class="en">Trend shows during a job</span></div><div class="ti2"><span class="ko">현재 레벨링 작업이 없습니다</span><span class="en">No active leveling job</span></div></div>
     <div class="tlegend">
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#1a3a6b" stroke-width="3.8"/></svg> 실측 Actual</span>
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#9aa3b5" stroke-width="2.6" stroke-dasharray="6 5"/></svg> 지난 작업 평균 Avg of past jobs</span>
@@ -642,12 +653,12 @@
 <!-- ================= 작업 선택 ================= -->
 <div class="view" id="v-select">
   <div style="font-size:17px;font-weight:900;color:var(--sec)">Pick coil — <span class="ko">오늘</span><span class="en">Today</span> <span style="color:var(--mut);font-size:14px;font-weight:800"><span class="ko">· 코일만 고르면 1박스로 시작</span><span class="en">· pick a coil, starts at box 1</span></span></div>
-  <div class="sgrid">
+  <div class="sgrid" id="sel-grid">
     <div class="scoil on"><span class="st run"><span class="ko">작업중</span><span class="en">Running</span></span><div class="cu">태경스틸</div><div class="sp">1.55×4자</div><div class="mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
     <div class="scoil"><span class="st wait"><span class="ko">대기</span><span class="en">Wait</span></span><div class="cu">대한강재</div><div class="sp">0.45×4XC</div><div class="mt">코일 2632500711 · 10,760kg · 3박스</div><div class="pk">선택 Select →</div></div>
     <div class="scoil"><span class="st wait">대기</span><div class="cu">미래이앤아이</div><div class="sp">0.75×4XC</div><div class="mt">코일 T251122 · 10,420kg · 2박스</div><div class="pk">선택 Select →</div></div>
   </div>
-  <div class="selbox" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+  <div class="selbox" id="sel-box" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
     <div style="font-size:19px;font-weight:900"><span class="ko">선택:</span><span class="en">Selected:</span> <span style="color:var(--navy)">태경스틸</span> · <span class="ko">1박스로 시작</span><span class="en">start at box 1</span></div>
     <div class="gobtn" style="margin-top:0;padding:16px 34px" data-go="now">작업 시작 Start →</div>
   </div>
