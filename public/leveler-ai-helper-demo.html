@@ -937,7 +937,7 @@ function loadRec(coil,cut){
   if(!coil||String(coil).length<5||/^0+$/.test(coil))return;
   var key=coil+'|'+cut;if(RECKEY===key)return;RECKEY=key;
   fetch(RAPI+'?coil='+encodeURIComponent(coil)+(cut?'&cutlen='+Math.round(cut):''),{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():Promise.reject(r.status);})
-   .then(function(j){ if(j&&j.ok&&j.rec){ var r=j.rec; r.ss=+r.ss;r.acc=+r.acc;r.de=+r.de;r.slow=+r.slow;r.cl=+r.cl;r.clsd=+r.clsd; REC=r;RECMETA=j;applyRec();if(LASTLOAD!=null)guide(LASTLOAD);} else {_T('rc-note','· '+t('같은 규격 과거 데이터 없음','no same-spec history'));} })
+   .then(function(j){ if(j&&j.ok&&j.rec){ var r=j.rec; r.ss=+r.ss;r.acc=+r.acc;r.de=+r.de;r.slow=+r.slow;r.cl=+r.cl;r.clsd=+r.clsd; REC=r;RECMETA=j;applyRec();if(LASTLOAD!=null)guide(LASTLOAD);if(CURCOILJOB)buildTrend(CURCOILJOB);} else {_T('rc-note','· '+t('같은 규격 과거 데이터 없음','no same-spec history'));} })
    .catch(function(){_T('rc-note','· '+t('추천 데이터 조회 실패','rec lookup failed'));});
 }
 function recLine(rcId,curId,val){
@@ -978,7 +978,7 @@ function render(st){
   if(!(lv && job && online)){ setIdle(); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); handleDefects(defs); return; }
   _T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
   _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
-  trendIdle(false);loadRec(job.coil,m.cut);
+  trendIdle(false);fetchTrend(job.coil,st.today);loadRec(job.coil,m.cut);
   _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · '+t('코일','coil')+' '+(job.coil||'')+' · '+t('시작','start')+' '+(job.st||''));
   var totB=(job.planBoxes&&job.planBoxes.length)||(job.boxes&&job.boxes.length)||'';
   _T('h-box',t('박스','Box')+' '+(lv.box||'')+' / '+totB);
@@ -1254,8 +1254,50 @@ function fetchTenTrend(){
   var u=REST+'ai_tension_readings?select=captured_at,output_percent,tension_set,thickness_um,start_dia_mm&order=captured_at.desc&limit=14';
   return fetch(u,{headers:{apikey:SKEY,Authorization:'Bearer '+SKEY},cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(rows){rows=(rows||[]).filter(function(x){return x.output_percent!=null;}).reverse();renderTen(rows);}).catch(function(){});
 }
+var TRENDTAB='load',CURCOILJOB=null,CURTRENDKEY=null;
+function _trSer(j){var prof=j.prof||{x:[],ld:[],cyc:[]},rd=j.rd||[],out=[],i,cum=0;
+  if(TRENDTAB==='load'){for(i=0;i<(prof.x||[]).length;i++)if(prof.ld[i]!=null)out.push({x:prof.x[i],y:prof.ld[i]});return {pts:out,unit:'%',lbl:t('인버터 부하','Load'),col:'#1a3a6b',area:1};}
+  if(TRENDTAB==='cycle'){for(i=0;i<(prof.x||[]).length;i++)if(prof.cyc[i]!=null)out.push({x:prof.x[i],y:prof.cyc[i]});return {pts:out,unit:'s',lbl:t('사이클','Cycle'),col:'#2451a0'};}
+  if(TRENDTAB==='tension'){rd.forEach(function(r){if(r.l!=null&&r.out!=null)out.push({x:r.l,y:r.out});});return {pts:out,unit:'%',lbl:t('텐션','Tension'),col:'#796cbf'};}
+  (j.boxes||[]).forEach(function(b){var len=(b.lenM!=null?b.lenM:(b.len?b.len/1000:0))||0;out.push({x:cum,y:+b.ss||0});cum+=len;out.push({x:cum,y:+b.ss||0});});return {pts:out,unit:'',lbl:t('이송속도','Speed'),col:'#e8870f'};
+}
+function buildTrend(j){
+  var svg=document.getElementById('trend-svg');if(!svg||!j)return;
+  var S=_trSer(j),pts=S.pts;
+  if(!pts.length){svg.innerHTML='<text x="600" y="230" text-anchor="middle" font-size="19" fill="#8995ab" font-weight="800">'+t('이 지표는 데이터가 없습니다','no data for this metric')+'</text>';return;}
+  var L=Math.max(1,j.L||1),X0=96,X1=1180,Y0=48,Y1=404;
+  var ys=pts.map(function(p){return p.y;}),mn=Math.min.apply(null,ys),mx=Math.max.apply(null,ys),band=null;
+  if(TRENDTAB==='load'&&REC&&REC.cl){var sd=(REC.clsd&&REC.clsd>2)?REC.clsd:3;band={lo:REC.cl-sd,hi:REC.cl+sd};mn=Math.min(mn,band.lo);mx=Math.max(mx,band.hi);}
+  var pad=(mx-mn)*0.16||2,y0=mn-pad,y1=mx+pad;
+  function xOf(x){return X0+Math.min(1,x/L)*(X1-X0);}
+  function yOf(v){return Y1-(v-y0)/((y1-y0)||1)*(Y1-Y0);}
+  var h='',g,vv;
+  for(g=0;g<=4;g++){vv=y0+(y1-y0)*g/4;h+='<line x1="'+X0+'" y1="'+yOf(vv).toFixed(1)+'" x2="'+X1+'" y2="'+yOf(vv).toFixed(1)+'" stroke="#eef1f7" stroke-width="1.5"/><text x="'+(X0-12)+'" y="'+(yOf(vv)+6).toFixed(1)+'" text-anchor="end" font-size="17" fill="#8995ab" font-weight="800">'+(Math.round(vv*10)/10)+'</text>';}
+  h+='<text x="'+(X0-12)+'" y="'+(Y0-14)+'" text-anchor="end" font-size="15" fill="#8995ab" font-weight="800">'+S.unit+'</text>';
+  if(band){h+='<rect x="'+X0+'" y="'+yOf(band.hi).toFixed(1)+'" width="'+(X1-X0)+'" height="'+(yOf(band.lo)-yOf(band.hi)).toFixed(1)+'" fill="rgba(31,157,87,.15)"/><text x="'+(X0+10)+'" y="'+(yOf(band.hi)-8).toFixed(1)+'" font-size="16" font-weight="800" fill="#1f9d57">'+t('정상 범위','Normal')+' '+Math.round(band.lo)+'~'+Math.round(band.hi)+'%</text>';}
+  var cum=0;(j.boxes||[]).forEach(function(b,bi){var len=(b.lenM!=null?b.lenM:(b.len?b.len/1000:0))||0;cum+=len;if(bi<(j.boxes.length-1)){var bx=xOf(cum);h+='<line x1="'+bx.toFixed(1)+'" y1="'+Y0+'" x2="'+bx.toFixed(1)+'" y2="'+Y1+'" stroke="#d7deea" stroke-width="2" stroke-dasharray="6 6"/><text x="'+(bx+7).toFixed(1)+'" y="'+(Y0+18)+'" font-size="14" font-weight="800" fill="#9aa3b5">'+t('박스','B')+(b.i+1)+'</text>';}});
+  h+='<line x1="'+X0+'" y1="'+Y0+'" x2="'+X0+'" y2="'+Y1+'" stroke="#dfe4ee" stroke-width="2.5"/><line x1="'+X0+'" y1="'+Y1+'" x2="'+X1+'" y2="'+Y1+'" stroke="#dfe4ee" stroke-width="2.5"/>';
+  var line=pts.map(function(p){return xOf(p.x).toFixed(1)+','+yOf(p.y).toFixed(1);}).join(' ');
+  if(S.area)h+='<polyline points="'+xOf(pts[0].x).toFixed(1)+','+Y1+' '+line+' '+xOf(pts[pts.length-1].x).toFixed(1)+','+Y1+'" fill="rgba(36,81,160,.10)"/>';
+  h+='<polyline points="'+line+'" fill="none" stroke="'+S.col+'" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>';
+  pts.forEach(function(p){h+='<circle cx="'+xOf(p.x).toFixed(1)+'" cy="'+yOf(p.y).toFixed(1)+'" r="4.5" fill="'+S.col+'"/>';});
+  var lv=LASTST&&LASTST.floor&&LASTST.floor.live,posNow=(lv&&lv.pos!=null)?lv.pos:null;
+  if(posNow!=null&&posNow<=L){var nx=xOf(posNow);h+='<line x1="'+nx.toFixed(1)+'" y1="'+Y0+'" x2="'+nx.toFixed(1)+'" y2="'+Y1+'" stroke="#0f1e33" stroke-width="3"/><circle cx="'+nx.toFixed(1)+'" cy="'+yOf(pts[pts.length-1].y).toFixed(1)+'" r="8" fill="#0f1e33"/><text x="'+nx.toFixed(1)+'" y="'+(Y1+46)+'" text-anchor="middle" font-size="16" font-weight="900" fill="#0f1e33">'+t('지금','Now')+' '+Math.round(posNow)+'m</text>';}
+  [0,0.25,0.5,0.75,1].forEach(function(f){h+='<text x="'+xOf(L*f).toFixed(1)+'" y="'+(Y1+26)+'" text-anchor="middle" font-size="15" fill="#8995ab" font-weight="800">'+Math.round(L*f)+'m</text>';});
+  svg.innerHTML=h;
+}
+function fetchTrend(coil,today){
+  if(!coil||!today||ASOF)return;
+  var key=coil+'|'+today;if(CURTRENDKEY===key&&CURCOILJOB){buildTrend(CURCOILJOB);return;}
+  fetch(FAPI+'?mode=day&date='+today,{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
+    var jobs=(d&&d.jobs)||[],job=null;jobs.forEach(function(x){if(x.coil===coil)job=x;});
+    if(job){CURCOILJOB=job;CURTRENDKEY=key;buildTrend(job);}
+  }).catch(function(){});
+}
+function wireTrendTabs(){var tabs=document.querySelectorAll('#trend-tabs b'),keys=['load','tension','speed','cycle'];
+  [].forEach.call(tabs,function(b,i){b.onclick=function(){TRENDTAB=keys[i];[].forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});if(CURCOILJOB)buildTrend(CURCOILJOB);};});}
 function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');});fetchTenTrend();}
-try{tick();if(!ASOF)setInterval(tick,15000);initPast();}catch(e){}
+try{tick();if(!ASOF)setInterval(tick,15000);initPast();wireTrendTabs();}catch(e){}
 
 </script>
 </div>
