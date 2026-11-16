@@ -45,17 +45,17 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-weight:700;over
 .stt{position:absolute;top:-1px;right:-1px;color:#fff;font-size:13px;font-weight:900;border-radius:0 15px 0 14px;padding:5px 12px}
 .stt.run{background:#2451a0} .stt.done{background:#1f7a4d} .stt.rdy{background:#8a93a6}
 /* 상세 */
-.detail{flex:1;min-height:0;display:flex;flex-direction:column;padding:11px 14px 12px;gap:10px;overflow:hidden}
-.banner{flex:0 0 auto;display:flex;align-items:stretch;gap:12px;background:#fff;border:2px solid var(--line);border-radius:16px;padding:11px 16px}
-.banner .verdbox{display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:13px;padding:7px 18px;min-width:120px}
-.banner .verdbox .big{font-size:33px;font-weight:900;line-height:1} .banner .verdbox .sm2{font-size:14px;font-weight:800;margin-top:2px}
+.detail{flex:1;min-height:0;display:flex;flex-direction:column;padding:9px 14px 11px;gap:8px;overflow:hidden}
+.banner{flex:0 0 auto;display:flex;align-items:center;gap:12px;background:#fff;border:2px solid var(--line);border-radius:14px;padding:8px 15px}
+.banner .verdbox{display:flex;align-items:baseline;justify-content:center;gap:7px;border-radius:11px;padding:7px 15px}
+.banner .verdbox .big{font-size:27px;font-weight:900;line-height:1} .banner .verdbox .sm2{font-size:12px;font-weight:800}
 .banner.ok .verdbox{background:var(--okbg);color:var(--ok)} .banner.warn .verdbox{background:var(--warnbg);color:var(--warn)} .banner.bad .verdbox{background:var(--badbg);color:var(--bad)}
 .banner .info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;gap:2px}
-.banner .info .t{font-size:24px;font-weight:900;letter-spacing:-.4px;line-height:1.05;word-break:break-all}
-.banner .info .s{font-size:16px;font-weight:800;color:var(--sec)}
-.banner .kpis{display:flex;gap:9px;align-items:center}
-.kpi{text-align:center;background:#f7f9fc;border:1.5px solid var(--line);border-radius:12px;padding:6px 14px;min-width:76px}
-.kpi .n{font-size:26px;font-weight:900;line-height:1} .kpi .l{font-size:13px;font-weight:800;color:var(--mut)}
+.banner .info .t{font-size:22px;font-weight:900;letter-spacing:-.4px;line-height:1.05;word-break:break-all}
+.banner .info .s{font-size:15px;font-weight:800;color:var(--sec)}
+.banner .kpis{display:flex;gap:8px;align-items:center}
+.kpi{text-align:center;background:#f7f9fc;border:1.5px solid var(--line);border-radius:11px;padding:5px 13px;min-width:70px}
+.kpi .n{font-size:23px;font-weight:900;line-height:1} .kpi .l{font-size:12px;font-weight:800;color:var(--mut)}
 .kpi.hot{background:var(--badbg);border-color:var(--badln)} .kpi.hot .n{color:var(--bad)}
 .kpi.un{background:#fff4e6;border-color:#f3d6ab} .kpi.un .n{color:#b4690e}
 .dmain{flex:1;min-height:0;display:flex;gap:11px}
@@ -134,6 +134,24 @@ html,body{height:100%;background:var(--bg);color:var(--ink);font-weight:700;over
 .spin{width:44px;height:44px;border:5px solid #dfe4ee;border-top-color:var(--navy);border-radius:50%;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .btn-sm{font-size:16px;font-weight:900;color:var(--navy);background:#eef1fb;border:2px solid #d8def0;border-radius:11px;padding:10px 18px;cursor:pointer}
+/* 결함 갤러리(메인) */
+.typechips{flex:0 0 auto;display:flex;gap:8px;overflow-x:auto;padding:1px 1px 3px}
+.tchip{flex:0 0 auto;font-size:15px;font-weight:900;border:2px solid var(--line);background:#fff;color:var(--sec);border-radius:11px;padding:8px 14px;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:6px}
+.tchip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.tchip i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.gallery{flex:1;min-height:0;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(204px,1fr));grid-auto-rows:max-content;gap:12px;padding:3px 2px 6px;align-content:start;align-items:start}
+.gcard{background:#fff;border:2px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;align-self:start}
+.gcard:active{transform:scale(.99)}
+.gthumb{position:relative;width:100%;height:118px;flex:0 0 auto;background:#11151e;display:flex;align-items:center;justify-content:center}
+.gthumb img{width:100%;height:100%;object-fit:cover}
+.gthumb.noimg::after{content:'이미지 없음';color:#56607a;font-size:14px;font-weight:800}
+.gthumb .unflag{position:absolute;top:8px;left:8px;background:#b4690e;color:#fff;font-size:13px;font-weight:900;border-radius:7px;padding:3px 9px}
+.gthumb .poschip{position:absolute;bottom:8px;right:8px;background:rgba(15,30,51,.82);color:#fff;font-size:15px;font-weight:900;border-radius:8px;padding:3px 10px}
+.gthumb .prepost{position:absolute;top:8px;right:8px;color:#fff;font-size:12px;font-weight:900;border-radius:7px;padding:3px 8px}
+.ginfo{padding:9px 11px;display:flex;flex-direction:column;gap:4px}
+.gtp{align-self:flex-start;color:#fff;font-size:16px;font-weight:900;border-radius:8px;padding:3px 11px}
+.gmeta{font-size:14px;font-weight:800;color:var(--mut)}
+.gempty{grid-column:1/-1;text-align:center;color:var(--mut);font-size:18px;font-weight:800;padding:46px}
 </style></head>
 <body>
 <div class="app">
@@ -238,23 +256,48 @@ function renderCoil(){
     +'<div class="verdbox"><div class="big">'+v.label+'</div><div class="sm2">종합 판정</div></div>'
     +'<div class="info"><div class="t">'+esc(c.coil)+'</div><div class="s">'+esc(c.company||'슬리터2 가공')+' · '+esc(c.spec||'')+(c.oweight?' · '+wTxt(c.oweight):'')+' · '+(ng?(kstHM(ts)+'~'+kstHM(te)):'—')+'</div></div>'
     +'<div class="kpis">'+kpi(ng,'총 결함',ng>0)+kpi(un,'미확인',un>0,'un')+kpi(Object.keys(cams).length,'카메라',false)+'</div></div>';
-  h+='<div class="dmain">';
-  h+='<div class="mapcol"><h3>📏 코일 길이 지도 <span style="font-size:13px;color:var(--mut);font-weight:800">결함을 누르면 이미지·히트맵·영상</span></h3>'
-    +'<div class="hint"><b style="color:var(--pre)">위=슬리팅 이전</b> · <b style="color:var(--post)">아래=슬리팅 이후</b> · 색=결함 유형</div>'
-    +'<div class="mapwrap" id="map"></div>'
-    +'<div class="leg" id="leg"></div></div>';
-  h+='<div class="sumcol" id="sumcol"></div>';
-  h+='</div>';
+  h+='<div class="typechips" id="typechips"></div>';
+  h+='<div class="gallery" id="gallery"></div>';
   h+='<div class="actbar">'
-    +'<div class="act" onclick="openDefList()">📋 결함 목록 <span class="bdg">'+ng+'</span>'+(un?' <span class="bdg un">미확인 '+un+'</span>':'')+'</div>'
+    +'<div class="act" onclick="openMap()">🗺 코일 위치 지도</div>'
     +'<div class="act" onclick="openVideos()">🎬 전체 영상</div>'
     +'</div>';
   h+='</div>';
   document.getElementById('detailBody').innerHTML=h;
-  document.getElementById('map').innerHTML=mapSVG();
-  document.getElementById('leg').innerHTML=legend();
-  document.getElementById('sumcol').innerHTML=typeTiles();
+  S.filter=null;
+  renderChips(); renderGallery();
   prefetch();
+}
+function sortedDefs(){
+  var arr=S.defs.slice();
+  arr.sort(function(a,b){ var ua=a.review_status==='UNREVIEWED'?0:1, ub=b.review_status==='UNREVIEWED'?0:1; if(ua!==ub)return ua-ub; return (b.max_score||0)-(a.max_score||0); });
+  return S.filter?arr.filter(function(r){return typeOf(r)===S.filter;}):arr;
+}
+function renderChips(){
+  var tc=typeCounts(),total=S.defs.length;
+  var chips='<button class="tchip'+(!S.filter?' on':'')+'" onclick="setFilter(null)">전체 '+total+'</button>';
+  chips+=tc.map(function(x){return '<button class="tchip'+(S.filter===x.t?' on':'')+'" onclick="setFilter(\''+esc(x.t).replace(/\x27/g,'')+'\')"><i style="background:'+x.c+'"></i>'+esc(x.t)+' '+x.n+'</button>';}).join('');
+  document.getElementById('typechips').innerHTML=chips;
+}
+function setFilter(t){ S.filter=t; renderChips(); renderGallery(); }
+function renderGallery(){
+  var arr=sortedDefs();
+  if(!arr.length){ document.getElementById('gallery').innerHTML='<div class="gempty">'+(S.defs.length?'해당 유형 결함이 없습니다.':'NG 결함이 없습니다 (양품).')+'</div>'; return; }
+  document.getElementById('gallery').innerHTML=arr.map(function(r){ var gi=S.defs.indexOf(r);var t=typeOf(r),col=colorOf(r),src=imgSrc(r,false);var un=r.review_status==='UNREVIEWED';var pre=isPre(r);
+    return '<div class="gcard" onclick="S.sel='+gi+';openDef()">'
+      +'<div class="gthumb">'+(src?'<img src="'+esc(src)+'" loading="lazy" onerror="this.parentNode.classList.add(\'noimg\');this.remove()">':'')
+      +(un?'<span class="unflag">미확인</span>':'')
+      +'<span class="prepost" style="background:'+(pre?'var(--pre)':'var(--post)')+'">'+(pre?'이전':'이후')+'</span>'
+      +'<span class="poschip">'+(r.distance!=null?r.distance+'m':'—')+'</span></div>'
+      +'<div class="ginfo"><span class="gtp" style="background:'+col+'">'+esc(t)+'</span>'
+      +'<div class="gmeta">점수 '+(r.max_score!=null?Number(r.max_score).toFixed(1):'—')+' · '+kstTime(r.inspection_time).slice(0,5)+'</div></div></div>';
+  }).join('');
+}
+function openMap(){
+  drawer('코일 위치 지도','<div style="background:#fff;border:2px solid var(--line);border-radius:14px;padding:12px">'
+    +'<div class="hint" style="margin-bottom:6px;font-size:14px;font-weight:800;color:var(--sec)"><b style="color:var(--pre)">위=슬리팅 이전</b> · <b style="color:var(--post)">아래=슬리팅 이후</b> · 색=결함 유형</div>'
+    +mapSVG()+'<div class="leg" style="margin-top:8px">'+legend()+'</div></div>'
+    +'<div style="font-size:14px;font-weight:700;color:var(--mut);margin-top:10px;line-height:1.5">결함이 코일 특정 구간에 몰려 있으면 지도에서 겹쳐 보일 수 있어요. 각 결함은 위 목록(갤러리)에서 이미지로 확인하세요.</div>');
 }
 function kpi(v,l,hot,cls){return '<div class="kpi'+(hot?' '+(cls||'hot'):'')+'"><div class="n">'+v+'</div><div class="l">'+l+'</div></div>';}
 function prefetch(){var ds=S.defs.slice(0,8);var i=0;function nx(){if(i>=ds.length)return;var im=new Image();im.onload=im.onerror=nx;im.src=imgSrc(ds[i++],false);}nx();nx();}
