@@ -35,6 +35,14 @@
     {
       "source": "/leveling-quality-dashboard",
       "destination": "/leveling-quality-dashboard.html"
+    },
+    {
+      "source": "/quality-tablet",
+      "destination": "/leveling-coil-quality-tablet.html"
+    },
+    {
+      "source": "/leveling-quality-tablet",
+      "destination": "/leveling-coil-quality-tablet.html"
     }
   ]
 }
