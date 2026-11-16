@@ -212,6 +212,38 @@
   .mbtns{display:grid;grid-template-columns:1.2fr 1fr;gap:11px;margin-top:16px}
   .mbtn{text-align:center;border-radius:13px;padding:15px;font-size:18px;font-weight:900}
   .mbtn.vid{background:#eaf0fb;color:var(--blue);border:2px solid #c6d8f2}.mbtn.close{background:#eef1f7;color:var(--sec)}
+
+  /* ===== 현장 큰 글씨 override (가독성 최우선) ===== */
+  .mtopbar .tt{font-size:25px}.mtopbar .date{font-size:16px}
+  .side .brand .bt{font-size:20px}.snav .t{font-size:23px}.snav .s{font-size:15px}
+  .side .lng{font-size:17px}.side .foot{font-size:15px}
+  #v-now .chead .nm,.chead .nm{font-size:31px}
+  .chead .meta{font-size:19.5px}.chead .box{font-size:22px;padding:5px 15px}
+  .chead .verdict{font-size:26px;padding:10px 20px}
+  .prog .pn{font-size:20px}.prog .pt{height:20px}
+  #v-now .boxswitch .bst,.boxswitch .bst{font-size:22px}
+  .boxswitch .bst small{font-size:16.5px}
+  #v-now .bsbtn .bn3,.bsbtn .bn3{font-size:42px}
+  #v-now .bsbtn .meta3,.bsbtn .meta3{font-size:18px}
+  #v-now .bsbtn .tag3,.bsbtn .tag3{font-size:16px;padding:4px 13px}
+  #v-now .eqwrap .et,.eqwrap .et{font-size:21px}
+  .boxprog .bt{font-size:19px}.bpr .bl{font-size:22px}.bpr .bc{font-size:23px}
+  .set2 .k{font-size:18.5px}.set2 .v small{font-size:22px}
+  .setband .sbt{font-size:25px}.setband .sbt small{font-size:16px}.setnote{font-size:18px}
+  .plc .pt2{font-size:19px}.pc .k{font-size:17px}.pc .v{font-size:28px}
+  .nfchip{font-size:20px}.nfchip .lk2{font-size:15px}.nfg{font-size:19px}.nfset{font-size:21px}
+  .trend .tt{font-size:21px}.ttabs b{font-size:18px}.tlegend{font-size:16px}
+  .gpanel .gh{font-size:21px}.gcard .gk{font-size:17px}.gcard .gv{font-size:33px}
+  .gcard .gavg{font-size:15.5px}.gcard .gok{font-size:16.5px}.gmsg{font-size:21px}
+  .scoil .cu{font-size:24px}.scoil .sp{font-size:18px}.scoil .mt{font-size:15px}
+  td{font-size:17px}th{font-size:15px}.pastbar .dd{font-size:20px}
+  /* 추천(최적)값 라인 */
+  .set2 .rc{margin-top:6px;font-size:15.5px;font-weight:900;color:var(--blue);background:#eaf0fb;border-radius:8px;padding:3px 6px;white-space:nowrap}
+  .set2 .rc.up{color:var(--ok);background:var(--okbg)}
+  .set2 .rc.dn{color:var(--warn);background:var(--warnbg)}
+  .setband .sbt .rcnote{font-size:14.5px;color:var(--blue);font-weight:800;margin-left:8px}
+  .nfg.gd-hi{background:var(--warnbg);border-color:#f3d6ab;color:#9a5410}
+  .nfg.gd-lo{background:#eaf0fb;border-color:#c6d8f2;color:var(--blue)}
 </style>
 </head>
 <body>
@@ -271,7 +303,7 @@
   <!-- 장비 그림 위에 운행 상태 -->
   <div class="eqwrap">
     <div class="et"><span class="ko">장비 운행 상태</span><span class="en">Equipment status</span> <span style="font-size:.82em;color:var(--mut)"><span class="ko">(그림 위 실시간 · 평소 대비 색)</span><span class="en">(live on diagram · color vs usual)</span></span></div>
-    <svg viewBox="0 0 1300 380" style="height:224px;width:auto;display:block;margin:0 auto" font-family="Pretendard">
+    <svg viewBox="0 0 1300 380" style="height:188px;width:auto;display:block;margin:0 auto" font-family="Pretendard">
       <!-- strip line -->
       <line x1="156" y1="196" x2="1116" y2="196" stroke="#9fb4d6" stroke-width="5" stroke-dasharray="14 10"/>
       <!-- 언코일러 -->
@@ -336,7 +368,7 @@
       <span class="nfchip" data-pop="ov-scratch"><span class="d"></span><span class="ko">흠집 0</span><span class="en">Scratch 0</span> <span class="lk2"><span class="ko">검출이력 →</span><span class="en">Log →</span></span></span>
       <span class="nfchip" style="color:var(--blue)">🎞 <span class="ko">영상</span><span class="en">Video</span></span>
     </div>
-    <div class="nfg" data-go="trend">🤖 <span class="ko">지난 같은 규격 작업 평균 범위 안 — 지금 설정 유지 <span style="color:var(--mut)">(자세히: 추세·분석)</span></span><span class="en">Within past same-spec average — keep current settings <span style="color:var(--mut)">(details: Trend)</span></span></div>
+    <div class="nfg" id="h-guide" data-go="trend">🤖 <span class="ko">지난 같은 규격 작업 평균 범위 안 — 지금 설정 유지 <span style="color:var(--mut)">(자세히: 추세·분석)</span></span><span class="en">Within past same-spec average — keep current settings <span style="color:var(--mut)">(details: Trend)</span></span></div>
     <span class="nfset" data-go="settings">⚙ <span class="ko">장비 셋팅값 확인 →</span><span class="en">Check machine settings →</span></span>
   </div>
 </div>
@@ -344,14 +376,14 @@
 <!-- ================= 장비 셋팅값 ================= -->
 <div class="view" id="v-settings">
   <div class="setband">
-    <div class="sbt">⚙ 장비 셋팅값 — 이 값으로 장비가 맞는지 확인하세요 <small>Settings · check the machine matches</small></div>
+    <div class="sbt">⚙ 장비 셋팅값 — 이 값으로 장비가 맞는지 확인하세요 <small>Settings · check the machine matches</small><span class="rcnote" id="rc-note">· 같은 규격 과거 평균 기준 추천</span></div>
     <div class="setgrid6">
       <div class="set2"><div class="k">절단길이 Cut len</div><div class="v"><span id="s-cutlen">2,439</span><small>mm</small></div></div>
       <div class="set2"><div class="k">보정 Correction</div><div class="v"><span id="s-corr">+0.0</span><small>mm</small></div></div>
-      <div class="set2"><div class="k">속도 설정 Speed</div><div class="v"><span id="s-speed">15.0</span></div></div>
-      <div class="set2"><div class="k">가속 Acc</div><div class="v"><span id="s-acc">10.0</span><small>s</small></div></div>
-      <div class="set2"><div class="k">감속 Dec</div><div class="v"><span id="s-dec">1.0</span><small>s</small></div></div>
-      <div class="set2"><div class="k">저속 구간 Slow</div><div class="v"><span id="s-slow">50</span><small>mm</small></div></div>
+      <div class="set2"><div class="k">속도 설정 Speed</div><div class="v"><span id="s-speed">15.0</span></div><div class="rc up" id="rc-speed">추천 16 ↑</div></div>
+      <div class="set2"><div class="k">가속 Acc</div><div class="v"><span id="s-acc">10.0</span><small>s</small></div><div class="rc" id="rc-acc">추천 10 ✓</div></div>
+      <div class="set2"><div class="k">감속 Dec</div><div class="v"><span id="s-dec">1.0</span><small>s</small></div><div class="rc up" id="rc-dec">추천 1.2 ↑</div></div>
+      <div class="set2"><div class="k">저속 구간 Slow</div><div class="v"><span id="s-slow">50</span><small>mm</small></div><div class="rc" id="rc-slow">추천 50 ✓</div></div>
     </div>
     <div class="setnote">✅ 작업지시 규격과 일치 — 장비 셋팅값이 올바릅니다. (불일치 시 빨강으로 표시)</div>
   </div>
