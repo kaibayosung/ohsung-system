@@ -691,30 +691,8 @@
   <div class="trend">
     <div class="tt">📈 추세·분석 Trend <small>· 코일 길이(시간)에 따른 변화 · 실측 vs 지난 같은 규격 작업 평균 vs 정상 범위</small></div>
     <div class="ttabs" id="trend-tabs"><b class="on">인버터 부하 Load</b><b>텐션 Tension</b><b>이송속도 Speed</b><b>사이클 Cycle</b></div>
-    <svg id="trend-svg" viewBox="0 0 1240 500" style="width:100%;height:auto;min-height:420px" font-family="Pretendard">
-      <!-- y축 0~60% 확대 -->
-      <rect x="70" y="192" width="1120" height="48" fill="rgba(31,157,87,.16)"/>
-      <text x="78" y="184" font-size="16" font-weight="800" fill="#1f9d57">정상 범위 Normal (같은 두께 지난 작업 30~38%)</text>
-      <line x1="70" y1="60" x2="70" y2="420" stroke="#dfe4ee" stroke-width="2.5"/>
-      <line x1="70" y1="420" x2="1190" y2="420" stroke="#dfe4ee" stroke-width="2.5"/>
-      <text x="36" y="66" font-size="15" fill="#8995ab" font-weight="800">60</text>
-      <text x="36" y="216" font-size="15" fill="#8995ab" font-weight="800">35</text>
-      <text x="42" y="426" font-size="15" fill="#8995ab" font-weight="800">0</text>
-      <text x="30" y="454" font-size="15" fill="#8995ab" font-weight="800">%</text>
-      <line x1="330" y1="66" x2="330" y2="420" stroke="#c7cedb" stroke-width="2.5" stroke-dasharray="6 6"/>
-      <text x="338" y="84" font-size="14" font-weight="800" fill="#8995ab">박스2 시작 Box2</text>
-      <!-- 지난 작업 평균 -->
-      <polyline points="70,206 330,205 640,207 920,205 1050,204" fill="none" stroke="#9aa3b5" stroke-width="3" stroke-dasharray="10 8"/>
-      <!-- 실측 -->
-      <polyline points="70,224 180,219 300,215 440,213 600,212 760,210 900,211 1050,210" fill="none" stroke="#1a3a6b" stroke-width="4.5"/>
-      <circle cx="1050" cy="210" r="9" fill="#1a3a6b"/>
-      <polyline points="1050,210 1150,210 1190,209" fill="none" stroke="#1a3a6b" stroke-width="3" stroke-dasharray="9 7" opacity=".55"/>
-      <line x1="1050" y1="60" x2="1050" y2="420" stroke="#0f1e33" stroke-width="3"/>
-      <text x="1050" y="450" text-anchor="middle" font-size="17" font-weight="900" fill="#0f1e33" id="t-now">지금 Now · 554m · 35%</text>
-      <text x="620" y="480" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">코일 길이 Length (m) →</text>
-      <text x="1165" y="450" text-anchor="middle" font-size="15" font-weight="800" fill="#8995ab">738</text>
-    </svg>
-    <div id="trend-idle" class="trend-idle" style="display:none">📈<div class="ti1"><span class="ko">작업이 시작되면 추세가 표시됩니다</span><span class="en">Trend shows during a job</span></div><div class="ti2"><span class="ko">현재 레벨링 작업이 없습니다</span><span class="en">No active leveling job</span></div></div>
+    <svg id="trend-svg" viewBox="0 0 1240 460" style="width:100%;height:auto;min-height:420px;display:none" font-family="Pretendard"></svg>
+    <div id="trend-idle" class="trend-idle">📈<div class="ti1"><span class="ko">작업이 시작되면 추세가 표시됩니다</span><span class="en">Trend shows during a job</span></div><div class="ti2"><span class="ko">현재 레벨링 작업이 없습니다</span><span class="en">No active leveling job</span></div></div>
     <div class="tlegend">
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#1a3a6b" stroke-width="3.8"/></svg> 실측 Actual</span>
       <span><svg width="26" height="8"><line x1="0" y1="4" x2="26" y2="4" stroke="#9aa3b5" stroke-width="2.6" stroke-dasharray="6 5"/></svg> 지난 작업 평균 Avg of past jobs</span>
@@ -1263,6 +1241,7 @@ function _trSer(j){var prof=j.prof||{x:[],ld:[],cyc:[]},rd=j.rd||[],out=[],i,cum
 }
 function buildTrend(j){
   var svg=document.getElementById('trend-svg');if(!svg||!j)return;
+  trendIdle(false);
   var S=_trSer(j),pts=S.pts;
   if(!pts.length){svg.innerHTML='<text x="600" y="230" text-anchor="middle" font-size="19" fill="#8995ab" font-weight="800">'+t('이 지표는 데이터가 없습니다','no data for this metric')+'</text>';return;}
   var L=Math.max(1,j.L||1),X0=96,X1=1180,Y0=48,Y1=404;
@@ -1291,12 +1270,12 @@ function fetchTrend(coil,today){
   var key=coil+'|'+today;if(CURTRENDKEY===key&&CURCOILJOB){buildTrend(CURCOILJOB);return;}
   fetch(FAPI+'?mode=day&date='+today,{headers:hdr(),cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(d){
     var jobs=(d&&d.jobs)||[],job=null;jobs.forEach(function(x){if(x.coil===coil)job=x;});
-    if(job){CURCOILJOB=job;CURTRENDKEY=key;buildTrend(job);}
-  }).catch(function(){});
+    if(job){CURCOILJOB=job;CURTRENDKEY=key;buildTrend(job);}else{trendIdle(true);}
+  }).catch(function(){trendIdle(true);});
 }
 function wireTrendTabs(){var tabs=document.querySelectorAll('#trend-tabs b'),keys=['load','tension','speed','cycle'];
-  [].forEach.call(tabs,function(b,i){b.onclick=function(){TRENDTAB=keys[i];[].forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});if(CURCOILJOB)buildTrend(CURCOILJOB);};});}
-function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');});fetchTenTrend();}
+  [].forEach.call(tabs,function(b,i){b.onclick=function(){TRENDTAB=keys[i];[].forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});if(CURCOILJOB)buildTrend(CURCOILJOB);else trendIdle(true);};});}
+function tick(){sfetch().then(render).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');trendIdle(true);});fetchTenTrend();}
 try{tick();if(!ASOF)setInterval(tick,15000);initPast();wireTrendTabs();}catch(e){}
 
 </script>
