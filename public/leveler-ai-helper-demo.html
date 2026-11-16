@@ -346,6 +346,26 @@
   .snapc span{display:block;font-size:14px;color:var(--mut);font-weight:800}
   .snapc b{font-size:26px;font-weight:900;color:var(--ink);font-family:'IBM Plex Mono',monospace}
   .snapc b small{font-size:14px;color:var(--mut)}
+
+  /* 코일 길이 따라 보기 */
+  .jlegend{display:flex;gap:16px;font-size:14px;font-weight:800;color:var(--sec);flex-wrap:wrap;margin:4px 0 2px}
+  .jlegend i{display:inline-block;width:14px;height:14px;border-radius:3px;margin-right:5px;vertical-align:-2px}
+  .jsld{width:100%;margin:12px 0 4px;-webkit-appearance:none;appearance:none;height:12px;border-radius:6px;background:#dfe6f2;outline:none}
+  .jsld::-webkit-slider-thumb{-webkit-appearance:none;width:36px;height:36px;border-radius:50%;background:var(--navy);border:5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.28);cursor:pointer}
+  .jsld::-moz-range-thumb{width:30px;height:30px;border-radius:50%;background:var(--navy);border:5px solid #fff;cursor:pointer}
+  .readout{display:grid;grid-template-columns:210px 1fr;gap:14px;margin-top:12px}
+  .rpos{background:var(--navy);color:#fff;border-radius:16px;padding:14px 16px;text-align:center;display:flex;flex-direction:column;justify-content:center}
+  .rpos .rl{font-size:15px;font-weight:800;opacity:.85}
+  .rpos .rm{font-size:44px;font-weight:900;line-height:1;font-family:'IBM Plex Mono',monospace;margin:3px 0}
+  .rpos .rb{font-size:17px;font-weight:900;background:rgba(255,255,255,.16);border-radius:9px;padding:5px 0;margin-top:5px}
+  .rpos .rt{font-size:14px;font-weight:800;opacity:.9;margin-top:5px}
+  .rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .rg{background:var(--soft);border:1px solid var(--line);border-radius:13px;padding:10px 13px}
+  .rg span{font-size:13.5px;color:var(--mut);font-weight:800}
+  .rg b{display:block;font-size:27px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:var(--ink);line-height:1.15}
+  .rg b small{font-size:14px;color:var(--mut)}
+  .rg.run{background:var(--okbg);border-color:var(--okln)}.rg.run b{color:var(--ok)}
+  .rg.stop{background:var(--badbg);border-color:#f0bdb3}.rg.stop b{color:var(--bad)}
 </style>
 </head>
 <body>
