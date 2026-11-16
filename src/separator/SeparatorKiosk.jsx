@@ -269,7 +269,6 @@ function SetupScreen({ job, strips, stationResults, page, setPage, onBack, autoD
         {strips.length > 0 && (
           <div style={styles.pageInd}>{strips.length > SPECS_PER_PAGE ? `규격 ${lo}~${hi} · ` : ''}<b style={styles.pageIndNum}>{cur + 1} / {total}</b> 페이지</div>
         )}
-        <div style={styles.doneBtn} onClick={onBack}>작업완료</div>
       </div>
 
       {strips.length === 0 ? (
@@ -320,45 +319,44 @@ const styles = {
   goArrow: { width: '44px', height: '44px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
 
   // ── 셋팅 (페이지) ──
-  setupPad: { padding: '10px 16px 12px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '10px' },
+  setupPad: { padding: '9px 16px 11px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '9px' },
   autoBanner: { background: PURPLE.panelBg, color: PURPLE.accentDark, fontWeight: 900, fontSize: '16px', padding: '9px 16px', borderRadius: '12px', flex: '0 0 auto' },
 
   setHead: { display: 'flex', alignItems: 'center', gap: '12px', flex: '0 0 auto' },
-  backBtn: { background: '#fff', border: `2px solid ${PURPLE.border}`, color: PURPLE.accentDark, borderRadius: '11px', padding: '10px 16px', fontSize: '17px', fontWeight: 900, cursor: 'pointer', flex: '0 0 auto' },
+  backBtn: { background: '#fff', border: `2px solid ${PURPLE.border}`, color: PURPLE.accentDark, borderRadius: '11px', padding: '9px 16px', fontSize: '18px', fontWeight: 900, cursor: 'pointer', flex: '0 0 auto' },
   coilInfo: { display: 'flex', alignItems: 'baseline', gap: '10px', minWidth: 0, flex: 1, flexWrap: 'wrap' },
-  coilNo: { fontSize: '22px', fontWeight: 900, color: PURPLE.text },
-  coilSub: { fontSize: '15px', fontWeight: 800, color: PURPLE.textMuted },
-  pageInd: { fontSize: '15px', fontWeight: 900, color: PURPLE.accentDark, flex: '0 0 auto' },
-  pageIndNum: { fontSize: '21px', color: PURPLE.accent },
-  doneBtn: { background: PURPLE.accent, color: '#fff', borderRadius: '11px', padding: '10px 20px', fontSize: '18px', fontWeight: 900, cursor: 'pointer', flex: '0 0 auto' },
+  coilNo: { fontSize: '26px', fontWeight: 900, color: PURPLE.text },
+  coilSub: { fontSize: '17px', fontWeight: 800, color: PURPLE.textMuted },
+  pageInd: { fontSize: '18px', fontWeight: 900, color: PURPLE.accentDark, flex: '0 0 auto' },
+  pageIndNum: { fontSize: '27px', color: PURPLE.accent },
 
-  bands: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '10px' },
+  bands: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '9px' },
   band: { flex: 1, minHeight: 0, background: '#fff', border: `2px solid ${PURPLE.border}`, borderRadius: '15px', display: 'flex', alignItems: 'stretch', overflow: 'hidden' },
-  wbox: { flex: '0 0 112px', background: PURPLE.panelBg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRight: `2px solid ${PURPLE.border}` },
-  wv: { fontSize: '36px', fontWeight: 900, color: PURPLE.text, lineHeight: 1 },
-  wvUnit: { fontSize: '16px', color: PURPLE.textMuted },
-  wq: { fontSize: '15px', fontWeight: 900, color: PURPLE.textMuted, marginTop: '3px' },
+  wbox: { flex: '0 0 128px', background: PURPLE.panelBg, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRight: `2px solid ${PURPLE.border}` },
+  wv: { fontSize: '48px', fontWeight: 900, color: PURPLE.text, lineHeight: 1 },
+  wvUnit: { fontSize: '20px', color: PURPLE.textMuted },
+  wq: { fontSize: '19px', fontWeight: 900, color: PURPLE.textMuted, marginTop: '3px' },
 
-  stc: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '8px 16px', gap: '6px' },
+  stc: { flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '6px 18px', gap: '6px' },
   stcDivider: { borderLeft: `2px dashed ${PURPLE.border}` },
   sthd: { display: 'flex', alignItems: 'center', gap: '8px' },
-  bdg: { width: '28px', height: '28px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '15px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  snm: { fontSize: '16px', fontWeight: 900, color: PURPLE.text },
-  off: { marginLeft: 'auto', fontSize: '15px', fontWeight: 900, color: '#fff', background: PURPLE.accent, borderRadius: '8px', padding: '2px 11px' },
-  eq: { fontSize: '27px', fontWeight: 900, color: PURPLE.text, display: 'flex', alignItems: 'baseline', gap: '6px' },
-  eqOp: { color: PURPLE.textMuted, fontSize: '21px' },
-  eqTarget: { color: PURPLE.accent, fontSize: '40px' },
-  pcs: { display: 'flex', alignItems: 'center', gap: '7px', flexWrap: 'wrap' },
-  spacer: { height: '54px', minWidth: '60px', borderRadius: '11px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '31px', fontWeight: 900, color: '#fff', padding: '0 12px', boxShadow: '0 2px 0 rgba(0,0,0,.15)' },
-  plusSm: { fontSize: '21px', fontWeight: 900, color: '#9a96ad' },
+  bdg: { width: '34px', height: '34px', borderRadius: '50%', background: PURPLE.accent, color: '#fff', fontSize: '19px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  snm: { fontSize: '22px', fontWeight: 900, color: PURPLE.text },
+  off: { marginLeft: 'auto', fontSize: '20px', fontWeight: 900, color: '#fff', background: PURPLE.accent, borderRadius: '9px', padding: '3px 14px' },
+  eq: { fontSize: '33px', fontWeight: 900, color: PURPLE.text, display: 'flex', alignItems: 'baseline', gap: '7px' },
+  eqOp: { color: PURPLE.textMuted, fontSize: '27px' },
+  eqTarget: { color: PURPLE.accent, fontSize: '48px' },
+  pcs: { display: 'flex', alignItems: 'center', gap: '9px', flexWrap: 'wrap' },
+  spacer: { height: '56px', minWidth: '74px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '37px', fontWeight: 900, color: '#fff', padding: '0 13px', boxShadow: '0 2px 0 rgba(0,0,0,.15)' },
+  plusSm: { fontSize: '28px', fontWeight: 900, color: '#9a96ad' },
   warn: { fontSize: '16px', fontWeight: 900, color: '#c8372c', marginLeft: '6px' },
 
   setFoot: { flex: '0 0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' },
-  navBtn: { fontSize: '18px', fontWeight: 900, padding: '11px 18px', borderRadius: '12px', background: '#fff', border: `3px solid ${PURPLE.border}`, color: PURPLE.accentDark, cursor: 'pointer' },
+  navBtn: { fontSize: '20px', fontWeight: 900, padding: '11px 20px', borderRadius: '12px', background: '#fff', border: `3px solid ${PURPLE.border}`, color: PURPLE.accentDark, cursor: 'pointer' },
   navNext: {},
   navDisabled: { opacity: 0.35, cursor: 'default' },
   ptabs: { display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' },
-  ptab: { minWidth: '50px', height: '50px', borderRadius: '12px', background: '#fff', border: `3px solid ${PURPLE.border}`, color: PURPLE.accentDark, fontSize: '22px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0 8px' },
+  ptab: { minWidth: '54px', height: '54px', borderRadius: '13px', background: '#fff', border: `3px solid ${PURPLE.border}`, color: PURPLE.accentDark, fontSize: '25px', fontWeight: 900, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '0 9px' },
   ptabOn: { background: PURPLE.accent, borderColor: PURPLE.accent, color: '#fff' },
 
   cantRead: { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center' },
