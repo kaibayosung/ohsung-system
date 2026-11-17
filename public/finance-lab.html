@@ -1,0 +1,373 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>자금관리 (지출결의 · 결재 · 일계표) 테스트 · 오성철강</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css">
+<style>
+:root{--ink:#0f1e33;--sub:#5c6478;--mut:#7d8ba1;--acc:#796cbf;--bg:#f3f5fe;--line:#e3e8f0;--ok:#0f6e56;--okbg:#e1f5ee;--warn:#993c1d;--warnbg:#faece7;--stamp:#d33c2b}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,system-ui,sans-serif;font-weight:500}
+button,input,select{font-family:inherit;font-weight:600}
+button{cursor:pointer}
+.top{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 18px;flex-wrap:wrap}
+.top b{font-size:18px;font-weight:800}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tab{border:0;background:transparent;padding:9px 14px;border-radius:999px;font-size:14px;color:var(--sub)}
+.tab.on{background:var(--ink);color:#fff}
+.note{margin-left:auto;font-size:12px;color:var(--warn);background:var(--warnbg);padding:5px 10px;border-radius:999px}
+.wrap{max-width:1180px;margin:0 auto;padding:18px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);padding:8px 12px;border-radius:10px;font-size:13px}
+.btn:hover{border-color:#c9d0de}
+.bp{background:var(--acc);border-color:var(--acc);color:#fff}
+.bd{background:var(--ink);border-color:var(--ink);color:#fff}
+.pill{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
+.p-ok{background:var(--okbg);color:var(--ok)}.p-wait{background:#eeedfe;color:#3c3489}.p-no{background:var(--warnbg);color:var(--warn)}.p-draft{background:#f1efe8;color:#5f5e5a}
+.mut{color:var(--mut);font-size:12px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.paper{background:#fff;border:1px solid var(--line);border-radius:10px;padding:22px 24px}
+table.f{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+table.f th,table.f td{border:1px solid var(--ink);padding:5px 6px;height:30px}
+table.f th{background:#f3f5fe;font-weight:700}
+table.f td input,table.f td select{width:100%;border:0;background:transparent;font-size:13px;padding:2px;outline:none;color:var(--ink)}
+table.f td input:focus{background:#f6f4ff}
+.r{text-align:right}.c{text-align:center}
+.xcol{border-style:dashed!important;color:var(--acc)}
+.sign{width:210px;border-collapse:collapse;table-layout:fixed}
+.sign th,.sign td{border:1px solid var(--ink);text-align:center;font-size:12px}
+.sign th{background:#f3f5fe;height:24px}
+.sign td{height:58px;vertical-align:middle}
+.stamp{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;width:44px;height:44px;border:2px solid var(--stamp);border-radius:50%;color:var(--stamp);font-size:12px;font-weight:800;line-height:1.1;transform:rotate(-8deg)}
+.stamp small{font-size:9px;font-weight:700}
+.ac{position:absolute;z-index:9;background:#fff;border:1px solid var(--acc);border-radius:10px;min-width:320px;box-shadow:0 8px 24px rgba(15,30,51,.12);overflow:hidden}
+.ac div{padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--line)}
+.ac div:hover,.ac div.on{background:#f3f5fe}
+.grid2{display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px}
+.vlist button{width:100%;text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.vlist button.on{border:2px solid var(--acc)}
+.phone{width:380px;background:var(--ink);border-radius:34px;padding:12px;margin:0 auto}
+.screen{background:var(--bg);border-radius:24px;min-height:640px;padding:14px;overflow:hidden}
+.kpi{background:var(--bg);border-radius:10px;padding:10px 12px}
+.kpi .v{font-size:20px;font-weight:800;margin-top:2px}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;display:none;z-index:20}
+.hide{display:none!important}
+@media (max-width:860px){.grid2{grid-template-columns:1fr}}
+@media print{
+  @page{size:A4;margin:14mm}
+  body{background:#fff}
+  .top,.noprint,.xcol,.toast{display:none!important}
+  .wrap{padding:0;max-width:none}
+  .card,.paper{border:0;padding:0}
+  .grid2{display:block}
+  table.f td input{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="top">
+  <b>자금관리 테스트</b>
+  <div class="tabs">
+    <button class="tab on" data-t="v">① 지출결의서</button>
+    <button class="tab" data-t="a">② 결재함 (휴대폰)</button>
+    <button class="tab" data-t="d">③ 일계표</button>
+    <button class="tab" data-t="p">④ 월 손익 (가안)</button>
+  </div>
+  <span class="note">테스트 · 샘플 데이터 · 저장 안 됨 (새로고침하면 처음으로)</span>
+</div>
+
+<div class="wrap">
+
+<!-- ① 지출결의서 -->
+<section id="t-v">
+  <div class="grid2">
+    <div class="noprint">
+      <div class="row" style="justify-content:space-between;margin-bottom:8px"><b>결의서 목록</b><button class="btn bp" id="newV">+ 새 결의서</button></div>
+      <div class="vlist" id="vlist"></div>
+      <div class="mut">엑셀에서 지급일마다 시트를 복사하던 것을 날짜별 목록으로 대신합니다.</div>
+    </div>
+    <div class="card">
+      <div class="row noprint" style="margin-bottom:12px">
+        <span class="mut">지급일</span><input type="date" id="vDate" class="btn">
+        <input id="vTitle" class="btn" style="width:200px" placeholder="메모 (예: 근로소득세)">
+        <button class="btn" id="copyPrev">지난 결의서 복사</button>
+        <button class="btn" id="addRow">+ 줄 추가</button>
+        <span style="flex:1"></span>
+        <button class="btn" onclick="window.print()">인쇄</button>
+        <button class="btn bp" id="submitV">결재 올리기</button>
+      </div>
+      <div class="paper" id="vPaper"></div>
+      <div class="mut noprint" style="margin-top:8px">· 예금주나 지급 칸에 두 글자 이상 치면 지난 지급 내역에서 은행·계좌가 자동으로 채워집니다. ↑↓ Enter로 선택.<br>· 점선 '계정' 칸은 화면에만 보이고 인쇄되지 않습니다(월 손익 집계용, 자동 추천 후 수정 가능).<br>· 인쇄하면 엑셀 「미지급금(결제건)」과 같은 모양으로 나옵니다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ② 결재함 -->
+<section id="t-a" class="hide">
+  <div class="row noprint" style="justify-content:center;margin-bottom:12px">
+    <span class="mut">지금 보는 사람</span>
+    <button class="btn role" data-r="실장">실장</button><button class="btn role" data-r="이사">이사</button><button class="btn role" data-r="대표">대표</button>
+  </div>
+  <div class="phone"><div class="screen" id="phone"></div></div>
+  <p class="mut" style="text-align:center">결재 순서: 실장 → 이사 → 대표. 앞사람이 결재하면 다음 사람에게 알림이 갑니다(실제 시스템).</p>
+</section>
+
+<!-- ③ 일계표 -->
+<section id="t-d" class="hide">
+  <div class="card">
+    <div class="row noprint" style="margin-bottom:12px">
+      <button class="btn" id="dmP">기간(월)</button><button class="btn" id="dmD">일별</button>
+      <select id="dDay" class="btn hide"></select>
+      <button class="btn" id="dUp">통장·카드 엑셀 올리기</button>
+      <span style="flex:1"></span>
+      <button class="btn" onclick="window.print()">인쇄</button>
+      <button class="btn bp" id="dSubmit">결재 올리기</button>
+    </div>
+    <div class="paper" id="dPaper"></div>
+    <div class="row noprint" style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))" id="dKpi"></div>
+    <div class="mut noprint" style="margin-top:8px">· 예시 숫자는 보내주신 「일계표」 엑셀(2020년 7월)을 그대로 옮긴 것입니다.<br>· 점선 '구분' 칸은 화면 전용입니다. 실제 시스템에서는 통장·카드 엑셀을 올리면 해당 줄이 자동으로 채워지고, 결재된 지출결의서는 지출 줄과 자동 연결됩니다.</div>
+  </div>
+</section>
+
+<!-- ④ 월 손익 -->
+<section id="t-p" class="hide">
+  <div class="card" style="margin-bottom:14px">
+    <div class="row" style="justify-content:space-between"><b style="font-size:16px">지출결의서 → 계정별 자동 집계</b><span class="mut">①에서 계정 칸을 바꾸면 여기 숫자가 바로 바뀝니다</span></div>
+    <div class="row" style="margin:10px 0"><span class="mut">월</span><select id="pMonth" class="btn"></select></div>
+    <div id="pAgg"></div>
+  </div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><b style="font-size:16px">월 손익계산서 (가안)</b><span class="pill p-no">숫자는 예시 — 실제는 세금계산서·통장·그린ERP 매출로 계산</span></div>
+    <div id="pPL" style="margin-top:10px"></div>
+  </div>
+</section>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const won=n=>(Math.round(n||0)).toLocaleString('ko-KR');
+const $=s=>document.querySelector(s);
+const toast=m=>{const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2600)};
+const ORDER=['실장','이사','대표'];
+const CATS=['외주가공비','소모품비','운반비','복리후생비','수선비','차량유지비','유류비','세금과공과','급여·상여','기계장치','기타'];
+function guessCat(t){t=t||'';
+  if(/식당|식대|부식/.test(t))return'복리후생비';
+  if(/가공|작업/.test(t))return'외주가공비';
+  if(/운송|운반/.test(t))return'운반비';
+  if(/세$|세금|소득세|주민세|자동차세|방위세|재산세/.test(t))return'세금과공과';
+  if(/수리|점검|튜브|타이어/.test(t))return'수선비';
+  if(/오일|모비|경유/.test(t))return'유류비';
+  if(/급여|휴가비|유대/.test(t))return'급여·상여';
+  if(/언코일러|기계|설비/.test(t))return'기계장치';
+  return'소모품비'}
+const R=(pay,holder,bank,acct,amt)=>({pay,holder,bank,acct,amt,cat:guessCat(pay)});
+const done=d=>({실장:d,이사:d,대표:d});
+let V=[
+ {id:1,date:'2026-06-30',title:'미지급금',status:'결재완료',ap:done('06-30'),rows:[
+  R('자동차세 대표님','시흥시장','우리은행','710-***-***043',220770),R('자동차세 이사','시흥시장','우리은행','732-***-***920',275910),
+  R('지게차튜브교환외','고*배','기업은행','451-***-***010',295000),R('원푸드식당결제','최*애','신한은행','110-***-***-06',1310100),
+  R('방위세','통합방위협의장','우리은행','168-***-***001',96180),R('대산공업 가공비','미강철강㈜','기업은행','169-***-***024',218900),
+  R('미싱선(출고증)','페이퍼문화','농협','351-***-***43',198000),R('지게차타이어6개','타이어월드㈜','국민은행','794-***-***692',1809500),
+  R('지게차엔진오일','박*승','국민은행','794-***-***580',341000)]},
+ {id:2,date:'2026-07-06',title:'미지급금',status:'결재완료',ap:done('07-06'),rows:[
+  R('리코일러수리','이*수','국민은행','799-***-***615',550000),R('점검비외수리비','금성호이스트','기업은행','640-***-***017',1540000)]},
+ {id:3,date:'2026-07-10',title:'근로소득세 주민세',status:'결재완료',ap:done('07-10'),rows:[
+  R('근로소득세','안산세무서','하나은행','696-***-***13-7',1178520),R('근로주민세','단원구청','하나은행','619-***-***437',117900)]},
+ {id:4,date:'2026-07-16',title:'대흥엔지니어링',status:'결재완료',ap:done('07-16'),rows:[R('언코일러대금일부','대흥엔지니어링','','',11770000)]},
+ {id:5,date:'2026-07-28',title:'대한강재',status:'결재완료',ap:done('07-28'),rows:[R('휴가비','대한강재','현금','현금지급',500000)]},
+ {id:6,date:'2026-07-31',title:'미지급금',status:'결재대기',ap:{실장:'07-31',이사:null,대표:null},rows:[
+  R('원푸드식당','최*애','신한은행','110-***-***-06',1501500),R('원석철강가공비','최*혁','기업은행','214-***-***019',418110),
+  R('미강-오성운송비','김*준(금강기사)','국민은행','247-***-***798',77000),R('현대전기타이','이*복','농협','302-***-***-81',28000),
+  R('강진밴드미니샤','미주철강','기업은행','378-***-***016',255871),R('혁진테크3M=6','박*식','기업은행','464-***-***010',60000),
+  R('4X8=16@7000','차*복','국민은행','612-***-***032',112000),R('대산공업작업','미강철강㈜','기업은행','169-***-***024',205700),
+  R('모비류4통','예스오일(윤*한)','기업은행','509-***-***011',391600)]}
+];
+V.forEach(v=>v.rows.forEach(r=>{if(/식당/.test(r.pay))r.cat='복리후생비'}));
+let cur=6,role='이사',nextId=7;
+const getV=()=>V.find(v=>v.id===cur);
+const sum=v=>v.rows.reduce((a,r)=>a+(+r.amt||0),0);
+const nextAp=v=>ORDER.find(k=>!v.ap[k]);
+const fmtD=d=>{const [y,m,dd]=d.split('-');return `${y}년 ${+m}월 ${+dd}일`};
+const stCls={결재완료:'p-ok',결재대기:'p-wait',반려:'p-no',작성중:'p-draft'};
+
+function payees(){const m={};V.filter(v=>v.id!==cur).forEach(v=>v.rows.forEach(r=>{if(!r.holder&&!r.pay)return;const k=r.holder+'|'+r.acct;if(!m[k]||m[k].date<v.date)m[k]={...r,date:v.date}}));return Object.values(m)}
+
+function renderList(){
+  $('#vlist').innerHTML=[...V].sort((a,b)=>b.date.localeCompare(a.date)).map(v=>`<button class="${v.id===cur?'on':''}" data-id="${v.id}"><div class="row" style="justify-content:space-between"><b style="font-size:14px">${v.date.slice(5).replace('-','/')} ${v.title||''}</b><span class="pill ${stCls[v.status]}">${v.status}</span></div><div class="mut">${v.rows.filter(r=>r.pay||r.amt).length}건 · ${won(sum(v))}원</div></button>`).join('');
+  document.querySelectorAll('#vlist button').forEach(b=>b.onclick=()=>{cur=+b.dataset.id;renderV()});
+}
+function stampHTML(v,k){const d=v.ap[k];return d?`<span class="stamp">${k}<small>${d}</small></span>`:(v.status==='반려'&&v.rejBy===k?`<span class="pill p-no">반려</span>`:'')}
+function renderV(){
+  const v=getV(),ro=v.status!=='작성중'&&v.status!=='반려';
+  $('#vDate').value=v.date;$('#vTitle').value=v.title||'';
+  [$('#vDate'),$('#vTitle')].forEach(e=>e.disabled=ro);
+  ['#copyPrev','#addRow','#submitV'].forEach(s=>$(s).classList.toggle('hide',ro));
+  while(!ro&&v.rows.length<10)v.rows.push(R('','','','',''));
+  const rows=v.rows.map((r,i)=>ro?
+   `<tr><td class="c">${i+1}</td><td>${r.pay}</td><td>${r.holder}</td><td class="c">${r.bank}</td><td>${r.acct}</td><td class="r">${r.amt?won(r.amt):''}</td><td class="xcol c" style="font-size:12px">${r.pay?r.cat:''}</td></tr>`:
+   `<tr><td class="c">${i+1}</td><td><input data-i="${i}" data-k="pay" value="${r.pay}"></td><td><input data-i="${i}" data-k="holder" value="${r.holder}"></td><td><input class="c" data-i="${i}" data-k="bank" value="${r.bank}"></td><td><input data-i="${i}" data-k="acct" value="${r.acct}"></td><td><input class="r" data-i="${i}" data-k="amt" value="${r.amt?won(r.amt):''}"></td><td class="xcol"><select data-i="${i}" data-k="cat">${CATS.map(c=>`<option ${c===r.cat?'selected':''}>${c}</option>`).join('')}</select></td></tr>`).join('');
+  $('#vPaper').innerHTML=`
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+    <div><div style="font-size:24px;font-weight:800;text-decoration:underline;text-underline-offset:6px">미지급금(결제건)</div>
+    <div style="margin-top:14px;font-size:15px;font-weight:700">${fmtD(v.date)}</div>
+    <div class="noprint" style="margin-top:6px"><span class="pill ${stCls[v.status]}">${v.status}</span>${v.status==='반려'?` <span class="mut">사유: ${v.rejMsg||''}</span>`:''}</div></div>
+    <table class="sign"><tr><th>대표</th><th>이사</th><th>실 장</th></tr><tr><td>${stampHTML(v,'대표')}</td><td>${stampHTML(v,'이사')}</td><td>${stampHTML(v,'실장')}</td></tr></table>
+   </div>
+   <table class="f" style="margin-top:14px">
+    <colgroup><col style="width:38px"><col style="width:21%"><col style="width:19%"><col style="width:11%"><col style="width:21%"><col style="width:15%"><col style="width:96px" class="xcol"></colgroup>
+    <tr><th>NO</th><th>지급</th><th>예금주</th><th>은행</th><th>계좌번호</th><th>금액</th><th class="xcol" style="background:#fff">계정</th></tr>
+    ${rows}
+    <tr><th colspan="5">합&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;계</th><th class="r" id="vSum">${won(sum(v))}</th><td class="xcol"></td></tr>
+   </table>`;
+  if(!ro)bindInputs(v);
+  renderList();
+}
+let acBox=null;
+function closeAc(){if(acBox){acBox.remove();acBox=null}}
+function bindInputs(v){
+  document.querySelectorAll('#vPaper input,#vPaper select').forEach(el=>{
+    const i=+el.dataset.i,k=el.dataset.k;
+    el.oninput=el.onchange=()=>{
+      if(k==='amt'){const n=+el.value.replace(/[^\d-]/g,'');v.rows[i].amt=n||'';$('#vSum').textContent=won(sum(v));}
+      else{v.rows[i][k]=el.value;if(k==='pay'&&!v.rows[i]._catSet)v.rows[i].cat=guessCat(el.value);if(k==='cat')v.rows[i]._catSet=1}
+      if((k==='holder'||k==='pay')&&el.value.trim().length>=2)showAc(el,v,i);else if(k==='holder'||k==='pay')closeAc();
+    };
+    if(k==='amt')el.onblur=()=>{el.value=v.rows[i].amt?won(v.rows[i].amt):''};
+    el.onkeydown=e=>{if(!acBox)return;const items=[...acBox.children];let j=items.findIndex(x=>x.classList.contains('on'));
+      if(e.key==='ArrowDown'){j=Math.min(items.length-1,j+1);e.preventDefault()}else if(e.key==='ArrowUp'){j=Math.max(0,j-1);e.preventDefault()}else if(e.key==='Enter'){if(items[j])items[j].click();e.preventDefault();return}else if(e.key==='Escape'){closeAc();return}else return;
+      items.forEach((x,n)=>x.classList.toggle('on',n===j))};
+  });
+}
+function showAc(el,v,i){
+  const q=el.value.trim();const hits=payees().filter(p=>(p.holder+p.pay).includes(q)).slice(0,6);
+  closeAc();if(!hits.length)return;
+  const rc=el.getBoundingClientRect();acBox=document.createElement('div');acBox.className='ac';
+  acBox.style.left=(rc.left+scrollX)+'px';acBox.style.top=(rc.bottom+scrollY+2)+'px';
+  acBox.innerHTML=hits.map(p=>`<div><b>${p.holder||p.pay}</b> · ${p.bank||'-'} ${p.acct||''}<br><span class="mut">최근 ${p.date.slice(5).replace('-','/')} 「${p.pay}」 ${won(p.amt)}원 · ${p.cat}</span></div>`).join('');
+  [...acBox.children].forEach((d,n)=>d.onmousedown=d.onclick=e=>{e.preventDefault();const p=hits[n],r=v.rows[i];
+    r.holder=p.holder;r.bank=p.bank;r.acct=p.acct;if(!r.pay)r.pay=p.pay;r.cat=p.cat;closeAc();renderV();toast(`${p.holder||p.pay} 계좌를 불러왔습니다`)});
+  acBox.firstChild.classList.add('on');document.body.appendChild(acBox);
+}
+document.addEventListener('click',e=>{if(acBox&&!acBox.contains(e.target))closeAc()});
+$('#vDate').onchange=e=>{getV().date=e.target.value;renderList();renderV()};
+$('#vTitle').oninput=e=>{getV().title=e.target.value;renderList()};
+$('#addRow').onclick=()=>{getV().rows.push(R('','','','',''));renderV()};
+$('#newV').onclick=()=>{const t=new Date(Date.now()+9*3600000).toISOString().slice(0,10);V.push({id:nextId,date:t,title:'',status:'작성중',ap:{실장:null,이사:null,대표:null},rows:[]});cur=nextId++;renderV();toast('새 결의서를 만들었습니다')};
+$('#copyPrev').onclick=()=>{const v=getV();const prev=[...V].filter(x=>x.id!==v.id&&x.rows.some(r=>r.pay)).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  v.rows=prev.rows.filter(r=>r.pay).map(r=>({...r,amt:''}));renderV();toast(`${prev.date.slice(5).replace('-','/')} 결의서의 지급처를 복사했습니다 (금액만 새로 입력)`)};
+$('#submitV').onclick=()=>{const v=getV();v.rows=v.rows.filter(r=>r.pay||r.amt);
+  if(!v.rows.length||!sum(v)){toast('지급 내용과 금액을 먼저 입력하세요');renderV();return}
+  v.status='결재대기';v.ap={실장:null,이사:null,대표:null};v.rejBy=null;renderV();toast('실장님께 결재 요청을 보냈습니다 → ② 결재함에서 확인');};
+
+/* ② 결재함 */
+let openId=null;
+function renderPhone(){
+  document.querySelectorAll('.role').forEach(b=>b.classList.toggle('bd',b.dataset.r===role));
+  const mine=V.filter(v=>v.status==='결재대기'&&nextAp(v)===role);
+  const doneList=V.filter(v=>v.status!=='작성중'&&!(v.status==='결재대기'&&nextAp(v)===role)).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,4);
+  const ph=$('#phone');
+  if(openId){const v=V.find(x=>x.id===openId);const can=v.status==='결재대기'&&nextAp(v)===role;
+    ph.innerHTML=`<button class="btn" id="back">← 목록</button>
+    <div class="card" style="margin-top:10px;padding:14px">
+     <div class="mut">지출결의 · ${v.date.replace(/-/g,'.')}</div><div style="font-size:18px;font-weight:800">${v.title||'미지급금'} ${v.rows.length}건</div>
+     <div style="font-size:28px;font-weight:800;margin:4px 0 10px">${won(sum(v))}원</div>
+     <div class="row" style="gap:6px;margin-bottom:10px">${ORDER.map(k=>`<div style="flex:1;text-align:center;border:1.5px solid ${nextAp(v)===k&&v.status==='결재대기'?'var(--acc)':'var(--line)'};border-radius:10px;padding:6px 2px;font-size:12px">${k}<br>${v.ap[k]?`<span style="color:var(--stamp);font-weight:800">결재 ${v.ap[k]}</span>`:(v.status==='반려'&&v.rejBy===k?'<span style="color:var(--warn)">반려</span>':'<span class="mut">대기</span>')}</div>`).join('')}</div>
+     <div style="font-size:14px;line-height:1.9;border-top:1px solid var(--line);padding-top:6px">${v.rows.map(r=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap"><span>${r.pay}<br><span class="mut">${r.holder} · ${r.bank}</span></span><b>${won(r.amt)}</b></div>`).join('')}</div>
+    </div>
+    ${can?`<textarea id="rej" placeholder="반려 사유 (반려할 때만)" style="width:100%;margin-top:10px;border:1px solid var(--line);border-radius:10px;padding:8px;font-family:inherit;font-size:14px" rows="2"></textarea>
+    <div class="row" style="margin-top:8px;flex-wrap:nowrap"><button class="btn" id="doRej" style="flex:1;padding:14px;font-size:16px">반려</button><button class="btn bp" id="doOk" style="flex:2;padding:14px;font-size:16px">결재</button></div>`:`<p class="mut" style="text-align:center">${v.status==='결재대기'?nextAp(v)+'님 결재 차례입니다':v.status}</p>`}`;
+    $('#back').onclick=()=>{openId=null;renderPhone()};
+    if(can){$('#doOk').onclick=()=>{const t=new Date(Date.now()+9*3600000).toISOString().slice(5,10);v.ap[role]=t;
+        if(!nextAp(v)){v.status='결재완료';toast('결재 완료 — 실제 시스템에서는 이체 후 일계표 지출에 자동 연결됩니다')}else toast(`${nextAp(v)}님께 결재가 넘어갔습니다`);
+        openId=null;renderPhone();renderV()};
+      $('#doRej').onclick=()=>{const m=$('#rej').value.trim();if(!m){$('#rej').style.borderColor='var(--warn)';$('#rej').placeholder='반려 사유를 적어 주세요';return}
+        v.status='반려';v.rejBy=role;v.rejMsg=m;ORDER.forEach(k=>{if(k!==role&&!v.ap[k])v.ap[k]=null});openId=null;renderPhone();renderV();toast('반려했습니다 — 경리 담당자에게 돌아갑니다')}}
+    return}
+  ph.innerHTML=`<div class="row" style="justify-content:space-between"><b style="font-size:20px">결재함</b><span class="mut">${role}님</span></div>
+   <div class="mut" style="margin:12px 0 6px">결재할 것 ${mine.length}건</div>
+   ${mine.length?mine.map(v=>card(v,true)).join(''):'<div class="card mut" style="text-align:center;padding:22px">지금 결재할 것이 없습니다.<br>위에서 다른 사람으로 바꿔 보세요.</div>'}
+   <div class="card" style="padding:12px;margin-bottom:8px"><div class="mut">일계표 · 2020.07 예시</div><div style="font-size:15px;font-weight:800">현금 시재 ${won(dTotals(DROWS).bal)}원</div><div class="mut">③ 일계표 탭에서 결재 올리기</div></div>
+   <div class="mut" style="margin:14px 0 6px">최근 처리</div>${doneList.map(v=>card(v,false)).join('')}`;
+  document.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{openId=+b.dataset.open;renderPhone()});
+}
+const card=(v,hi)=>`<button data-open="${v.id}" class="card" style="width:100%;text-align:left;padding:12px;margin-bottom:8px;${hi?'border:2px solid var(--acc)':''}"><div class="row" style="justify-content:space-between"><span class="mut">지출결의 · ${v.date.slice(5).replace('-','/')}</span><span class="pill ${stCls[v.status]}">${v.status==='결재대기'?nextAp(v)+' 대기':v.status}</span></div><div style="font-size:15px;font-weight:800;margin-top:2px">${v.title||'미지급금'} ${v.rows.length}건</div><div style="font-size:20px;font-weight:800">${won(sum(v))}원</div></button>`;
+document.querySelectorAll('.role').forEach(b=>b.onclick=()=>{role=b.dataset.r;openId=null;renderPhone()});
+
+/* ③ 일계표 */
+const D=(name,memo,credit,date,cin,out,tag)=>({name,memo,credit,date,cin,out,tag});
+const DROWS=[
+ D('고철','9090*230',2090700,'07-08',0,0,'외상'),D('부가세','',209070,'',0,0,'외상'),
+ D('포장판외','17700*230',4071000,'07-10',0,0,'외상'),D('','부가세',407100,'',0,0,'외상'),
+ D('논산자원입금','',0,'',4478100,0,'외상회수'),D('보통예금입금','068218',0,'',0,4478100,'통장 자동'),
+ D('정대균차용','',0,'',10000000,0,'차입금'),D('보통예금입금','',0,'',0,10000000,'통장 자동'),
+ D('수박외','하나카드',20860,'07-15',0,0,'카드 자동'),D('특근자식대','현대카드',22000,'07-15',0,0,'카드 자동'),
+ D('야근식대','하나카드',10000,'07-15',0,0,'카드 자동'),D('대한강재음료수','현대카드',22400,'07-16',0,0,'카드 자동'),
+ D('유대','현대카드',76000,'07-16',0,0,'카드 자동'),D('고철','8850*210',1858500,'07-21',0,0,'외상'),
+ D('유림E.N.G','중도금',0,'',0,10000000,'지출결의 연결'),D('보통예금출금','16804',0,'',10000000,0,'통장 자동'),
+ D('논산자원입금','',0,'',1858500,0,'외상회수'),D('논산자원입금','잡수익',0,'',1500,0,''),
+ D('보통예금출금','16804',0,'07-22',3400000,0,'통장 자동'),D('반도호이스트','계약금',0,'',0,3400000,'지출결의 연결'),
+ D('기숙사부식비','하나카드',101750,'07-23',0,0,'카드 자동'),D('경유','현대카드',1185136,'07-24',0,0,'카드 자동'),
+ D('보통예금출금','16804',0,'07-27',9519240,0,'통장 자동'),D('부가세','1기분',0,'',0,9519240,'세금'),
+ D('보통예금출금','16804',0,'07-31',1351920,0,'통장 자동'),D('재산세(건축물)','',0,'',0,1351920,'세금')];
+let last='07-01';DROWS.forEach(r=>{if(r.date)last=r.date;r.d=last});
+let dMode='P',dDay='07-22';const OPEN=0;
+function dTotals(rows,open=OPEN){const c=rows.reduce((a,r)=>a+r.credit,0),i=rows.reduce((a,r)=>a+r.cin,0),o=rows.reduce((a,r)=>a+r.out,0);return{c,i,o,bal:open+i-o}}
+function renderD(){
+  $('#dmP').classList.toggle('bd',dMode==='P');$('#dmD').classList.toggle('bd',dMode==='D');$('#dDay').classList.toggle('hide',dMode!=='D');
+  const days=[...new Set(DROWS.map(r=>r.d))];$('#dDay').innerHTML=days.map(d=>`<option ${d===dDay?'selected':''} value="${d}">7월 ${+d.slice(3)}일</option>`).join('');
+  const rows=dMode==='P'?DROWS:DROWS.filter(r=>r.d===dDay);
+  const open=dMode==='P'?OPEN:dTotals(DROWS.filter(r=>r.d<dDay)).bal;
+  const t=dTotals(rows,open);
+  const tagHTML=g=>!g?'':g==='외상'?'':`<span class="pill ${/자동|연결/.test(g)?'p-wait':g==='외상회수'?'p-ok':'p-draft'}">${g}</span>`;
+  const credStatus=r=>{if(r.tag!=='외상'||!r.name||r.name==='부가세')return'';const paid=(r.memo==='17700*230'||r.memo==='8850*210');return `<span class="pill ${paid?'p-ok':'p-no'}">${paid?'회수완료':'미회수'}</span>`};
+  $('#dPaper').innerHTML=`
+   <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div style="width:210px"></div>
+    <div style="font-size:26px;font-weight:800;letter-spacing:14px;text-decoration:underline;text-underline-offset:6px">일계표</div>
+    <table class="sign"><tr><th>대표</th><th>이사</th><th>실 장</th></tr><tr><td></td><td></td><td></td></tr></table>
+   </div>
+   <div style="text-align:right;margin:8px 0;font-size:14px;font-weight:700">2020 년 &nbsp; ${dMode==='P'?'7월 1-30일':'7월 '+(+dDay.slice(3))+'일'}</div>
+   <table class="f">
+    <colgroup><col style="width:17%"><col style="width:13%"><col style="width:14%"><col style="width:8%"><col style="width:15%"><col style="width:15%"><col style="width:120px" class="xcol"></colgroup>
+    <tr><th>상호</th><th>적요</th><th>외상·카드</th><th>일자</th><th>현금</th><th>지출</th><th class="xcol" style="background:#fff">구분</th></tr>
+    <tr><td colspan="2" class="c" style="background:#fafbff">전일잔고</td><td></td><td></td><td class="r" style="background:#fafbff">${won(open)}</td><td></td><td class="xcol"></td></tr>
+    ${rows.map(r=>`<tr><td>${r.name}</td><td>${r.memo}</td><td class="r">${r.credit?won(r.credit):''}</td><td class="c">${r.date?(+r.date.slice(0,2))+'/'+(+r.date.slice(3)):''}</td><td class="r">${r.cin?won(r.cin):''}</td><td class="r">${r.out?won(r.out):''}</td><td class="xcol c">${credStatus(r)||tagHTML(r.tag)}</td></tr>`).join('')}
+    <tr><th colspan="2">합&nbsp;&nbsp;&nbsp;계</th><th class="r">${won(t.c)}</th><th></th><th class="r">${won(t.i)}</th><th class="r">${won(t.o)}</th><td class="xcol"></td></tr>
+    <tr><th colspan="4">금일잔고 (전일잔고 + 현금 − 지출)</th><th colspan="2" class="r">${won(t.bal)}</th><td class="xcol"></td></tr>
+   </table>`;
+  const card=rows.filter(r=>/카드/.test(r.memo)).reduce((a,r)=>a+r.credit,0);
+  $('#dKpi').innerHTML=`<div class="kpi"><div class="mut">외상 미회수 (기간 전체)</div><div class="v" style="color:var(--warn)">${won(2299770)}</div><div class="mut">고철 7/8 (부가세 포함)</div></div>
+   <div class="kpi"><div class="mut">카드 사용 ${dMode==='P'?'(하나·현대)':'(이날)'}</div><div class="v">${won(card)}</div><div class="mut">결제일에 통장 출금과 자동 대조</div></div>
+   <div class="kpi"><div class="mut">현금 시재</div><div class="v">${won(t.bal)}</div><div class="mut">${dMode==='P'?'논산자원 7/21분 통장 미입금':'이날 마감 기준'}</div></div>`;
+}
+$('#dmP').onclick=()=>{dMode='P';renderD()};$('#dmD').onclick=()=>{dMode='D';renderD()};$('#dDay').onchange=e=>{dDay=e.target.value;renderD()};
+$('#dUp').onclick=()=>toast('테스트판에서는 업로드하지 않습니다 — 실제 시스템에서 통장·카드 줄이 자동으로 채워집니다');
+$('#dSubmit').onclick=()=>toast('일계표 결재 요청 (테스트판은 지출결의서만 결재 흐름이 동작합니다)');
+
+/* ④ 월 손익 */
+function renderP(){
+  const months=[...new Set(V.map(v=>v.date.slice(0,7)))].sort().reverse();
+  if(!$('#pMonth').value||!months.includes($('#pMonth').value))$('#pMonth').innerHTML=months.map(m=>`<option value="${m}">${m.slice(0,4)}년 ${+m.slice(5)}월</option>`).join('');
+  const m=$('#pMonth').value;const agg={};let tot=0,cnt=0;
+  V.filter(v=>v.date.startsWith(m)&&v.status!=='반려').forEach(v=>{cnt++;v.rows.filter(r=>r.amt).forEach(r=>{agg[r.cat]=(agg[r.cat]||0)+(+r.amt);tot+=+r.amt})});
+  const max=Math.max(...Object.values(agg),1);
+  $('#pAgg').innerHTML=`<div class="mut" style="margin-bottom:8px">결의서 ${cnt}건 · 합계 ${won(tot)}원</div>`+Object.entries(agg).sort((a,b)=>b[1]-a[1]).map(([k,n])=>`<div class="row" style="flex-wrap:nowrap;margin:6px 0"><span style="width:100px;font-size:13px">${k}</span><div style="flex:1;background:var(--bg);border-radius:6px;height:22px"><div style="width:${n/max*100}%;background:var(--acc);height:22px;border-radius:6px"></div></div><b style="width:110px;text-align:right;font-size:13px">${won(n)}</b></div>`).join('');
+  const L=[['매출액',182000000,1],['  가공매출 (슬리팅·레벨링)',171500000],['  스크랩 매출',10500000],['매출원가',121300000,1],['  외주가공비',18400000],['  소모품비',9800000],['  전력비',14200000],['  현장 인건비',71600000],['  운반비',7300000],['매출총이익',60700000,2],['판매관리비',37300000,1],['  사무 급여',21000000],['  복리후생비',5900000],['  세금과공과',3100000],['  차량유지비·수선비',4300000],['  기타',3000000],['영업이익',23400000,2]];
+  $('#pPL').innerHTML=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:12px">
+   <div class="kpi"><div class="mut">매출</div><div class="v">1.82억</div></div><div class="kpi"><div class="mut">영업이익</div><div class="v" style="color:var(--ok)">2,340만</div></div>
+   <div class="kpi"><div class="mut">가공량</div><div class="v">3,820톤</div></div><div class="kpi"><div class="mut">톤당 이익</div><div class="v">6,126원</div></div></div>
+   <table class="f" style="max-width:620px">${L.map(([k,n,s])=>`<tr><td style="${s?'font-weight:800;background:'+(s===2?'#eeedfe':'#f3f5fe'):'color:var(--sub)'};white-space:pre">${k}</td><td class="r" style="${s?'font-weight:800':''}">${won(n)}</td></tr>`).join('')}</table>
+   <p class="mut">실제 시스템: 매출 = 매출 세금계산서 + 그린ERP 작업실적, 비용 = 매입 세금계산서·카드·지출결의(계정), 월마감 후 확정 · 전월/전년 비교 · 부가세 예상액.</p>`;
+}
+$('#pMonth').onchange=renderP;
+
+/* tabs */
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===b));
+  ['v','a','d','p'].forEach(t=>$('#t-'+t).classList.toggle('hide',t!==b.dataset.t));closeAc();
+  ({v:renderV,a:renderPhone,d:renderD,p:renderP})[b.dataset.t]();});
+renderV();
+</script>
+</body>
+</html>
