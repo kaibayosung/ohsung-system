@@ -480,7 +480,7 @@
 <div class="app">
 <!-- 좌측 사이드바 -->
 <div class="side">
-  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 11:53</small></div></div>
+  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 12:05</small></div></div>
   <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s" id="nav-sel-s">태경스틸 외 3건</div></div>
   <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s" id="nav-now-s">태경스틸 · 박스2</div></div>
   <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
@@ -491,7 +491,7 @@
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 11:53</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 12:05</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
 <!-- ================= 현재 작업 ================= -->
@@ -843,9 +843,7 @@ function handleDefects(defs){
   var nf=defs?defs.filter(isFlat).length:0, ns=defs?defs.length-nf:0;
   _H('h-flatchip','<span class="d" style="background:'+(nf?'var(--bad)':'var(--ok)')+'"></span><span class="ko">평탄도</span><span class="en">Flatness</span> '+(nf?'<b style="color:var(--bad)">'+t('불량','NG')+' '+nf+'</b>':t('정상 OK','OK'))+' <span class="lk2">'+t('도식 →','Diagram →')+'</span>');
   _H('h-scratchchip','<span class="d" style="background:'+(ns?'var(--bad)':'var(--ok)')+'"></span><span class="ko">흠집</span><span class="en">Scratch</span> '+ns+' <span class="lk2">'+t('검출이력 →','Log →')+'</span>');
-  if(!defs||!defs.length||ASOF)return;
-  var d=defs[defs.length-1],key=(d.id||d.alert_id||d.at||d.seg||d.segment_id||JSON.stringify(d));if(SHOWN[key])return;SHOWN[key]=1;
-  if(isFlat(d)){fillWave(d);showPop('ov-wave');}else{fillScratch(d);showPop('ov-scratch');}
+  // 자동 웨이브/스크래치 팝업 제거(2026-11-18) — 칩으로만 표시, 상세는 평탄도 모니터 사용
 }
 var BLANK_S=['s-cutlen','s-corr','s-speed','s-acc','s-dec','s-slow'],BLANK_M=['m-coeff','m-cycle','m-pos','m-run','m-ppm','m-thk'];
 function clearWork(){
@@ -978,7 +976,7 @@ function render(st){
   _T('eq-loadlbl',t('인버터 부하','Inv. load'));
   var totToday=jobs.length+waiting.length;
   _T('nav-sel-s',(totToday||'0')+t('건',' jobs'));buildSelect(st);
-  if(!(lv && job && online)){ if(SELJOB){var _fr=jobs.concat(waiting).filter(function(x){return x&&x.coil===SELJOB.coil;})[0];if(_fr)SELJOB=_fr;showJob(SELJOB);} else { setIdle(); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); } handleDefects(defs); return; }
+  if(!(lv && job && online)){ if(SELJOB){var _fr=jobs.concat(waiting).filter(function(x){return x&&x.coil===SELJOB.coil;})[0];if(_fr)SELJOB=_fr;showJob(SELJOB);} else if(jobs.length){SELJOB=jobs[0];showJob(jobs[0]);} else { setIdle(); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); } handleDefects(defs); return; }
   SELJOB=null;_T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
   _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
   trendIdle(false);fetchTrend(job.coil,st.today);loadRec(job.coil,m.cut);
