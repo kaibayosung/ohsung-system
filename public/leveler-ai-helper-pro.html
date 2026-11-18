@@ -487,85 +487,6 @@
 .tenset .ts2.taper .v b.gd-hi{color:#d5331f}.tenset .ts2.taper .v b.gd-lo{color:#167a43}
 .tsspark{background:#fff;border:2px solid #e7e2f5;border-radius:12px;padding:8px 12px}
 .tsspark .k{font-size:13px;color:var(--mut);font-weight:800}
-
-/* ===== 현재 상태 v3 — 라인 그림 + 장비별 큰 숫자 (2026-11-18) ===== */
-#v-now.on{gap:9px}
-.ncard{background:#fff;border:2px solid var(--line);border-radius:16px}
-.ntop{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:stretch}
-.njob{padding:8px 16px;display:flex;flex-direction:column;justify-content:center;min-width:0}
-.njob .cu{font-size:30px;font-weight:900;line-height:1.15;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.njob .sp{font-size:19px;color:var(--sec);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nnow{background:var(--navy);color:#fff;border-radius:16px;padding:6px 22px;display:flex;align-items:center;gap:14px}
-.nnow .b{font-size:26px;font-weight:900;background:rgba(255,255,255,.16);border-radius:10px;padding:2px 12px;white-space:nowrap}
-.nnow .n{font-size:58px;font-weight:900;line-height:1;font-family:'IBM Plex Mono',ui-monospace,monospace}
-.nnow .u{font-size:24px;font-weight:900;white-space:nowrap}
-.ntop .verdict{border-radius:16px;padding:0 20px;display:flex;align-items:center;font-size:28px;font-weight:900;color:var(--ok);background:#e6f7ee;border:3px solid #9fdcb8;white-space:nowrap;margin:0}
-.ntop .verdict.bad{color:var(--bad);background:var(--badbg);border-color:#f0bdb3}
-.ntop .verdict.warn{color:#9a5a00;background:#fff4df;border-color:#f3d389}
-.ntop .verdict.idle{color:var(--sec);background:#eef1f7;border-color:var(--line)}
-.nalert{display:flex;align-items:center;gap:14px;border-radius:14px;padding:11px 16px;font-size:22px;font-weight:900;line-height:1.3}
-.nalert.bad{background:var(--badbg);border:3px solid #f0a99c;color:#a4241a}
-.nalert.warn{background:#fff4df;border:3px solid #f3c56b;color:#8a5200}
-.nalert .ai{font-size:30px}
-.nalert .at{flex:1;min-width:0}.nalert .at small{display:block;font-size:17px;font-weight:800;opacity:.85}
-.nalert .ab{flex:0 0 auto;background:var(--navy);color:#fff;border-radius:12px;padding:12px 18px;font-size:21px;font-weight:900;cursor:pointer;white-space:nowrap}
-.nline{padding:6px 10px 10px;display:flex;flex-direction:column}
-.nicons{display:block;width:100%;height:auto;max-height:104px}
-.ncols{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.ncols>*{min-width:0}
-.nstn{text-align:center;font-size:22px;font-weight:900;margin:2px 0 7px;color:var(--ink)}
-.nstn i{font-style:normal;display:inline-block;width:30px;height:30px;line-height:30px;border-radius:50%;background:var(--navy);color:#fff;font-size:18px;margin-right:6px;vertical-align:2px}
-.nbox{border:3px solid var(--line);border-radius:16px;padding:10px 12px;background:#fff;display:flex;flex-direction:column;gap:6px;height:100%;min-width:0}
-.nbox.pora{border-color:#f1b9b3}
-.nsrc{font-size:15px;font-weight:900;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nsrc b{color:#c4231c}
-.nlab{font-size:21px;font-weight:900;color:var(--sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nlab.red{color:#d0281b}
-.nhero{font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:clamp(38px,4.3vw,56px);font-weight:900;line-height:1;color:var(--ink);white-space:nowrap}
-.nhero small{font-family:Pretendard,system-ui,sans-serif;font-size:20px;color:var(--sec);margin-left:3px}
-.nhero.red{color:#d0281b}
-.nsub{font-size:22px;font-weight:900;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.nsub span{color:var(--sec);font-weight:800}
-#n-dia,#n-dia0{font-size:20px}
-.npill{margin-top:auto;font-size:19px;font-weight:900;border-radius:10px;padding:6px 8px;text-align:center;line-height:1.25}
-.npill.ok{background:#e6f7ee;color:var(--ok)}
-.npill.info{background:#eaf0fb;color:var(--navy)}
-.npill.warn{background:#fff4df;color:#9a5a00}
-.npill.bad{background:var(--badbg);color:var(--bad)}
-.npill.mute{background:#eef1f7;color:var(--mut)}
-.nlcd{background:#05060a;border-radius:10px;padding:8px 12px;text-align:right;border:3px solid #33373f}
-.nlcd .p{font-family:'IBM Plex Mono',ui-monospace,monospace;color:#d8f33b;font-size:clamp(36px,4vw,52px);font-weight:900;line-height:1;white-space:nowrap}
-.nlcd .p small{font-size:24px}
-.nlcd.stale .p{color:#7c8443}
-.nbar{position:relative;height:34px;background:#e3e9f3;border-radius:8px;overflow:hidden;border:2px solid #c9d3e2}
-.nbar .f{position:absolute;left:0;top:0;bottom:0;background:var(--blue);transition:width .4s}
-.nbar .s{position:absolute;right:0;top:0;bottom:0;background:repeating-linear-gradient(45deg,#f5a623 0 5px,#fbd38a 5px 10px)}
-.nstack .nhero{font-size:clamp(56px,6.4vw,84px);text-align:center}.nstack .nhero small{display:block;font-size:21px;margin-top:2px;margin-left:0}
-.nstack .nlab{text-align:center}
-.nbottom{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px}
-.nboxes{padding:8px 10px;display:flex;gap:9px;align-items:center;min-width:0}
-.nboxes .bt{font-size:20px;font-weight:900;color:var(--navy);margin:0 4px;white-space:nowrap}
-.nbx{flex:1;display:flex;gap:6px;min-width:0;overflow-x:auto}
-.nbx .bb{flex:1 1 0;min-width:80px;border:3px solid var(--line);border-radius:13px;padding:6px 8px;text-align:center;background:var(--soft);cursor:pointer}
-.nbx .bb .n{font-size:26px;font-weight:900;line-height:1.1;color:var(--ink)}
-.nbx .bb .n small{font-size:14px;color:var(--mut);font-weight:800;margin-left:3px}
-.nbx .bb .m{font-size:16px;font-weight:900;color:var(--sec);white-space:nowrap}
-.nbx .bb.on{border-color:var(--navy);background:#e4ecfa}.nbx .bb.on .n{color:var(--navy)}
-.nbx .bb.dn{opacity:.6}
-.nbx .bb.full{border-color:#f3c56b;background:#fff7e6}
-.nbx .bbx{flex:1;text-align:center;font-size:19px;font-weight:900;color:var(--mut);padding:12px}
-.nbtn{border-radius:16px;padding:0 22px;display:flex;align-items:center;gap:6px;font-size:22px;font-weight:900;color:#fff;cursor:pointer;white-space:nowrap;min-height:64px}
-.nbtn.done{background:var(--ok)}.nbtn.set{background:var(--amber);color:#5a3a00}
-.nq{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:14px;padding:8px 14px}
-.nq .nfg{padding:8px 14px}
-/* 작업완료 — 장수 확정 */
-.pcnt{background:var(--soft);border:2px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:4px}
-.pcnt .pcl{font-size:20px;font-weight:900;color:var(--navy);margin-bottom:8px}
-.pcrow{display:flex;align-items:center;gap:8px}
-.pcrow .pcb{flex:0 0 auto;min-width:62px;text-align:center;border-radius:12px;background:#fff;border:2px solid var(--line);padding:12px 6px;font-size:22px;font-weight:900;color:var(--navy);cursor:pointer;user-select:none}
-.pcrow input{flex:1;min-width:0;font-family:'IBM Plex Mono',ui-monospace,monospace;font-size:44px;font-weight:900;text-align:center;border:3px solid var(--navy);border-radius:12px;padding:4px 6px;color:var(--ink)}
-.pcnt .pcs{font-size:17px;font-weight:800;color:var(--sec);margin-top:8px}
-.pcnt .pcs b{color:var(--ink);font-weight:900}
-.pcnt .pcw{font-size:17px;font-weight:800;color:var(--sec);margin-top:4px}
 </style>
 </head>
 <body>
@@ -574,7 +495,7 @@
 <div class="app">
 <!-- 좌측 사이드바 -->
 <div class="side">
-  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-19 09:05</small></div></div>
+  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 16:52</small></div></div>
   <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s" id="nav-sel-s">태경스틸 외 3건</div></div>
   <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s" id="nav-now-s">태경스틸 · 박스2</div></div>
   <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
@@ -585,93 +506,107 @@
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-19 09:05</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 16:52</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
-<!-- ================= 현재 작업 (v3: 라인 그림 + 장비별 큰 숫자) ================= -->
+<!-- ================= 현재 작업 ================= -->
 <div class="view on" id="v-now">
-  <div class="ntop">
-    <div class="ncard njob"><div class="cu" id="h-cu">—</div><div class="sp" id="h-meta">—</div></div>
-    <div class="nnow"><span class="b" id="n-nowbox">박스 —</span><span class="n" id="n-nowno">—</span><span class="u" id="n-nowu">번째 장</span></div>
-    <div class="verdict" id="h-verdict">● 대기</div>
+  <div class="chead">
+    <div>
+      <span class="nm" id="h-cu">태경스틸</span>
+      <span class="meta" id="h-meta"> &nbsp;1.55×4자 · 2,450kg · 코일 FG3UQAB · 시작 11:15</span>
+    </div>
+    <span class="box" id="h-box">박스 2 / 4</span>
+    <span class="verdict" id="h-verdict">● 정상 Normal</span>
+    <div class="prog">
+      <span class="pn" id="h-prog1">79% · 290/366장</span>
+      <div class="pt"><div class="pf" id="h-progfill" style="width:79%"></div></div>
+      <span class="pn" id="h-prog2"><span class="ko">남음 ~33분 · 종료 15:18</span><span class="en">Left ~33min · End 15:18</span> · 554/738m</span>
+    </div>
   </div>
-  <div class="nalert" id="n-alert" style="display:none"></div>
 
-  <div class="ncard nline">
-    <svg class="nicons" viewBox="0 0 1100 112" font-family="Pretendard" aria-hidden="true">
-      <path d="M150,46 L1060,46" stroke="#9fb4d6" stroke-width="6" stroke-dasharray="16 10"/>
-      <circle cx="110" cy="58" r="52" fill="none" stroke="#e4a19b" stroke-width="3" stroke-dasharray="6 5"/>
-      <circle id="n-coilc" cx="110" cy="58" r="43" fill="#eef2fa" stroke="#1a3a6b" stroke-width="6"/>
-      <circle cx="110" cy="58" r="17" fill="#fff" stroke="#9fb4d6" stroke-width="4"/>
-      <circle cx="110" cy="58" r="7" fill="#1a3a6b"/>
-      <g stroke="#1a3a6b" stroke-width="5" fill="#fff" transform="translate(-19,0)">
-        <circle cx="268" cy="34" r="14"/><circle cx="295" cy="60" r="14"/><circle cx="322" cy="34" r="14"/><circle cx="349" cy="60" r="14"/><circle cx="376" cy="34" r="14"/><circle cx="403" cy="60" r="14"/><circle cx="430" cy="34" r="14"/>
+  <!-- 박스 전환 바 (맨 위, 크게) -->
+  <div class="boxswitch">
+    <div class="bst">📦 <span class="ko">현재 박스</span><span class="en">Current box</span> <small><span class="ko">· 눌러서 바로 바꾸기 (잘못 눌렀어도 여기서 변경)</span><span class="en">· Tap to switch (fixes a missed box change)</span></small></div>
+    <div class="bsgrid" id="h-bsgrid">
+      <div class="bsbtn done"><div class="bn3">1</div><div class="meta3">1,260mm · 131장</div><div class="tag3">완료 Done</div></div>
+      <div class="bsbtn on"><div class="bn3">2</div><div class="meta3">2,438mm · 151/84장</div><div class="tag3">진행중 Now</div></div>
+      <div class="bsbtn"><div class="bn3">3</div><div class="meta3">2,438mm · 예정</div><div class="tag3">대기 Next</div></div>
+      <div class="bsbtn"><div class="bn3">4</div><div class="meta3">2,438mm · 예정</div><div class="tag3">대기 Next</div></div>
+    </div>
+  </div>
+
+  <!-- 장비 그림 위에 운행 상태 -->
+  <div class="eqwrap">
+    <div class="et"><span class="ko">장비 운행 상태</span><span class="en">Equipment status</span> <span style="font-size:.82em;color:var(--mut)"><span class="ko">(그림 위 실시간 · 평소 대비 색)</span><span class="en">(live on diagram · color vs usual)</span></span></div>
+    <svg viewBox="0 0 1300 380" style="width:100%;max-width:960px;height:auto;display:block;margin:0 auto" font-family="Pretendard">
+      <!-- strip line -->
+      <line x1="156" y1="196" x2="1116" y2="196" stroke="#9fb4d6" stroke-width="5" stroke-dasharray="14 10"/>
+      <!-- 언코일러 -->
+      <circle cx="120" cy="196" r="54" fill="#eef2fa" stroke="#1a3a6b" stroke-width="6"/>
+      <circle cx="120" cy="196" r="31" fill="#fff" stroke="#9fb4d6" stroke-width="4"/>
+      <circle cx="120" cy="196" r="10" fill="#1a3a6b"/>
+      <text x="120" y="282" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">언코일러 Uncoiler</text>
+      <text x="120" y="305" text-anchor="middle" font-size="20" font-weight="800" fill="#8995ab" id="eq-core">잔여경 508mm</text>
+      <!-- 텐션 콜아웃 (위, 큰 숫자) -->
+      <g>
+        <line x1="330" y1="150" x2="330" y2="193" stroke="#bfe6cf" stroke-width="4"/>
+        <rect x="214" y="48" width="232" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
+        <text x="330" y="76" text-anchor="middle" font-size="23" font-weight="800" fill="#51607a">텐션 출력 Tension(OCR)</text>
+        <text x="330" y="124" text-anchor="middle" font-size="54" font-weight="900" fill="#1f9d57" id="eq-ten">68.0%</text>
+        <text x="330" y="146" text-anchor="middle" font-size="21" font-weight="900" fill="#1f9d57" id="eq-tensub">● 적정 Normal · 평소 67%</text>
       </g>
-      <g transform="translate(-67,0)">
-        <circle cx="600" cy="34" r="12" fill="#fff" stroke="#1a3a6b" stroke-width="5"/><circle cx="600" cy="60" r="12" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
-        <circle cx="634" cy="34" r="12" fill="#fff" stroke="#1a3a6b" stroke-width="5"/><circle cx="634" cy="60" r="12" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
-        <rect x="580" y="78" width="74" height="28" rx="6" fill="#2451a0"/><text x="617" y="98" text-anchor="middle" font-size="15" font-weight="900" fill="#fff">SERVO</text>
+      <!-- 레벨러 7롤 -->
+      <g>
+        <circle cx="470" cy="178" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <circle cx="506" cy="214" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <circle cx="542" cy="178" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <circle cx="578" cy="214" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <circle cx="614" cy="178" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <circle cx="650" cy="214" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <circle cx="686" cy="178" r="21" fill="#fff" stroke="#1a3a6b" stroke-width="5"/>
+        <text x="578" y="300" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">레벨러 Leveler (7롤)</text>
       </g>
-      <rect x="758" y="2" width="24" height="34" rx="4" fill="#d5331f"/><path d="M758,36 L782,36 L770,48 Z" fill="#d5331f"/>
-      <rect x="745" y="64" width="50" height="11" rx="3" fill="#9aa3b2"/>
-      <rect x="935" y="56" width="110" height="11" fill="#2451a0"/><rect x="935" y="69" width="110" height="11" fill="#3a66b8"/><rect x="935" y="82" width="110" height="11" fill="#2451a0"/>
-      <rect x="925" y="96" width="130" height="9" rx="2" fill="#7c8698"/>
+      <!-- 부하 콜아웃 (아래, 큰 숫자) -->
+      <g>
+        <line x1="578" y1="236" x2="578" y2="312" stroke="#bfe6cf" stroke-width="4"/>
+        <rect x="462" y="312" width="232" height="60" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
+        <text x="520" y="350" text-anchor="middle" font-size="50" font-weight="900" fill="#1f9d57" id="eq-load">35%</text>
+        <text x="632" y="338" text-anchor="middle" font-size="21" font-weight="800" fill="#51607a" id="eq-loadlbl">인버터 부하</text>
+        <text x="632" y="358" text-anchor="middle" font-size="20" font-weight="900" fill="#1f9d57" id="eq-loadnorm">● 적정 30~38</text>
+      </g>
+      <!-- 이송·절단 -->
+      <rect x="800" y="146" width="28" height="104" rx="7" fill="#d5331f"/>
+      <text x="814" y="300" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">이송·절단 Cut</text>
+      <g>
+        <line x1="814" y1="150" x2="814" y2="146" stroke="#bfe6cf" stroke-width="4"/>
+        <rect x="700" y="46" width="228" height="104" rx="16" fill="#e9f8f0" stroke="#bfe6cf" stroke-width="3"/>
+        <text x="814" y="72" text-anchor="middle" font-size="22" font-weight="800" fill="#51607a">이송속도 Speed · 절단 Cut</text>
+        <text x="814" y="112" text-anchor="middle" font-size="42" font-weight="900" fill="#1f9d57" id="eq-spd">11.3<tspan font-size="18" fill="#51607a"> m/min</tspan></text>
+        <text x="814" y="138" text-anchor="middle" font-size="23" font-weight="900" fill="#17233b" id="eq-cut">절단길이 2,439mm</text>
+      </g>
+      <!-- 적재 -->
+      <g>
+        <rect x="1030" y="168" width="156" height="15" fill="#2451a0"/>
+        <rect x="1030" y="187" width="156" height="15" fill="#3a66b8"/>
+        <rect x="1030" y="206" width="156" height="15" fill="#2451a0"/>
+        <rect x="1030" y="225" width="156" height="15" fill="#3a66b8"/>
+        <text x="1108" y="282" text-anchor="middle" font-size="25" font-weight="900" fill="#17233b">적재 Stack</text>
+        <text x="1108" y="305" text-anchor="middle" font-size="23" font-weight="900" fill="#2451a0" id="eq-stack">박스2 · 151/84장</text>
+      </g>
     </svg>
-    <div class="ncols">
-      <div class="nstn"><i>1</i><span class="ko">언코일러</span><span class="en">Uncoiler</span></div>
-      <div class="nstn"><i>2</i><span class="ko">레벨러</span><span class="en">Leveler</span></div>
-      <div class="nstn"><i>3</i><span class="ko">이송</span><span class="en">Feed</span></div>
-      <div class="nstn"><i>4</i><span class="ko">절단</span><span class="en">Cut</span></div>
-      <div class="nstn"><i>5</i><span class="ko">적재</span><span class="en">Stack</span></div>
-    </div>
-    <div class="ncols nfill">
-      <div class="nbox pora">
-        <div class="nsrc" id="n-tsrc"><b>PORA</b> 화면</div>
-        <div class="nlab"><span class="ko">장력</span><span class="en">Tension</span></div>
-        <div class="nlcd" id="n-lcd"><div class="p" id="n-ten">—</div></div>
-        <div class="nsub" id="n-dia">코일경 —</div><div class="nsub" id="n-dia0"><span>처음 —</span></div>
-        <div class="npill info" id="n-tst">—</div>
-      </div>
-      <div class="nbox">
-        <div class="nsrc"><span class="ko">조작판</span><span class="en">Panel</span></div>
-        <div class="nlab red"><span class="ko">속도 설정</span><span class="en">Speed set</span></div>
-        <div class="nhero red" id="n-ss">—</div><div class="nsub"><span>m/min</span></div>
-        <div class="nsub" id="n-load">부하 —</div><div class="nsub" id="n-feed"><span>실제 —</span></div>
-        <div class="npill info" id="n-lst">—</div>
-      </div>
-      <div class="nbox">
-        <div class="nsrc"><span class="ko">조작판</span><span class="en">Panel</span></div>
-        <div class="nlab"><span class="ko">이번 장 보낸 길이</span><span class="en">Fed this sheet</span></div>
-        <div class="nhero" id="n-mv">—</div><div class="nsub" id="n-mvof"><span>—</span></div>
-        <div class="nbar"><div class="f" id="n-barf" style="width:0%"></div><div class="s" id="n-bars" style="width:2%"></div></div>
-        <div class="npill info" id="n-fst">—</div>
-      </div>
-      <div class="nbox">
-        <div class="nsrc"><span class="ko">조작판</span><span class="en">Panel</span></div>
-        <div class="nlab red"><span class="ko">절단길이 설정</span><span class="en">Cut length set</span></div>
-        <div class="nhero red" id="n-cut">—</div>
-        <div class="nsub" id="n-corr">보정 —</div><div class="nsub" id="n-order"><span>지시 —</span></div>
-        <div class="npill info" id="n-cst">—</div>
-      </div>
-      <div class="nbox nstack">
-        <div class="nlab" id="n-sbox">박스 —</div>
-        <div class="nhero" id="n-sno">—</div>
-        <div class="nsub" id="n-sdone" style="text-align:center">—</div>
-        <div class="npill info" id="n-sst">—</div>
-      </div>
-    </div>
   </div>
 
-  <div class="nbottom">
-    <div class="ncard nboxes"><span class="bt">📦 <span class="ko">박스</span><span class="en">Box</span></span><div class="nbx" id="h-bsgrid"></div></div>
-    <div class="nbtn done" id="h-donebtn" style="display:none">✔ <span id="h-donetxt">작업완료</span></div>
-    <div class="nbtn set" data-go="settings">⚙ <span class="ko">셋팅값</span><span class="en">Settings</span></div>
-  </div>
-  <div class="nq">
-    <span class="nfchip" id="h-flatchip" data-pop="ov-wave"><span class="d"></span><span class="ko">평탄도</span><span class="en">Flatness</span> —</span>
-    <span class="nfchip" id="h-scratchchip" data-pop="ov-scratch"><span class="d"></span><span class="ko">흠집</span><span class="en">Scratch</span> —</span>
-    <div class="nfg" id="h-guide" data-go="trend">🤖 —</div>
-    <a class="nfchip" href="/leveler-run-check.html" target="_blank" rel="noopener" style="text-decoration:none;color:var(--navy);background:#eaf0fb;border:2px solid #c6d8f2;border-radius:12px;padding:8px 12px">🩺 <span class="ko">작업 점검판</span><span class="en">Run check</span></a>
+  <!-- 하단 요약 (품질 + 가이드 한 줄 + 셋팅값 바로가기) — 16:9 한 화면 -->
+  <div class="nowfoot">
+    <div class="nfq">
+      <span class="nfchip" id="h-flatchip" data-pop="ov-wave"><span class="d"></span><span class="ko">평탄도 v2 OK</span><span class="en">Flatness v2 OK</span> <span class="lk2"><span class="ko">도식 →</span><span class="en">Diagram →</span></span></span>
+      <span class="nfchip" id="h-scratchchip" data-pop="ov-scratch"><span class="d"></span><span class="ko">흠집 0</span><span class="en">Scratch 0</span> <span class="lk2"><span class="ko">검출이력 →</span><span class="en">Log →</span></span></span>
+      <span class="nfchip" style="color:var(--blue)">🎞 <span class="ko">영상</span><span class="en">Video</span></span>
+    </div>
+    <div class="nfg" id="h-guide" data-go="trend">🤖 <span class="ko">지난 같은 규격 작업 평균 범위 안 — 지금 설정 유지 <span style="color:var(--mut)">(자세히: 추세·분석)</span></span><span class="en">Within past same-spec average — keep current settings <span style="color:var(--mut)">(details: Trend)</span></span></div>
+    <span class="nfdone" id="h-donebtn" style="display:none">✔ <span id="h-donetxt">작업완료</span></span>
+    <span class="nfset" data-go="settings">⚙ <span class="ko">장비 셋팅값 확인 →</span><span class="en">Check machine settings →</span></span>
   </div>
 </div>
 
@@ -747,7 +682,7 @@
 
 <!-- ================= 작업 선택 ================= -->
 <div class="view" id="v-select">
-  <div style="font-size:17px;font-weight:900;color:var(--sec)">Pick coil — <span class="ko">오늘</span><span class="en">Today</span> <span style="color:var(--mut);font-size:14px;font-weight:800"><span class="ko">· 코일을 누르고 박스를 골라 작업 시작</span><span class="en">· pick a coil, starts at box 1</span></span></div>
+  <div style="font-size:17px;font-weight:900;color:var(--sec)">Pick coil — <span class="ko">오늘</span><span class="en">Today</span> <span style="color:var(--mut);font-size:14px;font-weight:800"><span class="ko">· 코일만 고르면 1박스로 시작</span><span class="en">· pick a coil, starts at box 1</span></span></div>
   <div class="sgrid" id="sel-grid">
     <div class="scoil on"><span class="st run"><span class="ko">작업중</span><span class="en">Running</span></span><div class="cu" id="sel-cu">태경스틸</div><div class="sp" id="sel-sp">1.55×4자</div><div class="mt" id="sel-mt">코일 FG3UQAB · 2,450kg · 4박스</div><div class="pk">✓ 선택됨 Selected</div></div>
     <div class="scoil"><span class="st wait"><span class="ko">대기</span><span class="en">Wait</span></span><div class="cu">대한강재</div><div class="sp">0.45×4XC</div><div class="mt">코일 2632500711 · 10,760kg · 3박스</div><div class="pk">선택 Select →</div></div>
@@ -936,7 +871,7 @@ function handleDefects(defs){
 }
 var BLANK_S=['s-cutlen','s-corr','s-speed','s-acc','s-dec','s-slow'],BLANK_M=['m-coeff','m-cycle','m-pos','m-run','m-ppm','m-thk'];
 function clearWork(){
-  var g=document.getElementById('h-bsgrid');if(g)g.innerHTML='<div class="bbx">'+t('진행 중인 박스 없음','No active box')+'</div>';
+  var g=document.getElementById('h-bsgrid');if(g)g.innerHTML='<div class="bsbtn" style="grid-column:1/-1;opacity:.6;cursor:default"><div class="meta3" style="font-size:19px;padding:16px">'+t('진행 중인 박스 없음','No active box')+'</div></div>';
   _T('eq-ten','—');_T('eq-tensub','● '+t('대기','Idle'));_H('eq-spd','—');_T('eq-cut',t('절단길이','Cut len')+' —');_T('eq-stack',t('대기','Idle'));
   _T('eq-load','—');_T('eq-core',t('잔여경','Core')+' —');_T('eq-loadlbl',t('인버터 부하','Inv. load'));_T('eq-loadnorm','● '+t('적정','Normal'));
   _H('h-flatchip','<span class="d"></span><span class="ko">평탄도</span><span class="en">Flatness</span> —');_H('h-scratchchip','<span class="d"></span><span class="ko">흠집</span><span class="en">Scratch</span> —');
@@ -948,6 +883,21 @@ function mergeBoxes(job){
   var actual={};(job.boxes||[]).forEach(function(b){actual[b.i]=b;});
   if(job.planBoxes&&job.planBoxes.length)return job.planBoxes.map(function(b,i){var a=actual[i+1]||{};return {i:i+1,len:b.len,plan:b.plan,rest:b.rest||b.plan==null,plc:a.plc,ld:a.ld,cyc:a.cyc,ss:a.ss,acc:a.acc,dec:a.dec,slow:a.slow,spd:a.spd,corr:a.corr,coef:a.coef,pos:a.pos,ppm:a.ppm};});
   return (job.boxes||[]).map(function(b){return {i:b.i,len:b.len,plan:b.plan,rest:false,plc:b.plc,ld:b.ld,cyc:b.cyc,ss:b.ss,acc:b.acc,dec:b.dec,slow:b.slow,spd:b.spd,corr:b.corr,coef:b.coef,pos:b.pos,ppm:b.ppm};});
+}
+function buildPlanBoxes(job,boxes,cur,inBox){
+  var grid=document.getElementById('h-bsgrid');if(!grid)return;
+  var row=padRow(job&&job.coil),done=row?padDone(row):null;
+  grid.innerHTML=boxes.map(function(b){var i=b.i;var isRest=b.rest||b.plan==null;
+    var full=done?!!done[i]:(b.plan!=null&&b.plc!=null&&b.plan>0&&b.plc>=b.plan);
+    var cls=i===cur?'on':(full?'done':'');
+    var tag=i===cur?t('진행중','Now'):(full?t('완료','Done'):(isRest?t('나머지','Rest'):t('대기','Next')));
+    var pl=isRest?t('나머지','rest'):_nf(b.plan)+t('장','');
+    var cnt;
+    if(done){cnt=(i===cur)?((inBox!=null?_nf(inBox)+'/':'')+pl):(full?pl+' ✓':(isRest?t('나머지(완료 후)','rest'):pl));}
+    else cnt=isRest?t('나머지(완료 후)','rest'):(((b.plc!=null&&b.plc>0)?_nf(b.plc)+'/':'')+pl);
+    return '<div class="bsbtn '+cls+'" data-bi="'+i+'"><div class="bn3">'+i+'</div><div class="meta3">'+_nf(b.len)+'mm · '+cnt+'</div><div class="tag3">'+tag+'</div></div>';
+  }).join('');
+  grid.querySelectorAll('.bsbtn[data-bi]').forEach(function(el){el.addEventListener('click',function(){padBoxClick(job,cur,+el.getAttribute('data-bi'));});});
 }
 function showJob(job){
   if(!job)return;
@@ -1062,12 +1012,11 @@ function render(st){
   _T('eq-loadlbl',t('인버터 부하','Inv. load'));
   var totToday=jobs.length+waiting.length;
   _T('nav-sel-s',(totToday||'0')+t('건',' jobs'));buildSelect(st);
-  PADCOIL=job?job.coil:null;
-  if(!_isLive){ if(job){SELJOB=job;SELBOX=curBox;showJob(job);drawNow(job,curBox,(m&&m.coil===job.coil)?{m:m,lv:(lv&&_cc===job.coil)?lv:{},ten:ten,stopped:true}:null);} else { SELJOB=null;setIdle();padBtn(null);drawNow(null,1,null);} handleDefects(defs); return; }
+  if(!_isLive){ if(job){SELJOB=job;SELBOX=curBox;showJob(job);} else { SELJOB=null;setIdle();padBtn(null);_T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); } handleDefects(defs); return; }
   SELJOB=null;_T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
   _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
   trendIdle(false);fetchTrend(job.coil,st.today);loadRec(job.coil,m.cut);
-  _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · '+t('코일','coil')+' '+(job.coil||'')+(job.st?' · '+t('시작','start')+' '+job.st:''));
+  _T('h-cu',job.cu||lv.coil||'—');_T('h-meta',' '+(job.specRaw||'')+' · '+_nf(job.kg)+'kg · '+t('코일','coil')+' '+(job.coil||'')+' · '+t('시작','start')+' '+(job.st||''));
   var totB=(job.planBoxes&&job.planBoxes.length)||(job.boxes&&job.boxes.length)||'';
   _T('h-box',t('박스','Box')+' '+curBox+' / '+totB);
   _T('nav-now-s',(job.cu||'')+' · '+t('박스','Box')+curBox);
@@ -1087,8 +1036,7 @@ function render(st){
   _T('eq-cut',t('절단길이','Cut len')+' '+_nf(m.cut||lv.cutNow)+'mm');var _pbc=_pbs[curBox-1];_T('eq-stack',t('박스','Box')+curBox+' · '+(_inBox!=null?_nf(_inBox)+'/':'')+((_pbc&&_pbc.plan!=null)?_nf(_pbc.plan)+t('장',''):t('나머지','rest')));
   _T('eq-core',t('잔여경','Core')+' ≈'+_nf(lv.dia)+'mm');
   _T('m-cycle',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+' s');_T('m-pos',_nf(lv.pos));_T('m-ppm',_f1(lv.ppm)+t(' 장/분',' pc/m'));
-  buildBoxProg(job,lv);padBtn(job,curBox,!!(_row&&_row.status==='진행중'));
-  drawNow(job,curBox,{lv:lv,m:m,ten:ten});
+  buildPlanBoxes(job,mergeBoxes(job),curBox,_inBox);buildBoxProg(job,lv);padBtn(job,curBox,!!(_row&&_row.status==='진행중'));
   _H('g-load',Math.round(load)+'<small style="font-size:16px">%</small>');_H('g-ten',(ten.out!=null?Math.round(ten.out):'—')+'<small style="font-size:16px">%</small>');
   _H('g-cyc',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+'<small style="font-size:16px">s</small>');_H('g-spd',_f1(lv.feed));
   _T('t-now',t('지금','Now')+' · '+_nf(job.L)+'m · '+Math.round(load)+'%');
@@ -1404,7 +1352,7 @@ function wireTrendTabs(){var tabs=document.querySelectorAll('#trend-tabs b'),key
   [].forEach.call(tabs,function(b,i){b.onclick=function(){TRENDTAB=keys[i];[].forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});if(CURCOILJOB)buildTrend(CURCOILJOB);else trendIdle(true);};});}
 // ===== PAD 대체 (한줌 PAD 기능을 헬퍼로 이전 — leveler-pad 브리지가 한줌 백엔드 API를 호출) =====
 var PADAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-pad',PADST=null,PADBUSY=false,PADPEND=null;
-function padFetch(){if(ASOF)return Promise.resolve(null);return fetch(PADAPI+'?action=state'+(PADCOIL?'&coil='+encodeURIComponent(PADCOIL):''),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok)PADST=j;return j;}).catch(function(){return null;});}
+function padFetch(){if(ASOF)return Promise.resolve(null);return fetch(PADAPI+'?action=state',{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok)PADST=j;return j;}).catch(function(){return null;});}
 function padRow(coil){if(!PADST||!coil)return null;return (PADST.rows||[]).filter(function(r){return r.product_name===coil;})[0]||null;}
 function padDone(row){var s={};String((row&&row.completed_boxes)||'').split(',').forEach(function(x){var n=parseInt(x,10);if(n)s[n]=1;});return s;}
 function padActiveCoil(){if(!PADST)return null;var r=(PADST.rows||[]).filter(function(x){return x.status==='진행중';})[0];return r?r.product_name:null;}
@@ -1424,7 +1372,7 @@ function padBoxes(job,sel,done){var pb=(job.planBoxes&&job.planBoxes.length)?job
   return '<div class="pbx">'+pb.map(function(b,i){var n=i+1,rest=b.rest||b.plan==null;
     return '<div class="b'+(n===sel?' on':'')+(done[n]?' dn':'')+'" data-pb="'+n+'"><div class="n">'+n+'</div><div class="m">'+_nf(b.len)+'mm · '+(rest?t('나머지','rest'):_nf(b.plan)+t('장',''))+(done[n]?' ✓':'')+'</div></div>';}).join('')+'</div>';}
 function padAfter(d,okMsg,coil,box){PADBUSY=false;
-  if(d&&d.ok){if(d.state)PADST={ok:true,today:(PADST&&PADST.today)||'',rows:d.state.rows,ing:d.state.ing,counts:d.state.counts||null};
+  if(d&&d.ok){if(d.state)PADST={ok:true,today:(PADST&&PADST.today)||'',rows:d.state.rows,ing:d.state.ing};
     PADPEND=box?{coil:coil,box:box,until:Date.now()+20000}:null;
     hidePop();toast(okMsg);
     if(d.recordingOk===false)setTimeout(function(){alert(t('불량검출 카메라 녹화에 문제가 있습니다. 작업은 계속 진행됩니다 — 카메라 연결 상태를 확인해 주세요.','Defect-camera recording issue. Work continues — please check the camera.'));},300);
@@ -1438,7 +1386,6 @@ function openStart(job,box){
   function draw(){
     _H('pad-body',padInfo(job)+'<div class="pbxt">'+t('박스 번호 선택','Select box')+'</div>'+padBoxes(job,sel,done)
       +((row&&row.status==='완료')?'<div class="pwarn">⚠ '+t('이 작업은 \'완료\' 상태입니다 — 다시 진행중으로 바꾸고 박스 '+sel+'을 시작합니다.','This job is completed — it will be reopened.')+'</div>':'')
-      +((function(){var c=padCounts(job.coil),u=c&&c.unassigned;return (u&&u.n>0&&row&&row.status==='진행중')?'<div class="pwarn">ℹ '+t('박스 선택 전에 자른 '+u.n+'장('+_hm(u.since)+'부터)은 박스 '+sel+'로 계산됩니다.',u.n+' sheets cut before a box was picked will count for box '+sel+'.')+'</div>':'';})())
       +((ac&&ac!==job.coil)?'<div class="pwarn">⚠ '+t('지금 진행중인 ','Running job ')+'<b>'+ac+'</b>'+t(' 작업은 완료 처리됩니다 (한줌 PAD와 동일)',' will be marked complete (same as PAD)')+'</div>':'')
       +'<div class="mbtns"><div class="mbtn go">▶ '+t('박스 '+sel+' 작업 시작','Start box '+sel)+'</div><div class="mbtn close">'+t('취소','Cancel')+'</div></div>');
     var b=document.getElementById('pad-body');
@@ -1449,28 +1396,26 @@ function openStart(job,box){
   }
   draw();showPop('ov-pad');}
 function openSwitch(job,from,to){
-  if(!job||ASOF||from===to)return;var row=padRow(job.coil)||{},done=padDone(row),bc=+row.box_count||0,fromDone=!!done[from],ce=fromDone?null:cntEditor(job,from);
+  if(!job||ASOF||from===to)return;var row=padRow(job.coil)||{},done=padDone(row),bc=+row.box_count||0,fromDone=!!done[from];
   _T('pad-ic','⇄');_T('pad-t',t('박스 전환','Switch box'));_T('pad-s',(job.cu||'')+' · '+(job.coil||''));
   _H('pad-body','<div style="font-size:30px;font-weight:900;text-align:center;color:var(--navy);padding:6px 0 10px">'+t('박스','Box')+' '+from+' → '+t('박스','Box')+' '+to+'</div>'
     +'<div class="mhint">'+(fromDone?t('박스 '+from+'은 이미 완료되었습니다. 박스 '+to+' 작업을 시작합니다.','Box '+from+' is already done. Start box '+to+'.'):t('박스 '+from+'을 <b>완료 처리</b>하고 박스 '+to+'로 넘어갑니다. (한줌 PAD 박스전환과 동일)','Box '+from+' will be <b>completed</b>, then switch to box '+to+'.'))+'</div>'
-    +(ce?ce.html:'')
     +((!fromDone&&bc&&from>=bc)?'<div class="pwarn">⚠ '+t('한줌 서버는 이 작업을 '+bc+'박스로 인식합니다 — 박스 '+from+' 완료 시 대시보드에 작업이 \'완료\'로 표시될 수 있습니다.','Server counts '+bc+' boxes — the job may show as completed.')+'</div>':'')
     +'<div class="mbtns"><div class="mbtn go">⇄ '+t('박스 '+to+'로 전환','Switch to box '+to)+'</div><div class="mbtn close">'+t('취소','Cancel')+'</div></div>');
-  var b=document.getElementById('pad-body');b.querySelector('.mbtn.close').addEventListener('click',hidePop);if(ce)wireCnt(job,from,ce);
-  b.querySelector('.mbtn.go').addEventListener('click',function(){if(PADBUSY)return;PADBUSY=true;var cv=ce?cntVal():null;this.classList.add('dis');this.textContent=t('처리 중… (카메라 연결 최대 1분)','Working… (up to 1 min)');
-    var body=fromDone?{action:'start',coil:job.coil,box:to}:{action:'switch',coil:job.coil,from:from,to:to,count:cv,plc:ce.plc,plan:ce.plan};
+  var b=document.getElementById('pad-body');b.querySelector('.mbtn.close').addEventListener('click',hidePop);
+  b.querySelector('.mbtn.go').addEventListener('click',function(){if(PADBUSY)return;PADBUSY=true;this.classList.add('dis');this.textContent=t('처리 중… (카메라 연결 최대 1분)','Working… (up to 1 min)');
+    var body=fromDone?{action:'start',coil:job.coil,box:to}:{action:'switch',coil:job.coil,from:from,to:to};
     padPost(body).then(function(d){padAfter(d,t('박스 '+to+'로 전환됨','Switched to box '+to),job.coil,to);}).catch(function(e){padAfter({ok:false,error:String(e)});});});
   showPop('ov-pad');}
 function openComplete(job,box){
-  if(!job||ASOF)return;var row=padRow(job.coil)||{},bc=+row.box_count||0,tot=padTotal(job),last=(box>=tot)||(bc&&box>=bc),ce=cntEditor(job,box);
+  if(!job||ASOF)return;var row=padRow(job.coil)||{},bc=+row.box_count||0,tot=padTotal(job),last=(box>=tot)||(bc&&box>=bc);
   _T('pad-ic','✔');_T('pad-t',t('작업완료','Complete'));_T('pad-s',(job.cu||'')+' · '+(job.coil||''));
   _H('pad-body','<div style="font-size:30px;font-weight:900;text-align:center;color:var(--ok);padding:6px 0 10px">'+t('박스 '+box+' 작업완료','Box '+box+' done')+'</div>'
-    +'<div class="mhint">'+(last?t('마지막 박스입니다 — 완료하면 이 작업이 <b>\'완료\'</b>로 바뀝니다.','Last box — the job will be marked completed.'):t('박스 '+box+'을 완료 처리합니다. 다음 박스는 아래 박스 카드에서 눌러 시작하세요.','Box '+box+' will be completed. Tap the next box card to start it.'))+'</div>'
-    +ce.html
+    +'<div class="mhint">'+(last?t('마지막 박스입니다 — 완료하면 이 작업이 <b>\'완료\'</b>로 바뀝니다.','Last box — the job will be marked completed.'):t('박스 '+box+'을 완료 처리합니다. 다음 박스는 현재 박스 카드에서 눌러 시작하세요.','Box '+box+' will be completed. Tap the next box card to start it.'))+'</div>'
     +'<div class="mbtns"><div class="mbtn go" style="background:var(--ok)">✔ '+t('완료 처리','Complete')+'</div><div class="mbtn close">'+t('취소','Cancel')+'</div></div>');
-  var b=document.getElementById('pad-body');b.querySelector('.mbtn.close').addEventListener('click',hidePop);wireCnt(job,box,ce);
-  b.querySelector('.mbtn.go').addEventListener('click',function(){if(PADBUSY)return;PADBUSY=true;var cv=cntVal();this.classList.add('dis');this.textContent=t('처리 중…','Working…');
-    padPost({action:'complete',coil:job.coil,box:box,count:cv,plc:ce.plc,plan:ce.plan}).then(function(d){padAfter(d,t('박스 '+box+' 완료','Box '+box+' completed'),null,null);}).catch(function(e){padAfter({ok:false,error:String(e)});});});
+  var b=document.getElementById('pad-body');b.querySelector('.mbtn.close').addEventListener('click',hidePop);
+  b.querySelector('.mbtn.go').addEventListener('click',function(){if(PADBUSY)return;PADBUSY=true;this.classList.add('dis');this.textContent=t('처리 중…','Working…');
+    padPost({action:'complete',coil:job.coil,box:box}).then(function(d){padAfter(d,t('박스 '+box+' 완료','Box '+box+' completed'),null,null);}).catch(function(e){padAfter({ok:false,error:String(e)});});});
   showPop('ov-pad');}
 function padBtn(job,cur,active){var b=document.getElementById('h-donebtn');if(!b)return;
   if(job&&active&&!ASOF){b.style.display='';_T('h-donetxt',t('작업완료 (박스 '+cur+')','Complete (box '+cur+')'));b.onclick=function(){openComplete(job,cur);};}
@@ -1478,149 +1423,6 @@ function padBtn(job,cur,active){var b=document.getElementById('h-donebtn');if(!b
 function padBoxClick(job,cur,n){if(!job)return;var row=padRow(job.coil);
   if(row&&row.status==='진행중'){if(n===cur){toast(t('지금 작업 중인 박스입니다','This is the current box'));return;}openSwitch(job,cur,n);}
   else openStart(job,n);}
-
-// ===== 현재 상태 v3 그리기 + 박스별 장수(브리지 counts) =====
-var PADCOIL=null,TEN_STALE=25;
-function specDims(job){
-  if(!job)return {th:null,w:null};var th=job.thk?+job.thk:null,w=job.wd?+job.wd:null;
-  if(!th||!w){var s=String(job.specRaw||((padRow(job.coil)||{}).specification)||'').toUpperCase().replace(/×/g,'X').split('X');
-    if(!th)th=parseFloat(s[0])||null;if(!w){w=parseFloat(s[1])||null;}}
-  if(w&&w<10)w={3:914,4:1219,5:1524,6:1829}[Math.round(w)]||null;
-  return {th:th,w:w};}
-function sheetKg(job,len){var d=specDims(job);return (d.th&&d.w&&len)?d.th*d.w*len*7.85e-6:null;}
-function padCounts(coil){var c=PADST&&PADST.counts;return (coil&&c&&c.coil===coil&&!c.error)?c:null;}
-function cntBox(c,n){if(!c)return null;return (c.boxes||[]).filter(function(b){return b.box===n;})[0]||null;}
-function _ni(v){return (v==null||v===''||isNaN(v))?'—':String(Math.round(v));}
-function _hm(s){return s?String(s).slice(11,16):'';}
-function _pill(id,cls,txt){var e=document.getElementById(id);if(!e)return;e.className='npill '+cls;e.textContent=txt;}
-function boxInfo(job,n){var pb=job?mergeBoxes(job):[],b=pb[n-1]||{};return {len:b.len||(job&&job.cut)||null,plan:(b.plan!=null&&!b.rest)?+b.plan:null,rest:!!(b.rest||b.plan==null),total:pb.length};}
-function nextOpenBox(job,cur){var row=padRow(job&&job.coil),done=padDone(row),n=padTotal(job);for(var i=cur+1;i<=n;i++)if(!done[i])return i;return null;}
-
-function drawNow(job,cur,L){
-  var row=job?padRow(job.coil):null,active=!!(row&&row.status==='진행중');
-  var bi=boxInfo(job,cur),plan=bi.plan,order=bi.len;
-  var c=job?padCounts(job.coil):null,cb=cntBox(c,cur),cuts=(cb?cb.cuts:(c&&active?((c.unassigned&&c.unassigned.n)||0):null));
-  var m=(L&&L.m)||{},lv=(L&&L.lv)||{},ten=(L&&L.ten)||{},stopped=!!(L&&L.stopped);
-  var running=!!(L&&!stopped&&(lv.moving||(lv.load!=null&&lv.load>5)));
-  var mv=(lv.pos!=null)?+lv.pos:((c&&c.plc)?c.plc.mv:null);
-  var cutSet=(m.cut!=null)?+m.cut:((c&&c.plc)?c.plc.cut:null);
-  // 몇 번째 장: 진행중이면 (자른 장수+1), 아니면 자른 장수
-  var no=null,nolbl=t('번째 장','th sheet');
-  if(!job){no=null;}
-  else if(!active){no=null;nolbl=(row&&row.status==='완료')?t('완료','done'):t('시작 전','not started');}
-  else if(cuts!=null){no=cuts+1;}
-  _T('n-nowbox',t('박스','Box')+' '+(job?cur:'—'));
-  _T('n-nowno',no!=null?_nf(no):'—');_T('n-nowu',nolbl);
-
-  // ① 언코일러 (PORA)
-  var ta=ten.ageMin,stale=(ta!=null&&ta>TEN_STALE);
-  _H('n-tsrc','<b>PORA</b> '+t('화면','screen')+(ten.at?' · '+(ta!=null?Math.round(ta)+t('분 전',' min ago'):ten.at):''));
-  _H('n-ten',(L&&ten.out!=null)?_f1(ten.out)+'<small>%</small>':'—');
-  var lcd=document.getElementById('n-lcd');if(lcd)lcd.className='nlcd'+(stale?' stale':'');
-  _H('n-dia','<span>'+t('코일경','Coil Ø')+'</span> '+((L&&lv.dia!=null)?'≈'+_ni(lv.dia):'—')+'<span>mm</span>');
-  var d0=(lv.dia0!=null?lv.dia0:(ten.dia!=null?ten.dia:null));
-  _H('n-dia0','<span>'+t('처음','start')+' '+((L&&d0!=null)?_ni(d0)+'mm':'—')+'</span>');
-  if(!L)_pill('n-tst','mute',t('가동 시 표시','shown when running'));
-  else if(ten.out==null)_pill('n-tst','mute',t('판독 없음','no reading'));
-  else if(stale)_pill('n-tst','warn','⚠ '+Math.round(ta)+t('분 전 값 · 장비 확인','m old · check panel'));
-  else _pill('n-tst','ok',t('장력 판독 정상','reading OK'));
-
-  // ② 레벨러 (속도·부하)
-  var load=(lv.load!=null?lv.load:m.load);
-  _T('n-ss',(L&&m.ss!=null)?(+m.ss).toFixed(1):'—');
-  _H('n-load',t('부하','Load')+' '+((L&&load!=null)?Math.round(load):'—')+'<span>%</span>');
-  _H('n-feed','<span>'+t('실제','actual')+' '+((L&&lv.feed!=null)?_f1(lv.feed):'—')+' m/min</span>');
-  if(!L)_pill('n-lst','mute',t('가동 시 표시','shown when running'));
-  else if(!running)_pill('n-lst','mute','■ '+t('정지 중','stopped'));
-  else{var base=(REC&&REC.cl&&!isNaN(REC.cl))?REC.cl:null,sd=(REC&&REC.clsd&&REC.clsd>2)?REC.clsd:3;
-    if(base==null||load==null)_pill('n-lst','info',t('평소값 수집 중','collecting usual'));
-    else if(load-base>=sd+1)_pill('n-lst','warn',t('부하 높음 → 속도 ↓','load high → slow down'));
-    else if(load-base<=-(sd+1))_pill('n-lst','info',t('부하 낮음 → 속도 ↑ 가능','load low → may speed up'));
-    else _pill('n-lst','ok',t('속도·부하 적정','speed & load OK'));}
-
-  // ③ 이송 (이번 장 보낸 길이)
-  var cl=cutSet||order;
-  _H('n-mv',(job&&active&&mv!=null)?_ni(mv)+'<small>mm</small>':'—');
-  _H('n-mvof','<span>/ '+(cl?_ni(cl)+'mm '+t('중','of'):'—')+'</span>');
-  var bf=document.getElementById('n-barf');if(bf)bf.style.width=((job&&active&&mv!=null&&cl)?Math.max(0,Math.min(100,mv/cl*100)):0)+'%';
-  var slow=(m.slow!=null?+m.slow:null),bs=document.getElementById('n-bars');if(bs)bs.style.width=((slow&&cl)?Math.max(1.5,Math.min(30,slow/cl*100)):2)+'%';
-  _pill('n-fst','info',slow!=null&&L?t('끝 ','last ')+_nf(slow)+t('mm 저속','mm slow'):t('저속 구간','slow zone')+' —');
-
-  // ④ 절단
-  _H('n-cut',(L&&cutSet!=null)?_ni(cutSet)+'<small>mm</small>':'—');
-  _T('n-corr',t('보정','Corr')+' '+((L&&m.corr!=null)?_f1(m.corr):'—'));
-  _H('n-order','<span>'+t('지시','order')+' '+(order?_ni(order)+'mm':'—')+'</span>');
-  if(!L||cutSet==null||!order)_pill('n-cst','mute',t('지시 길이 확인','check order length'));
-  else if(Math.abs(cutSet-order)<=10)_pill('n-cst','ok',t('지시대로 셋팅','matches order'));
-  else _pill('n-cst','bad','⚠ '+t('지시 '+_ni(order)+'와 다름','differs from '+_ni(order)));
-
-  // ⑤ 적재
-  _T('n-sbox',t('박스','Box')+' '+(job?cur:'—')+(active?' '+t('지금','now'):''));
-  _H('n-sno',(no!=null?_nf(no):'—')+'<small>'+nolbl+'</small>');
-  _T('n-sdone',(cuts!=null&&active)?(_nf(cuts)+(plan?'/'+_nf(plan):'')+' '+t('장 완료','done')):(!job?'—':plan?t('계획 ','plan ')+_nf(plan)+t('장',''):(bi.rest?t('나머지 박스','rest box'):'—')));
-  var left=(plan!=null&&cuts!=null)?plan-cuts:null;
-  if(!job||!active)_pill('n-sst','mute',job?(row&&row.status==='완료'?t('작업 완료','job done'):t('박스 눌러 시작','tap a box to start')):t('대기','idle'));
-  else if(plan==null)_pill('n-sst','info',t('나머지 박스','rest box'));
-  else if(left<=0)_pill('n-sst','bad',t('도달','reached')+(left<0?' +'+(-left):'')+' · '+t('박스 교체','change box'));
-  else if(left<=5)_pill('n-sst','warn',t('남은 ','left ')+left+t('장 · 교체 준비','· get ready'));
-  else _pill('n-sst','info',t('남은 ','left ')+_nf(left)+t('장',''));
-
-  // 알림 + 판정
-  var al=document.getElementById('n-alert'),aCls=null,aHtml='',aAct=null,un=(c&&active&&c.unassigned)?c.unassigned:null;
-  if(un&&un.n>0){aCls='bad';
-    aHtml='<span class="ai">⚠</span><div class="at">'+t('박스 선택 안 된 절단 ','Cuts with no box: ')+'<b>'+un.n+t('장','')+'</b> ('+_hm(un.since)+t('부터',' on')+')<small>'+t('박스를 시작하면 이 장수가 그 박스로 들어갑니다','Starting a box adds these sheets to it')+'</small></div>';
-    var nb=padCurBox(job.coil,padTotal(job))||cur;aHtml+='<span class="ab" id="n-alertbtn">▶ '+t('박스 '+nb+' 시작','Start box '+nb)+'</span>';aAct=function(){openStart(job,nb);};}
-  else if(active&&left!=null&&left<=0){aCls='bad';var nx=nextOpenBox(job,cur);
-    aHtml='<span class="ai">📦</span><div class="at">'+t('박스 '+cur+' 계획 '+_nf(plan)+'장 도달','Box '+cur+' reached plan '+_nf(plan))+(left<0?' (+'+(-left)+t('장','')+')':'')+'<small>'+t('박스를 바꾸고 아래 버튼을 누르세요','Change the box, then tap below')+'</small></div>';
-    if(nx){aHtml+='<span class="ab" id="n-alertbtn">⇄ '+t('박스 '+nx+' 시작','Start box '+nx)+'</span>';aAct=function(){openSwitch(job,cur,nx);};}
-    else{aHtml+='<span class="ab" id="n-alertbtn">✔ '+t('작업완료','Complete')+'</span>';aAct=function(){openComplete(job,cur);};}}
-  else if(active&&left!=null&&left<=5){aCls='warn';
-    aHtml='<span class="ai">⏳</span><div class="at">'+t('박스 '+cur+' 계획까지 '+left+'장 남음','Box '+cur+': '+left+' to plan')+'<small>'+t('다음 박스 준비','get the next box ready')+'</small></div>';}
-  if(al){if(aCls){al.className='nalert '+aCls;al.innerHTML=aHtml;al.style.display='';var ab=document.getElementById('n-alertbtn');if(ab&&aAct)ab.onclick=aAct;}else{al.style.display='none';al.innerHTML='';}}
-  var v=document.getElementById('h-verdict'),defn=(LASTST&&LASTST.defects&&L&&!stopped)?LASTST.defects.length:0;
-  if(v){if(!job){v.className='verdict idle';v.textContent='● '+t('대기','Idle');}
-    else if(!active){v.className='verdict idle';v.textContent=(row&&row.status==='완료')?'✔ '+t('완료','Done'):'● '+t('시작 전','Ready');}
-    else if(aCls==='bad'){v.className='verdict bad';v.textContent='● '+t('확인','Check');}
-    else if(defn>0){v.className='verdict bad';v.textContent='● '+t('품질 주의','Quality');}
-    else if(!running){v.className='verdict idle';v.textContent='■ '+t('정지','Stopped');}
-    else if(aCls==='warn'){v.className='verdict warn';v.textContent='● '+t('교체 준비','Get ready');}
-    else{v.className='verdict';v.textContent='● '+t('정상','Normal');}}
-  if(job)buildPlanBoxes(job,mergeBoxes(job),cur);
-  else{var g=document.getElementById('h-bsgrid');if(g)g.innerHTML='<div class="bbx">'+t('진행 중인 작업 없음 — 작업 선택에서 코일을 고르세요','No active job — pick a coil')+'</div>';}
-}
-
-function buildPlanBoxes(job,boxes,cur){
-  var grid=document.getElementById('h-bsgrid');if(!grid||!job)return;
-  var row=padRow(job.coil),done=padDone(row),active=!!(row&&row.status==='진행중'),c=padCounts(job.coil);
-  if(!boxes.length){grid.innerHTML='<div class="bbx">'+t('박스 계획 없음','No box plan')+'</div>';return;}
-  grid.innerHTML=boxes.map(function(b){var i=b.i,isRest=b.rest||b.plan==null,cb=cntBox(c,i),n=cb?cb.cuts:null,
-      cf=(cb&&cb.confirmed&&cb.confirmed.packed!=null)?cb.confirmed.packed:null,isCur=(i===cur),m,cls='bb';
-    if(done[i]){cls+=' dn';m=(cf!=null?_nf(cf):(n!=null?((cb&&cb.est)?'~':'')+_nf(n):'—'))+t('장 ✓',' ✓');}
-    else if(isCur&&active){cls+=' on';var nn=(n!=null?n:0);if(!isRest&&nn>=b.plan)cls+=' full';m=_nf(nn)+(isRest?t('장','')+' · '+t('나머지','rest'):'/'+_nf(b.plan))+' '+t('진행','now');}
-    else{if(isCur)cls+=' on';m=isRest?t('나머지','rest'):_nf(b.plan)+t('장 대기',' next');}
-    return '<div class="'+cls+'" data-bi="'+i+'"><div class="n">'+i+'<small>'+_nf(b.len)+'</small></div><div class="m">'+m+'</div></div>';}).join('');
-  grid.querySelectorAll('.bb[data-bi]').forEach(function(el){el.addEventListener('click',function(){padBoxClick(job,cur,+el.getAttribute('data-bi'));});});
-}
-
-// 작업완료/박스전환 — 박스에 넣은 장수 확정 입력 + 무게 검산
-function cntEditor(job,box){
-  var c=padCounts(job.coil),cb=cntBox(c,box),plc=cb?cb.cuts:null,bi=boxInfo(job,box),val=(plc!=null?plc:(bi.plan!=null?bi.plan:''));
-  var html='<div class="pcnt"><div class="pcl">📦 '+t('박스 '+box+'에 넣은 장수 확인','Sheets packed in box '+box)+'</div>'
-   +'<div class="pcrow"><b class="pcb" data-d="-10">−10</b><b class="pcb" data-d="-1">−1</b><input id="pc-v" type="number" inputmode="numeric" min="0" value="'+val+'"><b class="pcb" data-d="1">+1</b><b class="pcb" data-d="10">+10</b></div>'
-   +'<div class="pcs">'+t('설비가 자른 장수 ','Machine cuts ')+'<b>'+(plc!=null?_nf(plc):'—')+'</b>'+t('장','')+(bi.plan?' · '+t('계획 ','plan ')+'<b>'+_nf(bi.plan)+'</b>'+t('장',''):'')+'</div>'
-   +'<div class="pcw" id="pc-w"></div></div>';
-  return {html:html,plc:plc,plan:bi.plan,len:bi.len};
-}
-function wireCnt(job,box,info){
-  var b=document.getElementById('pad-body');if(!b)return;var inp=document.getElementById('pc-v');if(!inp)return;
-  function upd(){var v=Math.max(0,parseInt(inp.value,10)||0),sk=sheetKg(job,info.len),w=document.getElementById('pc-w');if(!w)return;
-    var s=sk?('⚖ '+t('무게 약 ','weight ≈ ')+'<b>'+_nf(v*sk)+'kg</b> ('+t('장당 ','per sheet ')+(Math.round(sk*10)/10)+'kg)'):'';
-    if(info.plc!=null&&Math.abs(v-info.plc)>=2)s+='<div class="pwarn" style="margin-top:8px">⚠ '+t('설비 절단 수와 '+Math.abs(v-info.plc)+'장 차이 — 불량·샘플로 뺀 장이 있는지 확인하세요','Differs from machine by '+Math.abs(v-info.plc)+' — check rejects/samples')+'</div>';
-    w.innerHTML=s;}
-  b.querySelectorAll('.pcb').forEach(function(el){el.addEventListener('click',function(){inp.value=Math.max(0,(parseInt(inp.value,10)||0)+(+el.getAttribute('data-d')));upd();});});
-  inp.addEventListener('input',upd);upd();
-}
-function cntVal(){var i=document.getElementById('pc-v');if(!i)return null;var v=parseInt(i.value,10);return isNaN(v)?null:Math.max(0,v);}
 function tick(){Promise.all([sfetch(),padFetch()]).then(function(a){render(a[0]);}).catch(function(e){_H('h-foot','<span style="color:var(--bad)">'+t('PLC 연결 실패','PLC connect failed')+'<br>('+e+')</span>');trendIdle(true);});fetchTenTrend();}
 
 try{tick();if(!ASOF)setInterval(tick,15000);initPast();wireTrendTabs();}catch(e){}
