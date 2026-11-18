@@ -480,7 +480,7 @@
 <div class="app">
 <!-- 좌측 사이드바 -->
 <div class="side">
-  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 16:25</small></div></div>
+  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 16:36</small></div></div>
   <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s" id="nav-sel-s">태경스틸 외 3건</div></div>
   <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s" id="nav-now-s">태경스틸 · 박스2</div></div>
   <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
@@ -491,7 +491,7 @@
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 16:25</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 16:36</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
 <!-- ================= 현재 작업 ================= -->
@@ -995,8 +995,10 @@ function render(st){
   _H('h-prog2','<span class="ko">남음 ~'+Math.round(lv.remainMin||0)+'분 · 종료 '+(lv.endEst||'')+'</span><span class="en">Left ~'+Math.round(lv.remainMin||0)+'min · End '+(lv.endEst||'')+'</span> · '+_nf(job.L)+'m');
   var v=document.getElementById('h-verdict'),dn=defs.length;if(v){if(dn>0){v.textContent='● '+t('주의','Check');v.className='verdict bad';}else{v.textContent='● '+t('정상','Normal');v.className='verdict';}}
   var load=(lv.load!=null?lv.load:m.load);
-  _T('eq-ten',(ten.out!=null?_f1(ten.out):'—')+'%');_T('eq-tensub','● OCR '+(ten.at||'')+(ten.ageMin!=null?' · '+Math.round(ten.ageMin)+t('분전','m ago'):''));
-  _T('eq-load',(load!=null?Math.round(load):'—')+'%');_H('eq-spd',(lv.feed!=null?_f1(lv.feed):'—')+'<tspan font-size="20" fill="#51607a"> m/min</tspan>');
+  var _ta=(ten&&ten.ageMin),_tStale=(_ta!=null&&_ta>15),_te=document.getElementById('eq-ten'),_tsx=document.getElementById('eq-tensub');
+  if(_te){_te.textContent=((ten&&ten.out!=null)?_f1(ten.out):'—')+'%';try{_te.setAttribute('fill',((ten&&ten.out!=null)&&!_tStale)?'#1f9d57':'#9aa3b2');}catch(e){}}
+  if(_tsx){try{_tsx.setAttribute('fill',_tStale?'#d5331f':'#1f9d57');}catch(e){}_tsx.textContent=(ten&&ten.out==null)?('● '+t('판독 없음','no reading')):(_tStale?('⚠ '+Math.round(_ta)+t('분전·장비값 확인','m·check panel')):('● OCR '+((ten&&ten.at)||'')+(_ta!=null?' · '+Math.round(_ta)+t('분전','m ago'):'')));}
+  _T('eq-load',(load!=null?Math.round(load):'—')+'%');_H('eq-spd',(lv.feed!=null?_f1(lv.feed):'—')+'<tspan font-size="18" fill="#51607a"> m/min'+((m.ss!=null)?' · '+t('설정','set')+' '+_f1(m.ss):'')+'</tspan>');
   _T('eq-cut',t('절단길이','Cut len')+' '+_nf(m.cut||lv.cutNow)+'mm');_T('eq-stack',t('박스','Box')+(lv.box||'')+' · '+_nf(lv.sheetsDone)+'/'+_nf(lv.boxPlan)+t('장',''));
   _T('eq-core',t('잔여경','Core')+' '+_nf(lv.dia)+'mm');
   _T('m-cycle',_f1(lv.cycNow!=null?lv.cycNow:job.cyc)+' s');_T('m-pos',_nf(lv.pos));_T('m-ppm',_f1(lv.ppm)+t(' 장/분',' pc/m'));
