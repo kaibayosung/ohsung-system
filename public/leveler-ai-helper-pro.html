@@ -480,7 +480,7 @@
 <div class="app">
 <!-- 좌측 사이드바 -->
 <div class="side">
-  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 16:14</small></div></div>
+  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 16:25</small></div></div>
   <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s" id="nav-sel-s">태경스틸 외 3건</div></div>
   <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s" id="nav-now-s">태경스틸 · 박스2</div></div>
   <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
@@ -491,7 +491,7 @@
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 16:14</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 16:25</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
 <!-- ================= 현재 작업 ================= -->
@@ -870,7 +870,7 @@ function buildPlanBoxes(job,boxes,cur){
     return '<div class="bsbtn '+cls+'" data-bi="'+i+'"><div class="bn3">'+i+'</div><div class="meta3">'+meta+'</div><div class="tag3">'+tag+'</div></div>';
   }).join('');
   grid.querySelectorAll('.bsbtn[data-bi]').forEach(function(el){el.addEventListener('click',function(){
-    SELBOX=+el.getAttribute('data-bi');SELJOB=job;PICKBOX={coil:job.coil,box:SELBOX,t:Date.now()};showJob(job);
+    SELBOX=+el.getAttribute('data-bi');SELJOB=job;PICKBOX={coil:job.coil,box:SELBOX};storeBox(job.coil,SELBOX);showJob(job);
   });});
 }
 function showJob(job){
@@ -980,7 +980,8 @@ function render(st){
   _T('eq-loadlbl',t('인버터 부하','Inv. load'));
   var totToday=jobs.length+waiting.length;
   _T('nav-sel-s',(totToday||'0')+t('건',' jobs'));buildSelect(st);
-  if(PICKBOX&&(Date.now()-PICKBOX.t)<60000){var _pj=jobs.filter(function(x){return x&&x.coil===PICKBOX.coil;})[0];if(_pj){SELJOB=_pj;SELBOX=PICKBOX.box;showJob(_pj);handleDefects(defs);return;}else{PICKBOX=null;}}
+  if(_cc){if(!PICKBOX||PICKBOX.coil!==_cc){var _sb=readBox(_cc);PICKBOX=_sb?{coil:_cc,box:_sb}:null;}}
+  if(PICKBOX&&PICKBOX.coil===_cc){var _pj=jobs.filter(function(x){return x&&x.coil===PICKBOX.coil;})[0];if(_pj){SELJOB=_pj;SELBOX=PICKBOX.box;showJob(_pj);handleDefects(defs);return;}else{PICKBOX=null;}}
   if(!(lv && job && online)){ if(SELJOB){var _fr=jobs.concat(waiting).filter(function(x){return x&&x.coil===SELJOB.coil;})[0];if(_fr)SELJOB=_fr;showJob(SELJOB);} else if(job){SELJOB=job;SELBOX=(m.box||1);showJob(job);} else { setIdle(); _T('eq-load',(m.load!=null?Math.round(m.load):'—')+'%'); } handleDefects(defs); return; }
   SELJOB=null;_T('s-cutlen',_nf(m.cut));_T('s-corr',(m.corr>=0?'+':'')+_f1(m.corr));_T('s-speed',_f1(m.ss));_T('s-acc',_f1(m.acc));_T('s-dec',_f1(m.dec));_T('s-slow',_nf(m.slow));
   _T('m-coeff',_f1(m.coef));_T('m-run',m.run!=null?String(m.run):'—');_T('m-thk',(ten.thkUm!=null?_nf(ten.thkUm):'—')+' µm');
@@ -1271,6 +1272,8 @@ function fetchTenTrend(){
   return fetch(u,{headers:{apikey:SKEY,Authorization:'Bearer '+SKEY},cache:'no-store'}).then(function(r){return r.ok?r.json():[];}).then(function(rows){rows=(rows||[]).filter(function(x){return x.output_percent!=null;}).reverse();renderTen(rows);}).catch(function(){});
 }
 var TRENDTAB='load',CURCOILJOB=null,CURTRENDKEY=null,SELJOB=null,SELCUT=0,SELBOX=1,PICKBOX=null;
+function storeBox(coil,box){try{if(coil)localStorage.setItem('lvbox_'+coil,String(box));}catch(e){}}
+function readBox(coil){try{var v=coil?localStorage.getItem('lvbox_'+coil):null;return v?parseInt(v,10):null;}catch(e){return null;}}
 function _trSer(j){var prof=j.prof||{x:[],ld:[],cyc:[]},rd=j.rd||[],out=[],i,cum=0;
   if(TRENDTAB==='load'){for(i=0;i<(prof.x||[]).length;i++)if(prof.ld[i]!=null)out.push({x:prof.x[i],y:prof.ld[i]});return {pts:out,unit:'%',lbl:t('인버터 부하','Load'),col:'#1a3a6b',area:1};}
   if(TRENDTAB==='cycle'){for(i=0;i<(prof.x||[]).length;i++)if(prof.cyc[i]!=null)out.push({x:prof.x[i],y:prof.cyc[i]});return {pts:out,unit:'s',lbl:t('사이클','Cycle'),col:'#2451a0'};}
