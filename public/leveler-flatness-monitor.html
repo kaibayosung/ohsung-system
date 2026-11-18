@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>레벨러 평탄도 모니터</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{--ink:#17233b;--navy:#1a3a6b;--sec:#51607a;--mut:#8995ab;--line:#e3e8f0;--soft:#f3f5fe;--pp:#796cbf;--ok:#1f9d57;--amber:#e8930c;--bad:#d5331f;--blue:#2451a0}
+*{margin:0;box-sizing:border-box;font-family:Pretendard,system-ui,sans-serif}
+body{background:#eef1f8;color:var(--ink);font-weight:700;padding:14px}
+.wrap{max-width:1040px;margin:0 auto}
+.topbar{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 18px;margin-bottom:12px;flex-wrap:wrap}
+.topbar .logo{width:40px;height:40px;border-radius:11px;background:var(--navy);color:#fff;font-weight:900;font-size:15px;display:flex;align-items:center;justify-content:center}
+.topbar .tt{font-size:23px;font-weight:900;color:var(--navy);line-height:1.1}
+.topbar .tt small{display:block;font-size:12.5px;color:var(--mut);font-weight:800;margin-top:2px}
+.topbar .ver{margin-left:auto;font-size:12.5px;font-weight:900;color:var(--pp);background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px}
+
+/* coil picker */
+.coilbar{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px 16px;margin-bottom:12px}
+.coilbar .cl{font-size:13.5px;font-weight:900;color:var(--mut);margin-bottom:9px}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:2px solid var(--line);border-radius:11px;padding:8px 13px;background:var(--soft);cursor:pointer;font-size:14.5px;font-weight:900;color:var(--sec);transition:.12s}
+.chip .cn{color:var(--ink)}
+.chip .cm{font-size:12px;color:var(--mut);font-weight:800;margin-left:5px}
+.chip.on{border-color:var(--navy);background:#eaf0fb;color:var(--navy)}
+.chip.on .cn{color:var(--navy)}
+.chip:hover{border-color:var(--pp)}
+
+/* summary */
+.sumhead{display:flex;align-items:center;flex-wrap:wrap;gap:10px 16px;margin-bottom:10px}
+.sumhead .co{font-size:28px;font-weight:900}
+.sumhead .dt{font-size:15px;font-weight:800;color:var(--mut)}
+.verbig{font-size:22px;font-weight:900;border-radius:13px;padding:8px 20px}
+.verbig.ok{color:#167a43;background:#e9f8f0;border:2px solid #bfe6cf}
+.verbig.warn{color:#9a5a00;background:#fff4df;border:2px solid #f3d389}
+.verbig.ng{color:#b4232a;background:#fdecea;border:2px solid #f3b4ae}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+@media(max-width:620px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+.kpi .k{font-size:13px;font-weight:800;color:var(--mut)}
+.kpi .v{font-size:28px;font-weight:900;color:var(--ink);margin-top:3px}
+.kpi .v small{font-size:14px;color:var(--mut);font-weight:800}
+.kpi .v.ng{color:var(--bad)}.kpi .v.ok{color:var(--ok)}
+
+/* tabs */
+.tabs{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
+.tab{border:2px solid var(--line);border-radius:11px;padding:9px 16px;background:#fff;cursor:pointer;font-size:15.5px;font-weight:900;color:var(--sec)}
+.tab.on{border-color:var(--navy);background:var(--navy);color:#fff}
+.pane{display:none}.pane.on{display:block}
+.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.panel .pt{font-size:17px;font-weight:900;color:var(--navy);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.panel .pt small{font-size:12.5px;color:var(--mut);font-weight:800}
+
+/* feature bars */
+.feat{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.feat .fn{width:150px;font-size:15px;font-weight:900;color:var(--ink);flex:0 0 auto}
+.feat .fn small{display:block;font-size:11.5px;color:var(--mut);font-weight:800}
+.feat .ftrack{flex:1;height:22px;background:#eef1f7;border-radius:7px;position:relative;overflow:hidden}
+.feat .ffill{height:100%;border-radius:7px}
+.feat .fth{position:absolute;top:-3px;bottom:-3px;width:3px;background:#5b6b86}
+.feat .fv{width:150px;text-align:right;font-size:14.5px;font-weight:900;flex:0 0 auto}
+.feat .fv small{color:var(--mut);font-weight:800}
+
+/* box cards */
+.boxgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.bcard{border:2px solid var(--line);border-radius:14px;padding:13px;text-align:center}
+.bcard .bn{font-size:30px;font-weight:900;font-family:'IBM Plex Mono',monospace;color:var(--navy)}
+.bcard .bp{font-size:13.5px;font-weight:800;color:var(--sec);margin-top:4px}
+.bcard .bj{font-size:13px;font-weight:900;border-radius:8px;padding:3px 0;margin-top:7px}
+.bj.ok{background:#e9f8f0;color:#167a43}.bj.warn{background:#fff4df;color:#9a5a00}.bj.ng{background:#fdecea;color:#b4232a}
+.bcard.ng{border-color:#f3b4ae}.bcard.warn{border-color:#f3d389}
+
+/* detections */
+.dlist{display:flex;flex-direction:column;gap:8px}
+.drow{display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:12px;padding:11px 14px;background:#fff}
+.drow .dicon{width:42px;height:42px;border-radius:9px;background:#fdecea;color:var(--bad);display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto}
+.drow .dt{font-size:15px;font-weight:900}
+.drow .ds{font-size:12.5px;font-weight:800;color:var(--mut);margin-top:1px}
+.drow .dsc{margin-left:auto;text-align:right}
+.drow .dsc .sv{font-size:17px;font-weight:900;color:var(--bad)}
+.drow .dsc .st{font-size:11.5px;font-weight:800;color:var(--mut)}
+.feattag{display:inline-block;font-size:11.5px;font-weight:900;background:#eef1f7;color:var(--sec);border-radius:7px;padding:2px 8px;margin-left:6px}
+
+/* trend */
+.sparkwrap{overflow-x:auto}
+.empty{font-size:15px;font-weight:800;color:var(--mut);background:var(--soft);border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center}
+.loading{text-align:center;padding:40px;font-size:17px;font-weight:900;color:var(--mut)}
+.foot{font-size:12px;color:var(--mut);font-weight:800;text-align:center;padding:8px 0 4px}
+</style></head>
+<body><div class="wrap">
+
+<div class="topbar">
+  <div class="logo">오성</div>
+  <div class="tt">레벨러 평탄도 모니터<small>Leveler Flatness Monitor · 레이저 v2 실측 품질</small></div>
+  <div class="ver" id="ver">🛠 2026-11-18 11:20</div>
+</div>
+
+<div class="coilbar">
+  <div class="cl">코일 선택 <span style="color:var(--pp)">· 최근 검출 데이터가 있는 코일</span></div>
+  <div class="chips" id="chips"><span class="chip">불러오는 중…</span></div>
+</div>
+
+<div id="body"><div class="loading">평탄도 데이터를 불러오는 중…</div></div>
+
+<div class="foot" id="foot"></div>
+
+</div>
+<script>
+var FAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-flatness';
+var CUR=null, TAB='ov';
+var FEAT=[
+  {k:'edge_dev',ko:'가장자리 편차',en:'엣지 웨이브'},
+  {k:'bow',ko:'활 휨',en:'bow'},
+  {k:'jump',ko:'단차',en:'jump'},
+  {k:'local_dev',ko:'국부 편차',en:'local'},
+  {k:'resid',ko:'잔류 휨',en:'resid'},
+  {k:'gap',ko:'들뜸',en:'gap'}
+];
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function nf(n){return n==null?'—':Number(n).toLocaleString();}
+function tm(s){if(!s)return '—';var m=String(s).replace('T',' ').replace(/\..*$/,'').replace('Z','');return m.slice(5,16);}
+function judgeClass(j){return j==='OK'?'ok':(j==='NG'?'ng':'warn');}
+function judgeKo(j){return j==='OK'?'정상 OK':(j==='NG'?'불량 NG':'주의');}
+
+function load(coil){
+  document.getElementById('body').innerHTML='<div class="loading">평탄도 데이터를 불러오는 중…</div>';
+  var u=FAPI+(coil?('?coil_id='+encodeURIComponent(coil)):'');
+  fetch(u,{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    CUR=j; render(j);
+  }).catch(function(e){
+    document.getElementById('body').innerHTML='<div class="empty">데이터를 불러오지 못했습니다.<br>'+esc(e)+'</div>';
+  });
+}
+function renderChips(list,cur){
+  var el=document.getElementById('chips');if(!el)return;
+  if(!list||!list.length){el.innerHTML='<span class="chip">데이터 없음</span>';return;}
+  el.innerHTML=list.map(function(c){
+    var on=c.coil_id===cur?' on':'';
+    var ng=Number(c.ng)||0, pl=Number(c.plates)||0;
+    return '<span class="chip'+on+'" data-coil="'+esc(c.coil_id)+'"><span class="cn">'+esc(c.coil_id)+'</span><span class="cm">'+tm(c.last_at).slice(0,5)+' · '+pl+'장'+(ng?' · NG '+ng:'')+'</span></span>';
+  }).join('');
+  el.querySelectorAll('.chip[data-coil]').forEach(function(ch){ch.addEventListener('click',function(){load(ch.getAttribute('data-coil'));});});
+}
+function render(j){
+  renderChips(j.coil_list, j.coil_id);
+  if(!j.ok){document.getElementById('body').innerHTML='<div class="empty">오류: '+esc(j.error||'불러오기 실패')+'</div>';return;}
+  if(!j.has_data){
+    document.getElementById('body').innerHTML='<div class="sumhead"><span class="co">'+esc(j.coil_id||'—')+'</span><span class="dt">평탄도 검출 데이터 없음</span></div>'
+      +'<div class="empty">이 코일은 아직 평탄도(레이저 v2) 검출 데이터가 없습니다.<br>레벨러 장비가 가동되면 장별로 자동 수집됩니다. 위에서 다른 코일을 선택해 보세요.</div>';
+    return;
+  }
+  var ov=j.overall||{};
+  var h='';
+  h+='<div class="sumhead"><span class="co">'+esc(j.coil_id)+'</span>'
+    +'<span class="dt">'+tm(ov.first_at)+' ~ '+tm(ov.last_at)+'</span>'
+    +'<span class="verbig '+judgeClass(ov.judge)+'" style="margin-left:auto">● '+judgeKo(ov.judge)+'</span></div>';
+  h+='<div class="kpis">'
+    +'<div class="kpi"><div class="k">검사 장수</div><div class="v">'+nf(ov.plates)+'<small> 장</small></div></div>'
+    +'<div class="kpi"><div class="k">정상</div><div class="v ok">'+nf(ov.ok)+'<small> 장</small></div></div>'
+    +'<div class="kpi"><div class="k">불량(NG)</div><div class="v '+(ov.ng?'ng':'ok')+'">'+nf(ov.ng)+'<small> 장</small></div></div>'
+    +'<div class="kpi"><div class="k">불량률</div><div class="v '+(ov.ng_rate>=15?'ng':(ov.ng_rate>0?'':'ok'))+'">'+(ov.ng_rate||0)+'<small> %</small></div></div>'
+    +'</div>';
+  h+='<div class="tabs" id="tabs">'
+    +'<span class="tab'+(TAB==='ov'?' on':'')+'" data-t="ov">개요</span>'
+    +'<span class="tab'+(TAB==='box'?' on':'')+'" data-t="box">박스별</span>'
+    +'<span class="tab'+(TAB==='det'?' on':'')+'" data-t="det">검출이력</span>'
+    +'<span class="tab'+(TAB==='ft'?' on':'')+'" data-t="ft">특징·추세</span>'
+    +'</div>';
+  h+='<div class="pane'+(TAB==='ov'?' on':'')+'" id="pane-ov">'+paneOverview(j)+'</div>';
+  h+='<div class="pane'+(TAB==='box'?' on':'')+'" id="pane-box">'+paneBox(j)+'</div>';
+  h+='<div class="pane'+(TAB==='det'?' on':'')+'" id="pane-det">'+paneDet(j)+'</div>';
+  h+='<div class="pane'+(TAB==='ft'?' on':'')+'" id="pane-ft">'+paneFeat(j)+'</div>';
+  document.getElementById('body').innerHTML=h;
+  document.getElementById('foot').textContent='데이터: flatness_plate · detection_alert (레벨러 비전 v2) · '+tm(ov.last_at)+' 기준';
+  document.querySelectorAll('#tabs .tab').forEach(function(tb){tb.addEventListener('click',function(){
+    TAB=tb.getAttribute('data-t');
+    document.querySelectorAll('#tabs .tab').forEach(function(x){x.classList.toggle('on',x===tb);});
+    document.querySelectorAll('.pane').forEach(function(p){p.classList.remove('on');});
+    var pane=document.getElementById('pane-'+TAB);if(pane)pane.classList.add('on');
+  });});
+}
+function featBars(feats){
+  return FEAT.map(function(f){
+    var d=feats[f.k]||{};var mx=Number(d.max)||0,th=Number(d.th)||1;
+    var over=mx>th;var ratio=Math.min(1.6,mx/th);var w=Math.min(100,(ratio/1.6)*100);
+    var thpos=(1/1.6)*100;
+    return '<div class="feat"><div class="fn">'+f.ko+'<small>'+f.en+'</small></div>'
+      +'<div class="ftrack"><div class="ffill" style="width:'+w.toFixed(0)+'%;background:'+(over?'var(--bad)':'var(--ok)')+'"></div><div class="fth" style="left:'+thpos.toFixed(0)+'%"></div></div>'
+      +'<div class="fv" style="color:'+(over?'var(--bad)':'var(--ink)')+'">'+mx+' <small>/ 기준 '+th+'</small></div></div>';
+  }).join('');
+}
+function paneOverview(j){
+  var lp=j.latest_plate;
+  var h='<div class="panel"><div class="pt">🔍 특징별 최대값 vs 판정기준 <small>(막대가 기준선 넘으면 불량 발생)</small></div>'+featBars(j.features||{})+'</div>';
+  if(lp){
+    h+='<div class="panel"><div class="pt">최신 검사 장 <small>장 #'+esc(lp.plate_seq)+' · 박스 '+esc(lp.box_idx)+' · '+tm(lp.captured_at)+'</small></div>'
+      +'<div style="font-size:19px;font-weight:900;color:'+(lp.final_judge==='OK'?'var(--ok)':'var(--bad)')+'">● '+judgeKo(lp.final_judge)
+      +' <span style="font-size:14px;color:var(--mut)">· 주요 특징 '+esc(lp.worst_feature||'—')+'</span></div></div>';
+  }
+  return h;
+}
+function paneBox(j){
+  var pb=j.per_box||[];
+  if(!pb.length)return '<div class="empty">박스별 데이터가 없습니다.</div>';
+  var cards=pb.map(function(b){
+    var pl=Number(b.plates)||0,ng=Number(b.ng)||0;var rate=pl?ng/pl:0;
+    var cls=ng===0?'ok':(rate>=0.15?'ng':'warn');
+    return '<div class="bcard '+(cls==='ok'?'':cls)+'"><div class="bn">'+esc(b.box_idx)+'</div>'
+      +'<div class="bp">'+pl+'장 검사</div>'
+      +'<div class="bj '+cls+'">'+(ng===0?'정상 OK':('NG '+ng+'장'))+'</div></div>';
+  }).join('');
+  return '<div class="panel"><div class="pt">📦 박스별 평탄도</div><div class="boxgrid">'+cards+'</div></div>';
+}
+function paneDet(j){
+  var al=j.recent_alerts||[];
+  if(!al.length)return '<div class="panel"><div class="pt">⚠ 불량 검출이력</div><div class="empty">검출된 불량(NG)이 없습니다 — 전량 정상.</div></div>';
+  var rows=al.map(function(a){
+    var worst=worstOf(a.values);
+    return '<div class="drow"><div class="dicon">⚠</div>'
+      +'<div><div class="dt">박스 '+esc(a.box_idx)+' · 장 #'+esc(a.plate_seq)+'<span class="feattag">'+worst.ko+'</span></div>'
+      +'<div class="ds">'+tm(a.captured_at)+' · '+esc(a.metric||'flatness_v2')+(a.human_label?' · 확인:'+esc(a.human_label):'')+'</div></div>'
+      +'<div class="dsc"><div class="sv">'+(a.score!=null?Number(a.score).toFixed(2):'—')+'</div><div class="st">기준 '+esc(a.threshold)+' 초과</div></div></div>';
+  }).join('');
+  return '<div class="panel"><div class="pt">⚠ 불량 검출이력 <small>최근 '+al.length+'건</small></div><div class="dlist">'+rows+'</div>'
+    +'<div style="font-size:12px;color:var(--mut);font-weight:800;margin-top:10px">※ 결함 사진은 한줌 검출이력 화면에서 확인할 수 있습니다.</div></div>';
+}
+function worstOf(v){
+  v=v||{};var best=null,bk=null;
+  FEAT.forEach(function(f){var val=Number(v[f.k]);if(!isNaN(val)){if(best===null||val>best){best=val;bk=f;}}});
+  return bk||{ko:'—',en:''};
+}
+function paneFeat(j){
+  var rp=(j.recent_plates||[]).slice().reverse();
+  var h='<div class="panel"><div class="pt">📈 최근 검사 장 추세 <small>(점수·판정)</small></div>';
+  if(rp.length){
+    var W=Math.max(320,rp.length*26),H=120;
+    var scores=rp.map(function(p){return Number(p.rule_score)||0;});
+    var mx=Math.max.apply(null,scores.concat([1]));
+    var pts=rp.map(function(p,i){var x=20+i*((W-40)/(rp.length-1||1));var y=H-18-((Number(p.rule_score)||0)/mx)*(H-40);return x.toFixed(0)+','+y.toFixed(0);}).join(' ');
+    var dots=rp.map(function(p,i){var x=20+i*((W-40)/(rp.length-1||1));var y=H-18-((Number(p.rule_score)||0)/mx)*(H-40);var ng=p.final_judge!=='OK';return '<circle cx="'+x.toFixed(0)+'" cy="'+y.toFixed(0)+'" r="4" fill="'+(ng?'#d5331f':'#1f9d57')+'"/>';}).join('');
+    h+='<div class="sparkwrap"><svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" style="max-width:none">'
+      +'<polyline points="'+pts+'" fill="none" stroke="#9fb0cc" stroke-width="2"/>'+dots
+      +'<text x="20" y="'+(H-2)+'" font-size="11" fill="#8995ab" font-weight="800">과거</text>'
+      +'<text x="'+(W-20)+'" y="'+(H-2)+'" font-size="11" fill="#8995ab" font-weight="800" text-anchor="end">최신</text></svg></div>'
+      +'<div style="font-size:12.5px;color:var(--mut);font-weight:800;margin-top:6px">● 초록=정상 · 빨강=불량(NG) · 높을수록 불량에 가까움</div>';
+  }else{h+='<div class="empty">추세 데이터가 없습니다.</div>';}
+  h+='</div>';
+  h+='<div class="panel"><div class="pt">특징별 평균 / 최대 <small>vs 기준</small></div>';
+  var fe=j.features||{};
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:9px">'+FEAT.map(function(f){
+    var d=fe[f.k]||{};var over=(Number(d.max)||0)>(Number(d.th)||1);
+    return '<div style="border:1px solid var(--line);border-radius:11px;padding:10px 12px"><div style="font-size:13px;font-weight:900;color:var(--ink)">'+f.ko+'</div>'
+      +'<div style="font-size:12px;color:var(--mut);font-weight:800;margin-top:3px">평균 '+(d.avg==null?'—':d.avg)+'</div>'
+      +'<div style="font-size:16px;font-weight:900;color:'+(over?'var(--bad)':'var(--ok)')+';margin-top:2px">최대 '+(d.max==null?'—':d.max)+'</div>'
+      +'<div style="font-size:11.5px;color:var(--mut);font-weight:800">기준 '+(d.th==null?'—':d.th)+'</div></div>';
+  }).join('')+'</div></div>';
+  return h;
+}
+load(null);
+</script>
+</body></html>
