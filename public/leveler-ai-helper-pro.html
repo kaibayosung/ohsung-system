@@ -480,7 +480,7 @@
 <div class="app">
 <!-- 좌측 사이드바 -->
 <div class="side">
-  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 09:37</small></div></div>
+  <div class="brand"><div class="logo">오성</div><div class="bt">레벨러 AI 헬퍼<small>Leveler AI Helper · ver 2026-11-18 10:44</small></div></div>
   <div class="snav" data-v="select"><div class="t"><span class="ko">작업 선택</span><span class="en">Select job</span></div><div class="s" id="nav-sel-s">태경스틸 외 3건</div></div>
   <div class="snav on" data-v="now"><div class="t"><span class="ko">현재 상태</span><span class="en">Status</span></div><div class="s" id="nav-now-s">태경스틸 · 박스2</div></div>
   <div class="snav" data-v="settings"><div class="t"><span class="ko">장비 셋팅값</span><span class="en">Settings</span></div><div class="s"><span class="ko">장비 확인</span><span class="en">Check machine</span></div></div>
@@ -491,7 +491,7 @@
 </div>
 
 <div class="main">
-<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 09:37</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
+<div class="mtopbar"><span class="tt" id="vtitle">현재 작업 Current</span><span id="appver" style="margin-left:14px;font-size:13px;font-weight:900;color:#796cbf;background:#efecfa;border:1px solid #d7cff0;border-radius:9px;padding:4px 11px">🛠 수정 2026-11-18 10:44</span><span class="date" id="h-date"><span class="ko">지시일자</span><span class="en">Instructed</span> 2026-11-16 · PLC 14:44</span></div>
 <div class="wrap">
 
 <!-- ================= 현재 작업 ================= -->
@@ -810,6 +810,7 @@ var SAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-helper';
 var FAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-floor';
 var RAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-rec';
 var EXP='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-explore';
+var STAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-status';
 var SKEY='sb_publishable_xPn1mwmvq9myc7F7lv4Ljw_g6ExdHIs';
 var SQ=new URLSearchParams(location.search);
 var ASOF=SQ.get('asof')||null;
@@ -818,6 +819,7 @@ var EN=function(){return document.body.classList.contains('lang-en');};
 function t(k,e){return EN()?e:k;}
 function _T(id,x){var e=document.getElementById(id);if(e&&x!=null)e.textContent=x;}
 function _H(id,h){var e=document.getElementById(id);if(e&&h!=null)e.innerHTML=h;}
+function toast(msg,ok){var d=document.createElement('div');d.textContent=msg;d.style.cssText='position:fixed;left:50%;bottom:34px;transform:translateX(-50%);z-index:9999;background:'+(ok===false?'#b4232a':'#1f7a44')+';color:#fff;font-weight:900;font-size:17px;padding:13px 22px;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .2s';document.body.appendChild(d);requestAnimationFrame(function(){d.style.opacity='1';});setTimeout(function(){d.style.opacity='0';setTimeout(function(){d.remove();},250);},2600);}
 function _nf(v){return (v==null||v===''||isNaN(v))?'—':Math.round(v).toLocaleString('en-US');}
 function _f1(v){return (v==null||v===''||isNaN(v))?'—':(Math.round(v*10)/10).toString();}
 function hdr(){return {apikey:SKEY,Authorization:'Bearer '+SKEY};}
@@ -854,16 +856,23 @@ function clearWork(){
   _T('t-now',t('대기','Idle'));
 }
 function setIdle(){
-  _T('h-cu',t('현재 작업 없음','No active job'));_T('h-meta',' · '+t('라인 대기 중 (실데이터 연결됨)','line idle (data connected)'));_T('h-box',t('박스 —','Box —'));
-  var v=document.getElementById('h-verdict');if(v){v.textContent='● '+t('대기','Idle');v.className='verdict';}
-  _T('h-prog1','—');var pf=document.getElementById('h-progfill');if(pf)pf.style.width='0%';
-  _H('h-prog2','<span class="ko">진행 중인 작업이 없습니다</span><span class="en">No active job</span>');
+  if(SELJOB){var _sb=(SELJOB.planBoxes&&SELJOB.planBoxes.length)||(SELJOB.boxes&&SELJOB.boxes.length)||'';
+    _T('h-cu',SELJOB.cu||SELJOB.coil||'—');_H('h-meta',' '+(SELJOB.specRaw||'')+' · '+_nf(SELJOB.kg)+'kg · '+t('코일','coil')+' '+(SELJOB.coil||''));_T('h-box',t('박스','Box')+' 1'+(_sb?' / '+_sb:''));
+    var v=document.getElementById('h-verdict');if(v){v.textContent='● '+t('진행중','Running');v.className='verdict';}
+    _T('h-prog1',t('진행중 · 장비 셋팅 확인','In progress'));var pf=document.getElementById('h-progfill');if(pf)pf.style.width='0%';
+    _H('h-prog2','<span class="ko">선택한 코일 — 장비 셋팅값대로 맞추고 시작하세요</span><span class="en">Selected — set the machine and start</span>');
+  }else{
+    _T('h-cu',t('현재 작업 없음','No active job'));_T('h-meta',' · '+t('라인 대기 중 (실데이터 연결됨)','line idle (data connected)'));_T('h-box',t('박스 —','Box —'));
+    var v=document.getElementById('h-verdict');if(v){v.textContent='● '+t('대기','Idle');v.className='verdict';}
+    _T('h-prog1','—');var pf=document.getElementById('h-progfill');if(pf)pf.style.width='0%';
+    _H('h-prog2','<span class="ko">진행 중인 작업이 없습니다</span><span class="en">No active job</span>');
+  }
   BLANK_S.forEach(function(id){_T(id,'—');});BLANK_M.forEach(function(id){_T(id,'—');});
   if(!SELJOB){
   _T('rc-note','· '+t('작업 중 같은 규격 추천 표시','rec shown during a job'));
   _T('rc-speed',t('추천','Rec')+' —');_T('rc-acc',t('추천','Rec')+' —');_T('rc-dec',t('추천','Rec')+' —');_T('rc-slow',t('추천','Rec')+' —');
   }
-  _T('nav-now-s',t('작업 없음','No job'));
+  _T('nav-now-s',SELJOB?((SELJOB.cu||SELJOB.coil||'')+' · '+t('진행중','Running')):t('작업 없음','No job'));
   clearWork();if(!SELJOB){trendIdle(true);RECKEY=null;}
 }
 function loadRec(coil,cut){
@@ -1113,7 +1122,7 @@ function buildSelect(st){
       +'<div class="pk">'+(on?'✓ '+t('작업중','Running'):t('상세 →','View →'))+'</div></div>';}
   jobs.forEach(function(j){var run=online&&liveCoil&&j.coil===liveCoil;if(run)curName=j.cu||j.coil;
     cards.push(card(j,run?'run':'done',run?t('작업중','Running'):t('완료','Done'),run));});
-  waiting.forEach(function(w){cards.push(card(w,'wait',t('대기','Wait'),false));});
+  waiting.forEach(function(w){var _pk=SELJOB&&w.coil===SELJOB.coil;cards.push(card(w,_pk?'run':'wait',_pk?t('진행중','Running'):t('대기','Wait'),_pk));});
   if(!cards.length){grid.innerHTML='<div class="selempty">'+t('오늘 레벨링 작업이 없습니다','No leveling jobs today')+'<small>'+t('작업지시가 등록되면 여기에 표시됩니다','jobs appear here when scheduled')+'</small></div>';if(box)box.style.display='none';return;}
   grid.innerHTML=cards.join('');
   if(box){box.style.display='';box.innerHTML=curName
@@ -1121,13 +1130,16 @@ function buildSelect(st){
     : '<div style="font-size:19px;font-weight:900;color:var(--mut)">'+t('진행 중인 작업 없음','No running job')+'</div>';
     var gb=box.querySelector('[data-go="now"]');if(gb)gb.addEventListener('click',function(){showView('now');});}
   var _all=jobs.concat(waiting);
+  _all.forEach(function(j,i){if(SELJOB&&j.coil===SELJOB.coil){var se=grid.querySelectorAll('.scoil')[i];if(se)se.classList.add('sel');}});
   grid.querySelectorAll('.scoil').forEach(function(el,idx){el.addEventListener('click',function(){
     grid.querySelectorAll('.scoil').forEach(function(c){c.classList.remove('sel');});el.classList.add('sel');
     var j=_all[idx];if(!j||!j.coil)return;
     var cut=(j.planBoxes&&j.planBoxes[0]&&j.planBoxes[0].len)||(j.boxes&&j.boxes[0]&&j.boxes[0].cut)||0;
     SELJOB=j;SELCUT=cut;CURCOILJOB=j;RECKEY=null;
+    if(j.coil&&!ASOF){fetch(STAPI,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({coil_id:j.coil,work_date:st.today})}).then(function(r){return r.json();}).then(function(d){if(d&&d.ok){toast(t('한줌 대시보드: 상태 진행중으로 변경','Hanjum board: set to Running'));}else{toast((d&&d.error)||t('상태 변경 실패','Status update failed'),false);}}).catch(function(){toast(t('상태 변경 요청 실패(네트워크)','Status request failed'),false);});}
+
     trendIdle(false);fetchTrend(j.coil,st.today);loadRec(j.coil,cut);
-    _T('nav-now-s',(j.cu||j.coil||'')+' · '+t('선택','Picked'));
+    _T('nav-now-s',(j.cu||j.coil||'')+' · '+t('진행중','Running'));
     showView('settings');
   });});
 }
