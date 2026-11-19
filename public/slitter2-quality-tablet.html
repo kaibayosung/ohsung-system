@@ -223,7 +223,8 @@ function loadCoils(){
     document.getElementById('summary').innerHTML=
        sm('',coils.length,'작업 코일')+sm(tNg?'bad':'ok',tNg,'총 결함')
       +sm(tUn?'warn':'ok',tUn,'미확인')+sm(okRate>=70?'ok':okRate>=40?'warn':'bad',okRate+'%','양품률');
-    document.getElementById('cards').innerHTML=coils.map(function(c,i){var v=verdict(c.ng||0);var scl=statusCls(c.status);
+    var vimsWarn=(d.vimsOk===false)?'<div class="center" style="grid-column:1/-1;padding:12px;color:#a4241a;background:#fdecea;border-radius:12px">⚠ 품질검사(VIMS) 서버에 연결되지 않아 결함 수는 아직 0으로 보입니다. VIMS 서버를 확인한 뒤 새로고침하세요.</div>':'';
+    document.getElementById('cards').innerHTML=vimsWarn+coils.map(function(c,i){var v=verdict(c.ng||0);var scl=statusCls(c.status);
       return '<div class="coilcard '+v.k+'" onclick="openDetail('+i+')">'
         +'<span class="stt '+scl+'">'+esc(c.status||'준비')+'</span>'
         +'<div class="lamp"><span class="dot"></span><span class="verd">'+v.label+'</span></div>'
