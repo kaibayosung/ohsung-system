@@ -94,7 +94,13 @@ function seekWall(w){
   w=Math.min(Math.max(0,w),Math.max(0,wallDur-2));
   if(legacy){ v.currentTime=w*k; return; }
   var my=++gen; busy(true,'그 시점으로 이동 중…');
-  api('/levvid/seek?frac='+(wallDur? (w/wallDur).toFixed(5):'0')).then(function(sk){
+  // 파일 바이트와 시간이 정확히 비례하지 않아(장면에 따라 용량 차이) 한 번에 몇 분 어긋날 수 있음 → 최대 2번 보정(새 프록시는 서버에서 보정하므로 1번에 끝남)
+  var target=w*k, frac=wallDur? w/wallDur : 0;
+  function find(tries){ return api('/levvid/seek?frac='+frac.toFixed(6)).then(function(sk){
+      var e=target-(sk.sec||0);
+      if(tries<=0 || Math.abs(e)<3 || !mediaDur || frac<=0) return sk;
+      frac=Math.min(0.9995,Math.max(0.0001,frac+e/mediaDur)); return find(tries-1); }); }
+  find(2).then(function(sk){
     if(my!==gen) return;
     startMedia=sk.sec||0;
     v.src=OCR_BASE+'/levvid/play?seg='+encodeURIComponent(SEG)+'&file='+encodeURIComponent(FILE)+'&off='+sk.off;
