@@ -214,6 +214,7 @@ function loadCoils(){
   document.getElementById('summary').innerHTML='';
   document.getElementById('cards').innerHTML='<div class="center"><div class="spin"></div><div>작업 목록 불러오는 중…</div></div>';
   fetch(API+'?mode=worklist&date='+S.date).then(function(r){return r.json()}).then(function(d){
+    if(!d||d.ok===false){document.getElementById('cards').innerHTML='<div class="center">품질검사(VIMS) 서버에 연결되지 않습니다.<br>VIMS 서버가 켜져 있는지 확인한 뒤 새로고침하세요.<br><small style="opacity:.7">'+String((d&&d.error)||'').replace(/[<>&]/g,'')+'</small></div>';return;}
     var coils=dedupeCoils((d&&d.coils)||[]);S.coils=coils;
     if(!coils.length){document.getElementById('cards').innerHTML='<div class="center">이 날짜에 슬리터2 작업지시가 없습니다.<br>◀ ▶ 로 다른 날짜를 조회하세요.</div>';return;}
     var nBad=0,nWarn=0,nOk=0,tNg=0,tUn=0;
