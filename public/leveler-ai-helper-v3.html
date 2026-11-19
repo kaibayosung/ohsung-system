@@ -1403,7 +1403,7 @@ function fetchTrend(coil,today){
 function wireTrendTabs(){var tabs=document.querySelectorAll('#trend-tabs b'),keys=['load','tension','speed','cycle'];
   [].forEach.call(tabs,function(b,i){b.onclick=function(){TRENDTAB=keys[i];[].forEach.call(tabs,function(x){x.classList.toggle('on',x===b);});if(CURCOILJOB)buildTrend(CURCOILJOB);else trendIdle(true);};});}
 // ===== PAD 대체 (한줌 PAD 기능을 헬퍼로 이전 — leveler-pad 브리지가 한줌 백엔드 API를 호출) =====
-var PADAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-pad',PADST=null,PADBUSY=false,PADPEND=null;
+var PADAPI='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveler-pad-v3',PADST=null,PADBUSY=false,PADPEND=null;
 function padFetch(){if(ASOF)return Promise.resolve(null);return fetch(PADAPI+'?action=state'+(PADCOIL?'&coil='+encodeURIComponent(PADCOIL):''),{cache:'no-store'}).then(function(r){return r.ok?r.json():null;}).then(function(j){if(j&&j.ok)PADST=j;return j;}).catch(function(){return null;});}
 function padRow(coil){if(!PADST||!coil)return null;return (PADST.rows||[]).filter(function(r){return r.product_name===coil;})[0]||null;}
 function padDone(row){var s={};String((row&&row.completed_boxes)||'').split(',').forEach(function(x){var n=parseInt(x,10);if(n)s[n]=1;});return s;}
