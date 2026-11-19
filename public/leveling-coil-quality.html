@@ -251,7 +251,7 @@ function mapSVG(){
   s+='</svg>'; return s;
 }
 
-// 박스별 영상 — 큰 파일(수십분~2시간)은 프록시 임베드가 느려, 직접 단일 홉으로 새 창 재생
+// 박스별 영상 — 전용 플레이어 새 창(개발PC 프록시가 원하는 위치 조각부터 스트리밍)
 // 같은 녹화 파일을 가리키는 중복 세그먼트 제거(일부 코일은 실제 파일 없는 중복 구간이 섞여 404) — 첫 파일명 기준
 function dedupeSegs(segs){ var seen={}, out=[]; (segs||[]).forEach(function(sg){ var f=[]; try{f=JSON.parse(sg.files);}catch(e){} var key=(f[0]&&f[0].name)||sg.segment_id; if(seen[key])return; seen[key]=1; out.push(sg); }); return out; }
 function segForBox(n){ var segs=S.qual.segs||[]; return segs.find(function(x){ return String(x.box_id).replace(/^0+/,'')===String(n) || Number(x.box_id)===n; })||segs[n-1]||null; }
@@ -264,10 +264,14 @@ function videoCards(){
     if(cam2) btns+='<button class="btn" style="width:100%;margin-bottom:9px" onclick="openVid(\''+seg.segment_id+'\',\''+cam2.name+'\')">▶ 평탄도 CAM2 영상 열기'+fsize(cam2)+'</button>';
     if(cam1) btns+='<button class="btn ghost" style="width:100%" onclick="openVid(\''+seg.segment_id+'\',\''+cam1.name+'\')">▶ 흠집 CAM1 영상 열기'+fsize(cam1)+'</button>';
     return '<div class="vcard"><div class="vt">박스'+b.n+' 영상 <span style="font-size:14px;color:var(--mut)">'+(seg.st||'')+'~'+(seg.en||'')+'</span></div>'+btns
-      +'<div style="font-size:14px;color:var(--mut);font-weight:700;margin-top:9px">새 창에서 재생 · 대용량(수백 MB) 영상은 처음 로딩이 걸릴 수 있어요.</div></div>';
+      +'<div style="font-size:14px;color:var(--mut);font-weight:700;margin-top:9px">새 창에서 바로 재생 · 원하는 시점으로 바로 이동할 수 있어요.</div></div>';
   }).join('');
 }
-function openVid(seg,file,sec){ var t=(sec!=null&&sec>0)?'#t='+Math.floor(sec):''; window.open(OCR_BASE+'/levvid?seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file)+t,'_blank'); }
+// 2026-11-19: 전용 플레이어(leveling-video.html)로 — 원하는 시점의 조각부터 바로 재생(앞에서부터 다 받지 않음)
+function openVid(seg,file,sec){ var sg=(S.qual.segs||[]).find(function(x){return x.segment_id===seg;})||{}; var bx=sg.box_id?String(sg.box_id).replace(/^0+/,''):'';
+  var u='leveling-video.html?seg='+encodeURIComponent(seg)+'&file='+encodeURIComponent(file)+'&st='+encodeURIComponent(sg.st||'')+'&en='+encodeURIComponent(sg.en||'')
+    +'&title='+encodeURIComponent((S.coil||'')+(bx?' 박스'+bx:'')+' 영상')+((sec!=null&&sec>0)?'&t='+Math.floor(sec):'');
+  window.open(u,'_blank'); }
 
 // 박스별 보고서
 function reports(){

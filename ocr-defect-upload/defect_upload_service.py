@@ -24,7 +24,7 @@ import urllib.error
 from urllib.parse import quote
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Header
-from fastapi.responses import FileResponse, Response, RedirectResponse
+from fastapi.responses import FileResponse, Response, RedirectResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from PIL import Image, ImageOps
 
@@ -175,6 +175,40 @@ def levvid(seg: str, file: str):
         raise HTTPException(502, "no url")
     return RedirectResponse(play, status_code=302)
 
+
+
+# ──────────────── 영상 '바로 재생' (2026-11-19) ────────────────
+# 녹화 파일(조각 MP4)에 길이·색인이 없어 일반 재생은 원하는 시점까지 앞에서부터 다 받아야 했음.
+# 원하는 위치의 조각부터 바로 흘려준다. 한줌 서버는 읽기만(재생 URL 발급 + Range 읽기).
+from levvid_stream import LevVid  # noqa: E402
+_LV = LevVid(VISION_SRC)
+
+
+@app.get("/levvid/info")
+def levvid_info(seg: str, file: str):
+    try:
+        inf = _LV.info(seg, file)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"info: {e}")
+    return {"total": inf["total"], "mediaDur": inf["mediaDur"], "timescale": inf["timescale"]}
+
+
+@app.get("/levvid/seek")
+def levvid_seek(seg: str, file: str, frac: float = 0.0):
+    try:
+        return _LV.seek(seg, file, frac)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"seek: {e}")
+
+
+@app.get("/levvid/play")
+def levvid_play(seg: str, file: str, off: int = 0):
+    try:
+        _LV.info(seg, file)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(502, f"play: {e}")
+    return StreamingResponse(_LV.stream(seg, file, off), media_type="video/mp4",
+                             headers={"Cache-Control": "no-store"})
 
 if __name__ == "__main__":
     import uvicorn

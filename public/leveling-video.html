@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>레벨러 녹화 영상</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--ink:#0f1e33;--sec:#5c6478;--mut:#7d8ba1;--line:#e3e8f0;--bg:#f3f5fe;--pur:#796cbf;--navy:#0f1e33}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,system-ui,sans-serif;font-weight:700}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.top h1{font-size:24px;font-weight:900;margin:0}
+.tag{background:#ece9fb;color:var(--pur);border-radius:999px;padding:5px 12px;font-size:16px;font-weight:900}
+.sub{color:var(--sec);font-size:16px}
+.stage{position:relative;background:#0b0e14;border-radius:16px;overflow:hidden;aspect-ratio:16/9}
+.stage video{width:100%;height:100%;display:block;background:#0b0e14}
+.busy{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;color:#fff;font-size:20px;font-weight:900;background:rgba(11,14,20,.45)}
+.busy.on{display:flex}
+.spin{width:46px;height:46px;border-radius:50%;border:5px solid rgba(255,255,255,.25);border-top-color:#fff;animation:sp 0.9s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:14px 16px;margin-top:12px}
+.clock{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.clock .now{font-size:34px;font-weight:900;font-variant-numeric:tabular-nums}
+.clock .rng{font-size:16px;color:var(--mut);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;height:44px;margin:6px 0 2px;accent-color:var(--pur)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.b{flex:1 1 0;min-width:84px;border:1.5px solid var(--line);background:#fff;border-radius:12px;padding:13px 8px;font:inherit;font-size:18px;font-weight:900;color:var(--ink);cursor:pointer}
+.b.main{background:var(--pur);border-color:var(--pur);color:#fff;flex:1.4 1 0}
+.b.on{border-color:var(--pur);color:var(--pur);background:#f4f2fd}
+.note{font-size:14px;color:var(--mut);margin-top:10px}
+.err{background:#fdecea;border:1.5px solid #f0bdb3;color:#a4241a;border-radius:12px;padding:12px 14px;font-size:16px;margin-top:12px;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top"><h1 id="ttl">레벨러 녹화 영상</h1><span class="tag" id="cam"></span><span class="sub" id="fname"></span></div>
+  <div class="stage">
+    <video id="v" playsinline muted></video>
+    <div class="busy on" id="busy"><div class="spin"></div><div id="busyt">영상 준비 중…</div></div>
+  </div>
+  <div class="card">
+    <div class="clock"><div class="now" id="now">--:--:--</div><div class="rng" id="rng"></div></div>
+    <input type="range" id="bar" min="0" max="1" step="1" value="0">
+    <div class="btns">
+      <button class="b" onclick="jump(-300)">⏪ 5분</button>
+      <button class="b" onclick="jump(-30)">⏪ 30초</button>
+      <button class="b main" id="pp" onclick="toggle()">⏸ 일시정지</button>
+      <button class="b" onclick="jump(30)">30초 ⏩</button>
+      <button class="b" onclick="jump(300)">5분 ⏩</button>
+    </div>
+    <div class="btns">
+      <button class="b sp on" data-r="1" onclick="rate(1)">1배속</button>
+      <button class="b sp" data-r="2" onclick="rate(2)">2배속</button>
+      <button class="b sp" data-r="4" onclick="rate(4)">4배속</button>
+      <button class="b" onclick="fs()">⛶ 전체화면</button>
+    </div>
+    <div class="note" id="note">막대를 끌거나 버튼을 누르면 그 시점부터 바로 재생합니다.</div>
+  </div>
+  <div class="err" id="err"></div>
+</div>
+<script>
+// 레벨러 녹화 영상 플레이어 (2026-11-19)
+// 녹화 파일은 조각 MP4라 길이·색인이 없어 일반 재생으로는 원하는 시점까지 앞에서부터 다 받아야 했음.
+// 개발PC 프록시(/levvid/seek·/levvid/play)가 원하는 위치의 조각부터 바로 흘려주므로 어디로 가든 몇 초 안에 재생.
+// 프록시가 아직 옛 버전이면 예전 방식(/levvid 리다이렉트)으로 자동 대체.
+var OCR_BASE='https://desktop-tdp9hrt.tail8d1b48.ts.net';
+var q=new URLSearchParams(location.search);
+var SEG=q.get('seg')||'', FILE=q.get('file')||'', ST=q.get('st')||'', EN=q.get('en')||'', T0=parseFloat(q.get('t')||'0')||0;
+var v=document.getElementById('v'), bar=document.getElementById('bar');
+var mediaDur=0, wallDur=0, k=1, startMedia=0, dragging=false, legacy=false, speed=1, gen=0;
+
+function hms2s(s){ var m=/(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(s||''); return m?(+m[1])*3600+(+m[2])*60+(+(m[3]||0)):null; }
+function s2hms(x){ x=Math.max(0,Math.round(x)); x%=86400; var h=x/3600|0, m=(x%3600)/60|0, s=x%60; return (h<10?'0':'')+h+':'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
+function busy(on,t){ document.getElementById('busy').classList.toggle('on',!!on); if(t) document.getElementById('busyt').textContent=t; }
+function err(t){ var e=document.getElementById('err'); e.style.display='block'; e.textContent=t; }
+function wallNow(){ return legacy ? v.currentTime/k : (startMedia+v.currentTime)/k; }
+function paint(){ var w=wallNow(); if(!dragging) bar.value=Math.round(w); var st=hms2s(ST);
+  document.getElementById('now').textContent = st!=null ? s2hms(st+w) : s2hms(w);
+  document.getElementById('rng').textContent = (st!=null? ST+' ~ '+EN+' · ':'')+s2hms(w)+' / '+s2hms(wallDur); }
+
+(function head(){
+  var cam=/_2_/.test(FILE)?'CAM2 평탄도':/_1_/.test(FILE)?'CAM1 흠집':'';
+  document.getElementById('cam').textContent=cam; document.getElementById('fname').textContent=FILE;
+  if(q.get('title')) document.getElementById('ttl').textContent=q.get('title');
+  document.title=(q.get('title')||'레벨러 녹화 영상')+(cam?' · '+cam:'');
+})();
+
+function api(path){ return fetch(OCR_BASE+path+(path.indexOf('?')<0?'?':'&')+'seg='+encodeURIComponent(SEG)+'&file='+encodeURIComponent(FILE))
+  .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }); }
+
+function seekWall(w){
+  w=Math.min(Math.max(0,w),Math.max(0,wallDur-2));
+  if(legacy){ v.currentTime=w*k; return; }
+  var my=++gen; busy(true,'그 시점으로 이동 중…');
+  api('/levvid/seek?frac='+(wallDur? (w/wallDur).toFixed(5):'0')).then(function(sk){
+    if(my!==gen) return;
+    startMedia=sk.sec||0;
+    v.src=OCR_BASE+'/levvid/play?seg='+encodeURIComponent(SEG)+'&file='+encodeURIComponent(FILE)+'&off='+sk.off;
+    v.playbackRate=speed; v.play().catch(function(){}); paint();
+  }).catch(function(e){ if(my===gen){ busy(false); err('이동 실패: '+e.message+' — 잠시 후 다시 시도해 주세요.'); } });
+}
+function jump(d){ seekWall(wallNow()+d); }
+function toggle(){ if(v.paused) v.play().catch(function(){}); else v.pause(); }
+function rate(r){ speed=r; v.playbackRate=r; document.querySelectorAll('.sp').forEach(function(b){ b.classList.toggle('on',+b.dataset.r===r); }); }
+function fs(){ var s=document.querySelector('.stage'); (s.requestFullscreen||s.webkitRequestFullscreen||function(){}).call(s); }
+
+v.addEventListener('waiting',function(){ busy(true,'불러오는 중…'); });
+v.addEventListener('playing',function(){ busy(false); v.playbackRate=speed; });
+v.addEventListener('canplay',function(){ busy(false); });
+v.addEventListener('timeupdate',paint);
+v.addEventListener('play',function(){ document.getElementById('pp').textContent='⏸ 일시정지'; });
+v.addEventListener('pause',function(){ document.getElementById('pp').textContent='▶ 재생'; });
+v.addEventListener('error',function(){ busy(false); if(!legacy) err('재생 오류 — 다른 시점을 눌러 보거나 새로고침해 주세요.'); });
+bar.addEventListener('input',function(){ dragging=true; var st=hms2s(ST); document.getElementById('now').textContent= st!=null? s2hms(st+(+bar.value)) : s2hms(+bar.value); });
+bar.addEventListener('change',function(){ dragging=false; seekWall(+bar.value); });
+
+function startLegacy(){
+  legacy=true; k=1; var a=hms2s(ST), b=hms2s(EN); wallDur=(a!=null&&b!=null&&b>a)?b-a:0;
+  document.getElementById('note').textContent='개발PC 프록시가 옛 버전이라 예전 방식으로 재생합니다(뒤쪽 시점은 로딩이 길 수 있음).';
+  v.controls=true; v.src=OCR_BASE+'/levvid?seg='+encodeURIComponent(SEG)+'&file='+encodeURIComponent(FILE)+(T0>0?'#t='+Math.floor(T0):'');
+  v.addEventListener('loadedmetadata',function(){ if(!wallDur&&isFinite(v.duration)) wallDur=v.duration; bar.max=Math.max(1,Math.round(wallDur)); });
+  v.play().catch(function(){});
+}
+
+if(!SEG||!FILE){ busy(false); err('영상 정보가 없습니다(seg/file).'); }
+else api('/levvid/info').then(function(inf){
+  mediaDur=inf.mediaDur||0; var a=hms2s(ST), b=hms2s(EN);
+  wallDur=(a!=null&&b!=null&&b>a)?(b-a):mediaDur; k=(wallDur>0&&mediaDur>0)?mediaDur/wallDur:1;
+  bar.max=Math.max(1,Math.round(wallDur)); paint(); seekWall(T0);
+}).catch(function(){ startLegacy(); });
+</script>
+</body>
+</html>
