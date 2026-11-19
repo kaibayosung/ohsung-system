@@ -14,6 +14,7 @@
 // 비밀값: DB 접속 정보는 Edge Function 시크릿(LEVELER_DB_*)에서만 읽는다.
 import { Client } from "https://deno.land/x/mysql@v2.12.1/mod.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { mirrorDayRows, mirrorStats } from "./lvmirror.ts";
 
 const VERSION = "lf2";
 const CORS: Record<string, string> = {
@@ -62,6 +63,7 @@ async function db(): Promise<Client> {
     password: pass,
     db: Deno.env.get("LEVELER_DB_NAME") || "ohsung",
     timeout: 20000,
+    poolSize: 3,
   });
 }
 function sb() { return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!); }
@@ -69,25 +71,27 @@ function sb() { return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get(
 type Row = { t: number; c: string; b: number | null; r: number; cut: number; mv: number; ld: number; ss: number; cy: number; corr: number; acc: number; dec: number; slow: number; coef: number };
 
 async function plcRows(cl: Client, date: string): Promise<Row[]> {
-  const rows = await cl.query(
-    `SELECT DATE_FORMAT(TIMESTAMP,'%Y-%m-%d %H:%i:%s') ts, COIL_ID c, BOXIDX b, RUN r, CUTLENSET cut, MOVELENSV mv,
-            INVERTERSPEEDPER ld, SPEEDSET ss, CYCLETM cy, CUTLENCORR corr, ACCTM acc, DECTM dece, SLOWLENSET slow, INVERTERSPEEDCOEFF coef
-     FROM LEVELING_DATA WHERE TIMESTAMP >= ? AND TIMESTAMP < ? ORDER BY TIMESTAMP, ID`,
-    [date + " 00:00:00", addDays(date, 1) + " 00:00:00"],
-  );
+  // 2026-11-19: 그날 PLC 행은 Supabase 거울에서(공장 MariaDB에는 하루 서명·새 행만 물음)
+  const rows = await mirrorDayRows(cl, date);
   return (rows as any[]).map((x) => ({
     t: parseTs(x.ts), c: String(x.c ?? "").trim(), b: x.b == null ? null : num(x.b), r: num(x.r), cut: num(x.cut), mv: num(x.mv),
     ld: num(x.ld), ss: num(x.ss), cy: num(x.cy), corr: num(x.corr), acc: num(x.acc), dec: num(x.dece), slow: num(x.slow), coef: num(x.coef),
   }));
 }
+// 작업지시서 30일치 — 60초 메모리 캐시
+const erpMemo = new Map<string, { t: number; v: any[] }>();
 async function erpRows(cl: Client, from: string, to: string) {
+  const key = from + "|" + to; const m = erpMemo.get(key);
+  if (m && Date.now() - m.t < 60000) return m.v;
   const rows = await cl.query(
     `SELECT id, product_name, company_name, specification, original_weight, used_weight, status,
             DATE_FORMAT(work_date,'%Y-%m-%d') wd, DATE_FORMAT(started_at,'%Y-%m-%d %H:%i:%s') sa, process_rule
      FROM erp_data WHERE work_type='LEVELLING' AND work_date BETWEEN ? AND ? ORDER BY id`,
     [from, to],
   );
-  return dedupeErp(rows as any[]);
+  const v = dedupeErp(rows as any[]);
+  erpMemo.set(key, { t: Date.now(), v });
+  return v;
 }
 // 대시보드에 같은 작업지시서가 두 번 올라온 경우(준비 + 완료) 하나만 남긴다
 function dedupeErp(rows: any[]) {
@@ -543,7 +547,7 @@ Deno.serve(async (req) => {
         if (!day || day.version !== VERSION || url.searchParams.get("force") === "true") cl = await db();
       } else cl = await db();
       const res = await analyzeDay(cl, date, today, summaries, { force: url.searchParams.get("force") === "true" });
-      return json({ ok: true, version: VERSION, today, now: hms(nowT), date, jobs: res.jobs.map(strip), extra: res.extra, cached: res.cached });
+      return json({ ok: true, version: VERSION, today, now: hms(nowT), date, jobs: res.jobs.map(strip), extra: res.extra, cached: res.cached, _mirror: mirrorStats[date] ?? null });
     }
     // ---- live ----
     cl = await db();
@@ -577,7 +581,7 @@ Deno.serve(async (req) => {
     const doneErpNoPlc = erpsToday.filter((e: any) => !usedIds.has(e.id) && e.status === "완료" && !plcCoils.has(String(e.product_name || "").trim())).length;
     return json({
       ok: true, version: VERSION, today, now: hms(nowT), asof: asof || null, online, lastRow: lastAll ? hms(lastT) : null, lastCoil: lastCoil || null,
-      coilSelected: online ? !JUNK.has(lastCoil) : null, liveCoil, jobs: jobs.map(strip), live, waiting, doneErpNoPlc, extra: res.extra,
+      coilSelected: online ? !JUNK.has(lastCoil) : null, liveCoil, jobs: jobs.map(strip), live, waiting, doneErpNoPlc, extra: res.extra, _mirror: mirrorStats[today] ?? null,
     });
   } catch (e) {
     return json({ ok: false, error: String((e as Error)?.message || e) }, 500);
