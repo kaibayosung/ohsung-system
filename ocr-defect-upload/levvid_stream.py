@@ -20,6 +20,7 @@ import time
 import threading
 import urllib.request
 import urllib.error
+import http.client
 from urllib.parse import quote
 
 UA = {"User-Agent": "ohsung-levvid-stream"}
@@ -114,9 +115,20 @@ class LevVid:
         self.cache_sec = cache_sec
 
     # ── 한줌 38080에서 서명된 재생 URL 발급 (5분 유효) ──
-    def play_url(self, seg, file):
+    def play_url(self, seg, file, fresh=False):
         if self._custom_play_url:
             return self._custom_play_url(seg, file)
+        key = ("url", seg, file)
+        with self._lock:
+            c = self._cache.get(key)
+        if c and not fresh and time.time() - c[1] < 240:   # 5분 유효 → 4분까지 재사용
+            return c[0]
+        u = self._fetch_play_url(seg, file)
+        with self._lock:
+            self._cache[key] = (u, time.time())
+        return u
+
+    def _fetch_play_url(self, seg, file):
         url = f"{self.src}/api/leveling/videos/{quote(seg, safe='')}/files/{quote(file, safe='')}/play-url"
         req = urllib.request.Request(url, headers=UA)
         with urllib.request.urlopen(req, timeout=12) as r:
@@ -127,10 +139,19 @@ class LevVid:
         return u
 
     def _range(self, seg, file, start, end):
-        req = urllib.request.Request(self.play_url(seg, file), headers={**UA, "Range": f"bytes={start}-{end}"})
-        with urllib.request.urlopen(req, timeout=20) as r:
-            data = r.read()
-            cr = r.headers.get("Content-Range") or ""
+        for i in range(2):
+            req = urllib.request.Request(self.play_url(seg, file, fresh=i > 0), headers={**UA, "Range": f"bytes={start}-{end}"})
+            try:
+                with urllib.request.urlopen(req, timeout=20) as r:
+                    cr = r.headers.get("Content-Range") or ""
+                    try:
+                        data = r.read()
+                    except http.client.IncompleteRead as e:   # 중간에 끊겨도 받은 만큼 사용
+                        data = e.partial
+                break
+            except urllib.error.HTTPError as e:
+                if e.code != 403 or i:
+                    raise
         total = int(cr.split("/")[-1]) if "/" in cr else None
         return data, total
 
@@ -174,22 +195,42 @@ class LevVid:
     # ── 비율(0~1) → 조각 위치 ──
     def seek(self, seg, file, frac):
         inf = self.info(seg, file)
-        total, first = inf["total"], inf["firstMoof"]
+        total, first, dur = inf["total"], inf["firstMoof"], inf["mediaDur"]
         frac = min(max(float(frac or 0), 0.0), 1.0)
-        if frac <= 0.0005:
+        if frac <= 0.0005 or not dur:
             return {"off": first, "sec": 0.0, "frac": 0.0}
+        target = frac * dur
+        best = None
+        f = frac
+        # 바이트와 시간이 정확히 비례하지 않아 한 번에 몇 분 어긋날 수 있음 → 찾은 시각으로 최대 4번 보정
+        for _ in range(4):
+            hit = self._moof_near(seg, file, inf, f)
+            if not hit:
+                break
+            if best is None or abs(target - hit["sec"]) < abs(target - best["sec"]):
+                best = hit
+            e = target - hit["sec"]
+            if abs(e) < 3:
+                break
+            f = min(0.9995, max(0.0001, f + e / dur))
+        if not best:
+            return {"off": first, "sec": 0.0, "frac": 0.0}
+        best["frac"] = round(best["sec"] / dur, 5)
+        return best
+
+    def _moof_near(self, seg, file, inf, frac):
+        total, first = inf["total"], inf["firstMoof"]
         est = int(first + (total - first) * frac)
         est = min(est, max(first, total - 2 * 1024 * 1024))
-        for win in (1024 * 1024, 4 * 1024 * 1024):
+        for win in (512 * 1024, 4 * 1024 * 1024):
             buf, _ = self._range(seg, file, est, min(total - 1, est + win - 1))
             ms = _find_moofs(buf)
             if ms:
                 a = ms[0]
                 t = _tfdt(buf[a:a + _u32(buf, a)])
                 sec = ((t or inf["firstT"]) - inf["firstT"]) / float(inf["timescale"] or 1)
-                return {"off": est + a, "sec": round(sec, 3),
-                        "frac": round(sec / inf["mediaDur"], 5) if inf["mediaDur"] else frac}
-        return {"off": first, "sec": 0.0, "frac": 0.0}
+                return {"off": est + a, "sec": round(sec, 3)}
+        return None
 
     # ── 앞머리 + off부터 끝까지 (tfdt 0 기준으로 고쳐서) ──
     def stream(self, seg, file, off):
@@ -203,7 +244,7 @@ class LevVid:
         fails = 0
         while pos < inf["total"]:
             try:
-                req = urllib.request.Request(self.play_url(seg, file), headers={**UA, "Range": f"bytes={pos}-"})
+                req = urllib.request.Request(self.play_url(seg, file, fresh=fails > 0), headers={**UA, "Range": f"bytes={pos}-"})
                 with urllib.request.urlopen(req, timeout=20) as r:
                     while True:
                         chunk = r.read(CHUNK)
