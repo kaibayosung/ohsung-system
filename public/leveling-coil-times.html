@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>레벨링 코일별 작업시간</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<style>
+:root{--ink:#0f1e33;--sec:#5c6478;--mut:#7d8ba1;--line:#e3e8f0;--bg:#f3f5fe;--pur:#796cbf;--ok:#1f8a4c;--run:#d97706}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Pretendard,system-ui,sans-serif;font-weight:700}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:26px;font-weight:900;margin:0}
+.date{display:flex;align-items:center;gap:8px}
+.date input{font:inherit;font-size:18px;font-weight:800;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;background:#fff;color:var(--ink)}
+.date button{font:inherit;font-size:16px;font-weight:900;border:1.5px solid var(--line);border-radius:12px;padding:9px 14px;background:#fff;color:var(--pur);cursor:pointer}
+.sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.kpi{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:12px 16px}
+.kpi .l{font-size:15px;color:var(--sec)}
+.kpi .v{font-size:30px;font-weight:900;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .v small{font-size:16px;color:var(--sec);margin-left:3px}
+.card{background:#fff;border:1.5px solid var(--line);border-radius:16px;overflow:hidden}
+table{width:100%;border-collapse:collapse}
+th{font-size:14px;color:var(--mut);text-align:left;padding:10px 12px;border-bottom:1.5px solid var(--line);background:#fafbff;white-space:nowrap}
+td{font-size:18px;padding:12px;border-bottom:1px solid var(--line);vertical-align:middle;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+.n{color:var(--mut);font-size:15px;width:36px}
+.coil{font-size:19px;font-weight:900}
+.cu{font-size:14px;color:var(--sec);font-weight:700;margin-top:2px}
+.dur{font-size:22px;font-weight:900;white-space:nowrap}
+.tm{white-space:nowrap}
+.badge{display:inline-block;border-radius:999px;padding:3px 10px;font-size:13px;font-weight:900;margin-left:6px;vertical-align:2px}
+.b-run{background:#fff4df;color:var(--run)}
+.bar{position:relative;height:12px;background:#eef1f8;border-radius:6px;min-width:120px}
+.bar i{position:absolute;top:0;bottom:0;border-radius:6px;background:var(--pur)}
+.bar i.run{background:var(--run)}
+.r{text-align:right}
+.empty,.msg{padding:28px;text-align:center;color:var(--sec);font-size:18px}
+.foot{font-size:13px;color:var(--mut);margin-top:10px}
+@media (max-width:720px){
+  .sum{grid-template-columns:repeat(3,minmax(0,1fr))}.kpi .v{font-size:22px}
+  .hide-m{display:none}td{font-size:16px;padding:10px 8px}.dur{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <h1>레벨링 코일별 작업시간</h1>
+    <div class="date"><button onclick="move(-1)">◀</button><input type="date" id="d"><button onclick="move(1)">▶</button><button onclick="today()">오늘</button></div>
+  </div>
+  <div class="sum">
+    <div class="kpi"><div class="l">작업한 코일</div><div class="v" id="k-n">-<small>개</small></div></div>
+    <div class="kpi"><div class="l">총 작업시간</div><div class="v" id="k-t">-</div></div>
+    <div class="kpi"><div class="l">총 장수</div><div class="v" id="k-s">-<small>장</small></div></div>
+  </div>
+  <div class="card" id="box"><div class="msg">불러오는 중…</div></div>
+  <div class="foot">작업시간 = 그 코일의 PLC 첫 기록 ~ 마지막 절단(진행 중이면 지금까지). 가동 = 실제로 판을 자른 시간, 나머지는 세팅·박스 교체·정지. 오늘 날짜는 1분마다 자동 갱신.</div>
+</div>
+<script>
+// 레벨링 코일별 작업시간 (2026-11-19) — leveling-floor 실데이터(오늘=live, 지난 날짜=day), 읽기 전용
+var API='https://mnlnbwcbgfgftdgawanh.supabase.co/functions/v1/leveling-floor';
+var inp=document.getElementById('d');
+function kstToday(){return new Date(Date.now()+9*3600000).toISOString().slice(0,10);}
+function addDays(d,n){return new Date(Date.parse(d+'T00:00:00Z')+n*86400000).toISOString().slice(0,10);}
+function hm(min){if(min==null)return '-';min=Math.max(0,Math.round(min));var h=Math.floor(min/60),m=min%60;return h?h+'시간 '+m+'분':m+'분';}
+function toMin(s){var m=/(\d{1,2}):(\d{2})/.exec(s||'');return m?(+m[1])*60+(+m[2]):null;}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function move(n){inp.value=addDays(inp.value||kstToday(),n);load();}
+function today(){inp.value=kstToday();load();}
+inp.addEventListener('change',load);
+var seq=0;
+function load(){
+  var date=inp.value||kstToday(), my=++seq;
+  var isToday=date===kstToday();
+  fetch(API+(isToday?'?mode=live':'?mode=day&date='+date),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    if(my!==seq)return;
+    if(!j||!j.ok){document.getElementById('box').innerHTML='<div class="msg">불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>';return;}
+    var rows=(j.jobs||[]).map(function(x){return {coil:x.coil,company:x.cu,spec:x.specRaw,start:x.st,end:x.end,durMin:x.dur,runMin:x.runMin,stopMin:(x.stopMin||0)+(x.setup||0)+(x.chg||0),sheets:x.sPlc,_run:isToday&&j.liveCoil===x.coil};});
+    rows.sort(function(a,b){return (a.start||'')<(b.start||'')?-1:1;});
+    var tot=0,sh=0;rows.forEach(function(r){tot+=r.durMin||0;sh+=r.sheets||0;});
+    document.getElementById('k-n').innerHTML=rows.length+'<small>개</small>';
+    document.getElementById('k-t').textContent=hm(tot);
+    document.getElementById('k-s').innerHTML=sh.toLocaleString()+'<small>장</small>';
+    if(!rows.length){document.getElementById('box').innerHTML='<div class="empty">'+date+' 레벨링 작업 기록이 없습니다.</div>';return;}
+    // 하루 막대 범위: 첫 시작 ~ 마지막 종료 (최소 08:00~17:40)
+    var lo=Math.min(480,Math.min.apply(null,rows.map(function(r){return toMin(r.start)||480;}))),hi=Math.max(1060,Math.max.apply(null,rows.map(function(r){return toMin(r.end)||0;})));
+    var h='<table><thead><tr><th>#</th><th>코일 / 거래처</th><th class="hide-m">규격</th><th>시작 ~ 종료</th><th>작업시간</th><th class="r">장수</th><th class="hide-m" style="width:28%">시간대</th></tr></thead><tbody>';
+    rows.forEach(function(r,i){
+      var a=toMin(r.start),b=toMin(r.end),L=(a-lo)/(hi-lo)*100,W=Math.max(1,(b-a)/(hi-lo)*100);
+      h+='<tr><td class="n">'+(i+1)+'</td><td><div class="coil">'+esc(r.coil)+(r._run?'<span class="badge b-run">진행 중</span>':'')+'</div><div class="cu">'+esc(r.company||'-')+'</div></td>'
+        +'<td class="hide-m">'+esc(r.spec||'-')+'</td><td class="tm">'+esc(r.start||'-')+' ~ '+esc(r.end||'-')+'</td>'
+        +'<td><div class="dur">'+hm(r.durMin)+'</div><div class="cu">가동 '+hm(r.runMin)+' · 세팅·교체·정지 '+hm(r.stopMin)+'</div></td><td class="r">'+(r.sheets!=null?r.sheets.toLocaleString():'-')+'</td>'
+        +'<td class="hide-m"><div class="bar"><i class="'+(r._run?'run':'')+'" style="left:'+L.toFixed(1)+'%;width:'+W.toFixed(1)+'%"></i></div></td></tr>';
+    });
+    h+='</tbody></table>';
+    document.getElementById('box').innerHTML=h;
+  }).catch(function(){ if(my===seq) document.getElementById('box').innerHTML='<div class="msg">불러오지 못했습니다. 잠시 후 다시 시도해 주세요.</div>'; });
+}
+inp.value=kstToday(); load();
+setInterval(function(){ if(!document.hidden && inp.value===kstToday()) load(); },60000);
+</script>
+</body>
+</html>
