@@ -399,6 +399,25 @@ export default function BriefingApp() {
     setLoaded(true);
   }, []);
 
+  // 「회신」 메일 중 아직 답장 기록이 없는 것은 실제 메일함에서 답장 여부를 한 번씩 확인해 반영
+  const checked = React.useRef(new Set());
+  useEffect(() => {
+    const todo = data.mails.filter((m) => m.category === '회신' && !m.replied_at && !checked.current.has(m.gmail_id)).slice(0, 6);
+    if (!todo.length) return;
+    todo.forEach((m) => checked.current.add(m.gmail_id));
+    (async () => {
+      let changed = false;
+      for (const m of todo) {
+        const r = await callFn('mail-detail', { id: m.gmail_id });
+        if (r?.ok && r.detail?.replied) {
+          await supabase.from('mail_items').update({ replied_at: new Date().toISOString() }).eq('id', m.id);
+          changed = true;
+        }
+      }
+      if (changed) load();
+    })();
+  }, [data.mails, load]);
+
   useEffect(() => {
     if (!session) return;
     load();
