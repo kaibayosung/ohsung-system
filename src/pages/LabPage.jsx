@@ -27,6 +27,7 @@ import { LevelingLineNmsScreen } from './test/levelingLineNmsScreen';
 import { LevelingSummaryBoardScreen } from './test/levelingSummaryBoardScreen';
 import { DashboardSyncMonitorScreen } from './test/dashboardSyncMonitorScreen';
 import { DashboardReconcileScreen } from './test/dashboardReconcileScreen';
+import { DailyBriefingScreen } from './test/dailyBriefingScreen';
 
 // 새 프로젝트를 추가할 때는 여기에 한 줄만 더하면 됩니다 — category가 같으면 같은 섹션에 묶입니다.
 // "생산현장 도구"처럼 항목이 많은 카테고리는 group으로 한 번 더 묶어서 보여줍니다(선택 사항).
@@ -36,6 +37,7 @@ import { DashboardReconcileScreen } from './test/dashboardReconcileScreen';
 // 분류 섹션 순서·소분류 순서·소분류 안의 서비스 순서를 모두 "최근에 만든 것이 위" 기준(git 최초
 // 배포일)으로 재정렬했습니다. 목업 승인 내역은 대화 기록 참고.
 const PROJECTS = [
+  { key: 'daily-briefing', label: '데일리 브리핑 (메일·일정)', icon: '📬', category: '업무 지원', desc: 'Gmail·네이버 메일(Gmail 자동 전달분)·구글 캘린더를 10분마다(KST 07~21시) 확인해 오늘 꼭 할 일 Top 3, 오늘·내일 일정(이동시간 부족 경고), 급한 순 중요 메일(회신/마감/공고/거래처)을 한 화면에 정리합니다. Claude로 분류·요약, 「처리」로 목록 정리. 읽기 전용 — 메일 발송·삭제 없음. 소유자(관리자) 계정만 열람. mail-briefing-sync Edge Function + mail_items/briefing_runs 실데이터.', badge: '실데이터 연동', isNew: true, updated: '2026-11-26' },
   { key: 'slitter2-floor-demo-kr', label: '슬리터2 현장 화면 — 작업중 시연', icon: '🎬', category: '제품 시연', desc: '가동 작업이 없어도 슬리터2 현장 화면의 「현재 작업」 뷰를 항상 보여주는 시연. 과거 가동 코일을 작업 중처럼 재생해 진행률·라인 흐름·텐션 1~4·라인 속도가 실시간처럼 움직입니다. 대표·고객 시연용(자체 완결형). 바로가기 /slitter2-floor-demo-kr.html', external: '/slitter2-floor-demo-kr.html', badge: '시연', isNew: true, updated: '2026-11-12' },
   { key: 'leveling-floor-demo-kr', label: '레벨링 현장 화면 — 작업중 시연', icon: '🎬', category: '제품 시연', desc: '가동 작업이 없어도 레벨링 현장 화면의 「현재 작업」 뷰를 보여주는 시연. 과거 가동 코일(실데이터)을 시간순으로 재생해 박스 진행·이송/부하/텐션/사이클·OCR 텐션이 실시간처럼 움직입니다. 대표·고객 시연용. 바로가기 /leveling-floor-demo-kr.html', external: '/leveling-floor-demo-kr.html', badge: '시연', isNew: true, updated: '2026-11-12' },
   { key: 'slitter2-quality-live-demo', label: '슬리터2 품질검사 (SAIGE VIMS) — 시연', icon: '🔎', category: '제품 시연', desc: '세이지 VIMS 외관검사 실데이터 시연 — 날짜별 작업 코일 리스트에서 코일을 고르면 결함 목록(유형·발생위치·이상점수·리뷰상태)과 상세, 불량 이미지 확대·4채널 영상 UI를 봅니다. 날짜를 고르면 동작하므로 시연에 바로 사용(가동 작업 없어도 과거 날짜로 보여줌). 바로가기 /slitter2-quality-live', external: '/slitter2-quality-live', badge: '실데이터', isNew: true, updated: '2026-11-12' },
@@ -151,6 +153,7 @@ const PROJECTS = [
 // 분류(category)마다 아이콘·강조색을 부여해 홈 화면에서 한눈에 구분되게 합니다.
 // (기존 COLORS 토큰을 최대한 재사용하고, 없는 색만 새로 추가했습니다.)
 const CATEGORY_META = {
+  '업무 지원': { icon: '📬', accent: '#3672b0', accentBg: '#e6eef8' },
   '제품 시연': { icon: '🎬', accent: '#6b4fa0', accentBg: '#efe9f9' },
   '작업시간 분석': { icon: '⏱️', accent: '#1f7a8c', accentBg: '#e3f1f4' },
   '생산현장 도구': { icon: '🏭', accent: '#0e7c7b', accentBg: '#e3f4f3' },
@@ -380,6 +383,7 @@ function LabPage() {
           {view === 'coil-ai-helper-work' && <CoilAiHelperWorkScreen />}
           {view === 'dashboard-sync-monitor' && <DashboardSyncMonitorScreen />}
           {view === 'dashboard-reconcile' && <DashboardReconcileScreen />}
+          {view === 'daily-briefing' && <DailyBriefingScreen />}
         </div>
       )}
     </div>
