@@ -9,6 +9,14 @@
       "destination": "/portal.html"
     },
     {
+      "source": "/briefing",
+      "destination": "/briefing.html"
+    },
+    {
+      "source": "/briefing/(.*)",
+      "destination": "/briefing.html"
+    },
+    {
       "source": "/separator",
       "destination": "/separator.html"
     },
