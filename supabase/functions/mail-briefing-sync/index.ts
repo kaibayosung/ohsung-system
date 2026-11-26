@@ -33,6 +33,8 @@ const env = (k: string, d = "") => Deno.env.get(k) || d;
 const OWNER_EMAIL = env("BRIEFING_OWNER_EMAIL", "kaibay@naver.com");
 const MY_GMAIL = env("BRIEFING_GMAIL", "kaibay@gmail.com").toLowerCase();
 const MY_NAVER = env("BRIEFING_NAVER", "kaibay@naver.com").toLowerCase();
+// Google OAuth Client ID는 공개 식별자라 코드에 고정(시크릿 GOOGLE_CLIENT_ID 오입력 방지). Secret만 시크릿으로 관리.
+const CLIENT_ID = "773933122470-io5nu9iodjqjb9fc5f22mfb1qoi0kcu3.apps.googleusercontent.com";
 
 // ── KST 날짜 (double-offset 금지 패턴: getTime()+9h 후 toISOString) ──
 const KST = 9 * 3600000;
@@ -74,7 +76,7 @@ async function googleToken(refreshToken: string): Promise<string> {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: env("GOOGLE_CLIENT_ID"), client_secret: env("GOOGLE_CLIENT_SECRET"),
+      client_id: CLIENT_ID, client_secret: env("GOOGLE_CLIENT_SECRET"),
       refresh_token: refreshToken, grant_type: "refresh_token",
     }),
   });
@@ -132,12 +134,12 @@ Deno.serve(async (req) => {
 
   const path = new URL(req.url).pathname;
   if (path.endsWith("/oauth-start")) {
-    if (!env("GOOGLE_CLIENT_ID") || !env("GOOGLE_CLIENT_SECRET")) {
+    if (!CLIENT_ID || !env("GOOGLE_CLIENT_SECRET")) {
       return html("설정이 필요합니다", "Supabase Secrets에 GOOGLE_CLIENT_ID와 GOOGLE_CLIENT_SECRET을 먼저 등록해 주세요.", 400);
     }
     const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
     u.search = new URLSearchParams({
-      client_id: env("GOOGLE_CLIENT_ID"), redirect_uri: REDIRECT_URI, response_type: "code",
+      client_id: CLIENT_ID, redirect_uri: REDIRECT_URI, response_type: "code",
       scope: SCOPES, access_type: "offline", prompt: "consent", include_granted_scopes: "true", login_hint: MY_GMAIL,
     }).toString();
     return Response.redirect(u.toString(), 302);
@@ -149,7 +151,7 @@ Deno.serve(async (req) => {
     const tr = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
-        code, client_id: env("GOOGLE_CLIENT_ID"), client_secret: env("GOOGLE_CLIENT_SECRET"),
+        code, client_id: CLIENT_ID, client_secret: env("GOOGLE_CLIENT_SECRET"),
         redirect_uri: REDIRECT_URI, grant_type: "authorization_code",
       }),
     });
@@ -189,7 +191,7 @@ Deno.serve(async (req) => {
     const { data: tok } = await sb.from("google_oauth_tokens").select("refresh_token").eq("owner_id", ownerId).maybeSingle();
     refreshToken = tok?.refresh_token || "";
   }
-  const hasClient = !!(env("GOOGLE_CLIENT_ID") && env("GOOGLE_CLIENT_SECRET"));
+  const hasClient = !!(CLIENT_ID && env("GOOGLE_CLIENT_SECRET"));
   if (!hasClient || !refreshToken) {
     const why = !hasClient ? "need_client" : "need_connect";
     if (!(last?.status === "not_configured" && last?.error === why && now - Date.parse(last.run_at) < 3600000)) {
