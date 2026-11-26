@@ -92,6 +92,8 @@ async function gget(token: string, url: string): Promise<any> {
 }
 const hdr = (m: any, n: string) =>
   (m?.payload?.headers || []).find((h: any) => h.name?.toLowerCase() === n.toLowerCase())?.value || "";
+// Postgres text 에 저장할 수 없는 NUL·제어문자 제거
+const clean = (x: string) => String(x ?? "").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, "").trim();
 function parseFrom(v: string) {
   const m = v.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>/);
   return m ? { name: m[1].trim() || m[2], email: m[2].toLowerCase() } : { name: v.trim(), email: v.trim().toLowerCase() };
@@ -142,7 +144,7 @@ async function naverProbe(): Promise<string> {
   finally { try { conn.close(); } catch { /* */ } }
 }
 async function naverFetch(minUid: number, sinceMs: number): Promise<{ uid: number; from: string; to: string; subject: string; date: string }[]> {
-  const user = env("NAVER_IMAP_USER", "kaibay"), pass = env("NAVER_APP_PASSWORD");
+  const user = env("NAVER_IMAP_USER", "kaibay").trim(), pass = env("NAVER_APP_PASSWORD").replace(/\s+/g, "");
   const conn = await Deno.connectTls({ hostname: "imap.naver.com", port: 993 });
   let buf = "";
   const te = new TextEncoder();
@@ -160,9 +162,10 @@ async function naverFetch(minUid: number, sinceMs: number): Promise<{ uid: numbe
   try {
     while (!buf.includes("\r\n")) await readMore();
     buf = buf.slice(buf.indexOf("\r\n") + 2);
-    const q = (x: string) => `"${x.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
-    try { await cmd("a1", `LOGIN ${q(user)} ${q(pass)}`); }
-    catch (e) { throw new Error("naver_login_failed: " + String((e as Error).message).replace(pass, "***").slice(0, 200)); }
+    // AUTHENTICATE PLAIN(SASL-IR): 비밀번호에 어떤 문자가 있어도 명령이 깨지지 않음
+    const plain = btoa(String.fromCharCode(...new TextEncoder().encode(`\u0000${user}\u0000${pass}`)));
+    try { await cmd("a1", `AUTHENTICATE PLAIN ${plain}`); }
+    catch (e) { throw new Error("naver_login_failed: " + String((e as Error).message).replace(pass, "***").replace(plain, "***").slice(0, 200)); }
     await cmd("a2", "EXAMINE INBOX");
     const M = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const d = new Date(sinceMs + KST);
@@ -334,7 +337,7 @@ Deno.serve(async (req) => {
           if (from.email === MY_GMAIL || from.email === MY_NAVER) continue;
           const ad = /^\s*[\(\[]광고[\)\]]/.test(n.subject);
           metas.push({
-            gmail_id: `naver:${n.uid}`, thread_id: null, src: "네이버", from_name: from.name, from_email: from.email, subject: n.subject,
+            gmail_id: `naver:${n.uid}`, thread_id: null, src: "네이버", from_name: clean(from.name), from_email: clean(from.email), subject: clean(n.subject),
             snippet: "", ad, received_at: n.date, url: "https://mail.naver.com/",
           });
         }
@@ -373,8 +376,8 @@ Deno.serve(async (req) => {
       const dd = c?.due_date && /^\d{4}-\d{2}-\d{2}$/.test(c.due_date) ? c.due_date : null;
       return {
         owner_id: ownerId, gmail_id: m.gmail_id, thread_id: m.thread_id, src: m.src,
-        from_name: m.from_name, from_email: m.from_email, subject: m.subject,
-        summary: c?.summary || m.subject, category: cat, due_text: c?.due_text || null, due_date: dd,
+        from_name: clean(m.from_name), from_email: clean(m.from_email), subject: clean(m.subject),
+        summary: clean(c?.summary || m.subject), category: cat, due_text: c?.due_text ? clean(c.due_text) : null, due_date: dd,
         hot: !!c?.hot, url: m.url, received_at: m.received_at,
       };
     });
