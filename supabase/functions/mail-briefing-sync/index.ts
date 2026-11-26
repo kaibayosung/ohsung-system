@@ -8,7 +8,10 @@
 //  4) 새 메일이 있거나 60분이 지나면 Claude로 「오늘 꼭 할 일 Top 3」와 총평 재생성
 //  5) 결과를 mail_items / briefing_runs 에 저장 (RLS: 소유자 본인만 열람)
 //
-// 필요한 Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN (gmail.readonly + calendar.readonly),
+// 필요한 Secrets: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET (Google Cloud 프로젝트 ohsung-briefing의 웹 클라이언트).
+//   Refresh token은 「Google 계정 연결」(GET .../mail-briefing-sync/oauth-start → Google 허용 → .../oauth-callback)으로
+//   public.google_oauth_tokens 에 자동 저장됩니다(kaibay@gmail.com 계정만 허용). GOOGLE_REFRESH_TOKEN 시크릿이 있으면 그것을 우선 사용.
+//   권한 범위: gmail.readonly + calendar.readonly (읽기 전용)
 //                ANTHROPIC_API_KEY(기존), 선택: BRIEFING_OWNER_EMAIL(기본 kaibay@naver.com = 관리자 계정),
 //                BRIEFING_GMAIL(기본 kaibay@gmail.com), BRIEFING_NAVER(기본 kaibay@naver.com)
 // Google Secrets가 없으면 status='not_configured' 로 기록만 하고 끝납니다.
@@ -66,13 +69,13 @@ async function claude(system: string, user: string, maxTokens = 2000): Promise<a
 }
 
 // ── Google ──
-async function googleToken(): Promise<string> {
+async function googleToken(refreshToken: string): Promise<string> {
   const r = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "content-type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
       client_id: env("GOOGLE_CLIENT_ID"), client_secret: env("GOOGLE_CLIENT_SECRET"),
-      refresh_token: env("GOOGLE_REFRESH_TOKEN"), grant_type: "refresh_token",
+      refresh_token: refreshToken, grant_type: "refresh_token",
     }),
   });
   const d = await r.json();
@@ -90,6 +93,17 @@ function parseFrom(v: string) {
   const m = v.match(/^\s*"?([^"<]*?)"?\s*<([^>]+)>/);
   return m ? { name: m[1].trim() || m[2], email: m[2].toLowerCase() } : { name: v.trim(), email: v.trim().toLowerCase() };
 }
+
+
+// ── Google 계정 연결 (OAuth) ──
+const FN_URL = `${env("SUPABASE_URL")}/functions/v1/mail-briefing-sync`;
+const REDIRECT_URI = `${FN_URL}/oauth-callback`;
+const SCOPES = "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/calendar.readonly";
+const html = (title: string, body: string, s = 200) => new Response(
+  `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>` +
+  `<body style="font-family:Pretendard,'Malgun Gothic',sans-serif;background:#eef1f6;color:#0f1e33;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0">` +
+  `<div style="background:#fff;border:1px solid #e3e8f0;border-radius:16px;padding:28px 32px;max-width:440px"><h1 style="font-size:20px;margin:0 0 10px">${title}</h1><p style="font-size:15px;line-height:1.6;color:#4d5c72;margin:0">${body}</p></div></body></html>`,
+  { status: s, headers: { "Content-Type": "text/html; charset=utf-8" } });
 
 const IMPORTANT = ["회신", "마감", "공고", "거래처"];
 const CLASSIFY_SYS = `너는 오성철강(철강 가공, 경기도 시화·반월) 정대균 실장의 메일 비서다. 메일 목록을 받아 각 메일을 분류하고 한 줄로 요약한다.
@@ -116,6 +130,42 @@ Deno.serve(async (req) => {
   if (!owner?.id) return json({ ok: false, error: "owner_not_found" }, 500);
   const ownerId = owner.id as string;
 
+  const path = new URL(req.url).pathname;
+  if (path.endsWith("/oauth-start")) {
+    if (!env("GOOGLE_CLIENT_ID") || !env("GOOGLE_CLIENT_SECRET")) {
+      return html("설정이 필요합니다", "Supabase Secrets에 GOOGLE_CLIENT_ID와 GOOGLE_CLIENT_SECRET을 먼저 등록해 주세요.", 400);
+    }
+    const u = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+    u.search = new URLSearchParams({
+      client_id: env("GOOGLE_CLIENT_ID"), redirect_uri: REDIRECT_URI, response_type: "code",
+      scope: SCOPES, access_type: "offline", prompt: "consent", include_granted_scopes: "true", login_hint: MY_GMAIL,
+    }).toString();
+    return Response.redirect(u.toString(), 302);
+  }
+  if (path.endsWith("/oauth-callback")) {
+    const sp = new URL(req.url).searchParams;
+    if (sp.get("error")) return html("연결이 취소되었습니다", "Google 허용을 하지 않아 연결되지 않았습니다. 연구실 화면에서 다시 시도해 주세요.", 400);
+    const code = sp.get("code") || "";
+    const tr = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST", headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code, client_id: env("GOOGLE_CLIENT_ID"), client_secret: env("GOOGLE_CLIENT_SECRET"),
+        redirect_uri: REDIRECT_URI, grant_type: "authorization_code",
+      }),
+    });
+    const tk = await tr.json();
+    if (!tr.ok || !tk.access_token) return html("연결 실패", `Google 토큰 교환에 실패했습니다 (${tk.error || tr.status}).`, 400);
+    const prof = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", { headers: { Authorization: `Bearer ${tk.access_token}` } }).then((r) => r.json()).catch(() => ({}));
+    const email = String(prof?.emailAddress || "").toLowerCase();
+    if (email !== MY_GMAIL) return html("다른 계정입니다", `${MY_GMAIL} 계정으로만 연결할 수 있습니다. (허용한 계정: ${email || "알 수 없음"})`, 403);
+    if (!tk.refresh_token) return html("다시 시도해 주세요", "Google이 갱신 토큰을 주지 않았습니다. myaccount.google.com → 보안 → 타사 액세스에서 이 앱 연결을 해제한 뒤 다시 연결해 주세요.", 400);
+    const { error } = await sb.from("google_oauth_tokens").upsert({
+      owner_id: ownerId, google_email: email, refresh_token: tk.refresh_token, scopes: tk.scope || SCOPES, updated_at: new Date().toISOString(),
+    });
+    if (error) return html("저장 실패", "토큰 저장 중 오류가 났습니다: " + error.message, 500);
+    return html("Google 계정 연결 완료", `${email} 메일·캘린더를 읽기 전용으로 연결했습니다. 이 창을 닫고 연구실 「데일리 브리핑」에서 「지금 확인」을 누르세요. 이후 10분마다 자동으로 확인합니다.`);
+  }
+
   let trigger = "cron";
   const auth = req.headers.get("authorization") || "";
   const bearer = auth.replace(/^Bearer\s+/i, "");
@@ -134,15 +184,22 @@ Deno.serve(async (req) => {
 
   const insertRun = (row: Record<string, unknown>) => sb.from("briefing_runs").insert({ owner_id: ownerId, trigger, ...row });
 
-  if (!env("GOOGLE_CLIENT_ID") || !env("GOOGLE_CLIENT_SECRET") || !env("GOOGLE_REFRESH_TOKEN")) {
-    if (!(last?.status === "not_configured" && now - Date.parse(last.run_at) < 3600000)) {
-      await insertRun({ status: "not_configured", error: "Google OAuth Secrets(GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN)가 아직 없습니다." });
+  let refreshToken = env("GOOGLE_REFRESH_TOKEN");
+  if (!refreshToken) {
+    const { data: tok } = await sb.from("google_oauth_tokens").select("refresh_token").eq("owner_id", ownerId).maybeSingle();
+    refreshToken = tok?.refresh_token || "";
+  }
+  const hasClient = !!(env("GOOGLE_CLIENT_ID") && env("GOOGLE_CLIENT_SECRET"));
+  if (!hasClient || !refreshToken) {
+    const why = !hasClient ? "need_client" : "need_connect";
+    if (!(last?.status === "not_configured" && last?.error === why && now - Date.parse(last.run_at) < 3600000)) {
+      await insertRun({ status: "not_configured", error: why });
     }
-    return json({ ok: false, status: "not_configured" });
+    return json({ ok: false, status: "not_configured", need: why });
   }
 
   try {
-    const token = await googleToken();
+    const token = await googleToken(refreshToken);
 
     // ── 1) 새 메일 ──
     const { data: lastOk } = await sb.from("briefing_runs").select("checked_until, lead, top3, events, run_at")
