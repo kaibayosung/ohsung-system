@@ -2,7 +2,8 @@
 // pg_cron이 KST 07:00~20:50 사이 10분마다 호출하고, 화면의 「지금 확인」 버튼도 같은 함수를 부릅니다.
 //
 // 하는 일 (읽기 전용 — 메일 발송·삭제·라벨 변경, 일정 수정은 하지 않음)
-//  1) Gmail API: 지난 확인 이후 받은편지함에 새로 온 메일만 가져옴 (네이버 메일은 Gmail로 자동 전달된 것을 함께 읽음)
+//  1) Gmail API: 지난 확인 이후 받은편지함에 새로 온 메일만 가져옴
+//     네이버: imap.naver.com 에 직접 접속(읽기 전용, NAVER_APP_PASSWORD 시크릿 필요). Gmail 자동 전달분도 함께 처리
 //  2) 광고는 규칙으로 바로 분류, 나머지는 Claude(haiku 5.5)로 회신/마감/공고/거래처/참고 분류 + 한 줄 요약
 //  3) Google Calendar API: 오늘·내일 일정 + 일정 간 이동시간 부족 경고(규칙)
 //  4) 새 메일이 있거나 60분이 지나면 Claude로 「오늘 꼭 할 일 Top 3」와 총평 재생성
@@ -107,6 +108,85 @@ const html = (title: string, body: string, s = 200) => new Response(
   `<div style="background:#fff;border:1px solid #e3e8f0;border-radius:16px;padding:28px 32px;max-width:440px"><h1 style="font-size:20px;margin:0 0 10px">${title}</h1><p style="font-size:15px;line-height:1.6;color:#4d5c72;margin:0">${body}</p></div></body></html>`,
   { status: s, headers: { "Content-Type": "text/html; charset=utf-8" } });
 
+
+// ── 네이버 메일 직접 읽기 (IMAP, 읽기 전용) ──
+// imap.naver.com:993 에 애플리케이션 비밀번호(NAVER_APP_PASSWORD)로 접속해 EXAMINE(읽기 전용) + BODY.PEEK 로 헤더만 읽습니다.
+// 읽음 표시·삭제·이동을 하지 않습니다. 아이디는 NAVER_IMAP_USER(기본 kaibay).
+const latin1 = (b: Uint8Array) => { let s = ""; for (let i = 0; i < b.length; i += 8192) s += String.fromCharCode(...b.subarray(i, i + 8192)); return s; };
+const bytesOf = (s: string) => Uint8Array.from(s, (c) => c.charCodeAt(0) & 0xff);
+function decodeBytes(b: Uint8Array, cs = "utf-8"): string {
+  const tryDec = (c: string) => { try { return new TextDecoder(c, { fatal: true }).decode(b); } catch { return null; } };
+  return tryDec(cs.toLowerCase()) ?? tryDec("utf-8") ?? tryDec("euc-kr") ?? new TextDecoder().decode(b);
+}
+function decodeMimeWords(v: string): string {
+  const joined = v.replace(/\?=\s+=\?/g, "?==?");
+  const out = joined.replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_m, cs: string, enc: string, txt: string) => {
+    let b: Uint8Array;
+    if (enc.toUpperCase() === "B") { try { b = bytesOf(atob(txt)); } catch { return txt; } }
+    else b = bytesOf(txt.replace(/_/g, " ").replace(/=([0-9A-Fa-f]{2})/g, (_x, h) => String.fromCharCode(parseInt(h, 16))));
+    return decodeBytes(b, cs);
+  });
+  // 인코딩 없이 8bit로 온 헤더(UTF-8/EUC-KR) 처리
+  return /[\x80-\xff]/.test(out) ? decodeBytes(bytesOf(out)) : out;
+}
+function parseHeaders(raw: string): Record<string, string> {
+  const h: Record<string, string> = {};
+  for (const line of raw.replace(/\r\n[ \t]+/g, " ").split("\r\n")) {
+    const i = line.indexOf(":"); if (i > 0) h[line.slice(0, i).trim().toLowerCase()] = decodeMimeWords(line.slice(i + 1).trim());
+  }
+  return h;
+}
+async function naverProbe(): Promise<string> {
+  const conn = await Deno.connectTls({ hostname: "imap.naver.com", port: 993 });
+  try { const b = new Uint8Array(512); const n = await conn.read(b); return latin1(b.subarray(0, n || 0)).split("\r\n")[0]; }
+  finally { try { conn.close(); } catch { /* */ } }
+}
+async function naverFetch(minUid: number, sinceMs: number): Promise<{ uid: number; from: string; to: string; subject: string; date: string }[]> {
+  const user = env("NAVER_IMAP_USER", "kaibay"), pass = env("NAVER_APP_PASSWORD");
+  const conn = await Deno.connectTls({ hostname: "imap.naver.com", port: 993 });
+  let buf = "";
+  const te = new TextEncoder();
+  const readMore = async () => { const c = new Uint8Array(65536); const n = await conn.read(c); if (n === null) throw new Error("네이버 IMAP 연결이 끊겼습니다"); buf += latin1(c.subarray(0, n)); };
+  const cmd = async (tag: string, line: string) => {
+    await conn.write(te.encode(`${tag} ${line}\r\n`));
+    const re = new RegExp(`(^|\\r\\n)${tag} (OK|NO|BAD)([^\\r\\n]*)\\r\\n`);
+    for (let k = 0; k < 400; k++) {
+      const m = buf.match(re);
+      if (m && m.index !== undefined) { const end = m.index + m[0].length; const out = buf.slice(0, end); buf = buf.slice(end); if (m[2] !== "OK") throw new Error(`${tag} ${m[2]}${m[3]}`); return out; }
+      await readMore();
+    }
+    throw new Error("네이버 IMAP 응답 시간 초과");
+  };
+  try {
+    while (!buf.includes("\r\n")) await readMore();
+    buf = buf.slice(buf.indexOf("\r\n") + 2);
+    const q = (x: string) => `"${x.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+    try { await cmd("a1", `LOGIN ${q(user)} ${q(pass)}`); }
+    catch (e) { throw new Error("naver_login_failed: " + String((e as Error).message).replace(pass, "***").slice(0, 200)); }
+    await cmd("a2", "EXAMINE INBOX");
+    const M = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const d = new Date(sinceMs + KST);
+    const search = minUid > 0 ? `UID SEARCH UID ${minUid + 1}:*` : `UID SEARCH SINCE ${d.getUTCDate()}-${M[d.getUTCMonth()]}-${d.getUTCFullYear()}`;
+    const sr = await cmd("a3", search);
+    const uids = ((sr.match(/\* SEARCH([^\r\n]*)/) || [, ""])[1] as string).trim().split(/\s+/).filter(Boolean).map(Number).filter((u) => u > minUid).slice(-50);
+    const out: { uid: number; from: string; to: string; subject: string; date: string }[] = [];
+    if (uids.length) {
+      const fr = await cmd("a4", `UID FETCH ${uids.join(",")} (UID INTERNALDATE BODY.PEEK[HEADER.FIELDS (FROM TO CC SUBJECT)])`);
+      for (const seg of fr.split(/\* \d+ FETCH \(/).slice(1)) {
+        const uid = Number((seg.match(/UID (\d+)/) || [])[1] || 0);
+        const idate = (seg.match(/INTERNALDATE "([^"]+)"/) || [])[1] || "";
+        const lit = seg.match(/\{(\d+)\}\r\n/);
+        if (!uid || !lit || lit.index === undefined) continue;
+        const h = parseHeaders(seg.substr(lit.index + lit[0].length, Number(lit[1])));
+        const dt = Date.parse(idate.replace(/^(\d+)-(\w+)-(\d+)/, "$1 $2 $3"));
+        out.push({ uid, from: h["from"] || "", to: `${h["to"] || ""} ${h["cc"] || ""}`, subject: h["subject"] || "(제목 없음)", date: new Date(isNaN(dt) ? Date.now() : dt).toISOString() });
+      }
+    }
+    try { await cmd("a5", "LOGOUT"); } catch { /* */ }
+    return out;
+  } finally { try { conn.close(); } catch { /* */ } }
+}
+
 const IMPORTANT = ["회신", "마감", "공고", "거래처"];
 const CLASSIFY_SYS = `너는 오성철강(철강 가공, 경기도 시화·반월) 정대균 실장의 메일 비서다. 메일 목록을 받아 각 메일을 분류하고 한 줄로 요약한다.
 category 규칙:
@@ -133,6 +213,10 @@ Deno.serve(async (req) => {
   const ownerId = owner.id as string;
 
   const path = new URL(req.url).pathname;
+  if (path.endsWith("/naver-probe")) {
+    try { return json({ ok: true, greeting: (await naverProbe()).slice(0, 120), hasPassword: !!env("NAVER_APP_PASSWORD") }); }
+    catch (e) { return json({ ok: false, error: String((e as Error).message).slice(0, 200) }); }
+  }
   if (path.endsWith("/oauth-start")) {
     if (!CLIENT_ID || !env("GOOGLE_CLIENT_SECRET")) {
       return html("설정이 필요합니다", "Supabase Secrets에 GOOGLE_CLIENT_ID와 GOOGLE_CLIENT_SECRET을 먼저 등록해 주세요.", 400);
@@ -237,6 +321,31 @@ Deno.serve(async (req) => {
       });
     }
 
+    // ── 1-b) 네이버 메일 직접 읽기 ──
+    let naverState = { state: "off", note: "앱 비밀번호 필요" };
+    if (env("NAVER_APP_PASSWORD")) {
+      try {
+        const { data: lastNv } = await sb.from("mail_items").select("gmail_id").eq("owner_id", ownerId).like("gmail_id", "naver:%")
+          .order("received_at", { ascending: false }).limit(200);
+        const minUid = Math.max(0, ...(lastNv || []).map((r: any) => Number(String(r.gmail_id).slice(6)) || 0));
+        const nv = await naverFetch(minUid, now - 2 * 86400000);
+        for (const n of nv) {
+          const from = parseFrom(n.from);
+          if (from.email === MY_GMAIL || from.email === MY_NAVER) continue;
+          const ad = /^\s*[\(\[]광고[\)\]]/.test(n.subject);
+          metas.push({
+            gmail_id: `naver:${n.uid}`, thread_id: null, src: "네이버", from_name: from.name, from_email: from.email, subject: n.subject,
+            snippet: "", ad, received_at: n.date, url: "https://mail.naver.com/",
+          });
+        }
+        naverState = { state: "ok", note: "직접 연결 정상" };
+      } catch (e) {
+        const m = String((e as Error).message);
+        console.error("naver", m);
+        naverState = { state: "off", note: m.startsWith("naver_login_failed") ? "로그인 실패(앱 비밀번호·해외 로그인 차단 확인)" : "접속 실패" };
+      }
+    }
+
     // 네이버 전달본·Gmail 직접 수신본 중복 제거 (같은 발신자+제목, 최근 3일)
     if (metas.length) {
       const { data: recent } = await sb.from("mail_items").select("from_email, subject")
@@ -323,12 +432,9 @@ Deno.serve(async (req) => {
       } else { lead = "처리할 중요 메일과 오늘 일정이 없습니다."; top3 = []; }
     }
 
-    // 네이버 자동 전달 상태: 최근 7일 네이버발 메일 유무
-    const { count: naverCnt } = await sb.from("mail_items").select("id", { count: "exact", head: true })
-      .eq("owner_id", ownerId).eq("src", "네이버").gte("received_at", new Date(now - 7 * 86400000).toISOString());
     const sources = [
       { name: "Gmail", state: "ok" }, { name: "캘린더", state: "ok" },
-      { name: "네이버", state: naverCnt ? "ok" : "off", note: naverCnt ? "자동 전달 정상" : "자동 전달 대기" },
+      { name: "네이버", ...naverState },
     ];
 
     await insertRun({
