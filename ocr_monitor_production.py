@@ -328,14 +328,18 @@ GOOGLE_RANGES = {
     "output_percent": (0, 100), "output_voltage": (0, 30), "thickness_um": (100, 6000),
     "start_dia_mm": (100, 3000), "tension_set": (0, 100), "tension_rate": (0, 100),
 }
-# 화면 글씨(라벨) 규칙. 실제 OCR 원문을 보고 다듬는다 — google_ocr_labels.json 이 있으면 그걸 우선 사용
+# 화면 글씨(라벨) 규칙 — 2026-11-27 실제 화면 확인:
+#   "64.8%" (큰 숫자, 라벨 없음) / "OUT:15.5V" / "Progress: 46.5" / "CurDia 569/1224"
+#   "Thick 900 um" "Ratio 40.0" / "Start 917 mm" "T.Set 80.0"
+# 주의: OUT 은 출력%가 아니라 전압, CurDia 는 시작경이 아님(현재 지름).
+# google_ocr_labels.json 이 있으면 그걸 우선 사용
 GOOGLE_LABELS_DEFAULT = {
-    "output_percent": [r"OUT(?:PUT)?", r"출력"],
-    "output_voltage": [r"VOLT", r"전압"],
-    "thickness_um": [r"THICK(?:NESS)?", r"두께"],
-    "start_dia_mm": [r"START\s*D(?:IA)?", r"S\.?\s*DIA", r"DIA(?:METER)?", r"시작\s*경", r"권경"],
-    "tension_set": [r"T(?:ENSION)?\s*[.\-]?\s*SET", r"SET", r"장력\s*설정", r"설정"],
-    "tension_rate": [r"RATIO", r"RATE", r"TAPER", r"장력\s*율", r"테이퍼"],
+    "output_percent": [],                       # 라벨 없음 → 아래 단위(%) 규칙으로 찾음
+    "output_voltage": [r"OUT\s*:?", r"전압"],
+    "thickness_um": [r"Thick(?:ness)?", r"두께"],
+    "start_dia_mm": [r"Start", r"시작\s*경"],
+    "tension_set": [r"T\s*[.,]?\s*Set", r"장력\s*설정"],
+    "tension_rate": [r"Ratio", r"Rat[i1l]o", r"장력\s*율"],
 }
 # 라벨이 안 잡힐 때 단위로 찾기
 GOOGLE_UNITS = {
@@ -372,7 +376,7 @@ def parse_google_text(text):
     values = {}
     for key, pats in labels.items():
         for pat in pats:
-            m = re.search(r"(?:" + pat + r")[^0-9\-\n]{0,12}" + _NUM, t, re.IGNORECASE)
+            m = re.search(r"(?:" + pat + r")[^0-9\-]{0,12}" + _NUM, t, re.IGNORECASE)
             if m:
                 values[key] = m.group(1)
                 break
