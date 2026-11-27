@@ -480,6 +480,11 @@ function ReplyLetter({ group, reload, draftQueue }) {
 function ReplyInbox({ data, reload }) {
   const pending = data.mails.filter(needsReply);
   const groups = groupThreads(pending);
+  const pendingKeys = new Set(groups.map((g) => g.key));
+  const [pickedKeys, setPickedKeys] = useState([]);
+  const rest = groupThreads(data.mails.filter((m) => ['회신', '거래처', '마감'].includes(m.category))).filter((g) => !pendingKeys.has(g.key));
+  const picked = rest.filter((g) => pickedKeys.includes(g.key));
+  const others = rest.filter((g) => !pickedKeys.includes(g.key));
   // 초안 자동 생성 큐 (한 번에 하나씩)
   const q = React.useRef(Promise.resolve());
   const draftQueue = useCallback((fn) => { q.current = q.current.then(fn).catch(() => {}); }, []);
@@ -490,8 +495,21 @@ function ReplyInbox({ data, reload }) {
         <div style={{ fontSize: 18, fontWeight: 800, marginTop: 4 }}>답장할 메일 {groups.length}건</div>
         <div style={{ fontSize: 13, opacity: 0.8, marginTop: 6, lineHeight: 1.6 }}>받은 메일 아래에 AI 답장 초안이 있습니다. 고친 내용은 자동 저장되고, 「보내기」는 확인 창에서 한 번 더 눌러야 발송됩니다.</div>
       </div>
-      {groups.length === 0 && <div style={{ ...S.card, ...S.muted }}>지금 답장할 메일이 없습니다.</div>}
+      {groups.length === 0 && <div style={{ ...S.card, ...S.muted }}>지금 답장할 메일이 없습니다. 아래 업무 메일 중 답장할 것을 골라 초안을 만들 수 있습니다.</div>}
       {groups.map((g) => <ReplyLetter key={g.key + g.latest.id} group={g} reload={reload} draftQueue={draftQueue} />)}
+      {picked.map((g) => <ReplyLetter key={'p' + g.key + g.latest.id} group={g} reload={reload} draftQueue={draftQueue} />)}
+
+      {others.length > 0 && <div style={S.h}>다른 업무 메일 {others.length}건 <span style={{ ...S.muted, fontWeight: 400 }}>· 필요하면 답장</span></div>}
+      {others.map((g) => (
+        <div key={'o' + g.key} style={{ ...S.card, display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}><Tag name={g.latest.category} small />{g.items.length > 1 && <span style={{ ...S.muted, fontSize: 12 }}>같은 대화 {g.items.length}통</span>}<span style={{ ...S.muted, fontSize: 12, marginLeft: 'auto' }}>{g.latest.src} · {kstMDHM(g.latest.received_at)}</span></div>
+            <div style={{ fontSize: 14, fontWeight: 800, marginTop: 4 }}>{g.latest.summary || g.latest.subject}</div>
+            <div style={{ ...S.muted, fontSize: 12, marginTop: 2 }}>{g.latest.from_name}{g.latest.replied_at ? ' · 답장함' : ''}</div>
+          </div>
+          <button style={{ ...S.btn, padding: '8px 12px', fontSize: 13, whiteSpace: 'nowrap' }} onClick={() => setPickedKeys((k) => [...k, g.key])}>답장 초안</button>
+        </div>
+      ))}
       <div style={{ margin: 12 }}><a href="/briefing" style={{ ...S.btn, display: 'block', textAlign: 'center', textDecoration: 'none' }}>전체 브리핑 보기</a></div>
     </>
   );
@@ -550,7 +568,7 @@ export default function BriefingApp() {
       for (const m of todo) {
         const r = await callFn('mail-detail', { id: m.gmail_id });
         if (r?.ok && r.detail?.replied) {
-          await supabase.from('mail_items').update({ replied_at: new Date().toISOString() }).eq('id', m.id);
+          await supabase.from('mail_items').update({ replied_at: new Date().toISOString(), is_done: true, done_at: new Date().toISOString() }).eq('id', m.id); // 이미 답장한 메일은 처리 완료로(오늘 할 일에서도 빠짐)
           changed = true;
         }
       }
