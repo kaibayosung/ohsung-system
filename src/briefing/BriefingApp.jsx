@@ -377,6 +377,13 @@ function groupThreads(list) {
   return [...map.values()].sort((a, b) => (a.latest.hot === b.latest.hot ? (b.latest.received_at || '').localeCompare(a.latest.received_at || '') : a.latest.hot ? -1 : 1));
 }
 
+// 최신 메일 본문과 아래에 인용된 지난 대화를 나눔
+const QUOTE_RE = /^[ \t]*(-{3,}\s*(original message|원본 메일|원본 메시지|forwarded message)|from:\s.+$\n^\s*(sent|date|보낸 날짜):|on .{5,120} wrote:\s*$|\d{4}[.\-/년 ].{3,80}(님이 작성|작성:|wrote:)|>)/im;
+function splitQuote(body) {
+  const m = body.match(QUOTE_RE);
+  if (!m || m.index === undefined || m.index < 20) return [body, ''];
+  return [body.slice(0, m.index).trimEnd(), body.slice(m.index)];
+}
 function ReplyLetter({ group, reload, draftQueue }) {
   const row = group.latest;
   const [d, setD] = useState(null);
@@ -409,8 +416,8 @@ function ReplyLetter({ group, reload, draftQueue }) {
     if (r?.ok) { setSent(r); reload(); } else setMsg(r?.error === 'need_gmail_send' ? 'need_gmail_send' : (r?.error || '보내지 못했습니다'));
   };
   const to = d ? (d.reply_to || d.from) : `${row.from_name} <${row.from_email}>`;
-  const body = d?.text || '';
-  const long = body.length > 1400;
+  const [body, history] = splitQuote(d?.text || '');
+  const long = more || body.length > 1400;
 
   if (sent) return <div style={{ ...S.card, background: C.greenBg, color: C.green, fontWeight: 800 }}>답장 보냄 · {sent.to} · {kstMDHM(sent.replied_at)} — {row.subject}</div>;
 
@@ -432,9 +439,10 @@ function ReplyLetter({ group, reload, draftQueue }) {
         </tbody></table>
         {row.summary && <div style={{ background: '#f7f6fe', borderRadius: 10, padding: '8px 12px', marginTop: 10, fontSize: 14 }}><b style={{ color: C.purpleInk, fontSize: 12 }}>AI 요약 </b>{row.summary}</div>}
         <div style={{ fontSize: 15, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#2b3548', marginTop: 12 }}>
-          {err ? <span style={{ color: C.red }}>본문을 불러오지 못했습니다: {err}</span> : !d ? <span style={S.muted}>본문 불러오는 중…</span> : (long && !more ? body.slice(0, 1400) + '…' : body) || '(본문 없음)'}
+          {err ? <span style={{ color: C.red }}>본문을 불러오지 못했습니다: {err}</span> : !d ? <span style={S.muted}>본문 불러오는 중…</span> : (!more && body.length > 1400 ? body.slice(0, 1400) + '…' : body) || '(본문 없음)'}
+          {more && history && <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px dashed ${C.line}`, color: C.muted, fontSize: 14 }}>{history}</div>}
         </div>
-        {long && <button style={{ ...S.btn, padding: '6px 12px', fontSize: 13, marginTop: 8 }} onClick={() => setMore(!more)}>{more ? '접기' : '본문 전체 보기'}</button>}
+        {(history || body.length > 1400) && <button style={{ ...S.btn, padding: '6px 12px', fontSize: 13, marginTop: 8 }} onClick={() => setMore(!more)}>{more ? '접기' : history ? '이전 대화 보기' : '본문 전체 보기'}</button>}
         {d?.atts?.length > 0 && <div style={{ ...S.muted, marginTop: 8 }}>첨부 {d.atts.length}개 · {d.atts.join(', ')}</div>}
         {d?.open_url && <a href={d.open_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 13, color: C.purpleInk, fontWeight: 700 }}>원문 열기 ↗</a>}
       </div>
