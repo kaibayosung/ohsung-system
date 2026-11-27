@@ -12,7 +12,7 @@
  * 설정 (처음 한 번)
  *  1) 서비스(+) → Drive API, 버전 v3, 식별자 Drive
  *  2) 프로젝트 설정 → 시간대 Asia/Seoul
- *  3) 프로젝트 설정 → 스크립트 속성 → OCR_KEY = (판독 PC와 같은 비밀키)
+ *  3) 비밀키(OCR_KEY)는 판독 PC가 첫 호출 때 자동 등록 (getOrRegisterKey_)
  *  4) authTest 실행 → 권한 승인
  *  5) 배포 → 새 배포 → 웹 앱: 실행 계정 "나", 액세스 "모든 사용자"
  *     (판독 PC가 로그인 없이 호출해야 하므로. 대신 OCR_KEY가 맞아야만 동작)
@@ -25,7 +25,7 @@ function doPost(e) {
   let docId = null;
   try {
     const body = JSON.parse((e && e.postData && e.postData.contents) || '{}');
-    const key = PropertiesService.getScriptProperties().getProperty('OCR_KEY');
+    const key = getOrRegisterKey_(body);
     if (!key || body.key !== key) return out_({ ok: false, error: 'unauthorized' });
     if (!body.image) return out_({ ok: false, error: 'no image' });
 
@@ -55,6 +55,25 @@ function doPost(e) {
 /** 브라우저로 웹 앱 주소를 열면 살아있는지만 알려준다 (사진 처리 없음). */
 function doGet() {
   return out_({ ok: true, service: 'pr-dtc-ocr', time: new Date().toISOString() });
+}
+
+/**
+ * 비밀키: 판독 PC가 처음 보낸 키(register:true, 24자 이상)를 한 번만 등록하고 그 뒤로는 바꾸지 않는다.
+ * (키를 사람이 옮겨 적지 않도록 — 판독 PC가 키를 만들어 첫 호출 때 등록)
+ * 키를 바꾸려면 프로젝트 설정 > 스크립트 속성에서 OCR_KEY를 지우고 판독 PC의 키를 새로 만든다.
+ */
+function getOrRegisterKey_(body) {
+  const props = PropertiesService.getScriptProperties();
+  let key = props.getProperty('OCR_KEY');
+  if (key) return key;
+  if (!body.register || !body.key || String(body.key).length < 24) return null;
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    key = props.getProperty('OCR_KEY');
+    if (!key) { props.setProperty('OCR_KEY', String(body.key)); key = String(body.key); }
+  } finally { lock.releaseLock(); }
+  return key;
 }
 
 function out_(obj) {

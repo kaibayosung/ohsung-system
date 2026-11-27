@@ -72,7 +72,7 @@ PR-DTC-3100 LCD 인식 - 상용 운영 버전 (Groq 비전 모델 기반)
     both   : 같은 사진을 둘 다 보내 나란히 저장 (capture_id로 짝지음) — 비교 테스트용
   구글 방식에 필요한 환경변수(ocr_monitor_secrets.local.bat):
     GOOGLE_OCR_URL = Apps Script 웹 앱 주소(.../exec)
-    GOOGLE_OCR_KEY = Apps Script 스크립트 속성 OCR_KEY 와 같은 비밀키
+    GOOGLE_OCR_KEY = 비밀키(24자 이상). Apps Script에 키가 없으면 첫 호출 때 이 키가 자동 등록됨
   구글 한 번만 시험: python ocr_monitor_production.py --source ... --test --engine google
 
 현장 전원 On/Off 연동 (자동 시작/대기)
@@ -307,7 +307,8 @@ def call_google_ocr(frame, timeout=GOOGLE_TIMEOUT_SEC):
     if not GOOGLE_OCR_URL or not GOOGLE_OCR_KEY:
         raise RuntimeError("GOOGLE_OCR_URL / GOOGLE_OCR_KEY 환경변수가 없습니다 (ocr_monitor_secrets.local.bat)")
     b64 = encode_frame_to_b64(frame, GOOGLE_MAX_DIM, OCR_CROP)
-    body = json.dumps({"key": GOOGLE_OCR_KEY, "image": b64, "lang": GOOGLE_OCR_LANG}).encode("utf-8")
+    # register: Apps Script에 아직 키가 없으면 이 키를 한 번만 등록 (사람이 키를 옮겨 적지 않도록)
+    body = json.dumps({"key": GOOGLE_OCR_KEY, "image": b64, "lang": GOOGLE_OCR_LANG, "register": True}).encode("utf-8")
     req = urllib.request.Request(GOOGLE_OCR_URL, data=body, method="POST",
                                  headers={"Content-Type": "application/json"})
     t0 = time.time()
