@@ -370,25 +370,38 @@ def _clean_ocr_text(text):
 
 
 def parse_google_text(text):
-    """구글 OCR 글자에서 6개 값을 뽑는다. 항목마다 후보를 라벨 뒤 숫자 → 단위 앞 숫자 순으로 모으고,
-    허용 범위 안의 첫 후보를 쓴다 (예: 'Thick' 다음 줄에 '64.7%'가 오면 범위 밖이라 버리고 '900 um'을 씀).
+    """구글 OCR 글자에서 6개 값을 뽑는다.
+    1) 라벨 바로 뒤 숫자(사이에 공백·콜론만 허용) → 2) 단위 앞 숫자 → 범위 안의 첫 후보.
+    3) 장력율(Ratio)이 안 잡히면: 다른 항목이 쓰지 않은 'nn.n' 숫자 중 Progress 값이 아닌 첫 값.
+       (구글이 표 칸 순서를 섞어 'Ratio / Start 917 / 40.0 T.Set 80.0'처럼 읽는 경우 대비)
     (values, 찾은 개수)"""
     t = _clean_ocr_text(text or "")
     labels = _google_labels()
-    out = {}
+    out, used = {}, []
     for key, (lo, hi) in GOOGLE_RANGES.items():
         cands = []
         for pat in labels.get(key, []):
-            cands += [m.group(1) for m in re.finditer(r"(?:" + pat + r")[^0-9\-]{0,12}" + _NUM, t, re.IGNORECASE)]
+            cands += [(m.group(1), m.span(1)) for m in re.finditer(r"(?:" + pat + r")[\s:=]{0,6}" + _NUM, t, re.IGNORECASE)]
         if key in GOOGLE_UNITS:
-            cands += [m.group(1) for m in re.finditer(_NUM + r"\s*" + GOOGLE_UNITS[key], t)]
-        for v in cands:
+            cands += [(m.group(1), m.span(1)) for m in re.finditer(_NUM + r"\s*" + GOOGLE_UNITS[key], t)]
+        for v, span in cands:
             try:
                 n = float(str(v).replace(",", "."))
             except ValueError:
                 continue
             if lo <= n <= hi:
                 out[key] = int(n) if n.is_integer() and key in ("thickness_um", "start_dia_mm") else n
+                used.append(span)
+                break
+    if "tension_rate" not in out:
+        for m in re.finditer(r"(?<![\d.])(\d{1,3}\.\d)(?![\d%V])", t):
+            if any(a0 <= m.start(1) < b0 for a0, b0 in used):
+                continue
+            if re.search(r"Progress\s*:?\s*$", t[max(0, m.start(1) - 12):m.start(1)], re.IGNORECASE):
+                continue
+            n = float(m.group(1))
+            if 0 <= n <= 100:
+                out["tension_rate"] = n
                 break
     return out, len(out)
 
