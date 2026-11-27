@@ -28,3 +28,14 @@ ocr_monitor_secrets.local.bat
 
 # 현장 분석용 영상(대용량) — 커밋 제외
 videos/
+
+# 로컬 산출물·백업·캐시 (GitHub에 올리지 않음)
+Claude outputs/
+레베링 클라이언트 소스 (한줌)/
+한줌비전검사 시스템/
+__pycache__/
+*.pyc
+*.bak
+*.bak_*
+*.v16bak
+esb.err
