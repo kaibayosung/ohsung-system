@@ -63,6 +63,18 @@ PR-DTC-3100 LCD 인식 - 상용 운영 버전 (Groq 비전 모델 기반)
   3) 살아있음 신호: 매 주기 ai_tension_settings.last_seen_at/last_state 를 갱신 →
      모니터 화면이 '꺼짐'과 '라인 정지로 쉬는 중'을 구분해서 보여줌.
 
+판독 방식 선택 (2026-11-27 추가 — 멘토링 제안 구글 OCR 테스트)
+--------------------------------------------------------------
+  대시보드의 "판독 방식" 버튼(ai_tension_settings.ocr_engine)으로 재시작 없이 바꾼다.
+    groq   : 지금까지 방식 (Groq 비전 AI가 6개 값을 JSON으로 돌려줌)
+    google : 사진을 구글 Apps Script 웹 앱에 보내 구글 문서 OCR로 글자를 받고,
+             parse_google_text()가 규칙으로 6개 값을 나눈다 (무료, 내 구글 계정)
+    both   : 같은 사진을 둘 다 보내 나란히 저장 (capture_id로 짝지음) — 비교 테스트용
+  구글 방식에 필요한 환경변수(ocr_monitor_secrets.local.bat):
+    GOOGLE_OCR_URL = Apps Script 웹 앱 주소(.../exec)
+    GOOGLE_OCR_KEY = Apps Script 스크립트 속성 OCR_KEY 와 같은 비밀키
+  구글 한 번만 시험: python ocr_monitor_production.py --source ... --test --engine google
+
 현장 전원 On/Off 연동 (자동 시작/대기)
 --------------------------------------
 카메라(현장) 신호가 없으면 연결에 실패하고 조용히 대기하며 주기적으로
@@ -126,6 +138,14 @@ LINE_IDLE_MIN = 10              # 레벨러가 이 시간(분) 동안 안 움직
 IDLE_RECHECK_SEC = 120          # 정지 중에는 2분마다 다시 확인
 IDLE_FORCE_READ_SEC = 30 * 60   # 정지로 보여도 30분에 한 번은 판독(레벨러 기록 프로그램이 멈춘 경우 대비)
 FORCE_READ_EVERY_SEC = 12 * 60  # 화면 변화가 없어도 이 간격마다 한 번은 판독(모니터의 '공백' 표시 방지)
+GOOGLE_OCR_URL = os.environ.get("GOOGLE_OCR_URL")   # Apps Script 웹 앱 주소 (.../exec)
+GOOGLE_OCR_KEY = os.environ.get("GOOGLE_OCR_KEY")   # Apps Script 스크립트 속성 OCR_KEY 와 같은 값
+GOOGLE_MODEL = "google-docs-ocr"
+GOOGLE_TIMEOUT_SEC = 45
+GOOGLE_MAX_DIM = 1600            # 구글 OCR은 글자가 클수록 잘 읽어 Groq(1024)보다 크게 보냄
+GOOGLE_OCR_LANG = os.environ.get("GOOGLE_OCR_LANG", "ko")
+GOOGLE_MIN_FIELDS = 4            # 6개 중 이만큼 이상 읽어야 '판독 성공'으로 저장
+ENGINES = ("groq", "google", "both")
 CHANGE_BLOCK_THRESHOLD = 12.0   # 화면 변화 판단: 작은 칸(블록) 하나라도 평균 밝기 차가 이 값 넘으면 '바뀜'
 
 PROMPT = (
@@ -276,7 +296,122 @@ def parse_json_answer(text):
 # Supabase 저장
 # ---------------------------------------------------------------------------
 
-def save_reading_to_supabase(values, model, usage, parse_ok, connected, raw_text, error_message):
+# ---------------------------------------------------------------------------
+# 구글 문서 OCR (Apps Script 웹 앱 경유) — 2026-11-27
+# ---------------------------------------------------------------------------
+
+def call_google_ocr(frame, timeout=GOOGLE_TIMEOUT_SEC):
+    """사진을 Apps Script 웹 앱에 보내 OCR 글자를 받는다. (text, ms)를 돌려주고 실패하면 예외.
+    Apps Script는 POST에 302로 답하고 결과는 리디렉션된 주소(GET)에서 받는다 —
+    urllib가 302를 GET으로 따라가므로 별도 처리 불필요."""
+    if not GOOGLE_OCR_URL or not GOOGLE_OCR_KEY:
+        raise RuntimeError("GOOGLE_OCR_URL / GOOGLE_OCR_KEY 환경변수가 없습니다 (ocr_monitor_secrets.local.bat)")
+    b64 = encode_frame_to_b64(frame, GOOGLE_MAX_DIM, OCR_CROP)
+    body = json.dumps({"key": GOOGLE_OCR_KEY, "image": b64, "lang": GOOGLE_OCR_LANG}).encode("utf-8")
+    req = urllib.request.Request(GOOGLE_OCR_URL, data=body, method="POST",
+                                 headers={"Content-Type": "application/json"})
+    t0 = time.time()
+    with urllib.request.urlopen(req, timeout=timeout) as resp:
+        raw = resp.read().decode("utf-8", "ignore")
+    ms = int((time.time() - t0) * 1000)
+    try:
+        data = json.loads(raw)
+    except Exception:
+        raise RuntimeError(f"구글 응답이 JSON이 아님(웹 앱 배포·접근 권한 확인): {raw[:150]}")
+    if not data.get("ok"):
+        raise RuntimeError(f"Google OCR: {data.get('error')}")
+    return data.get("text") or "", ms
+
+
+# 항목별 허용 범위 — 이 밖의 값은 잘못 읽은 것으로 보고 버린다
+GOOGLE_RANGES = {
+    "output_percent": (0, 100), "output_voltage": (0, 30), "thickness_um": (100, 6000),
+    "start_dia_mm": (100, 3000), "tension_set": (0, 100), "tension_rate": (0, 100),
+}
+# 화면 글씨(라벨) 규칙. 실제 OCR 원문을 보고 다듬는다 — google_ocr_labels.json 이 있으면 그걸 우선 사용
+GOOGLE_LABELS_DEFAULT = {
+    "output_percent": [r"OUT(?:PUT)?", r"출력"],
+    "output_voltage": [r"VOLT", r"전압"],
+    "thickness_um": [r"THICK(?:NESS)?", r"두께"],
+    "start_dia_mm": [r"START\s*D(?:IA)?", r"S\.?\s*DIA", r"DIA(?:METER)?", r"시작\s*경", r"권경"],
+    "tension_set": [r"T(?:ENSION)?\s*[.\-]?\s*SET", r"SET", r"장력\s*설정", r"설정"],
+    "tension_rate": [r"RATIO", r"RATE", r"TAPER", r"장력\s*율", r"테이퍼"],
+}
+# 라벨이 안 잡힐 때 단위로 찾기
+GOOGLE_UNITS = {
+    "output_percent": r"%", "output_voltage": r"V(?![a-z])", "thickness_um": r"(?:um|μm|㎛|UM)", "start_dia_mm": r"(?:mm|MM|㎜)",
+}
+_NUM = r"(-?\d{1,4}(?:[.,]\d{1,2})?)"
+
+
+def _google_labels():
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "google_ocr_labels.json")
+    if os.path.exists(path):
+        try:
+            with open(path, encoding="utf-8") as f:
+                return {**GOOGLE_LABELS_DEFAULT, **json.load(f)}
+        except Exception as e:
+            print(f"[구글 라벨 규칙 읽기 실패] {e} - 기본 규칙 사용")
+    return GOOGLE_LABELS_DEFAULT
+
+
+def _clean_ocr_text(text):
+    t = text.replace("\u00a0", " ")
+    # 숫자 사이에 낀 O/o→0, I/l/|→1, 쉼표 소수점→점
+    t = re.sub(r"(?<=\d)[Oo](?=\d|\b)|(?<=\b)[Oo](?=\d)", "0", t)
+    t = re.sub(r"(?<=\d)[Il|](?=\d|\b)|(?<=\b)[Il|](?=\d)", "1", t)
+    t = re.sub(r"(?<=\d),(?=\d)", ".", t)
+    return t
+
+
+def parse_google_text(text):
+    """구글 OCR 글자에서 6개 값을 뽑는다. 라벨 뒤 숫자 → 단위 앞 숫자 순서로 찾고,
+    허용 범위를 벗어나면 버린다. (values, 찾은 개수)"""
+    t = _clean_ocr_text(text or "")
+    labels = _google_labels()
+    values = {}
+    for key, pats in labels.items():
+        for pat in pats:
+            m = re.search(r"(?:" + pat + r")[^0-9\-\n]{0,12}" + _NUM, t, re.IGNORECASE)
+            if m:
+                values[key] = m.group(1)
+                break
+        if key not in values and key in GOOGLE_UNITS:
+            m = re.search(_NUM + r"\s*" + GOOGLE_UNITS[key], t)
+            if m:
+                values[key] = m.group(1)
+    out = {}
+    for key, v in values.items():
+        try:
+            n = float(str(v).replace(",", "."))
+        except ValueError:
+            continue
+        lo, hi = GOOGLE_RANGES[key]
+        if lo <= n <= hi:
+            out[key] = int(n) if n.is_integer() and key in ("thickness_um", "start_dia_mm") else n
+    return out, len(out)
+
+
+def run_google(frame, capture_id):
+    """구글 방식 1회: (values, ok) — 실패해도 원문/오류를 DB에 남긴다."""
+    try:
+        text, ms = call_google_ocr(frame)
+    except Exception as e:
+        msg = f"{type(e).__name__}: {e}"
+        print(f"[구글 OCR 오류] {msg}")
+        save_reading_to_supabase({}, GOOGLE_MODEL, {}, False, True, None, msg[:500], "google", capture_id, None)
+        return {}, False
+    values, found = parse_google_text(text)
+    ok = found >= GOOGLE_MIN_FIELDS
+    err = None if ok else f"구글 OCR 글자에서 값 {found}개만 찾음 (기준 {GOOGLE_MIN_FIELDS}개)"
+    save_reading_to_supabase(values, GOOGLE_MODEL, {}, ok, True, text[:4000], err, "google", capture_id, ms)
+    summary = " ".join(f"{label}={values.get(key)}" for key, label in FIELDS)
+    print(f"[구글 {ms}ms] {summary}{'' if ok else ' | ' + err}")
+    return values, ok
+
+
+def save_reading_to_supabase(values, model, usage, parse_ok, connected, raw_text, error_message,
+                             engine="groq", capture_id=None, ocr_ms=None):
     """SUPABASE_SERVICE_ROLE_KEY 환경변수가 없으면 조용히 건너뛴다.
     네트워크/서버 오류가 나도 예외를 여기서 삼켜서 로컬 CSV/콘솔 동작에는
     영향을 주지 않는다. 오성철강 연구실의 상용 모니터링 페이지가 이 테이블을
@@ -298,6 +433,9 @@ def save_reading_to_supabase(values, model, usage, parse_ok, connected, raw_text
         "connected": connected,
         "raw_response": raw_text,
         "error_message": error_message,
+        "engine": engine,
+        "capture_id": capture_id,
+        "ocr_ms": ocr_ms,
     }]
     req = urllib.request.Request(
         f"{SUPABASE_URL}/rest/v1/{SUPABASE_TABLE}",
@@ -324,7 +462,7 @@ def fetch_settings_from_supabase(fallback):
     실패하면 조용히 fallback({'interval':..,'enabled':..})을 그대로 반환한다."""
     key = SUPABASE_SERVICE_KEY or SUPABASE_ANON_KEY
     req = urllib.request.Request(
-        f"{SUPABASE_URL}/rest/v1/{SUPABASE_SETTINGS_TABLE}?select=capture_interval_sec,enabled&id=eq.1&limit=1",
+        f"{SUPABASE_URL}/rest/v1/{SUPABASE_SETTINGS_TABLE}?select=capture_interval_sec,enabled,ocr_engine&id=eq.1&limit=1",
         headers={"apikey": key, "Authorization": f"Bearer {key}"},
     )
     try:
@@ -335,6 +473,7 @@ def fetch_settings_from_supabase(fallback):
             return {
                 "interval": float(row["capture_interval_sec"]) if row.get("capture_interval_sec") else fallback["interval"],
                 "enabled": bool(row["enabled"]) if row.get("enabled") is not None else fallback["enabled"],
+                "engine": row["ocr_engine"] if row.get("ocr_engine") in ENGINES else fallback.get("engine", "groq"),
             }
     except Exception:
         pass
@@ -423,7 +562,28 @@ def try_open(source):
 # 인식 1회 처리
 # ---------------------------------------------------------------------------
 
-def do_ocr_and_record(frame, last_values, csv_writer, csv_file):
+def do_ocr_and_record(frame, last_values, csv_writer, csv_file, engine="groq"):
+    """판독 방식(engine)에 따라 Groq / 구글 / 둘 다로 판독해 저장한다.
+    both면 같은 사진을 둘 다 보내고 capture_id로 짝지어 저장(대시보드 비교용)."""
+    capture_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    google_values, google_ok = {}, False
+    if engine in ("google", "both"):
+        google_values, google_ok = run_google(frame, capture_id)
+        csv_writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S")] +
+                            [google_values.get(k) for k, _ in FIELDS] + [google_ok, "", "google"])
+        csv_file.flush()
+    if engine == "google":
+        save_capture_image(frame, google_ok)
+        return google_values if google_ok else last_values
+    groq_values = do_groq_and_record(frame, last_values, csv_writer, csv_file, capture_id,
+                                     save_image=(engine == "groq"))
+    if engine == "both":
+        save_capture_image(frame, google_ok or groq_values is not last_values)
+        return google_values if google_ok else groq_values
+    return groq_values
+
+
+def do_groq_and_record(frame, last_values, csv_writer, csv_file, capture_id=None, save_image=True):
     """last_values: 직전 확정값 딕셔너리(carry-forward 용, 화면에는 안 쓰지만
     콘솔 로그에서 '직전값 유지'를 표시할 때 참고)."""
     ts = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -432,7 +592,7 @@ def do_ocr_and_record(frame, last_values, csv_writer, csv_file):
         msg = "GROQ_API_KEY 환경변수가 설정되지 않았습니다."
         print(f"[인식 오류] {msg}")
         log_event(csv_writer, csv_file, "error:no_groq_api_key")
-        save_reading_to_supabase({}, GROQ_MODEL, {}, False, True, None, msg)
+        save_reading_to_supabase({}, GROQ_MODEL, {}, False, True, None, msg, "groq", capture_id)
         return last_values
 
     try:
@@ -442,14 +602,15 @@ def do_ocr_and_record(frame, last_values, csv_writer, csv_file):
         msg = f"{type(e).__name__}: {e}"
         print(f"[인식 오류] {msg}")
         log_event(csv_writer, csv_file, f"error:{msg}")
-        save_reading_to_supabase({}, GROQ_MODEL, {}, False, True, None, msg)
+        save_reading_to_supabase({}, GROQ_MODEL, {}, False, True, None, msg, "groq", capture_id)
         return last_values
 
     parsed = parse_json_answer(text)
     ok = bool(parsed)
     values = parsed if ok else {}
 
-    save_capture_image(frame, ok)
+    if save_image:
+        save_capture_image(frame, ok)
 
     display_values = {key: (values.get(key) if ok else last_values.get(key)) for key, _ in FIELDS}
     summary = " ".join(f"{label}={display_values[key]}" for key, label in FIELDS)
@@ -463,7 +624,7 @@ def do_ocr_and_record(frame, last_values, csv_writer, csv_file):
     # Supabase에는 이번 주기 실제 인식값만 저장한다(파싱 실패 시 null) -
     # carry-forward는 화면(연구실 페이지) 쪽에서 "직전 정상값 유지 표시" 형태로
     # 처리하는 편이 더 투명하다(DB에 가짜 값을 채워 넣지 않음).
-    save_reading_to_supabase(values, GROQ_MODEL, usage, ok, True, text, None)
+    save_reading_to_supabase(values, GROQ_MODEL, usage, ok, True, text, None, "groq", capture_id)
 
     return values if ok else last_values
 
@@ -557,6 +718,8 @@ def main():
     parser.add_argument("--crop", default=os.environ.get("OCR_CROP"),
                         help='컨트롤러 화면만 잘라 보낼 영역 "x0,y0,x1,y1"(0~1 비율). 환경변수 OCR_CROP 로도 지정 가능')
     parser.add_argument("--compare", action="store_true", help="--test와 함께: 원본과 축소본을 각각 보내 값·토큰 비교")
+    parser.add_argument("--engine", choices=ENGINES, default=None,
+                        help="--test와 함께: groq / google / both 로 1회 시험 (상시 실행에서는 대시보드 설정을 따름)")
     parser.add_argument("--always", action="store_true", help="라인 정지·화면 변화 없음이어도 건너뛰지 않고 매 주기 판독")
     args = parser.parse_args()
 
@@ -577,6 +740,18 @@ def main():
         if not ok:
             print("[실패] 프레임을 읽지 못했습니다.")
             return
+        if args.engine in ("google", "both"):
+            img = prepare_frame(frame, GOOGLE_MAX_DIM, OCR_CROP)
+            print(f"[구글 OCR 시험] 사진 {img.shape[1]}x{img.shape[0]} 을 Apps Script로 보냅니다...")
+            try:
+                gtext, gms = call_google_ocr(frame)
+                print(f"[구글 원문 {gms}ms]\n{gtext}\n")
+                gvals, gfound = parse_google_text(gtext)
+                print(f"[구글 분리 결과] {gfound}개: " + " ".join(f"{lab}={gvals.get(k)}" for k, lab in FIELDS))
+            except Exception as e:
+                print(f"[구글 실패] {e}")
+            if args.engine == "google":
+                return
         if not GROQ_API_KEY:
             print("[실패] GROQ_API_KEY 환경변수가 설정되지 않았습니다.")
             return
@@ -623,6 +798,7 @@ def main():
         print("[DB 저장] 꺼짐 -> SUPABASE_SERVICE_ROLE_KEY 환경변수가 없어 로컬 CSV만 남습니다.")
     print(f"[토큰 절감] 사진 긴 변 {OCR_MAX_DIM or '원본'}px{' · 컨트롤러 화면만 자름 ' + str(OCR_CROP) if OCR_CROP else ''}"
           f" · {'항상 판독(--always)' if args.always else f'레벨러 {LINE_IDLE_MIN}분 정지/화면 변화 없음이면 건너뜀(최대 {FORCE_READ_EVERY_SEC // 60}분마다는 판독)'}")
+    print(f"[판독 방식] 대시보드 설정을 따름 (groq / google / both) · 구글 연결 {'준비됨' if GOOGLE_OCR_URL and GOOGLE_OCR_KEY else '안 됨 - GOOGLE_OCR_URL/GOOGLE_OCR_KEY 없음'}")
     print("종료: 미리보기 창에서 q, 또는 Ctrl+C\n")
 
     last_values = {key: None for key, _ in FIELDS}
@@ -634,7 +810,7 @@ def main():
         if args.no_preview:
             was_connected = False
             was_enabled = True
-            current = {"interval": args.interval, "enabled": True}
+            current = {"interval": args.interval, "enabled": True, "engine": "groq"}
             last_sig = None
             last_sent = 0.0
             last_line_state = None
@@ -646,6 +822,8 @@ def main():
                     print(f"[상태 변경] {'재개' if new_settings['enabled'] else '일시중단'} (대시보드 중단/시작 버튼으로 변경됨)")
                 if new_settings["interval"] != current["interval"]:
                     print(f"[인식 주기 변경] {current['interval']:.0f}초 -> {new_settings['interval']:.0f}초 (대시보드에서 변경됨)")
+                if new_settings.get("engine") != current.get("engine"):
+                    print(f"[판독 방식 변경] {current.get('engine')} -> {new_settings.get('engine')} (대시보드에서 변경됨)")
                 current = new_settings
 
                 if not current["enabled"]:
@@ -698,13 +876,13 @@ def main():
                     time.sleep(current["interval"])
                     continue
 
-                last_values = do_ocr_and_record(frame, last_values, csv_writer, csv_file)
+                last_values = do_ocr_and_record(frame, last_values, csv_writer, csv_file, current.get("engine", "groq"))
                 last_sig, last_sent = sig, time.time()
-                send_heartbeat("reading", "판독함")
+                send_heartbeat("reading", f"판독함 ({current.get('engine', 'groq')})")
                 time.sleep(current["interval"])
 
         # 미리보기 창을 띄운 확인 모드 (현장 설치 직후 프레이밍 확인용)
-        current = {"interval": args.interval, "enabled": True}
+        current = {"interval": args.interval, "enabled": True, "engine": "groq"}
         while True:
             attempt = 0
             cap = try_open(source)
@@ -740,7 +918,7 @@ def main():
                         print(f"[인식 주기 변경] {current['interval']:.0f}초 -> {new_settings['interval']:.0f}초 (대시보드에서 변경됨)")
                     current = new_settings
                     if current["enabled"]:
-                        last_values = do_ocr_and_record(frame, last_values, csv_writer, csv_file)
+                        last_values = do_ocr_and_record(frame, last_values, csv_writer, csv_file, current.get("engine", "groq"))
 
                 cv2.imshow("PR-DTC-3100 인식 모니터 (q: 종료)", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):

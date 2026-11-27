@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PR-DTC-3100 실시간 인식 (상용 · Groq)</title>
+<title>PR-DTC-3100 실시간 인식</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
   * { box-sizing: border-box; }
@@ -107,6 +107,24 @@
   .toggle-btn.resume { background:#185fa5; color:#fff; }
   .toggle-btn:disabled { opacity:0.5; cursor:default; }
   .live-dot.paused { background:#8aa0b8; }
+  /* 2026-11-27 판독 방식 선택 (Groq / 구글 OCR / 둘 다) */
+  .eng-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .eng-btn { border:1px solid #e3e8f0; border-radius:12px; padding:12px 10px; background:#fff; text-align:left; font-family:inherit; cursor:pointer; }
+  .eng-btn b { display:block; font-size:15px; color:#0f1e33; font-weight:800; }
+  .eng-btn span { display:block; font-size:11.5px; color:#7d8ba1; margin-top:4px; line-height:1.45; }
+  .eng-btn.active { border:2px solid #796cbf; background:#f3f1fb; }
+  .eng-btn.active b { color:#5a4a9e; }
+  .eng-btn:disabled { opacity:0.5; cursor:default; }
+  .eng-chip { font-size:11px; font-weight:800; padding:2px 9px; border-radius:999px; background:#f3f1fb; color:#5a4a9e; margin-left:6px; vertical-align:middle; white-space:nowrap; }
+  .status-chip.g { background:#e6f1fb; color:#185fa5; }
+  .status-chip.q { background:#f3f1fb; color:#5a4a9e; }
+  .match-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .mc { background:#eef1f6; border-radius:12px; padding:10px 12px; }
+  .mc .l { font-size:11px; color:#7d8ba1; } .mc .v { font-size:20px; font-weight:900; color:#1c7a4d; }
+  .mc .v.mid { color:#a3610a; } .mc .v.bad { color:#b23a3a; } .mc .v.none { color:#8aa0b8; }
+  .mc .s { font-size:10.5px; color:#7d8ba1; }
+  table.recent-table td.x { color:#b23a3a; background:#fdf3f3; }
+  .raw-box { font-family:ui-monospace,Consolas,monospace; font-size:11.5px; background:#0f1e33; color:#e6f1fb; border-radius:10px; padding:10px 12px; margin-top:10px; line-height:1.5; white-space:pre-wrap; word-break:break-all; max-height:180px; overflow:auto; }
 </style>
 </head>
 <body>
@@ -124,6 +142,15 @@ const INTERVAL_OPTIONS = [60, 120, 300]; // 1분 / 2분 / 5분
 // 고정된 하루 리셋 시각이 아니라 최근 24시간 누적 기준 - 오래된 사용량이 24시간
 // 지나 빠지는 대로 점차 여유가 생긴다(실제 429 오류 메시지의 "n분 후 재시도"로 확인됨).
 const DAILY_LIMITS = { tokens: 200000, requests: 1000 };
+// 구글 문서 OCR(Apps Script, 개인 계정): 문서 변환 하루 권장 상한 (멘토링 자료 기준 보수값)
+const GOOGLE_DAILY_SOFT_LIMIT = 200;
+const ENGINE_LABEL = { groq:'Groq AI', google:'구글 OCR', both:'둘 다 (비교)' };
+const FIELD_DEFS = [
+  ['output_percent','출력%'], ['output_voltage','전압'], ['thickness_um','두께'],
+  ['start_dia_mm','시작경'], ['tension_set','장력설정'], ['tension_rate','장력율'],
+];
+function escHtml(t){ return String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function sameVal(a, b){ const x = num(a), y = num(b); return x !== null && y !== null && Math.abs(x - y) <= 0.051; }
 
 function num(v){ const n = parseFloat(v); return Number.isFinite(n) ? n : null; }
 function fmtHMS(ts){
@@ -237,22 +264,30 @@ async function fetchWindow(sinceIso){
 }
 
 async function fetchTodayTokens(sinceIso){
-  const res = await pgrest(`${TABLE}?select=total_tokens&captured_at=gte.${encodeURIComponent(sinceIso)}`);
+  const res = await pgrest(`${TABLE}?select=total_tokens&engine=eq.groq&captured_at=gte.${encodeURIComponent(sinceIso)}`);
   if (!res.ok) return { tokens:0, requests:0 };
   const rows = await res.json();
   const tokens = rows.reduce((sum, r) => sum + (num(r.total_tokens) || 0), 0);
   return { tokens, requests: rows.length };
 }
 
+// 오늘 같은 사진(capture_id)으로 묶인 판독 기록 — 방식 비교·구글 사용량용
+async function fetchTodayCaptures(sinceIso){
+  const cols = 'captured_at,capture_id,engine,parse_ok,output_percent,output_voltage,thickness_um,start_dia_mm,tension_set,tension_rate,raw_response,ocr_ms,error_message';
+  const res = await pgrest(`${TABLE}?select=${cols}&capture_id=not.is.null&captured_at=gte.${encodeURIComponent(sinceIso)}&order=captured_at.desc&limit=600`);
+  if (!res.ok) return [];
+  return res.json();
+}
+
 async function fetchSettings(){
-  const res = await pgrest(`${SETTINGS_TABLE}?select=capture_interval_sec,enabled,last_seen_at,last_state,last_note&id=eq.1&limit=1`);
+  const res = await pgrest(`${SETTINGS_TABLE}?select=capture_interval_sec,enabled,ocr_engine,last_seen_at,last_state,last_note&id=eq.1&limit=1`);
   if (!res.ok) return null;
   const rows = await res.json();
   return rows[0] || null;
 }
 
 async function patchSettings(payload){
-  const buttons = document.querySelectorAll('.interval-btn, .toggle-btn');
+  const buttons = document.querySelectorAll('.interval-btn, .toggle-btn, .eng-btn');
   buttons.forEach(b => b.disabled = true);
   try {
     await fetch(`${SUPABASE_URL}/rest/v1/${SETTINGS_TABLE}?id=eq.1`, {
@@ -268,6 +303,55 @@ function setIntervalSec(sec){ return patchSettings({ capture_interval_sec: sec }
 function setEnabled(enabled){ return patchSettings({ enabled }); }
 window.setIntervalSec = setIntervalSec;
 window.setEnabled = setEnabled;
+function setEngine(engine){ return patchSettings({ ocr_engine: engine }); }
+window.setEngine = setEngine;
+
+// 방식 비교 카드: 같은 사진을 Groq·구글 둘 다 읽은 묶음만 비교
+function compareCard(caps){
+  const google = caps.filter(r => r.engine === 'google');
+  if (!google.length) return '';
+  const byCap = {};
+  caps.forEach(r => { (byCap[r.capture_id] = byCap[r.capture_id] || {})[r.engine] = r; });
+  const pairs = Object.values(byCap).filter(p => p.groq && p.google)
+    .sort((a,b) => new Date(b.google.captured_at) - new Date(a.google.captured_at));
+  const cells = FIELD_DEFS.map(([k, lab]) => {
+    const both = pairs.filter(p => num(p.groq[k]) !== null && num(p.google[k]) !== null);
+    const hit = both.filter(p => sameVal(p.groq[k], p.google[k])).length;
+    const pct = both.length ? Math.round(hit/both.length*100) : null;
+    const cls = pct === null ? 'none' : (pct >= 95 ? '' : (pct >= 80 ? 'mid' : 'bad'));
+    return `<div class="mc"><div class="l">${lab} 일치</div><div class="v ${cls}">${pct === null ? '-' : pct + '%'}</div><div class="s">${hit} / ${both.length}장</div></div>`;
+  }).join('');
+  const gOk = pairs.filter(p => p.google.parse_ok).length, qOk = pairs.filter(p => p.groq.parse_ok).length;
+  const gMs = google.map(r => num(r.ocr_ms)).filter(v => v !== null);
+  const avgMs = gMs.length ? (gMs.reduce((a,b)=>a+b,0)/gMs.length/1000).toFixed(1) : '-';
+  const row = (r, eng, other) => {
+    const chip = eng === 'google' ? '<span class="status-chip g">구글</span>' : '<span class="status-chip q">Groq</span>';
+    if (!r.parse_ok && FIELD_DEFS.every(([k]) => num(r[k]) === null)){
+      const why = failKind(r) === 'limit' ? '한도 초과 — 판독 못함' : escHtml(String(r.error_message || '판독 실패').slice(0, 60));
+      return `<td>${chip}</td><td colspan="6" style="text-align:left;color:#b23a3a">${why}</td>`;
+    }
+    return `<td>${chip}</td>` + FIELD_DEFS.map(([k]) => {
+      const diff = other && num(other[k]) !== null && num(r[k]) !== null && !sameVal(r[k], other[k]);
+      return `<td class="${diff ? 'x' : ''}">${num(r[k]) ?? '-'}</td>`;
+    }).join('');
+  };
+  const rows = pairs.slice(0, 6).map(p => `<tr><td>${fmtHMS(p.google.captured_at)}</td>${row(p.google, 'google', p.groq)}</tr><tr><td></td>${row(p.groq, 'groq', p.google)}</tr>`).join('');
+  const lastG = google.find(r => r.raw_response);
+  return `
+    <div class="card">
+      <div class="section-title">방식 비교 · 오늘 (같은 사진 ${pairs.length}장)</div>
+      ${pairs.length ? `<div class="match-grid">${cells}</div>
+      <div class="usage-label-row" style="margin-top:12px"><span>판독 성공 (같은 사진 기준)</span><b>Groq ${qOk} / ${pairs.length} · 구글 ${gOk} / ${pairs.length}</b></div>
+      <div class="usage-label-row"><span>구글 평균 처리 시간</span><b>${avgMs}초</b></div>
+      <div class="section-title">최근 비교 (두 방식 값이 다르면 빨간 칸)</div>
+      <div class="table-scroll"><table class="recent-table">
+        <thead><tr><th>시각</th><th>방식</th>${FIELD_DEFS.map(([,l]) => `<th>${l}</th>`).join('')}</tr></thead>
+        <tbody>${rows}</tbody></table></div>`
+      : `<p class="kpi-sub">아직 같은 사진을 두 방식으로 읽은 기록이 없습니다. 위 "판독 방식"에서 <b>둘 다 (비교)</b>를 누르면 쌓이기 시작합니다.</p>`}
+      ${lastG ? `<div class="raw-box">구글 원문 (${fmtHMS(lastG.captured_at)})\n${escHtml(lastG.raw_response)}</div>
+      <p class="kpi-sub" style="margin-top:8px;">원문으로 항목 분리 규칙(라벨·단위)을 다듬습니다. 값이 4개 미만이거나 범위를 벗어나면 '판독 실패'로 저장합니다.</p>` : ''}
+    </div>`;
+}
 
 function todayStartKstIso(){
   const now = new Date();
@@ -297,19 +381,21 @@ async function render(){
   const app = document.getElementById('app');
 
   const todayStart = todayStartKstIso();
-  const [totalCount, todayCount, recent, todayUsage, settings] = await Promise.all([
+  const [totalCount, todayCount, recent, todayUsage, settings, todayCaps] = await Promise.all([
     fetchCount(),
     fetchCount(`captured_at=gte.${encodeURIComponent(todayStart)}`),
     fetchRecent(20),
     fetchTodayTokens(todayStart),
     fetchSettings(),
+    fetchTodayCaptures(todayStart),
   ]);
+  const engine = (settings && settings.ocr_engine) || 'groq';
 
   if (!recent.length){
     app.innerHTML = `
       <div class="card">
         <div class="header-row">
-          <p class="header-title">PR-DTC-3100 실시간 인식 (상용 · Groq)</p>
+          <p class="header-title">PR-DTC-3100 실시간 인식</p>
           <span class="live-dot-wrap"><span class="live-dot"></span>대기중</span>
         </div>
         <p class="header-sub">ai_tension_readings 테이블을 8초마다 확인합니다.</p>
@@ -321,6 +407,10 @@ async function render(){
   }
 
   const last = recent[0];
+  // 큰 숫자: 구글/둘 다 모드면 가장 최근 구글 판독, 아니면 가장 최근 기록
+  const shown = (engine !== 'groq' && recent.find(r => r.engine === 'google')) || last;
+  const pairOf = engine === 'both' && shown.capture_id ? todayCaps.find(r => r.capture_id === shown.capture_id && r.engine !== shown.engine) : null;
+  const sub = k => pairOf ? `<p class="kpi-sub"${sameVal(pairOf[k], shown[k]) || num(pairOf[k]) === null ? '' : ' style="color:#b23a3a"'}>${pairOf.engine === 'groq' ? 'Groq' : '구글'} ${num(pairOf[k]) ?? '-'}${num(pairOf[k]) === null ? '' : (sameVal(pairOf[k], shown[k]) ? ' ✓' : ' ✗ 다름')}</p>` : '';
   const isPaused = settings && settings.enabled === false;
   const lastAgoSec = (Date.now() - new Date(last.captured_at).getTime())/1000;
   const intervalSec = (settings && settings.capture_interval_sec) || CAPTURE_INTERVAL_SEC;
@@ -332,21 +422,22 @@ async function render(){
 
   const failCount = recent.filter(r => r.parse_ok === false).length;
   const failPct = recent.length ? (failCount/recent.length*100) : 0;
-  const tokenVals = recent.map(r => num(r.total_tokens)).filter(v => v !== null);
+  const tokenVals = recent.filter(r => r.engine !== 'google').map(r => num(r.total_tokens)).filter(v => v !== null);
+  const googleToday = todayCaps.filter(r => r.engine === 'google').length;
   const avgTokens = tokenVals.length ? Math.round(tokenVals.reduce((a,b)=>a+b,0)/tokenVals.length) : null;
 
-  const primary = num(last.output_percent);
+  const primary = num(shown.output_percent);
 
   app.innerHTML = `
     ${stateBanner(recent, settings)}
-    <div class="real-note">🧪 ai_tension_readings 테이블(Groq 상용 인식)을 8초마다 확인합니다. ocr_monitor_production.py가 아래 "인식 주기"에 맞춰 이 테이블에 기록합니다.</div>
+    <div class="real-note">🧪 ai_tension_readings 테이블을 8초마다 확인합니다. ocr_monitor_production.py가 아래 "판독 방식"·"인식 주기"에 맞춰 이 테이블에 기록합니다.</div>
 
     <div class="card">
       <div class="header-row">
-        <p class="header-title">PR-DTC-3100 실시간 인식 (상용 · Groq)</p>
+        <p class="header-title">PR-DTC-3100 실시간 인식<span class="eng-chip">${ENGINE_LABEL[engine]}</span></p>
         <span class="live-dot-wrap"><span class="live-dot ${dotClass}"></span>${dotLabel}</span>
       </div>
-      <p class="header-sub">ai_tension_readings 실측 테이블 · 마지막 수신 ${agoLabel(last.captured_at)} (${fmtDT(last.captured_at)})</p>
+      <p class="header-sub">마지막 수신 ${agoLabel(last.captured_at)} (${fmtDT(last.captured_at)})${shown !== last ? ` · 아래 값은 구글 판독 ${fmtHMS(shown.captured_at)}` : ''}${pairOf ? ' · 작은 글씨는 같은 사진의 Groq 값' : ''}</p>
 
       <div class="primary-row">
         <span class="primary-label">출력%</span>
@@ -355,27 +446,45 @@ async function render(){
       </div>
 
       <div class="kpi-grid">
-        <div class="kpi-cell"><p class="kpi-label">전압 (V)</p><p class="kpi-value">${num(last.output_voltage) ?? '-'}</p></div>
-        <div class="kpi-cell"><p class="kpi-label">두께 (um)</p><p class="kpi-value">${num(last.thickness_um) ?? '-'}</p></div>
-        <div class="kpi-cell"><p class="kpi-label">시작경 (mm)</p><p class="kpi-value">${num(last.start_dia_mm) ?? '-'}</p></div>
-        <div class="kpi-cell"><p class="kpi-label">장력설정</p><p class="kpi-value purple">${num(last.tension_set) ?? '-'}</p></div>
-        <div class="kpi-cell"><p class="kpi-label">장력율</p><p class="kpi-value">${num(last.tension_rate) ?? '-'}</p></div>
-        <div class="kpi-cell"><p class="kpi-label">평균 토큰/회</p><p class="kpi-value">${avgTokens !== null ? avgTokens.toLocaleString() : '-'}</p></div>
+        <div class="kpi-cell"><p class="kpi-label">전압 (V)</p><p class="kpi-value">${num(shown.output_voltage) ?? '-'}</p>${sub('output_voltage')}</div>
+        <div class="kpi-cell"><p class="kpi-label">두께 (um)</p><p class="kpi-value">${num(shown.thickness_um) ?? '-'}</p>${sub('thickness_um')}</div>
+        <div class="kpi-cell"><p class="kpi-label">시작경 (mm)</p><p class="kpi-value">${num(shown.start_dia_mm) ?? '-'}</p>${sub('start_dia_mm')}</div>
+        <div class="kpi-cell"><p class="kpi-label">장력설정</p><p class="kpi-value purple">${num(shown.tension_set) ?? '-'}</p>${sub('tension_set')}</div>
+        <div class="kpi-cell"><p class="kpi-label">장력율</p><p class="kpi-value">${num(shown.tension_rate) ?? '-'}</p>${sub('tension_rate')}</div>
+        ${engine === 'groq'
+          ? `<div class="kpi-cell"><p class="kpi-label">평균 토큰/회</p><p class="kpi-value">${avgTokens !== null ? avgTokens.toLocaleString() : '-'}</p></div>`
+          : `<div class="kpi-cell"><p class="kpi-label">구글 처리 시간</p><p class="kpi-value">${num(shown.ocr_ms) !== null ? (num(shown.ocr_ms)/1000).toFixed(1) + '초' : '-'}</p>${pairOf ? `<p class="kpi-sub">출력% Groq ${num(pairOf.output_percent) ?? '-'}${sameVal(pairOf.output_percent, shown.output_percent) ? ' ✓' : ''}</p>` : ''}</div>`}
       </div>
     </div>
 
     <div class="card">
-      <div class="section-title">오늘 API 사용량 (Groq 무료 한도 기준)</div>
+      <div class="section-title">오늘 사용량</div>
       <div class="usage-row">
-        <div class="usage-label-row"><span>토큰</span><b>${todayUsage.tokens.toLocaleString()} / ${DAILY_LIMITS.tokens.toLocaleString()}</b></div>
+        <div class="usage-label-row"><span>Groq 토큰 (무료 한도)</span><b>${todayUsage.tokens.toLocaleString()} / ${DAILY_LIMITS.tokens.toLocaleString()}</b></div>
         <div class="usage-track"><div class="usage-fill${todayUsage.tokens/DAILY_LIMITS.tokens > 0.8 ? ' warn' : ''}" style="width:${Math.min(100, todayUsage.tokens/DAILY_LIMITS.tokens*100).toFixed(1)}%"></div></div>
       </div>
       <div class="usage-row">
-        <div class="usage-label-row"><span>호출 횟수</span><b>${todayUsage.requests.toLocaleString()} / ${DAILY_LIMITS.requests.toLocaleString()}</b></div>
+        <div class="usage-label-row"><span>Groq 호출 횟수</span><b>${todayUsage.requests.toLocaleString()} / ${DAILY_LIMITS.requests.toLocaleString()}</b></div>
         <div class="usage-track"><div class="usage-fill${todayUsage.requests/DAILY_LIMITS.requests > 0.8 ? ' warn' : ''}" style="width:${Math.min(100, todayUsage.requests/DAILY_LIMITS.requests*100).toFixed(1)}%"></div></div>
+      </div>
+      <div class="usage-row">
+        <div class="usage-label-row"><span>구글 문서 변환 (내 계정, 권장 하루 ${GOOGLE_DAILY_SOFT_LIMIT}건 이하)</span><b>${googleToday} / ${GOOGLE_DAILY_SOFT_LIMIT}</b></div>
+        <div class="usage-track"><div class="usage-fill${googleToday/GOOGLE_DAILY_SOFT_LIMIT > 0.8 ? ' warn' : ''}" style="width:${Math.min(100, googleToday/GOOGLE_DAILY_SOFT_LIMIT*100).toFixed(1)}%"></div></div>
       </div>
       <p class="kpi-sub" style="margin-top:10px;">고정된 리셋 시각 없이 최근 24시간 기준이라, 한도에 걸려도 시간이 지나면 점차 회복됩니다.</p>
     </div>
+
+    <div class="card">
+      <div class="section-title">판독 방식</div>
+      <div class="eng-row">
+        <button class="eng-btn${engine === 'groq' ? ' active' : ''}" onclick="setEngine('groq')"><b>Groq AI</b><span>지금까지 방식. AI가 사진을 읽어 6개 값을 바로 돌려줌</span></button>
+        <button class="eng-btn${engine === 'google' ? ' active' : ''}" onclick="setEngine('google')"><b>구글 OCR</b><span>내 구글 계정 문서 변환으로 글자 추출 → 규칙으로 6개 값 분리. 무료</span></button>
+        <button class="eng-btn${engine === 'both' ? ' active' : ''}" onclick="setEngine('both')"><b>둘 다 (비교)</b><span>같은 사진을 두 방식에 보내 나란히 저장. 테스트 기간용</span></button>
+      </div>
+      <p class="kpi-sub" style="margin-top:10px;">누르면 판독 PC가 재시작 없이 다음 주기부터 바꿉니다. 구글은 하루 변환 한도가 있어 테스트 중에는 5분 주기를 권장합니다.</p>
+    </div>
+
+    ${compareCard(todayCaps)}
 
     <div class="card">
       <div class="section-title">인식 주기</div>
@@ -413,16 +522,17 @@ async function render(){
       <div class="section-title">최근 저장 레코드</div>
       <div class="table-scroll">
       <table class="recent-table">
-        <thead><tr><th>날짜 시각</th><th>출력%</th><th>전압</th><th>두께</th><th>시작경</th><th>장력설정</th><th>장력율</th><th>상태</th></tr></thead>
+        <thead><tr><th>날짜 시각</th><th>방식</th><th>출력%</th><th>전압</th><th>두께</th><th>시작경</th><th>장력설정</th><th>장력율</th><th>상태</th></tr></thead>
         <tbody>
           ${recent.map((r, i) => {
             const kind = failKind(r);
             const prev = recent[i-1]; // 더 최근 기록
             const gapSec = prev ? (new Date(prev.captured_at).getTime() - new Date(r.captured_at).getTime())/1000 : 0;
             const gapRow = prev && gapSec > Math.max(intervalSec * 2.5, 900) ? // 주기가 바뀐 과거 기록도 있으니 15분 이상 비었을 때만 표시
-               `<tr class="gap-row"><td colspan="8">— ${spanLabel(gapSec)} 기록 없음 (레벨러 정지로 판독 쉼, 또는 판독 프로그램 꺼짐·연결 끊김) —</td></tr>` : '';
+               `<tr class="gap-row"><td colspan="9">— ${spanLabel(gapSec)} 기록 없음 (레벨러 정지로 판독 쉼, 또는 판독 프로그램 꺼짐·연결 끊김) —</td></tr>` : '';
             return `${gapRow}<tr>
               <td>${fmtDT(r.captured_at)}</td>
+              <td>${r.engine === 'google' ? '<span class="status-chip g">구글</span>' : '<span class="status-chip q">Groq</span>'}</td>
               <td>${num(r.output_percent) ?? '-'}</td>
               <td>${num(r.output_voltage) ?? '-'}</td>
               <td>${num(r.thickness_um) ?? '-'}</td>
