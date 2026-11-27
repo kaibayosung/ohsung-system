@@ -23,6 +23,8 @@ const TAG = {
   회신: [C.red, C.redBg], 마감: [C.amber, C.amberBg], 공고: [C.purpleInk, C.purpleBg], 거래처: [C.green, C.greenBg],
   일정: [C.blue, C.blueBg], 확인: [C.sub, C.line], 참고: [C.sub, C.line], 광고: [C.sub, C.line],
 };
+// 답장이 필요한 메일: 「회신」 분류이거나 기한 메모에 회신·답장이 들어간 메일 중 아직 답장 기록이 없는 것
+const needsReply = (m) => (m.category === '회신' || /회신|답장/.test(m.due_text || '')) && !m.replied_at && !m.is_done;
 const WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 // KST (double-offset 금지 패턴)
 const kst = (ms) => new Date(ms + 9 * 3600000);
@@ -124,8 +126,8 @@ function HomeView({ data, reload, onSignOut }) {
   const events = content.events || [];
   const tomorrow = content.tomorrow || [];
   const sources = content.sources || [];
-  const needReply = mails.filter((m) => m.category === '회신' && !m.replied_at);
-  const shown = mails.filter((m) => filter === '전체' || (filter === '답장 필요' ? m.category === '회신' && !m.replied_at : m.category === filter));
+  const needReply = mails.filter(needsReply);
+  const shown = mails.filter((m) => filter === '전체' || (filter === '답장 필요' ? needsReply(m) : m.category === filter));
   const filters = ['전체', '답장 필요', '마감', '공고', '거래처'];
 
   return (
@@ -180,6 +182,7 @@ function HomeView({ data, reload, onSignOut }) {
       <div style={{ ...S.h, display: 'flex', alignItems: 'center', gap: 8 }}>
         중요 메일 {mails.length}통 {needReply.length > 0 && <Tag name="회신" small />}{needReply.length > 0 && <span style={{ fontSize: 13, color: C.red }}>답장 필요 {needReply.length}</span>}
       </div>
+      {needReply.length > 0 && <a href="/reply" style={{ ...S.btnP, display: 'block', textAlign: 'center', textDecoration: 'none', margin: '8px 12px' }}>답장할 메일 {needReply.length}건 · 초안과 함께 보기 →</a>}
       <div style={{ display: 'flex', gap: 6, overflowX: 'auto', padding: '4px 12px' }}>
         {filters.map((f) => (
           <button key={f} onClick={() => setFilter(f)} style={{ ...S.btn, padding: '7px 12px', fontSize: 13, whiteSpace: 'nowrap', background: filter === f ? C.navy : '#fff', color: filter === f ? '#fff' : C.sub, borderColor: filter === f ? C.navy : C.line }}>{f}</button>
@@ -192,7 +195,7 @@ function HomeView({ data, reload, onSignOut }) {
             <Tag name={m.category} small />
             {m.due_text && <span style={{ fontSize: 12, fontWeight: 700, color: m.hot ? C.red : C.amber }}>{m.due_text}</span>}
             <span style={{ ...S.muted, marginLeft: 'auto', fontSize: 12 }}>
-              {m.src} · {m.replied_at ? <b style={{ color: C.green }}>답장함</b> : m.category === '회신' ? <b style={{ color: C.red }}>미답장</b> : kstMDHM(m.received_at)}
+              {m.src} · {m.replied_at ? <b style={{ color: C.green }}>답장함</b> : needsReply(m) ? <b style={{ color: C.red }}>미답장</b> : kstMDHM(m.received_at)}
             </span>
           </div>
           <div style={{ fontSize: 15, fontWeight: 800, marginTop: 6, lineHeight: 1.4 }}>{m.summary || m.subject}</div>
@@ -358,6 +361,142 @@ function ReplyView({ id, row, reload }) {
   );
 }
 
+
+// ── 답장할 메일 (/reply) : 메일 원문 + 바로 아래 답장 초안을 한 통의 메일처럼 ──
+// 같은 대화(Gmail 스레드, 또는 같은 보낸이+제목)는 최신 1통으로 묶고 몇 통인지 표시합니다.
+// 답장 초안은 처음 열 때 AI가 만들어 mail_items.reply_draft 에 저장 → 다음에 열면 그대로 이어서 고칩니다.
+const baseSubj = (s) => String(s || '').replace(/^\s*((re|fw|fwd|회신|답장|전달)\s*:\s*)+/gi, '').replace(/\s+/g, ' ').trim();
+function groupThreads(list) {
+  const map = new Map();
+  for (const m of list) {
+    const key = m.thread_id || `${m.from_email}|${baseSubj(m.subject)}`;
+    const g = map.get(key);
+    if (!g) map.set(key, { key, latest: m, items: [m] });
+    else { g.items.push(m); if ((m.received_at || '') > (g.latest.received_at || '')) g.latest = m; }
+  }
+  return [...map.values()].sort((a, b) => (a.latest.hot === b.latest.hot ? (b.latest.received_at || '').localeCompare(a.latest.received_at || '') : a.latest.hot ? -1 : 1));
+}
+
+function ReplyLetter({ group, reload, draftQueue }) {
+  const row = group.latest;
+  const [d, setD] = useState(null);
+  const [err, setErr] = useState('');
+  const [more, setMore] = useState(false);
+  const [text, setText] = useState(row.reply_draft || '');
+  const [busy, setBusy] = useState(row.reply_draft ? '' : 'draft');
+  const [confirm, setConfirm] = useState(false);
+  const [sent, setSent] = useState(null);
+  const [msg, setMsg] = useState('');
+
+  useEffect(() => { callFn('mail-detail', { id: row.gmail_id }).then((r) => (r?.ok ? setD(r.detail) : setErr(r?.error || '불러오지 못했습니다'))); }, [row.gmail_id]);
+  const makeDraft = useCallback(async () => {
+    setBusy('draft');
+    const r = await callFn('draft', { id: row.gmail_id, tone: '기본' });
+    if (r?.ok && r.body) {
+      setText(r.body);
+      await supabase.from('mail_items').update({ reply_draft: r.body, reply_draft_at: new Date().toISOString() }).eq('id', row.id);
+    } else setMsg(r?.error || '초안을 만들지 못했습니다');
+    setBusy('');
+  }, [row.gmail_id, row.id]);
+  // 초안이 없으면 차례대로 자동 생성 (동시에 여러 개를 부르지 않도록 큐 사용)
+  useEffect(() => { if (!row.reply_draft) draftQueue(makeDraft); }, []); // eslint-disable-line
+  const saveDraft = async () => { await supabase.from('mail_items').update({ reply_draft: text, reply_draft_at: new Date().toISOString() }).eq('id', row.id); setMsg('초안을 저장했습니다'); };
+  const skip = async () => { await supabase.from('mail_items').update({ is_done: true, done_at: new Date().toISOString() }).eq('id', row.id); reload(); };
+  const send = async () => {
+    setBusy('send'); setMsg('');
+    const r = await callFn('send', { id: row.gmail_id, body: text, confirm: true });
+    setBusy(''); setConfirm(false);
+    if (r?.ok) { setSent(r); reload(); } else setMsg(r?.error === 'need_gmail_send' ? 'need_gmail_send' : (r?.error || '보내지 못했습니다'));
+  };
+  const to = d ? (d.reply_to || d.from) : `${row.from_name} <${row.from_email}>`;
+  const body = d?.text || '';
+  const long = body.length > 1400;
+
+  if (sent) return <div style={{ ...S.card, background: C.greenBg, color: C.green, fontWeight: 800 }}>답장 보냄 · {sent.to} · {kstMDHM(sent.replied_at)} — {row.subject}</div>;
+
+  return (
+    <div style={{ ...S.card, padding: 0, overflow: 'hidden', borderColor: row.hot ? C.purple : C.line, borderWidth: row.hot ? 1.5 : 1 }}>
+      {/* 받은 메일 */}
+      <div style={{ padding: '14px 16px', borderBottom: `1px solid ${C.line}` }}>
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+          <Tag name={row.category} small />
+          {row.due_text && <span style={{ fontSize: 12, fontWeight: 800, color: row.hot ? C.red : C.amber }}>{row.due_text}</span>}
+          {group.items.length > 1 && <span style={{ fontSize: 12, fontWeight: 700, color: C.sub, background: C.line, borderRadius: 999, padding: '2px 8px' }}>같은 대화 {group.items.length}통</span>}
+          <span style={{ ...S.muted, marginLeft: 'auto', fontSize: 12 }}>{row.src}</span>
+        </div>
+        <div style={{ fontSize: 17, fontWeight: 800, marginTop: 8, lineHeight: 1.4 }}>{d?.subject || row.subject}</div>
+        <table style={{ fontSize: 13, marginTop: 8, borderCollapse: 'collapse', width: '100%' }}><tbody>
+          <tr><td style={{ ...S.muted, width: 64, padding: '2px 0', verticalAlign: 'top' }}>보낸 사람</td><td style={{ padding: '2px 0', wordBreak: 'break-all' }}>{d?.from || `${row.from_name} <${row.from_email}>`}</td></tr>
+          {d?.cc && <tr><td style={{ ...S.muted, padding: '2px 0', verticalAlign: 'top' }}>참조</td><td style={{ padding: '2px 0', wordBreak: 'break-all' }}>{d.cc}</td></tr>}
+          <tr><td style={{ ...S.muted, padding: '2px 0' }}>받은 시각</td><td style={{ padding: '2px 0' }}>{kstMDHM(d?.date || row.received_at)}</td></tr>
+        </tbody></table>
+        {row.summary && <div style={{ background: '#f7f6fe', borderRadius: 10, padding: '8px 12px', marginTop: 10, fontSize: 14 }}><b style={{ color: C.purpleInk, fontSize: 12 }}>AI 요약 </b>{row.summary}</div>}
+        <div style={{ fontSize: 15, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word', color: '#2b3548', marginTop: 12 }}>
+          {err ? <span style={{ color: C.red }}>본문을 불러오지 못했습니다: {err}</span> : !d ? <span style={S.muted}>본문 불러오는 중…</span> : (long && !more ? body.slice(0, 1400) + '…' : body) || '(본문 없음)'}
+        </div>
+        {long && <button style={{ ...S.btn, padding: '6px 12px', fontSize: 13, marginTop: 8 }} onClick={() => setMore(!more)}>{more ? '접기' : '본문 전체 보기'}</button>}
+        {d?.atts?.length > 0 && <div style={{ ...S.muted, marginTop: 8 }}>첨부 {d.atts.length}개 · {d.atts.join(', ')}</div>}
+        {d?.open_url && <a href={d.open_url} target="_blank" rel="noreferrer" style={{ display: 'inline-block', marginTop: 8, fontSize: 13, color: C.purpleInk, fontWeight: 700 }}>원문 열기 ↗</a>}
+      </div>
+      {/* 답장 초안 */}
+      <div style={{ padding: '14px 16px', background: '#fbfbff' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 14, fontWeight: 800 }}>↳ 답장 초안</span>
+          <span style={{ ...S.muted, fontSize: 12 }}>받는 사람 {to}</span>
+        </div>
+        {busy === 'draft' && !text
+          ? <div style={{ ...S.muted, padding: '14px 0' }}>AI가 답장 초안을 쓰는 중…</div>
+          : <textarea value={text} onChange={(e) => setText(e.target.value)} onBlur={saveDraft} style={{ ...S.input, minHeight: 180, lineHeight: 1.7, marginTop: 8, resize: 'vertical', background: '#fff' }} />}
+        {text.includes('[확인 필요') && <div style={{ fontSize: 13, color: C.amber, marginTop: 6 }}>[확인 필요] 부분을 채운 뒤 보내세요.</div>}
+        {d && !d.can_send && <div style={{ fontSize: 13, color: C.amber, marginTop: 6 }}>Gmail 답장은 <a href={CONNECT_URL} target="_blank" rel="noreferrer" style={{ color: C.amber, fontWeight: 800 }}>Google 계정 다시 연결</a> 후 보낼 수 있습니다.</div>}
+        {msg && msg !== 'need_gmail_send' && <div style={{ fontSize: 13, color: msg.includes('저장') ? C.green : C.red, marginTop: 6 }}>{msg}</div>}
+        {msg === 'need_gmail_send' && <div style={{ fontSize: 13, color: C.amber, marginTop: 6 }}>Gmail 발송 권한이 없습니다. <a href={CONNECT_URL} target="_blank" rel="noreferrer" style={{ color: C.amber, fontWeight: 800 }}>Google 계정 다시 연결</a></div>}
+        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <button style={{ ...S.btnN, flex: 1.4, minWidth: 120 }} disabled={!d || !!busy} onClick={() => (text.trim().length < 2 ? setMsg('답장 내용을 입력하세요') : setConfirm(true))}>보내기</button>
+          <button style={{ ...S.btn, flex: 1 }} disabled={!!busy} onClick={makeDraft}>{busy === 'draft' ? '만드는 중…' : '초안 다시 만들기'}</button>
+          <button style={{ ...S.btn, flex: 1 }} onClick={skip}>답장 안 함</button>
+        </div>
+      </div>
+      {confirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,30,51,.55)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 20 }} onClick={() => busy || setConfirm(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: '#fff', width: '100%', maxWidth: 640, borderRadius: '18px 18px 0 0', padding: 20 }}>
+            <div style={{ fontSize: 18, fontWeight: 800 }}>이 답장을 보낼까요?</div>
+            <div style={{ fontSize: 14, marginTop: 10, lineHeight: 1.7 }}>
+              <div><span style={S.muted}>받는 사람</span> <b>{to}</b></div>
+              <div><span style={S.muted}>보내는 계정</span> {d?.send_from}</div>
+            </div>
+            <div style={{ fontSize: 14, color: C.sub, whiteSpace: 'pre-wrap', maxHeight: 200, overflow: 'auto', background: C.bg, borderRadius: 10, padding: 12, marginTop: 10 }}>{text}</div>
+            <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <button style={{ ...S.btn, flex: 1 }} onClick={() => setConfirm(false)} disabled={!!busy}>취소</button>
+              <button style={{ ...S.btnN, flex: 1.5 }} onClick={send} disabled={!!busy}>{busy === 'send' ? '보내는 중…' : '보내기'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ReplyInbox({ data, reload }) {
+  const pending = data.mails.filter(needsReply);
+  const groups = groupThreads(pending);
+  // 초안 자동 생성 큐 (한 번에 하나씩)
+  const q = React.useRef(Promise.resolve());
+  const draftQueue = useCallback((fn) => { q.current = q.current.then(fn).catch(() => {}); }, []);
+  return (
+    <>
+      <div style={{ ...S.card, background: C.navy, color: '#fff', border: 'none' }}>
+        <div style={{ fontSize: 13, opacity: 0.75 }}>{todayLabel()}</div>
+        <div style={{ fontSize: 18, fontWeight: 800, marginTop: 4 }}>답장할 메일 {groups.length}건</div>
+        <div style={{ fontSize: 13, opacity: 0.8, marginTop: 6, lineHeight: 1.6 }}>받은 메일 아래에 AI 답장 초안이 있습니다. 고친 내용은 자동 저장되고, 「보내기」는 확인 창에서 한 번 더 눌러야 발송됩니다.</div>
+      </div>
+      {groups.length === 0 && <div style={{ ...S.card, ...S.muted }}>지금 답장할 메일이 없습니다.</div>}
+      {groups.map((g) => <ReplyLetter key={g.key + g.latest.id} group={g} reload={reload} draftQueue={draftQueue} />)}
+      <div style={{ margin: 12 }}><a href="/briefing" style={{ ...S.btn, display: 'block', textAlign: 'center', textDecoration: 'none' }}>전체 브리핑 보기</a></div>
+    </>
+  );
+}
+
 // ── 앱 ──
 export default function BriefingApp() {
   const [session, setSession] = useState(undefined);
@@ -365,7 +504,8 @@ export default function BriefingApp() {
   const [loaded, setLoaded] = useState(false);
   const route = useHashRoute();
   const m1 = route.match(/^\/(mail|reply)\/(.+)$/);
-  const view = m1 ? m1[1] : 'home';
+  const isInbox = window.location.pathname.replace(/\/+$/, '') === '/reply';
+  const view = m1 ? m1[1] : isInbox ? 'inbox' : 'home';
   const id = m1 ? decodeURIComponent(m1[2]) : '';
   const [extraRow, setExtraRow] = useState(null);
 
@@ -385,7 +525,7 @@ export default function BriefingApp() {
       supabase.from('mail_items').select('category').in('category', ['참고', '광고']).gte('received_at', since2),
     ]);
     const mails = (r3.data || []).slice().sort((a, b) => {
-      const ra = a.category === '회신' && !a.replied_at ? 0 : 1, rb = b.category === '회신' && !b.replied_at ? 0 : 1;
+      const ra = needsReply(a) ? 0 : 1, rb = needsReply(b) ? 0 : 1;
       const ha = a.hot ? 0 : 1, hb = b.hot ? 0 : 1;
       if (ha !== hb) return ha - hb;
       if (ra !== rb) return ra - rb;
@@ -402,7 +542,7 @@ export default function BriefingApp() {
   // 「회신」 메일 중 아직 답장 기록이 없는 것은 실제 메일함에서 답장 여부를 한 번씩 확인해 반영
   const checked = React.useRef(new Set());
   useEffect(() => {
-    const todo = data.mails.filter((m) => m.category === '회신' && !m.replied_at && !checked.current.has(m.gmail_id)).slice(0, 6);
+    const todo = data.mails.filter((m) => needsReply(m) && !checked.current.has(m.gmail_id)).slice(0, 6);
     if (!todo.length) return;
     todo.forEach((m) => checked.current.add(m.gmail_id));
     (async () => {
@@ -444,12 +584,14 @@ export default function BriefingApp() {
         <div style={S.bar}>
           {view === 'home'
             ? <span style={{ fontSize: 17, fontWeight: 800 }}>데일리 브리핑</span>
+            : view === 'inbox' ? <span style={{ fontSize: 17, fontWeight: 800 }}>답장할 메일</span>
             : <button style={S.barBtn} onClick={() => (view === 'reply' ? go(`/mail/${encodeURIComponent(id)}`) : go('/'))}>‹ {view === 'reply' ? '메일' : '브리핑'}</button>}
-          <span style={{ fontSize: 13, opacity: 0.8 }}>{view === 'home' ? (data.run ? `${kstHM(data.run.run_at)} 갱신` : '') : view === 'mail' ? '메일' : '답장 쓰기'}</span>
+          <span style={{ fontSize: 13, opacity: 0.8 }}>{view === 'home' || view === 'inbox' ? (data.run ? `${kstHM(data.run.run_at)} 갱신` : '') : view === 'mail' ? '메일' : '답장 쓰기'}</span>
         </div>
         {!loaded ? <div style={{ ...S.muted, padding: 24 }}>불러오는 중…</div>
           : view === 'mail' ? <MailView id={id} row={row} reload={load} />
           : view === 'reply' ? <ReplyView id={id} row={row} reload={load} />
+          : view === 'inbox' ? <ReplyInbox data={data} reload={load} />
           : <HomeView data={data} reload={load} onSignOut={signOut} />}
       </div>
     </div>

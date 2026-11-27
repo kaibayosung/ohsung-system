@@ -9,6 +9,10 @@
       "destination": "/portal.html"
     },
     {
+      "source": "/reply",
+      "destination": "/briefing.html"
+    },
+    {
       "source": "/briefing",
       "destination": "/briefing.html"
     },
